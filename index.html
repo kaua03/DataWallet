@@ -4,8 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DataWallet - Inteligência Financeira</title>
+    <!-- Tailwind e FontAwesome -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- O SUPERPODER: SDK Oficial do Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
@@ -23,30 +27,57 @@
 <body class="bg-gray-100 text-gray-800 font-sans h-screen overflow-hidden flex relative">
 
     <!-- ========================================== -->
-    <!-- PORTARIAS DE LOGIN -->
+    <!-- PORTARIAS DE LOGIN E CADASTRO -->
     <!-- ========================================== -->
     <div id="tela-login" class="fixed inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-900 to-gray-900 z-50 fade-in">
-        <div id="login-desktop" class="escondido bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm mx-4 relative overflow-hidden">
-            <div class="text-center mb-8">
+        
+        <div id="login-desktop" class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm mx-4 relative overflow-hidden transition-all duration-300">
+            <div class="text-center mb-6">
                 <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-inner">
                     <i class="fa-solid fa-wallet"></i>
                 </div>
                 <h1 class="text-2xl font-black text-gray-900">DataWallet</h1>
-                <p class="text-sm text-gray-500">Seu centro de inteligência financeira</p>
+                <p class="text-sm text-gray-500" id="texto-boas-vindas">Seu centro de inteligência financeira</p>
             </div>
             
-            <div class="space-y-4">
+            <!-- FORMULÁRIO DE LOGIN -->
+            <div id="form-login" class="space-y-4 fade-in">
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">E-mail</label>
-                    <input type="email" id="email-login" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 transition" placeholder="elite@dados.com" value="elite@dados.com">
+                    <input type="email" id="email-login" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 transition" placeholder="seu@email.com">
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">Senha</label>
-                    <input type="password" id="senha-login" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 transition" placeholder="••••••••" value="123456">
+                    <input type="password" id="senha-login" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 transition" placeholder="••••••••">
                 </div>
                 <button onclick="iniciarApp()" id="btn-login-desk" class="w-full bg-gray-900 text-white font-bold py-3 rounded-xl hover:bg-blue-600 transition shadow-lg flex justify-center items-center gap-2">
                     <i class="fa-solid fa-right-to-bracket"></i> Entrar
                 </button>
+                <div class="text-center mt-4">
+                    <button onclick="alternarTelaAuth('cadastro')" class="text-sm font-bold text-blue-600 hover:underline">Não tem conta? Cadastre-se</button>
+                </div>
+            </div>
+
+            <!-- FORMULÁRIO DE CADASTRO -->
+            <div id="form-cadastro" class="space-y-4 escondido fade-in">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Seu Nome</label>
+                    <input type="text" id="nome-cad" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 transition" placeholder="Como quer ser chamado?">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">E-mail</label>
+                    <input type="email" id="email-cad" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 transition" placeholder="seu@email.com">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Crie uma Senha</label>
+                    <input type="password" id="senha-cad" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 transition" placeholder="••••••••">
+                </div>
+                <button onclick="cadastrarUsuario()" id="btn-cadastrar" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition shadow-lg flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-user-plus"></i> Criar Conta
+                </button>
+                <div class="text-center mt-4">
+                    <button onclick="alternarTelaAuth('login')" class="text-sm font-bold text-gray-500 hover:underline">Já tem conta? Entre aqui</button>
+                </div>
             </div>
         </div>
 
@@ -111,9 +142,7 @@
         <!-- ÁREA CENTRAL DE CONTEÚDO -->
         <main class="flex-1 h-full overflow-y-auto bg-gray-50 relative pb-24 md:pb-0">
             
-            <!-- ========================================== -->
             <!-- ABA 1: INÍCIO / MOVIMENTAÇÕES (NLP Ativo) -->
-            <!-- ========================================== -->
             <section id="aba-movimentacao" class="aba-conteudo p-4 md:p-8 max-w-5xl mx-auto fade-in">
                 <div class="bg-gradient-to-br from-blue-900 to-gray-900 text-white p-6 md:p-10 rounded-[2rem] shadow-xl mb-6 flex flex-col md:flex-row md:items-center justify-between relative overflow-hidden">
                     <div class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white opacity-5 blur-2xl"></div>
@@ -122,7 +151,6 @@
                         <h2 class="text-4xl md:text-5xl font-black mt-1 tracking-tight" id="saldo-tela">R$ 0,00</h2>
                     </div>
                     
-                    <!-- COMANDO MÁGICO NLP -->
                     <div class="mt-6 md:mt-0 w-full md:w-[450px] bg-white/10 p-1.5 rounded-2xl flex items-center backdrop-blur-md border border-white/20 z-10 shadow-lg">
                         <button class="p-3 text-blue-200 hover:text-white transition"><i class="fa-solid fa-microphone"></i></button>
                         <input type="text" id="input-magico" placeholder="Ex: Recebi 2500 de salário ou Ifood 45" class="flex-1 bg-transparent outline-none text-white placeholder-blue-200 px-2 font-medium">
@@ -160,9 +188,7 @@
                 <div id="lista-extrato" class="space-y-3"></div>
             </section>
 
-            <!-- ========================================== -->
             <!-- ABA 2: DASHBOARD (COACH & ANALYTICS) -->
-            <!-- ========================================== -->
             <section id="aba-dashboard" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                     <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
@@ -217,9 +243,7 @@
                 </div>
             </section>
 
-            <!-- ========================================== -->
             <!-- ABA 3: DÍVIDAS (COM PARCELAMENTO) -->
-            <!-- ========================================== -->
             <section id="aba-dividas" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
@@ -257,9 +281,7 @@
                 </div>
             </section>
 
-            <!-- ========================================== -->
             <!-- ABA 4: CATEGORIAS (RANKING E FILTRO) -->
-            <!-- ========================================== -->
             <section id="aba-categorias" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
@@ -274,9 +296,7 @@
                 <div id="grid-categorias" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
             </section>
             
-            <!-- ========================================== -->
             <!-- ABA 5: PLANOS (METAS E COFFEE SAFE) -->
-            <!-- ========================================== -->
             <section id="aba-planos" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
@@ -387,7 +407,6 @@
                             <input type="date" id="div-data" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-medium">
                         </div>
                         <div class="flex items-end">
-                            <!-- Será ligado dinamicamente com as categorias reais no futuro, mas mantemos o input puro por agora -->
                             <p class="text-xs text-gray-400 font-bold w-full text-center pb-2">Salvo automaticamente no seu Perfil</p>
                         </div>
                     </div>
@@ -438,10 +457,16 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- JAVASCRIPT: MOTOR REAL DE BANCO DE DADOS -->
+    <!-- JAVASCRIPT: MOTOR REAL SUPABASE (BAAS) -->
     <!-- ========================================== -->
     <script>
-        // O MOCKDB FOI DESTRUÍDO! Bem-vindo à Engenharia de Dados de Elite.
+        // ==========================================
+        // 1. CONEXÃO DIRETA COM O SUPABASE
+        // ==========================================
+        const supabaseUrl = 'COLOQUE_SUA_URL_DO_SUPABASE_AQUI'; // Ex: https://xyz.supabase.co
+        const supabaseKey = 'COLOQUE_SUA_CHAVE_ANON_AQUI'; // A chave pública anon
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
         let usuarioLogado = null;
         let transacoesGlobais = [];
         let categoriasGlobais = [];
@@ -451,7 +476,7 @@
         const formatarMoeda = (v) => `R$ ${v.toFixed(2).replace('.', ',')}`;
 
         // ---------------------------------------------
-        // AUTENTICAÇÃO
+        // CONTROLE VISUAL DE LOGIN / CADASTRO
         // ---------------------------------------------
         function verificarDispositivo() {
             const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
@@ -470,11 +495,82 @@
             document.getElementById('login-mobile').classList.add('escondido');
             document.getElementById('login-desktop').classList.remove('escondido');
         }
+
+        // Alterna entre a tela de Login e a tela de Cadastro nativamente
+        function alternarTelaAuth(tela) {
+            const formLogin = document.getElementById('form-login');
+            const formCad = document.getElementById('form-cadastro');
+            const txtBoasVindas = document.getElementById('texto-boas-vindas');
+
+            if (tela === 'cadastro') {
+                formLogin.classList.add('escondido');
+                formCad.classList.remove('escondido');
+                txtBoasVindas.innerText = "Crie sua conta para começar";
+            } else {
+                formCad.classList.add('escondido');
+                formLogin.classList.remove('escondido');
+                txtBoasVindas.innerText = "Seu centro de inteligência financeira";
+            }
+        }
+
         function fazerLoginBiometrico() { alert("Face ID acionado na versão mobile nativa."); }
 
+        // ---------------------------------------------
+        // 2. AUTENTICAÇÃO E CADASTRO REAL NO SUPABASE
+        // ---------------------------------------------
+        async function cadastrarUsuario() {
+            const nome = document.getElementById('nome-cad').value.trim();
+            const email = document.getElementById('email-cad').value.trim();
+            const senha = document.getElementById('senha-cad').value;
+
+            if(!nome || !email || !senha) return alert("Preencha todos os campos do cadastro!");
+
+            const btn = document.getElementById('btn-cadastrar');
+            const txtOrig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Criando...';
+
+            try {
+                // Verifica se o email já existe no Supabase
+                const { data: userExistente } = await supabase.from('usuarios').select('id').eq('email', email).single();
+                if (userExistente) {
+                    alert("Este e-mail já está cadastrado. Faça login!");
+                    alternarTelaAuth('login');
+                    return;
+                }
+
+                // Insere o novo usuário diretamente no banco
+                const { data: novoUser, error } = await supabase.from('usuarios')
+                    .insert([{ nome: nome, email: email, senha_hash: senha }])
+                    .select().single();
+
+                if (error) throw error;
+
+                // Cria as configurações automáticas para o novo usuário
+                await supabase.from('categorias').insert([
+                    { usuario_id: novoUser.id, nome: 'Alimentação', icone: 'fa-burger', cor: 'text-red-500' },
+                    { usuario_id: novoUser.id, nome: 'Salário', icone: 'fa-building', cor: 'text-green-500' }
+                ]);
+
+                await supabase.from('planos').insert([
+                    { usuario_id: novoUser.id, nome: 'Reserva de Emergência', valor_meta: 10000, cor: 'bg-blue-500' }
+                ]);
+
+                alert("Conta criada com sucesso! Entrando no sistema...");
+                usuarioLogado = novoUser;
+                iniciarSistema();
+
+            } catch (erro) {
+                console.error("Erro no cadastro:", erro);
+                alert("Erro ao criar conta. Verifique sua conexão.");
+            } finally {
+                btn.innerHTML = txtOrig;
+            }
+        }
+
         async function iniciarApp() {
-            const email = document.getElementById('email-login').value;
+            const email = document.getElementById('email-login').value.trim();
             const senha = document.getElementById('senha-login').value;
+            
             if(!email || !senha) return alert("Preencha e-mail e senha!");
 
             const btn = document.getElementById('btn-login-desk');
@@ -482,76 +578,79 @@
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Autenticando...';
 
             try {
-                const res = await fetch('/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, senha })
-                });
+                // Busca o usuário diretamente no Supabase! FIM DO PYTHON.
+                const { data: user, error } = await supabase
+                    .from('usuarios')
+                    .select('*')
+                    .eq('email', email)
+                    .single();
 
-                if(res.ok) {
-                    usuarioLogado = await res.json();
-                    document.getElementById('tela-login').style.display = 'none';
-                    document.getElementById('app-principal').classList.remove('escondido');
-                    await atualizarTudo(); // Dispara o motor de fetch
+                if (error || !user) {
+                    alert("Usuário não encontrado. Verifique o e-mail ou crie uma conta!");
+                    alternarTelaAuth('cadastro');
+                } else if (user.senha_hash !== senha) {
+                    alert("Senha incorreta!");
                 } else {
-                    alert("Acesso negado. A API do Python está online?");
+                    usuarioLogado = user;
+                    iniciarSistema();
                 }
             } catch(e) {
-                console.error(e);
-                alert("Erro grave de conexão com o Backend Python.");
+                console.error("Erro no login:", e);
+                alert("Erro ao conectar com o banco de dados.");
             } finally {
                 btn.innerHTML = txtOriginal;
             }
         }
 
+        function iniciarSistema() {
+            document.getElementById('tela-login').style.display = 'none';
+            document.getElementById('app-principal').classList.remove('escondido');
+            atualizarTudo();
+        }
+
         function sair() {
             usuarioLogado = null;
+            document.getElementById('email-login').value = '';
+            document.getElementById('senha-login').value = '';
             document.getElementById('app-principal').classList.add('escondido');
             document.getElementById('tela-login').style.display = 'flex';
+            alternarTelaAuth('login');
             verificarDispositivo();
         }
 
         // ---------------------------------------------
-        // FETCH DO SUPABASE (O TRATOR DE DADOS)
+        // 3. O MOTOR DE BUSCA (Fetch Direto no Banco Multi-tenant)
         // ---------------------------------------------
         async function atualizarTudo() {
             if (!usuarioLogado) return;
 
-            // Busca paralela para máxima performance
-            const [rTrans, rCat, rDiv, rPlan] = await Promise.all([
-                fetch(`/transacoes/${usuarioLogado.id}`),
-                fetch(`/categorias/${usuarioLogado.id}`),
-                fetch(`/dividas/${usuarioLogado.id}`),
-                fetch(`/planos/${usuarioLogado.id}`)
-            ]);
+            try {
+                // Buscando TUDO com proteção de segurança (Filtro por usuário)
+                const [resTrans, resCat, resDiv, resPlan] = await Promise.all([
+                    supabase.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).order('id', { ascending: false }),
+                    supabase.from('categorias').select('*').eq('usuario_id', usuarioLogado.id),
+                    supabase.from('dividas').select('*').eq('usuario_id', usuarioLogado.id),
+                    supabase.from('planos').select('*').eq('usuario_id', usuarioLogado.id)
+                ]);
 
-            transacoesGlobais = await rTrans.json();
-            categoriasGlobais = await rCat.json();
-            dividasGlobais = await rDiv.json();
-            planosGlobais = await rPlan.json();
+                transacoesGlobais = resTrans.data || [];
+                categoriasGlobais = resCat.data || [];
+                dividasGlobais = resDiv.data || [];
+                planosGlobais = resPlan.data || [];
 
-            // Inteligência Autônoma: Cria banco inicial se for conta nova
-            if(categoriasGlobais.length === 0) {
-                await fetch(`/categorias/?usuario_id=${usuarioLogado.id}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({nome: 'Alimentação', icone: 'fa-burger', cor: 'text-red-500'}) });
-                await fetch(`/categorias/?usuario_id=${usuarioLogado.id}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({nome: 'Salário', icone: 'fa-building', cor: 'text-green-500'}) });
-                const nRes = await fetch(`/categorias/${usuarioLogado.id}`);
-                categoriasGlobais = await nRes.json();
+                carregarInicio();
+                atualizarDashboard();
+                carregarDividas();
+                carregarCategorias();
+                carregarPlanos();
+
+            } catch (erro) {
+                console.error("Erro ao buscar dados:", erro);
             }
-            if(planosGlobais.length === 0) {
-                await fetch(`/planos/?usuario_id=${usuarioLogado.id}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({nome: 'Reserva de Emergência', valor_meta: 10000, cor: 'bg-blue-500'}) });
-                const pRes = await fetch(`/planos/${usuarioLogado.id}`);
-                planosGlobais = await pRes.json();
-            }
-
-            carregarInicio();
-            atualizarDashboard();
-            carregarDividas();
-            carregarCategorias();
-            carregarPlanos();
         }
 
         // ---------------------------------------------
-        // RENDER: ABA INÍCIO
+        // RENDER: ABA INÍCIO E GRAVAÇÃO NLP
         // ---------------------------------------------
         function carregarInicio() {
             let saldo = 0, entradas = 0, saidas = 0;
@@ -565,7 +664,7 @@
             document.getElementById('total-entradas').innerText = formatarMoeda(entradas);
             document.getElementById('total-saidas').innerText = formatarMoeda(saidas);
 
-            const html = transacoesGlobais.slice().reverse().map(t => {
+            const html = transacoesGlobais.map(t => {
                 const cat = categoriasGlobais.find(c => c.id === t.categoria_id) || { nome: 'Geral', icone: 'fa-tag', cor: 'text-gray-500' };
                 const corBg = t.tipo === 'despesa' ? 'bg-red-100' : 'bg-green-100';
                 const corTxt = t.tipo === 'despesa' ? 'text-red-500' : 'text-green-500';
@@ -592,7 +691,7 @@
             const val = nums ? Math.max(...nums.map(n => parseFloat(n.replace(',', '.')))) : 0;
             const isReceita = ['recebi', 'ganhei', 'pix', 'salário', 'rendimento'].some(p => input.includes(p));
 
-            const catSugerida = categoriasGlobais.length > 0 ? categoriasGlobais[0].id : 1;
+            const catSugerida = categoriasGlobais.length > 0 ? categoriasGlobais[0].id : null;
             const desc = document.getElementById('input-magico').value.split(' ')[0];
             
             transacaoNLP = {
@@ -633,12 +732,25 @@
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
 
             try {
-                await fetch(`/transacoes/?usuario_id=${usuarioLogado.id}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(transacaoNLP) });
+                const { error } = await supabase.from('transacoes').insert([{
+                    usuario_id: usuarioLogado.id,
+                    categoria_id: transacaoNLP.categoria_id,
+                    valor: transacaoNLP.valor,
+                    tipo: transacaoNLP.tipo,
+                    descricao: transacaoNLP.descricao,
+                    data_vencimento: transacaoNLP.data_vencimento
+                }]);
+                
+                if (error) throw error;
                 await atualizarTudo();
                 fecharModal();
                 document.getElementById('input-magico').value = '';
-            } catch(e) { alert("Erro de comunicação com o Python."); }
-            finally { btn.innerHTML = txt; }
+            } catch(e) { 
+                console.error(e);
+                alert("Erro ao gravar no Supabase."); 
+            } finally { 
+                btn.innerHTML = txt; 
+            }
         }
 
         // ---------------------------------------------
@@ -661,10 +773,10 @@
             document.getElementById('dash-media').innerText = formatarMoeda(totalDespesas / 30);
             document.getElementById('dash-maior').innerHTML = `${formatarMoeda(maiorGasto.valor)} <span class="text-xs font-medium text-gray-400">(${maiorGasto.descricao})</span>`;
             
-            document.getElementById('texto-coach').innerHTML = `Sua API Python processou ${transacoesGlobais.length} transações com sucesso. O seu maior gasto atual é com <strong>${maiorGasto.descricao}</strong>.`;
+            document.getElementById('texto-coach').innerHTML = `Sua API Supabase processou ${transacoesGlobais.length} transações com sucesso. O seu maior gasto atual é com <strong>${maiorGasto.descricao}</strong>.`;
 
             document.getElementById('lista-alertas').innerHTML = `
-                <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-200"><div class="w-10 h-10 bg-red-100 rounded-full flex justify-center items-center text-red-500"><i class="fa-solid fa-cloud"></i></div><p class="text-sm font-medium text-gray-700">Conectado ao Supabase com sucesso!</p></div>
+                <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-200"><div class="w-10 h-10 bg-green-100 rounded-full flex justify-center items-center text-green-500"><i class="fa-solid fa-cloud"></i></div><p class="text-sm font-medium text-gray-700">Conectado ao Supabase BaaS com sucesso!</p></div>
             `;
 
             document.getElementById('grafico-categorias').innerHTML = Object.keys(totaisCat).map(cat => {
@@ -682,7 +794,7 @@
         }
 
         // ---------------------------------------------
-        // RENDER E SALVAMENTO: DÍVIDAS (O Motor Kanban)
+        // RENDER E SALVAMENTO: DÍVIDAS
         // ---------------------------------------------
         function carregarDividas() {
             const atrasadas = [], atual = [], futuras = [];
@@ -691,7 +803,6 @@
             const anoAtual = hoje.getFullYear();
 
             dividasGlobais.forEach(d => {
-                // Ajuste de Fuso Horário seguro para comparar meses
                 const dData = new Date(d.data_vencimento + 'T12:00:00Z');
                 if (dData < hoje && dData.getMonth() !== mesAtual) atrasadas.push(d);
                 else if (dData.getMonth() === mesAtual && dData.getFullYear() === anoAtual) atual.push(d);
@@ -724,24 +835,34 @@
 
             const btn = document.getElementById('btn-salvar-divida');
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-            const promessas = [];
+            const parcelasArray = [];
             const valorP = valorTotal / parcelas;
 
             for(let i=0; i<parcelas; i++) {
                 const dataParc = new Date(dataBase + 'T12:00:00Z');
                 dataParc.setMonth(dataParc.getMonth() + i);
                 
-                promessas.push(fetch(`/dividas/?usuario_id=${usuarioLogado.id}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ descricao: `${desc} (${i+1}/${parcelas})`, valor: valorP, data_vencimento: dataParc.toISOString().split('T')[0] })
-                }));
+                parcelasArray.push({
+                    usuario_id: usuarioLogado.id,
+                    descricao: `${desc} (${i+1}/${parcelas})`, 
+                    valor: valorP, 
+                    data_vencimento: dataParc.toISOString().split('T')[0]
+                });
             }
 
-            await Promise.all(promessas);
-            await atualizarTudo();
-            fecharModalDivida();
-            btn.innerHTML = 'Gerar Parcelas';
+            try {
+                const { error } = await supabase.from('dividas').insert(parcelasArray);
+                if (error) throw error;
+                await atualizarTudo();
+                fecharModalDivida();
+                document.getElementById('div-desc').value = '';
+                document.getElementById('div-valor').value = '';
+            } catch (e) {
+                console.error(e);
+                alert("Erro ao salvar dívida no Supabase.");
+            } finally {
+                btn.innerHTML = 'Gerar Parcelas';
+            }
         }
 
         // ---------------------------------------------
@@ -783,17 +904,26 @@
 
             const btn = document.getElementById('btn-salvar-categoria');
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-            await fetch(`/categorias/?usuario_id=${usuarioLogado.id}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ nome, icone, cor: 'text-blue-500' }) });
-            await atualizarTudo();
-            fecharModalCategoria();
-            btn.innerHTML = 'Criar';
+            try {
+                const { error } = await supabase.from('categorias').insert([{
+                    usuario_id: usuarioLogado.id, nome: nome, icone: icone, cor: 'text-blue-500'
+                }]);
+                if (error) throw error;
+                await atualizarTudo();
+                fecharModalCategoria();
+                document.getElementById('cat-nome').value = '';
+            } catch (e) {
+                console.error(e);
+                alert("Erro ao criar categoria no Supabase.");
+            } finally {
+                btn.innerHTML = 'Criar';
+            }
         }
 
         // ---------------------------------------------
         // RENDER E SALVAMENTO: PLANOS (Safe to Save)
         // ---------------------------------------------
         function carregarPlanos() {
-            // Lógica Safe To Save
             const mesAtual = new Date().getMonth();
             let divMes = 0;
             dividasGlobais.forEach(d => {
@@ -837,11 +967,26 @@
 
             const btn = document.getElementById('btn-salvar-aporte');
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-            await fetch(`/planos/${planosGlobais[0].id}/aporte`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ valor: val }) });
-            await atualizarTudo();
-            fecharModalAporte();
-            document.getElementById('aporte-valor').value = '';
-            btn.innerHTML = 'Confirmar';
+            try {
+                // Soma o valor que está no banco com o novo valor
+                const novoValor = planosGlobais[0].valor_atual + val;
+                
+                const { error } = await supabase.from('planos')
+                    .update({ valor_atual: novoValor })
+                    .eq('id', planosGlobais[0].id)
+                    .eq('usuario_id', usuarioLogado.id); // Blindagem de Segurança
+
+                if (error) throw error;
+                await atualizarTudo();
+                fecharModalAporte();
+                document.getElementById('aporte-valor').value = '';
+                alert(`Sucesso! Você guardou ${formatarMoeda(val)} para sua meta.`);
+            } catch (e) {
+                console.error(e);
+                alert("Erro ao atualizar a meta no Supabase.");
+            } finally {
+                btn.innerHTML = 'Confirmar';
+            }
         }
 
         function mudarAba(nome) {
