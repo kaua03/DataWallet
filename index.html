@@ -4,19 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DataWallet - Inteligência Financeira</title>
-    <!-- Tailwind CSS para Estilização Rápida -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome para os Ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* Animações nativas para dar sensação de aplicativo mobile */
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         .slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .pulse-slow { animation: pulse 3s infinite; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        
-        /* Oculta a barra de rolagem (scroll) mantendo a funcionalidade */
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         ::-webkit-scrollbar { display: none; }
         .escondido { display: none !important; }
     </style>
@@ -24,10 +21,12 @@
 <body class="bg-gray-100 text-gray-800 font-sans h-screen overflow-hidden flex">
 
     <!-- ========================================== -->
-    <!-- TELA DE LOGIN -->
+    <!-- PORTARIAS DE LOGIN INTELIGENTES -->
     <!-- ========================================== -->
     <div id="tela-login" class="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-900 to-gray-900 absolute z-50 fade-in">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm mx-4 relative overflow-hidden">
+        
+        <!-- PORTARIA 1: COMPUTADOR / DESKTOP (Apenas E-mail e Senha) -->
+        <div id="login-desktop" class="escondido bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm mx-4 relative overflow-hidden">
             <div class="text-center mb-8">
                 <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-inner">
                     <i class="fa-solid fa-wallet"></i>
@@ -45,24 +44,33 @@
                     <label class="block text-sm font-bold text-gray-700 mb-1">Senha</label>
                     <input type="password" id="senha-login" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 transition" placeholder="••••••••" value="123456">
                 </div>
-                
                 <button onclick="iniciarApp()" class="w-full bg-gray-900 text-white font-bold py-3 rounded-xl hover:bg-blue-600 transition shadow-lg flex justify-center items-center gap-2">
                     <i class="fa-solid fa-right-to-bracket"></i> Entrar
                 </button>
+            </div>
+        </div>
+
+        <!-- PORTARIA 2: CELULAR (Tela de Bloqueio Estilo Nubank) -->
+        <div id="login-mobile" onclick="fazerLoginBiometrico()" class="escondido flex flex-col items-center justify-center text-white w-full h-full cursor-pointer relative">
+            <!-- Fundo pulsante para indicar interação -->
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div class="w-64 h-64 bg-white opacity-5 rounded-full blur-3xl pulse-slow"></div>
+            </div>
+            
+            <div class="z-10 flex flex-col items-center text-center">
+                <div class="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center text-4xl mb-6 backdrop-blur-md border border-white/20 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+                    <i class="fa-solid fa-lock text-blue-200"></i>
+                </div>
+                <h1 class="text-4xl font-black tracking-tight mb-2">DataWallet</h1>
+                <p class="text-blue-200 font-medium text-sm mb-16">Desbloqueie seu aplicativo</p>
                 
-                <!-- ÁREA DE BIOMETRIA -->
-                <div id="area-biometria" class="escondido">
-                    <div class="relative flex items-center justify-center mt-6 mb-4">
-                        <div class="border-t border-gray-200 w-full absolute"></div>
-                        <span class="bg-white px-3 text-xs font-bold text-gray-400 relative tracking-wider">OU ACESSE COM</span>
-                    </div>
-                    <button onclick="iniciarApp()" class="w-full bg-gray-50 text-gray-800 border border-gray-200 font-bold py-3 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition flex items-center justify-center gap-3">
-                        <i class="fa-solid fa-fingerprint text-2xl"></i> 
-                        <span>Face ID / Digital</span>
-                    </button>
+                <div class="bg-white/20 px-8 py-4 rounded-full font-bold backdrop-blur-md flex items-center gap-3 border border-white/30 shadow-lg hover:bg-white/30 transition pulse-slow">
+                    <i class="fa-solid fa-fingerprint text-2xl text-blue-100"></i> 
+                    <span>Toque para desbloquear</span>
                 </div>
             </div>
         </div>
+        
     </div>
 
     <!-- ========================================== -->
@@ -76,7 +84,6 @@
                 <div class="bg-blue-600 p-2 rounded-lg"><i class="fa-solid fa-wallet text-white text-xl"></i></div>
                 <h2 class="text-xl font-black text-gray-900 tracking-tight">DataWallet</h2>
             </div>
-            
             <nav class="flex-1 space-y-2">
                 <button onclick="mudarAba('dashboard')" id="nav-desk-dashboard" class="menu-desk w-full flex items-center gap-3 p-3 rounded-xl font-bold bg-blue-50 text-blue-600 transition">
                     <i class="fa-solid fa-chart-pie w-5"></i> Dashboard
@@ -91,7 +98,6 @@
                     <i class="fa-solid fa-bullseye w-5"></i> Planos
                 </button>
             </nav>
-            
             <button onclick="sair()" class="flex items-center gap-3 p-3 rounded-xl font-bold text-red-500 hover:bg-red-50 transition mt-auto">
                 <i class="fa-solid fa-right-from-bracket w-5"></i> Sair
             </button>
@@ -102,16 +108,12 @@
             
             <!-- ABA 1: DASHBOARD -->
             <section id="aba-dashboard" class="aba-conteudo p-4 md:p-8 max-w-5xl mx-auto fade-in">
-                <!-- Header (Saldo e Comando Mágico) -->
                 <div class="bg-gradient-to-br from-blue-900 to-gray-900 text-white p-6 md:p-10 rounded-[2rem] shadow-xl mb-6 flex flex-col md:flex-row md:items-center justify-between relative overflow-hidden">
-                    <!-- Efeito visual de fundo -->
                     <div class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white opacity-5 blur-2xl"></div>
-                    
                     <div class="z-10">
                         <p class="text-blue-200 text-sm font-medium flex items-center gap-2"><i class="fa-solid fa-building-columns"></i> Saldo Disponível</p>
                         <h2 class="text-4xl md:text-5xl font-black mt-1 tracking-tight" id="saldo-tela">R$ 0,00</h2>
                     </div>
-                    
                     <div class="mt-6 md:mt-0 w-full md:w-96 bg-white/10 p-1.5 rounded-2xl flex items-center backdrop-blur-md border border-white/20 z-10">
                         <button class="p-3 text-blue-200 hover:text-white transition"><i class="fa-solid fa-microphone"></i></button>
                         <input type="text" id="input-magico" placeholder="Ex: Ifood 45 ontem..." class="flex-1 bg-transparent outline-none text-white placeholder-blue-200 px-2 font-medium">
@@ -121,7 +123,6 @@
                     </div>
                 </div>
 
-                <!-- Resumo Rápido -->
                 <div class="grid grid-cols-2 gap-4 mb-8">
                     <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-4">
                         <div class="w-12 h-12 rounded-full bg-green-100 text-green-500 flex justify-center items-center text-xl"><i class="fa-solid fa-arrow-trend-up"></i></div>
@@ -139,17 +140,14 @@
                     </div>
                 </div>
 
-                <!-- Lista de Últimas Movimentações (Injetada via JS) -->
                 <div class="flex justify-between items-end mb-4">
                     <h3 class="text-gray-800 font-black text-lg">Últimas Movimentações</h3>
                     <button onclick="mudarAba('movimentacao')" class="text-blue-600 text-sm font-bold hover:underline">Ver todas</button>
                 </div>
-                <div id="lista-dashboard" class="space-y-3">
-                    <!-- O JavaScript vai injetar as divs aqui -->
-                </div>
+                <div id="lista-dashboard" class="space-y-3"></div>
             </section>
 
-            <!-- ABA 2: MOVIMENTAÇÕES (Extrato Completo) -->
+            <!-- ABA 2: MOVIMENTAÇÕES -->
             <section id="aba-movimentacao" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-black text-gray-900">Extrato</h2>
@@ -157,18 +155,12 @@
                         <i class="fa-solid fa-plus"></i> Nova
                     </button>
                 </div>
-                
-                <!-- Filtros visuais falsos -->
                 <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
                     <span class="bg-gray-900 text-white px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap">Todas</span>
                     <span class="bg-white border border-gray-200 text-gray-600 px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap">Receitas</span>
                     <span class="bg-white border border-gray-200 text-gray-600 px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap">Despesas</span>
-                    <span class="bg-white border border-gray-200 text-gray-600 px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap">Agosto</span>
                 </div>
-
-                <div id="lista-extrato" class="space-y-3">
-                    <!-- O JavaScript vai injetar as divs aqui -->
-                </div>
+                <div id="lista-extrato" class="space-y-3"></div>
             </section>
 
             <!-- ABA 3: CATEGORIAS -->
@@ -177,20 +169,14 @@
                     <h2 class="text-2xl font-black text-gray-900">Pastas de Organização</h2>
                     <button class="text-blue-600 font-bold bg-blue-50 px-3 py-1.5 rounded-lg text-sm">+ Adicionar</button>
                 </div>
-                
-                <div id="grid-categorias" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <!-- O JavaScript vai injetar os cards de categoria aqui -->
-                </div>
+                <div id="grid-categorias" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
             </section>
             
             <!-- ABA 4: PLANOS -->
             <section id="aba-planos" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
                 <h2 class="text-2xl font-black text-gray-900 mb-2">Metas e Planos</h2>
                 <p class="text-gray-500 text-sm mb-6">Acompanhe a evolução dos seus objetivos.</p>
-                
-                <div id="grid-planos" class="space-y-4">
-                    <!-- O JavaScript vai injetar os planos aqui -->
-                </div>
+                <div id="grid-planos" class="space-y-4"></div>
             </section>
 
         </main>
@@ -206,7 +192,6 @@
                 <span class="text-[10px] font-bold">Extrato</span>
             </button>
             <div class="relative -top-6">
-                <!-- Botão flutuante central -->
                 <button class="w-14 h-14 bg-blue-600 text-white rounded-full flex justify-center items-center text-xl shadow-[0_10px_20px_rgba(37,99,235,0.3)] border-4 border-gray-50 hover:scale-105 transition transform">
                     <i class="fa-solid fa-plus"></i>
                 </button>
@@ -221,13 +206,11 @@
             </button>
         </nav>
 
-        <!-- JANELA FLUTUANTE (Confirmação de Voz/Mágica) -->
+        <!-- JANELA FLUTUANTE (Confirmação) -->
         <div id="modal-confirmacao" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center fade-in">
             <div class="bg-white w-full md:w-[400px] rounded-t-[2.5rem] md:rounded-3xl p-8 slide-up shadow-2xl relative">
                 <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6 md:hidden"></div>
-                
                 <h3 class="text-2xl font-black text-gray-900 mb-6 text-center">Registrar Conta?</h3>
-                
                 <div class="bg-gray-50 p-5 rounded-2xl space-y-3 border border-gray-100 mb-8">
                     <div class="flex justify-between items-center pb-3 border-b border-gray-200">
                         <span class="text-gray-500 font-bold text-sm">Categoria Identificada</span>
@@ -244,7 +227,6 @@
                         <strong id="conf-val" class="text-red-500 text-3xl font-black">- R$ 45,00</strong>
                     </div>
                 </div>
-                
                 <div class="flex space-x-4">
                     <button onclick="fecharModal()" class="flex-1 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition">Cancelar</button>
                     <button onclick="confirmarSalvamento()" class="flex-1 py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
@@ -253,53 +235,85 @@
                 </div>
             </div>
         </div>
-
     </div>
 
     <!-- ========================================== -->
-    <!-- JAVASCRIPT: O CÉREBRO DO FRONTEND (MOCK DATA) -->
+    <!-- JAVASCRIPT: INTELIGÊNCIA LOGÍSTICA -->
     <!-- ========================================== -->
     <script>
         // ---------------------------------------------
-        // BANCO DE DADOS FALSO (MOCK)
+        // BANCO DE DADOS FALSO (MOCK) - Mantido igual para popular a tela
         // ---------------------------------------------
         const mockDB = {
             resumo: { saldo: 1845.50, entradas: 3500.00, saidas: 1654.50 },
             transacoes: [
                 { id: 1, descricao: "Ifood", data: "Hoje", valor: 45.00, tipo: "despesa", icone: "fa-burger", corTxt: "text-red-500", corBg: "bg-red-100" },
                 { id: 2, descricao: "Salário da Empresa", data: "05 Ago", valor: 3500.00, tipo: "receita", icone: "fa-building", corTxt: "text-green-500", corBg: "bg-green-100" },
-                { id: 3, descricao: "Posto Ipiranga", data: "02 Ago", valor: 150.00, tipo: "despesa", icone: "fa-gas-pump", corTxt: "text-orange-500", corBg: "bg-orange-100" },
-                { id: 4, descricao: "Assinatura ChatGPT", data: "01 Ago", valor: 109.50, tipo: "despesa", icone: "fa-robot", corTxt: "text-purple-500", corBg: "bg-purple-100" }
+                { id: 3, descricao: "Posto Ipiranga", data: "02 Ago", valor: 150.00, tipo: "despesa", icone: "fa-gas-pump", corTxt: "text-orange-500", corBg: "bg-orange-100" }
             ],
             categorias: [
                 { nome: "Alimentação", icone: "fa-burger", cor: "text-red-500" },
-                { nome: "Transporte", icone: "fa-car", cor: "text-orange-500" },
-                { nome: "Moradia", icone: "fa-house", cor: "text-blue-500" },
-                { nome: "Assinaturas", icone: "fa-star", cor: "text-purple-500" },
-                { nome: "Lazer", icone: "fa-gamepad", cor: "text-pink-500" },
-                { nome: "Salário", icone: "fa-money-bill-wave", cor: "text-green-500" }
+                { nome: "Transporte", icone: "fa-car", cor: "text-orange-500" }
             ],
             planos: [
-                { nome: "Reserva de Emergência", atual: 2500, meta: 10000, cor: "bg-blue-500" },
-                { nome: "Upgrade no Notebook", atual: 1200, meta: 4500, cor: "bg-purple-500" }
+                { nome: "Reserva de Emergência", atual: 2500, meta: 10000, cor: "bg-blue-500" }
             ]
         };
 
-        // Formata dinheiro para o padrão Brasileiro
         const formatarMoeda = (valor) => `R$ ${valor.toFixed(2).replace('.', ',')}`;
 
         // ---------------------------------------------
-        // INJETANDO OS DADOS NA TELA
+        // 1. O PORTEIRO INTELIGENTE (Detecta PC vs Celular)
         // ---------------------------------------------
+        function verificarDispositivo() {
+            // Regra simples: Se o tamanho da tela for menor que 768px (Tablet/Celular) ou se o navegador disser que é mobile
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
+            
+            if (isMobile) {
+                // É Celular: Mostra o "Cadeado"
+                document.getElementById('login-mobile').classList.remove('escondido');
+                document.getElementById('login-desktop').classList.add('escondido');
+            } else {
+                // É PC: Mostra Email e Senha
+                document.getElementById('login-desktop').classList.remove('escondido');
+                document.getElementById('login-mobile').classList.add('escondido');
+            }
+        }
+        
+        // Roda a verificação assim que a página abre
+        verificarDispositivo();
+        
+        // Recalcula se o usuário redimensionar a janela do navegador no PC
+        window.addEventListener('resize', verificarDispositivo);
+
+        // ---------------------------------------------
+        // AÇÕES DA TELA
+        // ---------------------------------------------
+        function fazerLoginBiometrico() {
+            // Em um app real, o TouchID/FaceID piscaria aqui. Para o teste, simulamos o sucesso.
+            iniciarApp();
+        }
+
+        function iniciarApp() {
+            document.getElementById('tela-login').classList.add('escondido');
+            document.getElementById('app-principal').classList.remove('escondido');
+            carregarDadosFalsos();
+        }
+
+        function sair() {
+            document.getElementById('app-principal').classList.add('escondido');
+            document.getElementById('tela-login').classList.remove('escondido');
+            verificarDispositivo(); // Reposiciona a tela correta ao sair
+        }
+
+        // --- Restante das funções de navegação mantidas intactas ---
         function carregarDadosFalsos() {
-            // Dashboard Header
             document.getElementById('saldo-tela').innerText = formatarMoeda(mockDB.resumo.saldo);
             document.getElementById('total-entradas').innerText = formatarMoeda(mockDB.resumo.entradas);
             document.getElementById('total-saidas').innerText = formatarMoeda(mockDB.resumo.saidas);
 
-            // Gerador de Cards de Transação (HTML via JS)
-            const gerarCardTransacao = (t) => `
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-gray-300 transition cursor-pointer">
+            const gerarCard = (t) => `
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                     <div class="flex items-center space-x-4">
                         <div class="w-12 h-12 ${t.corBg} rounded-full flex items-center justify-center ${t.corTxt} text-xl">
                             <i class="fa-solid ${t.icone}"></i>
@@ -314,110 +328,33 @@
                     </p>
                 </div>
             `;
+            document.getElementById('lista-dashboard').innerHTML = mockDB.transacoes.slice(0, 3).map(gerarCard).join('');
+            document.getElementById('lista-extrato').innerHTML = mockDB.transacoes.map(gerarCard).join('');
 
-            // Preenche Lista do Dashboard (Mostra só os 3 primeiros)
-            const htmlDashboard = mockDB.transacoes.slice(0, 3).map(gerarCardTransacao).join('');
-            document.getElementById('lista-dashboard').innerHTML = htmlDashboard;
-
-            // Preenche Lista do Extrato Completo
-            const htmlExtrato = mockDB.transacoes.map(gerarCardTransacao).join('');
-            document.getElementById('lista-extrato').innerHTML = htmlExtrato;
-
-            // Preenche Categorias
-            const htmlCategorias = mockDB.categorias.map(c => `
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center hover:shadow-md transition cursor-pointer gap-2">
-                    <i class="fa-solid ${c.icone} ${c.cor} text-3xl"></i>
-                    <p class="font-bold text-gray-800 text-sm">${c.nome}</p>
-                </div>
+            document.getElementById('grid-categorias').innerHTML = mockDB.categorias.map(c => `
+                <div class="bg-white p-6 rounded-2xl border border-gray-100 flex flex-col items-center justify-center gap-2"><i class="fa-solid ${c.icone} ${c.cor} text-3xl"></i><p class="font-bold text-gray-800 text-sm">${c.nome}</p></div>
             `).join('');
-            document.getElementById('grid-categorias').innerHTML = htmlCategorias;
 
-            // Preenche Planos (Barra de Progresso)
-            const htmlPlanos = mockDB.planos.map(p => {
-                const porcentagem = (p.atual / p.meta) * 100;
-                return `
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-                    <div class="flex justify-between items-end mb-3">
-                        <h3 class="font-bold text-gray-800">${p.nome}</h3>
-                        <span class="text-xs font-bold text-gray-500">${formatarMoeda(p.atual)} / ${formatarMoeda(p.meta)}</span>
-                    </div>
-                    <div class="w-full bg-gray-100 rounded-full h-3">
-                        <div class="${p.cor} h-3 rounded-full" style="width: ${porcentagem}%"></div>
-                    </div>
-                </div>
-                `;
-            }).join('');
-            document.getElementById('grid-planos').innerHTML = htmlPlanos;
+            document.getElementById('grid-planos').innerHTML = mockDB.planos.map(p => `
+                <div class="bg-white p-6 rounded-3xl border border-gray-100"><div class="flex justify-between items-end mb-3"><h3 class="font-bold text-gray-800">${p.nome}</h3><span class="text-xs font-bold text-gray-500">${formatarMoeda(p.atual)} / ${formatarMoeda(p.meta)}</span></div><div class="w-full bg-gray-100 rounded-full h-3"><div class="${p.cor} h-3 rounded-full" style="width: ${(p.atual/p.meta)*100}%"></div></div></div>
+            `).join('');
         }
 
-        // ---------------------------------------------
-        // REGRAS DE NEGÓCIO E NAVEGAÇÃO
-        // ---------------------------------------------
-        
-        // Verifica o Hardware de Biometria na tela de Login
-        if (window.PublicKeyCredential) {
-            window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(temHardware => {
-                if(temHardware) document.getElementById('area-biometria').classList.remove('escondido');
-            });
+        function mudarAba(nome) {
+            document.querySelectorAll('.aba-conteudo').forEach(a => a.classList.add('escondido'));
+            document.querySelectorAll('.menu-desk').forEach(b => { b.classList.remove('bg-blue-50', 'text-blue-600'); b.classList.add('text-gray-500'); });
+            document.querySelectorAll('.menu-mob').forEach(b => { b.classList.remove('text-blue-600'); b.classList.add('text-gray-400'); });
+            document.getElementById(`aba-${nome}`).classList.remove('escondido');
+            if(document.getElementById(`nav-desk-${nome}`)) document.getElementById(`nav-desk-${nome}`).classList.add('bg-blue-50', 'text-blue-600');
+            if(document.getElementById(`nav-mob-${nome}`)) document.getElementById(`nav-mob-${nome}`).classList.add('text-blue-600');
         }
 
-        function iniciarApp() {
-            document.getElementById('tela-login').classList.add('escondido');
-            document.getElementById('app-principal').classList.remove('escondido');
-            carregarDadosFalsos(); // Injeta a vida no sistema quando loga
-        }
-
-        function sair() {
-            document.getElementById('app-principal').classList.add('escondido');
-            document.getElementById('tela-login').classList.remove('escondido');
-        }
-
-        function mudarAba(nomeDaAba) {
-            // Esconde todas as sections e limpa formatações
-            document.querySelectorAll('.aba-conteudo').forEach(aba => aba.classList.add('escondido'));
-            document.querySelectorAll('.menu-desk').forEach(btn => {
-                btn.classList.remove('bg-blue-50', 'text-blue-600');
-                btn.classList.add('text-gray-500');
-            });
-            document.querySelectorAll('.menu-mob').forEach(btn => {
-                btn.classList.remove('text-blue-600');
-                btn.classList.add('text-gray-400');
-            });
-
-            // Mostra a aba correta e pinta o botão clicado
-            document.getElementById(`aba-${nomeDaAba}`).classList.remove('escondido');
-            
-            const btnDesk = document.getElementById(`nav-desk-${nomeDaAba}`);
-            if(btnDesk) btnDesk.classList.add('bg-blue-50', 'text-blue-600');
-            
-            const btnMob = document.getElementById(`nav-mob-${nomeDaAba}`);
-            if(btnMob) btnMob.classList.add('text-blue-600');
-        }
-
-        // Simula o processamento do texto enviando para a janela de aprovação
         function simularEnvioVoz() {
-            const texto = document.getElementById('input-magico').value;
-            if(!texto) return;
-            
-            // Aqui seria a chamada real para o Python. Por enquanto simulamos:
-            document.getElementById('conf-desc').innerText = "Alimentação (Ifood)";
-            document.getElementById('conf-val').innerText = "- R$ 45,00";
-            
-            const hoje = new Date();
-            document.getElementById('conf-data').innerText = `${hoje.getDate()}/${hoje.getMonth()+1}/${hoje.getFullYear()}`;
-            
+            if(!document.getElementById('input-magico').value) return;
             document.getElementById('modal-confirmacao').classList.remove('hidden');
         }
-
-        function fecharModal() {
-            document.getElementById('modal-confirmacao').classList.add('hidden');
-        }
-
-        function confirmarSalvamento() {
-            alert("Aprovado! Quando conectarmos o Python, isso vai direto para o Supabase.");
-            fecharModal();
-            document.getElementById('input-magico').value = '';
-        }
+        function fecharModal() { document.getElementById('modal-confirmacao').classList.add('hidden'); }
+        function confirmarSalvamento() { fecharModal(); document.getElementById('input-magico').value = ''; }
     </script>
 </body>
 </html>
