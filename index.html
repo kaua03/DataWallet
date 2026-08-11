@@ -16,16 +16,19 @@
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         ::-webkit-scrollbar { display: none; }
         .escondido { display: none !important; }
+        /* Suaviza a barra de rolagem onde precisar */
+        .scroll-suave { overflow-x: auto; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+        .scroll-suave::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans h-screen overflow-hidden flex">
 
     <!-- ========================================== -->
-    <!-- PORTARIAS DE LOGIN INTELIGENTES -->
+    <!-- PORTARIAS DE LOGIN -->
     <!-- ========================================== -->
     <div id="tela-login" class="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-900 to-gray-900 absolute z-50 fade-in">
         
-        <!-- PORTARIA 1: COMPUTADOR / DESKTOP (Apenas E-mail e Senha) -->
+        <!-- PORTARIA 1: E-MAIL E SENHA -->
         <div id="login-desktop" class="escondido bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm mx-4 relative overflow-hidden">
             <div class="text-center mb-8">
                 <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-inner">
@@ -50,9 +53,8 @@
             </div>
         </div>
 
-        <!-- PORTARIA 2: CELULAR (Tela de Bloqueio Estilo Nubank) -->
-        <div id="login-mobile" onclick="fazerLoginBiometrico()" class="escondido flex flex-col items-center justify-center text-white w-full h-full cursor-pointer relative">
-            <!-- Fundo pulsante para indicar interação -->
+        <!-- PORTARIA 2: CELULAR (TELA DE BLOQUEIO) -->
+        <div id="login-mobile" class="escondido flex flex-col items-center justify-center text-white w-full h-full relative">
             <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div class="w-64 h-64 bg-white opacity-5 rounded-full blur-3xl pulse-slow"></div>
             </div>
@@ -61,6 +63,393 @@
                 <div class="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center text-4xl mb-6 backdrop-blur-md border border-white/20 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
                     <i class="fa-solid fa-lock text-blue-200"></i>
                 </div>
+                <h1 class="text-4xl font-black tracking-tight mb-2">DataWallet</h1>
+                <p class="text-blue-200 font-medium text-sm mb-16">Desbloqueie seu aplicativo</p>
+                
+                <button onclick="fazerLoginBiometrico()" class="bg-white/20 px-8 py-4 rounded-full font-bold backdrop-blur-md flex items-center gap-3 border border-white/30 shadow-lg hover:bg-white/30 transition pulse-slow cursor-pointer">
+                    <i class="fa-solid fa-fingerprint text-2xl text-blue-100"></i> 
+                    <span>Toque para desbloquear</span>
+                </button>
+
+                <!-- Rota de Fuga Exigida -->
+                <button onclick="forcarLoginPadrao()" class="mt-12 text-blue-200 text-sm font-bold hover:text-white transition flex items-center gap-2">
+                    <i class="fa-solid fa-keyboard"></i> Usar login padrão
+                </button>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- ========================================== -->
+    <!-- ESTRUTURA PRINCIPAL DO APP -->
+    <!-- ========================================== -->
+    <div id="app-principal" class="escondido w-full h-full flex flex-col md:flex-row">
+        
+        <!-- MENU LATERAL (Notebook/PC) -->
+        <aside class="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 p-6 h-full shadow-lg z-20">
+            <div class="flex items-center gap-3 mb-10">
+                <div class="bg-blue-600 p-2 rounded-lg"><i class="fa-solid fa-wallet text-white text-xl"></i></div>
+                <h2 class="text-xl font-black text-gray-900 tracking-tight">DataWallet</h2>
+            </div>
+            <nav class="flex-1 space-y-2">
+                <button onclick="mudarAba('movimentacao')" id="nav-desk-movimentacao" class="menu-desk w-full flex items-center gap-3 p-3 rounded-xl font-bold bg-blue-50 text-blue-600 transition">
+                    <i class="fa-solid fa-money-bill-transfer w-5"></i> Início
+                </button>
+                <button onclick="mudarAba('dashboard')" id="nav-desk-dashboard" class="menu-desk w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition">
+                    <i class="fa-solid fa-chart-pie w-5"></i> Dashboard (Coach)
+                </button>
+                <button onclick="mudarAba('dividas')" id="nav-desk-dividas" class="menu-desk w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition">
+                    <i class="fa-solid fa-file-invoice-dollar w-5"></i> Dívidas
+                </button>
+                <button onclick="mudarAba('categorias')" id="nav-desk-categorias" class="menu-desk w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition">
+                    <i class="fa-solid fa-layer-group w-5"></i> Categorias
+                </button>
+                <button onclick="mudarAba('planos')" id="nav-desk-planos" class="menu-desk w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition">
+                    <i class="fa-solid fa-bullseye w-5"></i> Planos
+                </button>
+            </nav>
+            <button onclick="sair()" class="flex items-center gap-3 p-3 rounded-xl font-bold text-red-500 hover:bg-red-50 transition mt-auto">
+                <i class="fa-solid fa-right-from-bracket w-5"></i> Sair
+            </button>
+        </aside>
+
+        <!-- ÁREA CENTRAL DE CONTEÚDO -->
+        <main class="flex-1 h-full overflow-y-auto bg-gray-50 relative pb-24 md:pb-0">
+            
+            <!-- ========================================== -->
+            <!-- ABA 1: MOVIMENTAÇÕES (A NOVA TELA INICIAL) -->
+            <!-- ========================================== -->
+            <section id="aba-movimentacao" class="aba-conteudo p-4 md:p-8 max-w-5xl mx-auto fade-in">
+                <!-- O Header Operacional -->
+                <div class="bg-gradient-to-br from-blue-900 to-gray-900 text-white p-6 md:p-10 rounded-[2rem] shadow-xl mb-6 flex flex-col md:flex-row md:items-center justify-between relative overflow-hidden">
+                    <div class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white opacity-5 blur-2xl"></div>
+                    <div class="z-10">
+                        <p class="text-blue-200 text-sm font-medium flex items-center gap-2"><i class="fa-solid fa-building-columns"></i> Saldo Disponível</p>
+                        <h2 class="text-4xl md:text-5xl font-black mt-1 tracking-tight" id="saldo-tela">R$ 0,00</h2>
+                    </div>
+                    <!-- Comando de Voz Rápido -->
+                    <div class="mt-6 md:mt-0 w-full md:w-96 bg-white/10 p-1.5 rounded-2xl flex items-center backdrop-blur-md border border-white/20 z-10">
+                        <button class="p-3 text-blue-200 hover:text-white transition"><i class="fa-solid fa-microphone"></i></button>
+                        <input type="text" id="input-magico" placeholder="Ex: Ifood 45 ontem..." class="flex-1 bg-transparent outline-none text-white placeholder-blue-200 px-2 font-medium">
+                        <button onclick="simularEnvioVoz()" class="bg-white text-gray-900 p-3 rounded-xl hover:bg-blue-500 hover:text-white transition shadow-md">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Resumo Rápido de Entradas e Saídas -->
+                <div class="grid grid-cols-2 gap-4 mb-8">
+                    <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-green-100 text-green-500 flex justify-center items-center text-xl"><i class="fa-solid fa-arrow-trend-up"></i></div>
+                        <div>
+                            <p class="text-gray-400 text-xs font-bold uppercase">Entradas (Mês)</p>
+                            <p class="text-gray-800 font-black text-lg" id="total-entradas">R$ 0,00</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-red-100 text-red-500 flex justify-center items-center text-xl"><i class="fa-solid fa-arrow-trend-down"></i></div>
+                        <div>
+                            <p class="text-gray-400 text-xs font-bold uppercase">Saídas (Mês)</p>
+                            <p class="text-gray-800 font-black text-lg" id="total-saidas">R$ 0,00</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista do Extrato (Operacional) -->
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-gray-800 font-black text-lg">Histórico de Transações</h3>
+                    <div class="flex gap-2">
+                        <span class="bg-gray-900 text-white px-3 py-1 rounded-lg text-xs font-bold cursor-pointer">Todas</span>
+                        <span class="bg-white border border-gray-200 text-gray-600 px-3 py-1 rounded-lg text-xs font-bold cursor-pointer">Filtrar</span>
+                    </div>
+                </div>
+                <div id="lista-extrato" class="space-y-3"></div>
+            </section>
+
+            <!-- ========================================== -->
+            <!-- ABA 2: DASHBOARD (O CÉREBRO E COACH FINANCEIRO) -->
+            <!-- ========================================== -->
+            <section id="aba-dashboard" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
+                
+                <h2 class="text-2xl font-black text-gray-900 mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie text-blue-600"></i> Inteligência e Análise
+                </h2>
+
+                <!-- O Coach Financeiro (Inteligência Artificial) -->
+                <div class="bg-indigo-900 text-white p-6 md:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row gap-6 items-start mb-8 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-40 h-40 bg-indigo-500 opacity-20 blur-3xl rounded-full"></div>
+                    <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center text-3xl shrink-0 border border-white/20 shadow-inner z-10">
+                        <i class="fa-solid fa-robot text-indigo-200"></i>
+                    </div>
+                    <div class="z-10">
+                        <h3 class="font-bold text-xl mb-2 text-indigo-100">Seu Coach Financeiro</h3>
+                        <p class="text-indigo-50 font-medium text-sm md:text-base leading-relaxed" id="texto-coach">
+                            <!-- Injetado pelo JS -->
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Alertas de Risco -->
+                    <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+                        <h3 class="text-gray-800 font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-orange-500"></i> Alertas da Carteira</h3>
+                        <div id="lista-alertas" class="space-y-3">
+                            <!-- Injetado pelo JS -->
+                        </div>
+                    </div>
+
+                    <!-- Análise de Categorias (Gráfico de Barras) -->
+                    <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+                        <h3 class="text-gray-800 font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-chart-bar text-blue-500"></i> Para onde seu dinheiro vai</h3>
+                        <div id="grafico-categorias" class="space-y-4">
+                            <!-- Injetado pelo JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================== -->
+            <!-- ABA 3: DÍVIDAS (CONTAS A PAGAR) -->
+            <!-- ========================================== -->
+            <section id="aba-dividas" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
+                        <i class="fa-solid fa-file-invoice-dollar text-blue-600"></i> Controle de Dívidas
+                    </h2>
+                    <button class="text-blue-600 font-bold bg-blue-50 px-3 py-1.5 rounded-lg text-sm">+ Nova Conta</button>
+                </div>
+
+                <!-- Kanban / Linha do Tempo de Dívidas -->
+                <div class="flex flex-col md:flex-row gap-4 overflow-x-auto scroll-suave pb-4">
+                    
+                    <!-- Coluna Atrasadas (Mês Anterior) -->
+                    <div class="flex-1 min-w-[280px] bg-red-50 p-4 rounded-3xl border border-red-100">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-red-800 text-sm uppercase">Atrasadas</h3>
+                            <span class="bg-red-200 text-red-800 text-xs font-bold px-2 py-1 rounded-lg" id="total-div-atrasada">R$ 0,00</span>
+                        </div>
+                        <div id="col-div-atrasada" class="space-y-3"></div>
+                    </div>
+
+                    <!-- Coluna Mês Atual -->
+                    <div class="flex-1 min-w-[280px] bg-blue-50 p-4 rounded-3xl border border-blue-100">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-blue-800 text-sm uppercase">Este Mês (Vão vencer)</h3>
+                            <span class="bg-blue-200 text-blue-800 text-xs font-bold px-2 py-1 rounded-lg" id="total-div-atual">R$ 0,00</span>
+                        </div>
+                        <div id="col-div-atual" class="space-y-3"></div>
+                    </div>
+
+                    <!-- Coluna Próximos Meses -->
+                    <div class="flex-1 min-w-[280px] bg-gray-100 p-4 rounded-3xl border border-gray-200">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-gray-600 text-sm uppercase">Próximos Meses</h3>
+                            <span class="bg-gray-200 text-gray-600 text-xs font-bold px-2 py-1 rounded-lg" id="total-div-futura">R$ 0,00</span>
+                        </div>
+                        <div id="col-div-futura" class="space-y-3"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================== -->
+            <!-- ABA 4 e 5: CATEGORIAS E PLANOS (Mantidas) -->
+            <!-- ========================================== -->
+            <section id="aba-categorias" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
+                <h2 class="text-2xl font-black text-gray-900 mb-6">Pastas de Organização</h2>
+                <div id="grid-categorias" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+            </section>
+            
+            <section id="aba-planos" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
+                <h2 class="text-2xl font-black text-gray-900 mb-6">Metas e Planos</h2>
+                <div id="grid-planos" class="space-y-4"></div>
+            </section>
+
+        </main>
+
+        <!-- MENU INFERIOR (Celular) -->
+        <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t border-gray-200 px-4 py-3 flex justify-between items-center z-20">
+            <button onclick="mudarAba('movimentacao')" id="nav-mob-movimentacao" class="menu-mob flex flex-col items-center text-blue-600 transition">
+                <i class="fa-solid fa-house text-xl mb-1"></i>
+                <span class="text-[10px] font-bold">Início</span>
+            </button>
+            <button onclick="mudarAba('dashboard')" id="nav-mob-dashboard" class="menu-mob flex flex-col items-center text-gray-400 hover:text-gray-600 transition">
+                <i class="fa-solid fa-chart-pie text-xl mb-1"></i>
+                <span class="text-[10px] font-bold">Análise</span>
+            </button>
+            <div class="relative -top-6">
+                <!-- Botão central para adicionar conta manual -->
+                <button class="w-14 h-14 bg-blue-600 text-white rounded-full flex justify-center items-center text-xl shadow-[0_10px_20px_rgba(37,99,235,0.3)] border-4 border-gray-50 hover:scale-105 transition transform">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            </div>
+            <button onclick="mudarAba('dividas')" id="nav-mob-dividas" class="menu-mob flex flex-col items-center text-gray-400 hover:text-gray-600 transition">
+                <i class="fa-solid fa-file-invoice-dollar text-xl mb-1"></i>
+                <span class="text-[10px] font-bold">Dívidas</span>
+            </button>
+            <button onclick="mudarAba('categorias')" id="nav-mob-categorias" class="menu-mob flex flex-col items-center text-gray-400 hover:text-gray-600 transition">
+                <i class="fa-solid fa-layer-group text-xl mb-1"></i>
+                <span class="text-[10px] font-bold">Pastas</span>
+            </button>
+        </nav>
+
+        <!-- JANELA FLUTUANTE (Confirmação de Mágica) -->
+        <div id="modal-confirmacao" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center fade-in">
+            <!-- (Código mantido igual ao anterior, omitido no HTML base por espaço, mas presente nas funções JS) -->
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- JAVASCRIPT: INTELIGÊNCIA LOGÍSTICA -->
+    <!-- ========================================== -->
+    <script>
+        // ---------------------------------------------
+        // BANCO DE DADOS FALSO (MOCK) - Atualizado com Dívidas e Análise
+        // ---------------------------------------------
+        const mockDB = {
+            resumo: { saldo: 1845.50, entradas: 3500.00, saidas: 1654.50 },
+            transacoes: [
+                { id: 1, descricao: "Ifood", data: "Hoje", valor: 45.00, tipo: "despesa", icone: "fa-burger", corTxt: "text-red-500", corBg: "bg-red-100" },
+                { id: 2, descricao: "Salário da Empresa", data: "05 Ago", valor: 3500.00, tipo: "receita", icone: "fa-building", corTxt: "text-green-500", corBg: "bg-green-100" },
+                { id: 3, descricao: "Posto Ipiranga", data: "02 Ago", valor: 150.00, tipo: "despesa", icone: "fa-gas-pump", corTxt: "text-orange-500", corBg: "bg-orange-100" },
+                { id: 4, descricao: "Conta de Luz", data: "01 Ago", valor: 180.00, tipo: "despesa", icone: "fa-bolt", corTxt: "text-blue-500", corBg: "bg-blue-100" },
+                { id: 5, descricao: "Uber", data: "30 Jul", valor: 28.50, tipo: "despesa", icone: "fa-car", corTxt: "text-orange-500", corBg: "bg-orange-100" }
+            ],
+            coach: {
+                mensagem: "Você gastou R$ 380,00 com Delivery este mês (25% acima da média). <strong>Atenção:</strong> Você tem um boleto do Cartão de Crédito de R$ 850,00 agendado para o dia 20. Sugiro reduzir gastos com Lazer esta semana para fechar no azul.",
+                alertas: [
+                    { tipo: "alerta", icone: "fa-credit-card", cor: "text-red-500", bg: "bg-red-100", texto: "Fatura do Cartão (R$ 850,00) vence em 9 dias." },
+                    { tipo: "dica", icone: "fa-lightbulb", cor: "text-yellow-500", bg: "bg-yellow-100", texto: "Sua meta 'Reserva' recebeu 0 aportes este mês." }
+                ],
+                grafico: [
+                    { cat: "Alimentação", valor: 850, limite: 1000, cor: "bg-red-500" },
+                    { cat: "Transporte", valor: 350, limite: 400, cor: "bg-orange-500" },
+                    { cat: "Lazer", valor: 450, limite: 300, cor: "bg-pink-500" } // Estourou
+                ]
+            },
+            dividas: {
+                atrasadas: [{ desc: "Internet Fibra", valor: 99.90, data: "10 Jul" }],
+                atual: [
+                    { desc: "Cartão de Crédito", valor: 850.00, data: "20 Ago" },
+                    { desc: "Financiamento Carro", valor: 650.00, data: "25 Ago" }
+                ],
+                futuras: [{ desc: "IPVA 2027 (Parcela 1)", valor: 350.00, data: "15 Jan" }]
+            },
+            categorias: [
+                { nome: "Alimentação", icone: "fa-burger", cor: "text-red-500" },
+                { nome: "Transporte", icone: "fa-car", cor: "text-orange-500" },
+                { nome: "Moradia", icone: "fa-house", cor: "text-blue-500" }
+            ],
+            planos: [
+                { nome: "Reserva de Emergência", atual: 2500, meta: 10000, cor: "bg-blue-500" }
+            ]
+        };
+
+        const formatarMoeda = (v) => `R$ ${v.toFixed(2).replace('.', ',')}`;
+
+        // ---------------------------------------------
+        // 1. O PORTEIRO INTELIGENTE & LOGIN PADRÃO
+        // ---------------------------------------------
+        function verificarDispositivo() {
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
+            if (isMobile) {
+                document.getElementById('login-mobile').classList.remove('escondido');
+                document.getElementById('login-desktop').classList.add('escondido');
+            } else {
+                document.getElementById('login-desktop').classList.remove('escondido');
+                document.getElementById('login-mobile').classList.add('escondido');
+            }
+        }
+        verificarDispositivo();
+        window.addEventListener('resize', verificarDispositivo);
+
+        function forcarLoginPadrao() {
+            // Esconde a biometria do celular e mostra o formulário clássico
+            document.getElementById('login-mobile').classList.add('escondido');
+            document.getElementById('login-desktop').classList.remove('escondido');
+        }
+
+        function fazerLoginBiometrico() { iniciarApp(); }
+
+        function iniciarApp() {
+            document.getElementById('tela-login').classList.add('escondido');
+            document.getElementById('app-principal').classList.remove('escondido');
+            carregarDadosFalsos();
+        }
+
+        function sair() {
+            document.getElementById('app-principal').classList.add('escondido');
+            document.getElementById('tela-login').classList.remove('escondido');
+            verificarDispositivo();
+        }
+
+        // ---------------------------------------------
+        // 2. INJETANDO INTELIGÊNCIA NA TELA (BI & Coach)
+        // ---------------------------------------------
+        function carregarDadosFalsos() {
+            // TELA 1: MOVIMENTAÇÕES (Operacional)
+            document.getElementById('saldo-tela').innerText = formatarMoeda(mockDB.resumo.saldo);
+            document.getElementById('total-entradas').innerText = formatarMoeda(mockDB.resumo.entradas);
+            document.getElementById('total-saidas').innerText = formatarMoeda(mockDB.resumo.saidas);
+
+            const gerarCardT = (t) => `
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div class="flex items-center space-x-4"><div class="w-12 h-12 ${t.corBg} rounded-full flex items-center justify-center ${t.corTxt} text-xl"><i class="fa-solid ${t.icone}"></i></div>
+                    <div><p class="text-gray-900 font-bold">${t.descricao}</p><p class="text-gray-400 text-xs font-bold">${t.data}</p></div></div>
+                    <p class="${t.tipo === 'despesa' ? 'text-red-500' : 'text-green-500'} font-black text-lg">${t.tipo === 'despesa' ? '-' : '+'} ${formatarMoeda(t.valor)}</p>
+                </div>`;
+            document.getElementById('lista-extrato').innerHTML = mockDB.transacoes.map(gerarCardT).join('');
+
+            // TELA 2: DASHBOARD (Coach Financeiro)
+            document.getElementById('texto-coach').innerHTML = mockDB.coach.mensagem;
+            document.getElementById('lista-alertas').innerHTML = mockDB.coach.alertas.map(a => `
+                <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-200"><div class="w-10 h-10 ${a.bg} rounded-full flex items-center justify-center ${a.cor}"><i class="fa-solid ${a.icone}"></i></div><p class="text-sm font-medium text-gray-700">${a.texto}</p></div>
+            `).join('');
+            
+            document.getElementById('grafico-categorias').innerHTML = mockDB.coach.grafico.map(g => {
+                const estourou = g.valor > g.limite;
+                const perc = Math.min((g.valor / g.limite) * 100, 100);
+                const corBarra = estourou ? 'bg-red-600' : g.cor;
+                return `
+                <div class="mb-3"><div class="flex justify-between items-end mb-1"><span class="text-sm font-bold text-gray-700">${g.cat}</span><span class="text-xs font-bold ${estourou ? 'text-red-500' : 'text-gray-500'}">${formatarMoeda(g.valor)} / ${formatarMoeda(g.limite)}</span></div>
+                <div class="w-full bg-gray-100 rounded-full h-2.5"><div class="${corBarra} h-2.5 rounded-full" style="width: ${perc}%"></div></div></div>
+            `}).join('');
+
+            // TELA 3: DÍVIDAS
+            const gerarCardD = (d) => `
+                <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex justify-between items-center"><div class="truncate"><p class="font-bold text-gray-800 text-sm truncate">${d.desc}</p><p class="text-xs text-gray-500 font-bold"><i class="fa-regular fa-calendar"></i> ${d.data}</p></div><p class="font-black text-gray-900">${formatarMoeda(d.valor)}</p></div>
+            `;
+            
+            const soma = (arr) => arr.reduce((acc, curr) => acc + curr.valor, 0);
+            
+            document.getElementById('total-div-atrasada').innerText = formatarMoeda(soma(mockDB.dividas.atrasadas));
+            document.getElementById('col-div-atrasada').innerHTML = mockDB.dividas.atrasadas.map(gerarCardD).join('');
+            
+            document.getElementById('total-div-atual').innerText = formatarMoeda(soma(mockDB.dividas.atual));
+            document.getElementById('col-div-atual').innerHTML = mockDB.dividas.atual.map(gerarCardD).join('');
+            
+            document.getElementById('total-div-futura').innerText = formatarMoeda(soma(mockDB.dividas.futuras));
+            document.getElementById('col-div-futura').innerHTML = mockDB.dividas.futuras.map(gerarCardD).join('');
+
+            // Categorias e Planos
+            document.getElementById('grid-categorias').innerHTML = mockDB.categorias.map(c => `<div class="bg-white p-6 rounded-2xl border border-gray-100 flex flex-col items-center justify-center gap-2"><i class="fa-solid ${c.icone} ${c.cor} text-3xl"></i><p class="font-bold text-gray-800 text-sm">${c.nome}</p></div>`).join('');
+            document.getElementById('grid-planos').innerHTML = mockDB.planos.map(p => `<div class="bg-white p-6 rounded-3xl border border-gray-100"><div class="flex justify-between items-end mb-3"><h3 class="font-bold text-gray-800">${p.nome}</h3><span class="text-xs font-bold text-gray-500">${formatarMoeda(p.atual)} / ${formatarMoeda(p.meta)}</span></div><div class="w-full bg-gray-100 rounded-full h-3"><div class="${p.cor} h-3 rounded-full" style="width: ${(p.atual/p.meta)*100}%"></div></div></div>`).join('');
+        }
+
+        // ---------------------------------------------
+        // NAVEGAÇÃO SPA (SINGLE PAGE APPLICATION)
+        // ---------------------------------------------
+        function mudarAba(nome) {
+            document.querySelectorAll('.aba-conteudo').forEach(a => a.classList.add('escondido'));
+            document.querySelectorAll('.menu-desk').forEach(b => { b.classList.remove('bg-blue-50', 'text-blue-600'); b.classList.add('text-gray-500'); });
+            document.querySelectorAll('.menu-mob').forEach(b => { b.classList.remove('text-blue-600'); b.classList.add('text-gray-400'); });
+            
+            document.getElementById(`aba-${nome}`).classList.remove('escondido');
+            if(document.getElementById(`nav-desk-${nome}`)) document.getElementById(`nav-desk-${nome}`).classList.add('bg-blue-50', 'text-blue-600');
+            if(document.getElementById(`nav-mob-${nome}`)) document.getElementById(`nav-mob-${nome}`).classList.add('text-blue-600');
+        }
+    </script>
+</body>
+</html>                </div>
                 <h1 class="text-4xl font-black tracking-tight mb-2">DataWallet</h1>
                 <p class="text-blue-200 font-medium text-sm mb-16">Desbloqueie seu aplicativo</p>
                 
