@@ -2,22 +2,34 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import date
 
-# Este é o molde que o celular deve respeitar ao enviar dados!
+# ==========================================
+# SCHEMAS DE ENTRADA (O que o Celular envia)
+# ==========================================
+
 class TransacaoCriar(BaseModel):
     valor: float
-    tipo: str # "Receita" ou "Despesa"
+    tipo: str
     descricao: str
     data_vencimento: date
+    
+    # IDs para amarrar a qual usuário e categoria essa conta pertence
     usuario_id: int
     categoria_id: int
 
-# Este é o molde de como a API vai devolver a informação
+# ==========================================
+# SCHEMAS DE SAÍDA (O que a API devolve para o Celular)
+# ==========================================
+
 class TransacaoResposta(BaseModel):
     id: int
     valor: float
     tipo: str
     descricao: str
+    data_vencimento: date
     status: str
+    
+    categoria_id: int
 
     class Config:
-        orm_mode = True # Ensina o Pydantic a ler os objetos do SQLAlchemy
+        # Isso ensina o Inspetor a ler os dados direto do SQLAlchemy
+        from_attributes = True
