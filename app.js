@@ -1,9 +1,11 @@
 // ==========================================
-// 1. CONEXÃO DIRETA COM O SUPABASE
+// 1. CONEXÃO DIRETA COM O SUPABASE (BLINDADA)
 // ==========================================
 const supabaseUrl = 'https://aoeyeleaxbwvjmzxxdib.supabase.co'; 
 const supabaseKey = 'sb_publishable_Q6JiNxMGUdqObAMxj3EYSA_s_cYpFUk'; 
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+// MUDANÇA DE SÊNIOR: Mudamos de 'supabase' para 'supabaseClient' para não dar conflito com a CDN
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let usuarioLogado = null;
 let transacoesGlobais = [];
@@ -13,10 +15,10 @@ let planosGlobais = [];
 
 const formatarMoeda = (v) => `R$ ${v.toFixed(2).replace('.', ',')}`;
 
-// IGNIÇÃO SEGURA: Só roda após o HTML estar pronto (Garante que os botões existam)
+// IGNIÇÃO SEGURA: Só roda após o HTML estar pronto
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
         if (error) throw error;
         
         if (session) {
@@ -77,16 +79,17 @@ async function efetuarCadastro() {
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Criando...';
 
     try {
-        const { data, error } = await supabase.auth.signUp({ email: email, password: senha });
+        const { data, error } = await supabaseClient.auth.signUp({ email: email, password: senha });
         if (error) throw error;
         
         usuarioLogado = data.user;
 
-        await supabase.from('categorias').insert([
+        await supabaseClient.from('categorias').insert([
             { usuario_id: usuarioLogado.id, nome: 'Alimentação', icone: 'fa-burger', cor: 'text-red-500' },
             { usuario_id: usuarioLogado.id, nome: 'Salário', icone: 'fa-building', cor: 'text-green-500' }
         ]);
-        await supabase.from('planos').insert([
+        
+        await supabaseClient.from('planos').insert([
             { usuario_id: usuarioLogado.id, nome: 'Reserva de Emergência', valor_meta: 10000, cor: 'bg-blue-500' }
         ]);
 
@@ -111,7 +114,7 @@ async function efetuarLogin() {
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Entrando...';
 
     try {
-        const { data, error } = await supabase.auth.signInWithPassword({ email: email, password: senha });
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email: email, password: senha });
         if (error) throw error;
         
         usuarioLogado = data.user;
@@ -131,7 +134,7 @@ function iniciarSistema() {
 }
 
 async function sair() {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     usuarioLogado = null;
     document.getElementById('app-principal').classList.add('escondido');
     document.getElementById('tela-login').style.display = 'flex';
@@ -146,10 +149,10 @@ async function atualizarTudo() {
     if (!usuarioLogado) return;
     try {
         const [rTrans, rCat, rDiv, rPlan] = await Promise.all([
-            supabase.from('transacoes').select('*').order('id', { ascending: false }),
-            supabase.from('categorias').select('*'),
-            supabase.from('dividas').select('*'),
-            supabase.from('planos').select('*')
+            supabaseClient.from('transacoes').select('*').order('id', { ascending: false }),
+            supabaseClient.from('categorias').select('*'),
+            supabaseClient.from('dividas').select('*'),
+            supabaseClient.from('planos').select('*')
         ]);
 
         transacoesGlobais = rTrans.data || [];
@@ -183,7 +186,6 @@ function carregarInicio() {
         const corBg = t.tipo === 'despesa' ? 'bg-red-100' : 'bg-green-100';
         const corTxt = t.tipo === 'despesa' ? 'text-red-500' : 'text-green-500';
         
-        // Tratamento seguro contra dados nulos
         const dataFormatada = t.data_vencimento ? t.data_vencimento.split('-').reverse().join('/') : 'S/ Data';
 
         return `<div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between"><div class="flex items-center space-x-4"><div class="w-12 h-12 ${corBg} rounded-full flex items-center justify-center ${corTxt} text-xl"><i class="fa-solid ${cat.icone}"></i></div><div><p class="text-gray-900 font-bold">${t.descricao}</p><p class="text-gray-400 text-xs font-bold">${cat.nome} • ${dataFormatada}</p></div></div><p class="${corTxt} font-black text-lg">${t.tipo === 'despesa' ? '-' : '+'} ${formatarMoeda(t.valor)}</p></div>`;
@@ -228,7 +230,7 @@ async function confirmarSalvamentoNLP() {
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
 
     try {
-        const { error } = await supabase.from('transacoes').insert([transacaoNLP]);
+        const { error } = await supabaseClient.from('transacoes').insert([transacaoNLP]);
         if (error) throw error;
         await atualizarTudo();
         fecharModal();
@@ -271,7 +273,7 @@ async function salvarNovaDivida() {
     }
     
     try {
-        const { error } = await supabase.from('dividas').insert(parcelasArray);
+        const { error } = await supabaseClient.from('dividas').insert(parcelasArray);
         if (error) throw error;
         await atualizarTudo();
         fecharModalDivida();
@@ -293,7 +295,7 @@ async function salvarNovaCategoria() {
     if(!nome) return;
     
     try {
-        const { error } = await supabase.from('categorias').insert([{ usuario_id: usuarioLogado.id, nome: nome, icone: 'fa-tag', cor: 'text-blue-500' }]);
+        const { error } = await supabaseClient.from('categorias').insert([{ usuario_id: usuarioLogado.id, nome: nome, icone: 'fa-tag', cor: 'text-blue-500' }]);
         if (error) throw error;
         await atualizarTudo();
         fecharModalCategoria();
@@ -317,7 +319,7 @@ async function salvarAporte() {
     const novoValor = planosGlobais[0].valor_atual + val;
     
     try {
-        const { error } = await supabase.from('planos').update({ valor_atual: novoValor }).eq('id', planosGlobais[0].id).eq('usuario_id', usuarioLogado.id);
+        const { error } = await supabaseClient.from('planos').update({ valor_atual: novoValor }).eq('id', planosGlobais[0].id).eq('usuario_id', usuarioLogado.id);
         if (error) throw error;
         await atualizarTudo();
         fecharModalAporte();
