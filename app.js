@@ -1,5 +1,5 @@
 // ==========================================
-// 1. CONEXÃO DIRETA COM O SUPABASE
+// 1. CONEXÃO DIRETA COM O SUPABASE (BLINDADA)
 // ==========================================
 const supabaseUrl = 'https://aoeyeleaxbwvjmzxxdib.supabase.co'; 
 const supabaseKey = 'sb_publishable_Q6JiNxMGUdqObAMxj3EYSA_s_cYpFUk'; 
@@ -13,14 +13,14 @@ let planosGlobais = [];
 
 const formatarMoeda = (v) => `R$ ${v.toFixed(2).replace('.', ',')}`;
 
-// Checa sessão ao carregar a página
+// IGNIÇÃO SEGURA: Checa se há sessão ativa ao carregar a página
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         const { data: { session }, error } = await supabaseClient.auth.getSession();
         if (error) throw error;
         
         if (session) {
-            usuarioLogado = session.user;
+            usuarioLogado = session.user; // Aqui o sistema resgata o ID único invisível (UUID) do cofre do Supabase
             iniciarSistema();
         }
     } catch (e) {
@@ -54,7 +54,6 @@ function alternarTelaAuth(tela) {
         document.getElementById('form-login').classList.add('escondido');
         document.getElementById('form-cadastro').classList.remove('escondido');
         document.getElementById('texto-boas-vindas').innerText = "Crie sua conta para começar";
-        document.getElementById('btn-cadastrar').innerHTML = '<i class="fa-solid fa-user-plus"></i> Criar Conta';
     } else {
         document.getElementById('form-cadastro').classList.add('escondido');
         document.getElementById('form-login').classList.remove('escondido');
@@ -71,51 +70,35 @@ async function efetuarCadastro() {
     const email = document.getElementById('email-cad').value.trim();
     const senha = document.getElementById('senha-cad').value;
     
-    if(!email || !senha || senha.length < 6) {
-        alert("E-mail e Senha (mínimo 6 caracteres) são obrigatórios.");
-        return;
-    }
+    if(!email || !senha || senha.length < 6) return alert("E-mail e Senha (mínimo 6 caracteres) são obrigatórios.");
 
     const btn = document.getElementById('btn-cadastrar');
-    const txtOriginal = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Criando conta...';
+    const txt = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Criando...';
 
     try {
-        // 1. Cria a conta no Supabase Auth
         const { data, error } = await supabaseClient.auth.signUp({ email: email, password: senha });
+        if (error) throw error;
         
-        // Se der erro (ex: e-mail já existe, formato inválido), aborta o código e avisa o usuário
-        if (error) {
-            alert(`Falha no Cadastro: ${error.message}`);
-            return;
-        }
-
-        if (!data.user) {
-            alert("Atenção: O Supabase exige que você confirme o e-mail na sua caixa de entrada, ou que você desligue a opção 'Confirm Email' no painel.");
-            return;
-        }
-
         usuarioLogado = data.user;
 
-        // 2. Injeta categorias e metas padrões
-        const { error: catError } = await supabaseClient.from('categorias').insert([
+        // Ao criar a conta, injetamos as categorias e metas já com a etiqueta (ID) do novo dono
+        await supabaseClient.from('categorias').insert([
             { usuario_id: usuarioLogado.id, nome: 'Alimentação', icone: 'fa-burger', cor: 'text-red-500' },
             { usuario_id: usuarioLogado.id, nome: 'Salário', icone: 'fa-building', cor: 'text-green-500' }
         ]);
-        if (catError) console.error("Erro ao gerar categorias padrão:", catError);
-
-        const { error: planoError } = await supabaseClient.from('planos').insert([
+        
+        await supabaseClient.from('planos').insert([
             { usuario_id: usuarioLogado.id, nome: 'Reserva de Emergência', valor_meta: 10000, cor: 'bg-blue-500' }
         ]);
-        if (planoError) console.error("Erro ao gerar plano padrão:", planoError);
 
         alert("Conta criada com sucesso!");
         iniciarSistema();
 
     } catch (e) {
-        alert("Erro grave no sistema: " + e.message);
+        alert("Erro no cadastro: " + e.message);
     } finally {
-        btn.innerHTML = txtOriginal;
+        btn.innerHTML = txt;
     }
 }
 
@@ -126,24 +109,20 @@ async function efetuarLogin() {
     if(!email || !senha) return alert("Preencha e-mail e senha.");
 
     const btn = document.getElementById('btn-login-desk');
-    const txtOriginal = btn.innerHTML;
+    const txt = btn.innerHTML;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Entrando...';
 
     try {
         const { data, error } = await supabaseClient.auth.signInWithPassword({ email: email, password: senha });
-        
-        if (error) {
-            alert(`Falha no Login: ${error.message}`);
-            return;
-        }
+        if (error) throw error;
         
         usuarioLogado = data.user;
         iniciarSistema();
 
     } catch (e) {
-        alert("Erro de comunicação com o servidor.");
+        alert("Login falhou. Verifique as credenciais.");
     } finally {
-        btn.innerHTML = txtOriginal;
+        btn.innerHTML = txt;
     }
 }
 
@@ -163,16 +142,18 @@ async function sair() {
 }
 
 // ---------------------------------------------
-// 3. BUSCA DE DADOS (COM RLS BLINDADO)
+// 3. BUSCA DE DADOS COM ISOLAMENTO EXPLÍCITO (MULTITENANT)
 // ---------------------------------------------
 async function atualizarTudo() {
     if (!usuarioLogado) return;
+    
     try {
+        // A MARCA DO SÊNIOR: Cada 'select' exige estritamente o ID do usuário (.eq('usuario_id', usuarioLogado.id))
         const [rTrans, rCat, rDiv, rPlan] = await Promise.all([
-            supabaseClient.from('transacoes').select('*').order('id', { ascending: false }),
-            supabaseClient.from('categorias').select('*'),
-            supabaseClient.from('dividas').select('*'),
-            supabaseClient.from('planos').select('*')
+            supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).order('id', { ascending: false }),
+            supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id),
+            supabaseClient.from('dividas').select('*').eq('usuario_id', usuarioLogado.id),
+            supabaseClient.from('planos').select('*').eq('usuario_id', usuarioLogado.id)
         ]);
 
         transacoesGlobais = rTrans.data || [];
@@ -185,7 +166,9 @@ async function atualizarTudo() {
         carregarDividas();
         carregarCategorias();
         carregarPlanos();
-    } catch (erro) { console.error("Erro Crítico ao baixar dados:", erro); }
+    } catch (erro) { 
+        console.error("Erro Crítico ao buscar os dados na nuvem:", erro); 
+    }
 }
 
 // ---------------------------------------------
@@ -206,7 +189,6 @@ function carregarInicio() {
         const corBg = t.tipo === 'despesa' ? 'bg-red-100' : 'bg-green-100';
         const corTxt = t.tipo === 'despesa' ? 'text-red-500' : 'text-green-500';
         
-        // Tratamento seguro de datas
         const dataFormatada = t.data_vencimento ? t.data_vencimento.split('-').reverse().join('/') : 'S/ Data';
 
         return `<div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition"><div class="flex items-center space-x-4"><div class="w-12 h-12 ${corBg} rounded-full flex items-center justify-center ${corTxt} text-xl"><i class="fa-solid ${cat.icone}"></i></div><div><p class="text-gray-900 font-bold">${t.descricao}</p><p class="text-gray-400 text-xs font-bold">${cat.nome} • ${dataFormatada}</p></div></div><p class="${corTxt} font-black text-lg">${t.tipo === 'despesa' ? '-' : '+'} ${formatarMoeda(t.valor)}</p></div>`;
@@ -223,7 +205,7 @@ function simularEnvioVoz() {
     const isReceita = ['recebi', 'ganhei', 'pix', 'salário'].some(p => input.includes(p));
 
     transacaoNLP = {
-        usuario_id: usuarioLogado.id,
+        usuario_id: usuarioLogado.id, // Vínculo inquebrável de segurança
         valor: val,
         tipo: isReceita ? 'receita' : 'despesa',
         descricao: document.getElementById('input-magico').value.split(' ')[0] || 'Registro',
@@ -312,12 +294,13 @@ async function salvarNovaDivida() {
     
     const parcelasArray = [];
     for(let i=0; i<parcelas; i++) {
-        // Incremento matemático de meses seguro
         const dataParc = new Date(dataBase + 'T12:00:00Z');
         dataParc.setMonth(dataParc.getMonth() + i);
         parcelasArray.push({
-            usuario_id: usuarioLogado.id, descricao: `${desc} (${i+1}/${parcelas})`, 
-            valor: valorTotal/parcelas, data_vencimento: dataParc.toISOString().split('T')[0]
+            usuario_id: usuarioLogado.id, // Vínculo inquebrável de segurança
+            descricao: `${desc} (${i+1}/${parcelas})`, 
+            valor: valorTotal/parcelas, 
+            data_vencimento: dataParc.toISOString().split('T')[0]
         });
     }
     
@@ -351,7 +334,12 @@ async function salvarNovaCategoria() {
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
 
     try {
-        const { error } = await supabaseClient.from('categorias').insert([{ usuario_id: usuarioLogado.id, nome: nome, icone: 'fa-tag', cor: 'text-blue-500' }]);
+        const { error } = await supabaseClient.from('categorias').insert([{ 
+            usuario_id: usuarioLogado.id, 
+            nome: nome, 
+            icone: 'fa-tag', 
+            cor: 'text-blue-500' 
+        }]);
         if (error) throw error;
         await atualizarTudo();
         fecharModalCategoria();
@@ -396,7 +384,11 @@ async function salvarAporte() {
 
     const novoValor = planosGlobais[0].valor_atual + val;
     try {
-        const { error } = await supabaseClient.from('planos').update({ valor_atual: novoValor }).eq('id', planosGlobais[0].id).eq('usuario_id', usuarioLogado.id);
+        const { error } = await supabaseClient.from('planos')
+            .update({ valor_atual: novoValor })
+            .eq('id', planosGlobais[0].id)
+            .eq('usuario_id', usuarioLogado.id); // Blindagem final no Update
+
         if (error) throw error;
         await atualizarTudo();
         fecharModalAporte();
