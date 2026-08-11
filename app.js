@@ -13,14 +13,20 @@ let planosGlobais = [];
 
 const formatarMoeda = (v) => `R$ ${v.toFixed(2).replace('.', ',')}`;
 
-// Checa sessão ao carregar
-window.onload = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-        usuarioLogado = session.user;
-        iniciarSistema();
+// IGNIÇÃO SEGURA: Só roda após o HTML estar pronto (Garante que os botões existam)
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        
+        if (session) {
+            usuarioLogado = session.user;
+            iniciarSistema();
+        }
+    } catch (e) {
+        console.error("Erro ao checar sessão:", e.message);
     }
-};
+});
 
 // ---------------------------------------------
 // CONTROLE VISUAL DE LOGIN / CADASTRO
@@ -176,7 +182,11 @@ function carregarInicio() {
         const cat = categoriasGlobais.find(c => c.id === t.categoria_id) || { nome: 'Geral', icone: 'fa-tag' };
         const corBg = t.tipo === 'despesa' ? 'bg-red-100' : 'bg-green-100';
         const corTxt = t.tipo === 'despesa' ? 'text-red-500' : 'text-green-500';
-        return `<div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between"><div class="flex items-center space-x-4"><div class="w-12 h-12 ${corBg} rounded-full flex items-center justify-center ${corTxt} text-xl"><i class="fa-solid ${cat.icone}"></i></div><div><p class="text-gray-900 font-bold">${t.descricao}</p><p class="text-gray-400 text-xs font-bold">${cat.nome} • ${t.data_vencimento.split('-').reverse().join('/')}</p></div></div><p class="${corTxt} font-black text-lg">${t.tipo === 'despesa' ? '-' : '+'} ${formatarMoeda(t.valor)}</p></div>`;
+        
+        // Tratamento seguro contra dados nulos
+        const dataFormatada = t.data_vencimento ? t.data_vencimento.split('-').reverse().join('/') : 'S/ Data';
+
+        return `<div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between"><div class="flex items-center space-x-4"><div class="w-12 h-12 ${corBg} rounded-full flex items-center justify-center ${corTxt} text-xl"><i class="fa-solid ${cat.icone}"></i></div><div><p class="text-gray-900 font-bold">${t.descricao}</p><p class="text-gray-400 text-xs font-bold">${cat.nome} • ${dataFormatada}</p></div></div><p class="${corTxt} font-black text-lg">${t.tipo === 'despesa' ? '-' : '+'} ${formatarMoeda(t.valor)}</p></div>`;
     }).join('') || '<p class="text-center text-gray-400 py-6">Nenhuma transação.</p>';
 }
 
@@ -193,7 +203,7 @@ function simularEnvioVoz() {
         usuario_id: usuarioLogado.id,
         valor: val,
         tipo: isReceita ? 'receita' : 'despesa',
-        descricao: document.getElementById('input-magico').value.split(' ')[0],
+        descricao: document.getElementById('input-magico').value.split(' ')[0] || 'Gasto',
         data_vencimento: new Date().toISOString().split('T')[0],
         categoria_id: categoriasGlobais.length > 0 ? categoriasGlobais[0].id : null
     };
@@ -218,12 +228,16 @@ async function confirmarSalvamentoNLP() {
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
 
     try {
-        await supabase.from('transacoes').insert([transacaoNLP]);
+        const { error } = await supabase.from('transacoes').insert([transacaoNLP]);
+        if (error) throw error;
         await atualizarTudo();
         fecharModal();
         document.getElementById('input-magico').value = '';
-    } catch(e) { alert("Erro ao gravar."); }
-    finally { btn.innerHTML = '<i class="fa-solid fa-check"></i> Confirmar'; }
+    } catch(e) { 
+        alert("Erro ao gravar: " + e.message); 
+    } finally { 
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Confirmar'; 
+    }
 }
 
 function atualizarDashboard() {
@@ -255,9 +269,15 @@ async function salvarNovaDivida() {
             valor: valorTotal/parcelas, data_vencimento: dataBase
         });
     }
-    await supabase.from('dividas').insert(parcelasArray);
-    await atualizarTudo();
-    fecharModalDivida();
+    
+    try {
+        const { error } = await supabase.from('dividas').insert(parcelasArray);
+        if (error) throw error;
+        await atualizarTudo();
+        fecharModalDivida();
+    } catch(e) {
+        alert("Erro ao salvar dívida: " + e.message);
+    }
 }
 
 function carregarCategorias() {
@@ -271,9 +291,15 @@ function fecharModalCategoria() { document.getElementById('modal-categoria').cla
 async function salvarNovaCategoria() {
     const nome = document.getElementById('cat-nome').value;
     if(!nome) return;
-    await supabase.from('categorias').insert([{ usuario_id: usuarioLogado.id, nome: nome, icone: 'fa-tag', cor: 'text-blue-500' }]);
-    await atualizarTudo();
-    fecharModalCategoria();
+    
+    try {
+        const { error } = await supabase.from('categorias').insert([{ usuario_id: usuarioLogado.id, nome: nome, icone: 'fa-tag', cor: 'text-blue-500' }]);
+        if (error) throw error;
+        await atualizarTudo();
+        fecharModalCategoria();
+    } catch(e) {
+        alert("Erro ao criar categoria: " + e.message);
+    }
 }
 
 function carregarPlanos() {
@@ -289,9 +315,15 @@ async function salvarAporte() {
     const val = parseFloat(document.getElementById('aporte-valor').value);
     if(!val || planosGlobais.length === 0) return;
     const novoValor = planosGlobais[0].valor_atual + val;
-    await supabase.from('planos').update({ valor_atual: novoValor }).eq('id', planosGlobais[0].id).eq('usuario_id', usuarioLogado.id);
-    await atualizarTudo();
-    fecharModalAporte();
+    
+    try {
+        const { error } = await supabase.from('planos').update({ valor_atual: novoValor }).eq('id', planosGlobais[0].id).eq('usuario_id', usuarioLogado.id);
+        if (error) throw error;
+        await atualizarTudo();
+        fecharModalAporte();
+    } catch(e) {
+        alert("Erro ao salvar aporte: " + e.message);
+    }
 }
 
 function mudarAba(nome) {
