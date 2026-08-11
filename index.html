@@ -23,11 +23,9 @@
 <body class="bg-gray-100 text-gray-800 font-sans h-screen overflow-hidden flex relative">
 
     <!-- ========================================== -->
-    <!-- PORTARIAS DE LOGIN (Agora blindadas com 'fixed inset-0') -->
+    <!-- PORTARIAS DE LOGIN -->
     <!-- ========================================== -->
     <div id="tela-login" class="fixed inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-900 to-gray-900 z-50 fade-in">
-        
-        <!-- PORTARIA 1: E-MAIL E SENHA -->
         <div id="login-desktop" class="escondido bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm mx-4 relative overflow-hidden">
             <div class="text-center mb-8">
                 <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-inner">
@@ -52,7 +50,6 @@
             </div>
         </div>
 
-        <!-- PORTARIA 2: CELULAR (TELA DE BLOQUEIO) -->
         <div id="login-mobile" class="escondido flex flex-col items-center justify-center text-white w-full h-full relative">
             <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div class="w-64 h-64 bg-white opacity-5 rounded-full blur-3xl pulse-slow"></div>
@@ -75,7 +72,6 @@
                 </button>
             </div>
         </div>
-        
     </div>
 
     <!-- ========================================== -->
@@ -83,10 +79,8 @@
     <!-- ========================================== -->
     <div id="app-principal" class="escondido w-full h-full flex flex-col md:flex-row">
         
-        <!-- MENU LATERAL (Notebook/PC) -->
+        <!-- MENU LATERAL (PC) -->
         <aside class="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 p-6 h-full shadow-lg z-20">
-            
-            <!-- Ícone da Carteira Azul Minimalista -->
             <div class="flex items-center gap-3 mb-10">
                 <i class="fa-solid fa-wallet text-blue-600 text-3xl"></i>
                 <h2 class="text-2xl font-black text-gray-900 tracking-tight">DataWallet</h2>
@@ -118,7 +112,7 @@
         <main class="flex-1 h-full overflow-y-auto bg-gray-50 relative pb-24 md:pb-0">
             
             <!-- ========================================== -->
-            <!-- ABA 1: MOVIMENTAÇÕES (A NOVA TELA INICIAL) -->
+            <!-- ABA 1: INÍCIO / MOVIMENTAÇÕES (NLP Ativo) -->
             <!-- ========================================== -->
             <section id="aba-movimentacao" class="aba-conteudo p-4 md:p-8 max-w-5xl mx-auto fade-in">
                 <div class="bg-gradient-to-br from-blue-900 to-gray-900 text-white p-6 md:p-10 rounded-[2rem] shadow-xl mb-6 flex flex-col md:flex-row md:items-center justify-between relative overflow-hidden">
@@ -127,10 +121,13 @@
                         <p class="text-blue-200 text-sm font-medium flex items-center gap-2"><i class="fa-solid fa-building-columns"></i> Saldo Disponível</p>
                         <h2 class="text-4xl md:text-5xl font-black mt-1 tracking-tight" id="saldo-tela">R$ 0,00</h2>
                     </div>
-                    <div class="mt-6 md:mt-0 w-full md:w-96 bg-white/10 p-1.5 rounded-2xl flex items-center backdrop-blur-md border border-white/20 z-10">
+                    
+                    <!-- COMANDO MÁGICO NLP -->
+                    <div class="mt-6 md:mt-0 w-full md:w-[450px] bg-white/10 p-1.5 rounded-2xl flex items-center backdrop-blur-md border border-white/20 z-10 shadow-lg">
                         <button class="p-3 text-blue-200 hover:text-white transition"><i class="fa-solid fa-microphone"></i></button>
-                        <input type="text" id="input-magico" placeholder="Ex: Ifood 45 ontem..." class="flex-1 bg-transparent outline-none text-white placeholder-blue-200 px-2 font-medium">
-                        <button onclick="simularEnvioVoz()" class="bg-white text-gray-900 p-3 rounded-xl hover:bg-blue-500 hover:text-white transition shadow-md">
+                        <input type="text" id="input-magico" placeholder="Ex: Recebi 2500 de salário ou Ifood 45" class="flex-1 bg-transparent outline-none text-white placeholder-blue-200 px-2 font-medium">
+                        <button onclick="simularEnvioVoz()" class="bg-white text-gray-900 p-3 rounded-xl hover:bg-blue-500 hover:text-white transition shadow-md flex items-center gap-2">
+                            <span class="hidden md:inline font-bold text-sm">Registrar</span>
                             <i class="fa-solid fa-paper-plane"></i>
                         </button>
                     </div>
@@ -164,14 +161,25 @@
             </section>
 
             <!-- ========================================== -->
-            <!-- ABA 2: DASHBOARD (O CÉREBRO E COACH FINANCEIRO) -->
+            <!-- ABA 2: DASHBOARD (COACH & ANALYTICS) -->
             <!-- ========================================== -->
             <section id="aba-dashboard" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
-                
-                <h2 class="text-2xl font-black text-gray-900 mb-6 flex items-center gap-2">
-                    <i class="fa-solid fa-chart-pie text-blue-600"></i> Inteligência e Análise
-                </h2>
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie text-blue-600"></i> Inteligência e Análise
+                    </h2>
+                    <!-- Filtro de Período -->
+                    <div class="flex items-center gap-2 bg-white p-2 rounded-2xl border border-gray-200 shadow-sm">
+                        <span class="text-xs font-bold text-gray-400 px-2">PERÍODO:</span>
+                        <select id="filtro-periodo" onchange="atualizarDashboard()" class="bg-transparent outline-none text-sm font-bold text-gray-800 cursor-pointer">
+                            <option value="mes_atual">Este Mês (Agosto)</option>
+                            <option value="mes_anterior">Mês Anterior (Julho)</option>
+                            <option value="ano">Ano Atual (2026)</option>
+                        </select>
+                    </div>
+                </div>
 
+                <!-- O Coach Financeiro -->
                 <div class="bg-indigo-900 text-white p-6 md:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row gap-6 items-start mb-8 relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-40 h-40 bg-indigo-500 opacity-20 blur-3xl rounded-full"></div>
                     <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center text-3xl shrink-0 border border-white/20 shadow-inner z-10">
@@ -183,32 +191,51 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <!-- Alertas de Risco -->
                     <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
                         <h3 class="text-gray-800 font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-orange-500"></i> Alertas da Carteira</h3>
                         <div id="lista-alertas" class="space-y-3"></div>
                     </div>
 
+                    <!-- Gráfico de Gastos por Categoria -->
                     <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
                         <h3 class="text-gray-800 font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-chart-bar text-blue-500"></i> Para onde seu dinheiro vai</h3>
                         <div id="grafico-categorias" class="space-y-4"></div>
                     </div>
                 </div>
+
+                <!-- Métricas Analíticas Extras -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
+                        <p class="text-xs text-gray-400 font-bold uppercase mb-1">Média Diária de Gastos</p>
+                        <p class="text-2xl font-black text-gray-800">R$ 53,37</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
+                        <p class="text-xs text-gray-400 font-bold uppercase mb-1">Maior Gasto do Período</p>
+                        <p class="text-2xl font-black text-red-500">R$ 850,00 <span class="text-xs font-medium text-gray-400">(Cartão)</span></p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
+                        <p class="text-xs text-gray-400 font-bold uppercase mb-1">Taxa de Poupança</p>
+                        <p class="text-2xl font-black text-green-500">52,7%</p>
+                    </div>
+                </div>
             </section>
 
             <!-- ========================================== -->
-            <!-- ABA 3: DÍVIDAS (CONTAS A PAGAR) -->
+            <!-- ABA 3: DÍVIDAS (COM PARCELAMENTO) -->
             <!-- ========================================== -->
             <section id="aba-dividas" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
                         <i class="fa-solid fa-file-invoice-dollar text-blue-600"></i> Controle de Dívidas
                     </h2>
-                    <button class="text-blue-600 font-bold bg-blue-50 px-3 py-1.5 rounded-lg text-sm">+ Nova Conta</button>
+                    <button onclick="abrirModalDivida()" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-sm shadow-md hover:bg-blue-700 transition flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Nova Conta / Dívida
+                    </button>
                 </div>
 
                 <div class="flex flex-col md:flex-row gap-4 overflow-x-auto scroll-suave pb-4">
-                    
                     <!-- Atrasadas -->
                     <div class="flex-1 min-w-[280px] bg-red-50 p-4 rounded-3xl border border-red-100">
                         <div class="flex justify-between items-center mb-4">
@@ -218,7 +245,7 @@
                         <div id="col-div-atrasada" class="space-y-3"></div>
                     </div>
 
-                    <!-- Atual -->
+                    <!-- Mês Atual -->
                     <div class="flex-1 min-w-[280px] bg-blue-50 p-4 rounded-3xl border border-blue-100">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-bold text-blue-800 text-sm uppercase">Este Mês</h3>
@@ -227,7 +254,7 @@
                         <div id="col-div-atual" class="space-y-3"></div>
                     </div>
 
-                    <!-- Futuras -->
+                    <!-- Próximos Meses -->
                     <div class="flex-1 min-w-[280px] bg-gray-100 p-4 rounded-3xl border border-gray-200">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-bold text-gray-600 text-sm uppercase">Próximos Meses</h3>
@@ -239,15 +266,46 @@
             </section>
 
             <!-- ========================================== -->
-            <!-- ABA 4 e 5: CATEGORIAS E PLANOS -->
+            <!-- ABA 4: CATEGORIAS (RANKING E FILTRO) -->
             <!-- ========================================== -->
             <section id="aba-categorias" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
-                <h2 class="text-2xl font-black text-gray-900 mb-6">Pastas de Organização</h2>
-                <div id="grid-categorias" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-blue-600"></i> Pastas de Organização
+                    </h2>
+                    <button onclick="abrirModalCategoria()" class="text-blue-600 font-bold bg-blue-50 px-4 py-2 rounded-xl text-sm hover:bg-blue-100 transition">
+                        + Nova Categoria
+                    </button>
+                </div>
+                
+                <p class="text-sm text-gray-500 mb-6">Clique em uma categoria para ver o resumo e os gastos detalhados.</p>
+                <div id="grid-categorias" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
             </section>
             
+            <!-- ========================================== -->
+            <!-- ABA 5: PLANOS (METAS E COFFEE SAFE) -->
+            <!-- ========================================== -->
             <section id="aba-planos" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
-                <h2 class="text-2xl font-black text-gray-900 mb-6">Metas e Planos</h2>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
+                        <i class="fa-solid fa-bullseye text-blue-600"></i> Metas e Planos (Safe to Save)
+                    </h2>
+                    <button onclick="abrirModalAporte()" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-sm shadow-md hover:bg-blue-700 transition">
+                        + Guardar Valor
+                    </button>
+                </div>
+
+                <!-- Alerta de Segurança do Coach -->
+                <div id="alerta-seguranca-guardar" class="bg-green-50 border border-green-200 p-5 rounded-2xl mb-8 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xl shrink-0">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-green-900">Análise de Segurança Concluída</h4>
+                        <p class="text-sm text-green-700 font-medium" id="texto-seguranca-guardar">Calculando margem segura livre de dívidas...</p>
+                    </div>
+                </div>
+
                 <div id="grid-planos" class="space-y-4"></div>
             </section>
 
@@ -264,7 +322,7 @@
                 <span class="text-[10px] font-bold">Análise</span>
             </button>
             <div class="relative -top-6">
-                <button class="w-14 h-14 bg-blue-600 text-white rounded-full flex justify-center items-center text-xl shadow-[0_10px_20px_rgba(37,99,235,0.3)] border-4 border-gray-50 hover:scale-105 transition transform">
+                <button onclick="mudarAba('movimentacao')" class="w-14 h-14 bg-blue-600 text-white rounded-full flex justify-center items-center text-xl shadow-[0_10px_20px_rgba(37,99,235,0.3)] border-4 border-gray-50 hover:scale-105 transition transform">
                     <i class="fa-solid fa-plus"></i>
                 </button>
             </div>
@@ -278,62 +336,139 @@
             </button>
         </nav>
 
-        <!-- JANELA FLUTUANTE (Confirmação de Mágica) -->
+        <!-- ========================================== -->
+        <!-- MODAIS FLUTUANTES (Janelas de Ação) -->
+        <!-- ========================================== -->
+        
+        <!-- Modal 1: Confirmação de NLP (Início) -->
         <div id="modal-confirmacao" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center fade-in">
-            <div class="bg-white w-full md:w-[400px] rounded-t-[2.5rem] md:rounded-3xl p-8 slide-up shadow-2xl relative">
+            <div class="bg-white w-full md:w-[450px] rounded-t-[2.5rem] md:rounded-3xl p-8 slide-up shadow-2xl relative overflow-hidden">
+                <div id="modal-bg-efeito" class="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10 blur-2xl"></div>
                 <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6 md:hidden"></div>
-                <h3 class="text-2xl font-black text-gray-900 mb-6 text-center">Registrar Conta?</h3>
-                <div class="bg-gray-50 p-5 rounded-2xl space-y-3 border border-gray-100 mb-8">
+                
+                <h3 class="text-2xl font-black text-gray-900 mb-2 text-center" id="modal-titulo">Registrar Operação?</h3>
+                <p class="text-center text-sm text-gray-500 mb-6 font-medium">Análise inteligente da sua frase</p>
+                
+                <div class="bg-gray-50 p-5 rounded-2xl space-y-4 border border-gray-100 mb-8">
                     <div class="flex justify-between items-center pb-3 border-b border-gray-200">
-                        <span class="text-gray-500 font-bold text-sm">Categoria Identificada</span>
-                        <div class="flex items-center gap-2 bg-red-100 text-red-500 px-3 py-1 rounded-lg text-sm font-bold">
-                            <i class="fa-solid fa-burger"></i> <span id="conf-desc">Alimentação</span>
-                        </div>
+                        <span class="text-gray-500 font-bold text-sm">Classificação</span>
+                        <div id="modal-badge-cat" class="flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-bold"></div>
                     </div>
                     <div class="flex justify-between items-center pb-3 border-b border-gray-200">
-                        <span class="text-gray-500 font-bold text-sm">Data do Gasto</span>
-                        <strong id="conf-data" class="text-gray-900">10/08/2026</strong>
+                        <span class="text-gray-500 font-bold text-sm">Data Detectada</span>
+                        <strong id="conf-data" class="text-gray-900">Hoje</strong>
                     </div>
                     <div class="flex justify-between items-center">
-                        <span class="text-gray-500 font-bold text-sm">Valor Estimado</span>
-                        <strong id="conf-val" class="text-red-500 text-3xl font-black">- R$ 45,00</strong>
+                        <span class="text-gray-500 font-bold text-sm">Valor Processado</span>
+                        <strong id="conf-val" class="text-3xl font-black">R$ 0,00</strong>
                     </div>
                 </div>
+                
                 <div class="flex space-x-4">
-                    <button onclick="fecharModal()" class="flex-1 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition">Cancelar</button>
-                    <button onclick="confirmarSalvamento()" class="flex-1 py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-check"></i> Salvar
+                    <button onclick="fecharModal()" class="flex-1 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition">Corrigir</button>
+                    <button onclick="confirmarSalvamentoNLP()" id="btn-salvar-modal" class="flex-1 py-4 text-white font-bold rounded-2xl shadow-lg transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-check"></i> Confirmar
                     </button>
                 </div>
             </div>
         </div>
+
+        <!-- Modal 2: Nova Dívida com Parcelamento -->
+        <div id="modal-divida" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center fade-in p-4">
+            <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl relative">
+                <h3 class="text-xl font-black text-gray-900 mb-4"><i class="fa-solid fa-file-invoice-dollar text-blue-600"></i> Nova Conta / Dívida</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">Descrição da Conta</label>
+                        <input type="text" id="div-desc" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-medium" placeholder="Ex: Notebook Novo">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">Valor Total (R$)</label>
+                            <input type="number" id="div-valor" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-medium" placeholder="1200.00">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">Qtd Parcelas</label>
+                            <input type="number" id="div-parcelas" value="1" min="1" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-medium">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">Data de Vencimento</label>
+                            <input type="date" id="div-data" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">Categoria</label>
+                            <select id="div-categoria" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-medium">
+                                <option value="Alimentação">Alimentação</option>
+                                <option value="Transporte">Transporte</option>
+                                <option value="Moradia">Moradia</option>
+                                <option value="Lazer">Lazer</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex space-x-3 mt-6">
+                    <button onclick="fecharModalDivida()" class="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition">Cancelar</button>
+                    <button onclick="salvarNovaDivida()" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition">Gerar Parcelas</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal 3: Criar Nova Categoria Rápida -->
+        <div id="modal-categoria" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center fade-in p-4">
+            <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative">
+                <h3 class="text-xl font-black text-gray-900 mb-4"><i class="fa-solid fa-layer-group text-blue-600"></i> Nova Categoria</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">Nome da Categoria</label>
+                        <input type="text" id="cat-nome" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-medium" placeholder="Ex: Educação">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">Ícone FontAwesome</label>
+                        <input type="text" id="cat-icone" value="fa-book" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-medium" placeholder="fa-book">
+                    </div>
+                </div>
+                <div class="flex space-x-3 mt-6">
+                    <button onclick="fecharModalCategoria()" class="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition">Cancelar</button>
+                    <button onclick="salvarNovaCategoria()" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition">Criar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal 4: Aporte de Valor em Planos (Safe to Save) -->
+        <div id="modal-aporte" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center fade-in p-4">
+            <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative">
+                <h3 class="text-xl font-black text-gray-900 mb-4"><i class="fa-solid fa-bullseye text-blue-600"></i> Guardar para a Meta</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">Valor a Guardar (R$)</label>
+                        <input type="number" id="aporte-valor" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-medium" placeholder="300.00">
+                    </div>
+                </div>
+                <div class="flex space-x-3 mt-6">
+                    <button onclick="fecharModalAporte()" class="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition">Cancelar</button>
+                    <button onclick="salvarAporte()" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition">Confirmar</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- ========================================== -->
-    <!-- JAVASCRIPT -->
+    <!-- JAVASCRIPT: CÉREBRO COMPLETO DE DADOS E LÓGICA -->
     <!-- ========================================== -->
     <script>
         const mockDB = {
             resumo: { saldo: 1845.50, entradas: 3500.00, saidas: 1654.50 },
             transacoes: [
-                { id: 1, descricao: "Ifood", data: "Hoje", valor: 45.00, tipo: "despesa", icone: "fa-burger", corTxt: "text-red-500", corBg: "bg-red-100" },
-                { id: 2, descricao: "Salário da Empresa", data: "05 Ago", valor: 3500.00, tipo: "receita", icone: "fa-building", corTxt: "text-green-500", corBg: "bg-green-100" },
-                { id: 3, descricao: "Posto Ipiranga", data: "02 Ago", valor: 150.00, tipo: "despesa", icone: "fa-gas-pump", corTxt: "text-orange-500", corBg: "bg-orange-100" },
-                { id: 4, descricao: "Conta de Luz", data: "01 Ago", valor: 180.00, tipo: "despesa", icone: "fa-bolt", corTxt: "text-blue-500", corBg: "bg-blue-100" },
-                { id: 5, descricao: "Uber", data: "30 Jul", valor: 28.50, tipo: "despesa", icone: "fa-car", corTxt: "text-orange-500", corBg: "bg-orange-100" }
+                { id: 1, descricao: "Ifood", categoria: "Alimentação", data: "Hoje", valor: 45.00, tipo: "despesa", icone: "fa-burger", corTxt: "text-red-500", corBg: "bg-red-100" },
+                { id: 2, descricao: "Salário da Empresa", categoria: "Salário", data: "05 Ago", valor: 3500.00, tipo: "receita", icone: "fa-building", corTxt: "text-green-500", corBg: "bg-green-100" },
+                { id: 3, descricao: "Posto Ipiranga", categoria: "Transporte", data: "02 Ago", valor: 150.00, tipo: "despesa", icone: "fa-gas-pump", corTxt: "text-orange-500", corBg: "bg-orange-100" },
+                { id: 4, descricao: "Conta de Luz", categoria: "Moradia", data: "01 Ago", valor: 180.00, tipo: "despesa", icone: "fa-bolt", corTxt: "text-blue-500", corBg: "bg-blue-100" },
+                { id: 5, descricao: "Uber", categoria: "Transporte", data: "30 Jul", valor: 28.50, tipo: "despesa", icone: "fa-car", corTxt: "text-orange-500", corBg: "bg-orange-100" },
+                { id: 6, descricao: "Cartão de Crédito", categoria: "Moradia", data: "20 Jul", valor: 850.00, tipo: "despesa", icone: "fa-credit-card", corTxt: "text-red-500", corBg: "bg-red-100" }
             ],
-            coach: {
-                mensagem: "Você gastou R$ 380,00 com Delivery este mês (25% acima da média). <strong>Atenção:</strong> Você tem um boleto do Cartão de Crédito de R$ 850,00 agendado para o dia 20. Sugiro reduzir gastos com Lazer esta semana para fechar no azul.",
-                alertas: [
-                    { tipo: "alerta", icone: "fa-credit-card", cor: "text-red-500", bg: "bg-red-100", texto: "Fatura do Cartão (R$ 850,00) vence em 9 dias." },
-                    { tipo: "dica", icone: "fa-lightbulb", cor: "text-yellow-500", bg: "bg-yellow-100", texto: "Sua meta 'Reserva' recebeu 0 aportes este mês." }
-                ],
-                grafico: [
-                    { cat: "Alimentação", valor: 850, limite: 1000, cor: "bg-red-500" },
-                    { cat: "Transporte", valor: 350, limite: 400, cor: "bg-orange-500" },
-                    { cat: "Lazer", valor: 450, limite: 300, cor: "bg-pink-500" }
-                ]
-            },
             dividas: {
                 atrasadas: [{ desc: "Internet Fibra", valor: 99.90, data: "10 Jul" }],
                 atual: [
@@ -345,7 +480,8 @@
             categorias: [
                 { nome: "Alimentação", icone: "fa-burger", cor: "text-red-500" },
                 { nome: "Transporte", icone: "fa-car", cor: "text-orange-500" },
-                { nome: "Moradia", icone: "fa-house", cor: "text-blue-500" }
+                { nome: "Moradia", icone: "fa-house", cor: "text-blue-500" },
+                { nome: "Lazer", icone: "fa-gamepad", cor: "text-pink-500" }
             ],
             planos: [
                 { nome: "Reserva de Emergência", atual: 2500, meta: 10000, cor: "bg-blue-500" }
@@ -355,7 +491,7 @@
         const formatarMoeda = (v) => `R$ ${v.toFixed(2).replace('.', ',')}`;
 
         // ---------------------------------------------
-        // 1. O PORTEIRO INTELIGENTE
+        // AUTENTICAÇÃO E DISPOSITIVO
         // ---------------------------------------------
         function verificarDispositivo() {
             const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
@@ -378,23 +514,29 @@
         function fazerLoginBiometrico() { iniciarApp(); }
 
         function iniciarApp() {
-            // Usa display='none' absoluto no JavaScript para remover o fantasma da tela
             document.getElementById('tela-login').style.display = 'none';
             document.getElementById('app-principal').classList.remove('escondido');
-            carregarDadosFalsos();
+            atualizarTudo();
         }
 
         function sair() {
             document.getElementById('app-principal').classList.add('escondido');
-            // Devolve a tela de login ao sistema
             document.getElementById('tela-login').style.display = 'flex';
             verificarDispositivo();
         }
 
+        function atualizarTudo() {
+            carregarInicio();
+            atualizarDashboard();
+            carregarDividas();
+            carregarCategorias();
+            carregarPlanos();
+        }
+
         // ---------------------------------------------
-        // 2. INJETANDO INTELIGÊNCIA NA TELA
+        // 1. ABA INÍCIO (Extrato e NLP Avançado)
         // ---------------------------------------------
-        function carregarDadosFalsos() {
+        function carregarInicio() {
             document.getElementById('saldo-tela').innerText = formatarMoeda(mockDB.resumo.saldo);
             document.getElementById('total-entradas').innerText = formatarMoeda(mockDB.resumo.entradas);
             document.getElementById('total-saidas').innerText = formatarMoeda(mockDB.resumo.saidas);
@@ -402,25 +544,136 @@
             const gerarCardT = (t) => `
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                     <div class="flex items-center space-x-4"><div class="w-12 h-12 ${t.corBg} rounded-full flex items-center justify-center ${t.corTxt} text-xl"><i class="fa-solid ${t.icone}"></i></div>
-                    <div><p class="text-gray-900 font-bold">${t.descricao}</p><p class="text-gray-400 text-xs font-bold">${t.data}</p></div></div>
+                    <div><p class="text-gray-900 font-bold">${t.descricao}</p><p class="text-gray-400 text-xs font-bold">${t.categoria} • ${t.data}</p></div></div>
                     <p class="${t.tipo === 'despesa' ? 'text-red-500' : 'text-green-500'} font-black text-lg">${t.tipo === 'despesa' ? '-' : '+'} ${formatarMoeda(t.valor)}</p>
                 </div>`;
             document.getElementById('lista-extrato').innerHTML = mockDB.transacoes.map(gerarCardT).join('');
+        }
 
-            document.getElementById('texto-coach').innerHTML = mockDB.coach.mensagem;
-            document.getElementById('lista-alertas').innerHTML = mockDB.coach.alertas.map(a => `
-                <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-200"><div class="w-10 h-10 ${a.bg} rounded-full flex items-center justify-center ${a.cor}"><i class="fa-solid ${a.icone}"></i></div><p class="text-sm font-medium text-gray-700">${a.texto}</p></div>
-            `).join('');
+        let transacaoTemporariaNLP = null;
+
+        function simularEnvioVoz() {
+            const inputBruto = document.getElementById('input-magico').value;
+            if(!inputBruto) return;
             
-            document.getElementById('grafico-categorias').innerHTML = mockDB.coach.grafico.map(g => {
-                const estourou = g.valor > g.limite;
-                const perc = Math.min((g.valor / g.limite) * 100, 100);
-                const corBarra = estourou ? 'bg-red-600' : g.cor;
-                return `
-                <div class="mb-3"><div class="flex justify-between items-end mb-1"><span class="text-sm font-bold text-gray-700">${g.cat}</span><span class="text-xs font-bold ${estourou ? 'text-red-500' : 'text-gray-500'}">${formatarMoeda(g.valor)} / ${formatarMoeda(g.limite)}</span></div>
-                <div class="w-full bg-gray-100 rounded-full h-2.5"><div class="${corBarra} h-2.5 rounded-full" style="width: ${perc}%"></div></div></div>
-            `}).join('');
+            const texto = inputBruto.toLowerCase();
+            const numerosEncontrados = texto.match(/\d+(?:[.,]\d+)?/g);
+            let valorProcessado = 0;
+            
+            if (numerosEncontrados) {
+                valorProcessado = Math.max(...numerosEncontrados.map(n => parseFloat(n.replace(',', '.'))));
+            }
 
+            const palavrasReceita = ['recebi', 'ganhei', 'pix', 'salário', 'salario', 'rendimento'];
+            let isReceita = palavrasReceita.some(palavra => texto.includes(palavra));
+
+            transacaoTemporariaNLP = {
+                descricao: inputBruto,
+                valor: valorProcessado,
+                tipo: isReceita ? 'receita' : 'despesa',
+                categoria: isReceita ? 'Salário' : 'Outros',
+                data: texto.includes('ontem') ? 'Ontem' : 'Hoje',
+                icone: isReceita ? 'fa-building' : 'fa-tag',
+                corTxt: isReceita ? 'text-green-500' : 'text-red-500',
+                corBg: isReceita ? 'bg-green-100' : 'bg-red-100'
+            };
+
+            const modalTitulo = document.getElementById('modal-titulo');
+            const confVal = document.getElementById('conf-val');
+            const badgeCat = document.getElementById('modal-badge-cat');
+            const btnSalvar = document.getElementById('btn-salvar-modal');
+            const bgEfeito = document.getElementById('modal-bg-efeito');
+
+            if (isReceita) {
+                modalTitulo.innerText = "Registrar Entrada?";
+                confVal.innerText = `+ ${formatarMoeda(valorProcessado)}`;
+                confVal.className = "text-3xl font-black text-green-500";
+                badgeCat.innerHTML = `<i class="fa-solid fa-money-bill-wave"></i> <span>Receita</span>`;
+                badgeCat.className = "flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-bold bg-green-100 text-green-600";
+                btnSalvar.className = "flex-1 py-4 text-white font-bold rounded-2xl shadow-lg transition flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700";
+                bgEfeito.className = "absolute top-0 right-0 w-32 h-32 rounded-full opacity-20 blur-2xl bg-green-500";
+            } else {
+                modalTitulo.innerText = "Registrar Saída?";
+                confVal.innerText = `- ${formatarMoeda(valorProcessado)}`;
+                confVal.className = "text-3xl font-black text-red-500";
+                badgeCat.innerHTML = `<i class="fa-solid fa-tag"></i> <span>Despesa</span>`;
+                badgeCat.className = "flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-bold bg-red-100 text-red-600";
+                btnSalvar.className = "flex-1 py-4 text-white font-bold rounded-2xl shadow-lg transition flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700";
+                bgEfeito.className = "absolute top-0 right-0 w-32 h-32 rounded-full opacity-20 blur-2xl bg-red-500";
+            }
+            
+            document.getElementById('conf-data').innerText = transacaoTemporariaNLP.data;
+            document.getElementById('modal-confirmacao').classList.remove('hidden');
+        }
+
+        function fecharModal() { document.getElementById('modal-confirmacao').classList.add('hidden'); }
+        
+        function confirmarSalvamentoNLP() { 
+            if(transacaoTemporariaNLP) {
+                mockDB.transacoes.unshift(transacaoTemporariaNLP);
+                if(transacaoTemporariaNLP.tipo === 'receita') {
+                    mockDB.resumo.saldo += transacaoTemporariaNLP.valor;
+                    mockDB.resumo.entradas += transacaoTemporariaNLP.valor;
+                } else {
+                    mockDB.resumo.saldo -= transacaoTemporariaNLP.valor;
+                    mockDB.resumo.saidas += transacaoTemporariaNLP.valor;
+                }
+                atualizarTudo();
+            }
+            fecharModal(); 
+            document.getElementById('input-magico').value = '';
+        }
+
+        // ---------------------------------------------
+        // 2. ABA DASHBOARD (Coach, Alertas e Gráficos por Período)
+        // ---------------------------------------------
+        function atualizarDashboard() {
+            const periodo = document.getElementById('filtro-periodo').value;
+            let msgCoach = "";
+            
+            if(periodo === 'mes_atual') {
+                msgCoach = "Você gastou R$ 380,00 com Delivery este mês (25% acima da média). <strong>Atenção:</strong> Você tem um boleto do Cartão de Crédito de R$ 850,00 agendado para o dia 20. Sugiro reduzir gastos com Lazer esta semana para fechar no azul.";
+            } else if(periodo === 'mes_anterior') {
+                msgCoach = "No mês anterior, sua performance foi excelente! Você poupou 42% do seu salário e quitou todas as dívidas antes do prazo.";
+            } else {
+                msgCoach = "Análise anual consolidada: Sua curva de crescimento está estável, com maior pico de despesas concentrado no setor de habitação e transporte.";
+            }
+
+            document.getElementById('texto-coach').innerHTML = msgCoach;
+
+            document.getElementById('lista-alertas').innerHTML = `
+                <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-200"><div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-500"><i class="fa-solid fa-credit-card"></i></div><p class="text-sm font-medium text-gray-700">Fatura do Cartão (R$ 850,00) vence em 9 dias.</p></div>
+                <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-200"><div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-500"><i class="fa-solid fa-lightbulb"></i></div><p class="text-sm font-medium text-gray-700">Categoria Moradia representa 40% dos seus gastos.</p></div>
+            `;
+
+            // Gráfico de Categorias dinâmico baseado nas transações
+            const totaisCat = {};
+            mockDB.transacoes.forEach(t => {
+                if(t.tipo === 'despesa') {
+                    totaisCat[t.categoria] = (totaisCat[t.categoria] || 0) + t.valor;
+                }
+            });
+
+            const htmlGrafico = Object.keys(totaisCat).map(cat => {
+                const val = totaisCat[cat];
+                const limite = 1000;
+                const perc = Math.min((val / limite) * 100, 100);
+                const estourou = val > limite;
+                return `
+                    <div class="mb-3">
+                        <div class="flex justify-between items-end mb-1"><span class="text-sm font-bold text-gray-700">${cat}</span><span class="text-xs font-bold ${estourou ? 'text-red-500' : 'text-gray-500'}">${formatarMoeda(val)} / ${formatarMoeda(limite)}</span></div>
+                        <div class="w-full bg-gray-100 rounded-full h-2.5"><div class="${estourou ? 'bg-red-600' : 'bg-blue-600'} h-2.5 rounded-full" style="width: ${perc}%"></div></div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('grafico-categorias').innerHTML = htmlGrafico;
+        }
+
+        // ---------------------------------------------
+        // 3. ABA DÍVIDAS (Parcelamento Inteligente)
+        // ---------------------------------------------
+        function carregarDividas() {
             const gerarCardD = (d) => `
                 <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex justify-between items-center"><div class="truncate"><p class="font-bold text-gray-800 text-sm truncate">${d.desc}</p><p class="text-xs text-gray-500 font-bold"><i class="fa-regular fa-calendar"></i> ${d.data}</p></div><p class="font-black text-gray-900">${formatarMoeda(d.valor)}</p></div>
             `;
@@ -428,13 +681,165 @@
             
             document.getElementById('total-div-atrasada').innerText = formatarMoeda(soma(mockDB.dividas.atrasadas));
             document.getElementById('col-div-atrasada').innerHTML = mockDB.dividas.atrasadas.map(gerarCardD).join('');
+            
             document.getElementById('total-div-atual').innerText = formatarMoeda(soma(mockDB.dividas.atual));
             document.getElementById('col-div-atual').innerHTML = mockDB.dividas.atual.map(gerarCardD).join('');
+            
             document.getElementById('total-div-futura').innerText = formatarMoeda(soma(mockDB.dividas.futuras));
             document.getElementById('col-div-futura').innerHTML = mockDB.dividas.futuras.map(gerarCardD).join('');
+        }
 
-            document.getElementById('grid-categorias').innerHTML = mockDB.categorias.map(c => `<div class="bg-white p-6 rounded-2xl border border-gray-100 flex flex-col items-center justify-center gap-2"><i class="fa-solid ${c.icone} ${c.cor} text-3xl"></i><p class="font-bold text-gray-800 text-sm">${c.nome}</p></div>`).join('');
-            document.getElementById('grid-planos').innerHTML = mockDB.planos.map(p => `<div class="bg-white p-6 rounded-3xl border border-gray-100"><div class="flex justify-between items-end mb-3"><h3 class="font-bold text-gray-800">${p.nome}</h3><span class="text-xs font-bold text-gray-500">${formatarMoeda(p.atual)} / ${formatarMoeda(p.meta)}</span></div><div class="w-full bg-gray-100 rounded-full h-3"><div class="${p.cor} h-3 rounded-full" style="width: ${(p.atual/p.meta)*100}%"></div></div></div>`).join('');
+        function abrirModalDivida() { document.getElementById('modal-divida').classList.remove('hidden'); }
+        function fecharModalDivida() { document.getElementById('modal-divida').classList.add('hidden'); }
+
+        function salvarNovaDivida() {
+            const desc = document.getElementById('div-desc').value;
+            const valorTotal = parseFloat(document.getElementById('div-valor').value) || 0;
+            const parcelas = parseInt(document.getElementById('div-parcelas').value) || 1;
+            const dataVenc = document.getElementById('div-data').value || 'Próximo mês';
+
+            if(!desc || valorTotal <= 0) {
+                alert("Preencha os campos corretamente!");
+                return;
+            }
+
+            const valorParcela = valorTotal / parcelas;
+            for(let i=1; i<=parcelas; i++) {
+                mockDB.dividas.atual.push({
+                    desc: `${desc} (${i}/${parcelas})`,
+                    valor: valorParcela,
+                    data: dataVenc
+                });
+            }
+
+            carregarDividas();
+            fecharModalDivida();
+            document.getElementById('div-desc').value = '';
+            document.getElementById('div-valor').value = '';
+        }
+
+        // ---------------------------------------------
+        // 4. ABA CATEGORIAS (Ranking e Filtro Interativo)
+        // ---------------------------------------------
+        function carregarCategorias() {
+            // Calcula o total gasto por categoria para o ranking
+            const gastosCat = {};
+            mockDB.transacoes.forEach(t => {
+                if(t.tipo === 'despesa') {
+                    gastosCat[t.categoria] = (gastosCat[t.categoria] || 0) + t.valor;
+                }
+            });
+
+            // Ordena o ranking do maior para o menor gasto
+            const ranking = Object.keys(gastosCat).sort((a, b) => gastosCat[b] - gastosCat[a]);
+
+            const html = mockDB.categorias.map((c, index) => {
+                const totalGasto = gastosCat[c.nome] || 0;
+                // Acha a posição no ranking (1°, 2°...)
+                const posicaoIndex = ranking.indexOf(c.nome);
+                const badgeRanking = posicaoIndex !== -1 ? `${posicaoIndex + 1}° em gastos no mês` : 'Sem gastos';
+
+                return `
+                    <div onclick="filtrarPorCategoria('${c.nome}')" class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:border-blue-400 transition cursor-pointer flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center ${c.cor} text-2xl"><i class="fa-solid ${c.icone}"></i></div>
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-600">${badgeRanking}</span>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-lg mb-1">${c.nome}</h4>
+                            <p class="text-gray-400 text-xs font-bold uppercase">Total Gasto</p>
+                            <p class="text-xl font-black text-gray-800">${formatarMoeda(totalGasto)}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('grid-categorias').innerHTML = html;
+        }
+
+        function filtrarCorCategoria(nomeCat) {
+            mudarAba('movimentacao');
+            // Filtra visualmente o histórico de transações na aba Início
+            const filtradas = mockDB.transacoes.filter(t => t.categoria === nomeCat);
+            const gerarCardT = (t) => `
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div class="flex items-center space-x-4"><div class="w-12 h-12 ${t.corBg} rounded-full flex items-center justify-center ${t.corTxt} text-xl"><i class="fa-solid ${t.icone}"></i></div>
+                    <div><p class="text-gray-900 font-bold">${t.descricao}</p><p class="text-gray-400 text-xs font-bold">${t.categoria} • ${t.data}</p></div></div>
+                    <p class="${t.tipo === 'despesa' ? 'text-red-500' : 'text-green-500'} font-black text-lg">${t.tipo === 'despesa' ? '-' : '+'} ${formatarMoeda(t.valor)}</p>
+                </div>`;
+            document.getElementById('lista-extrato').innerHTML = filtradas.length > 0 ? filtradas.map(gerarCardT).join('') : `<p class="text-center text-gray-400 py-6">Nenhuma transação encontrada para ${nomeCat}.</p>`;
+        }
+
+        function abrirModalCategoria() { document.getElementById('modal-categoria').classList.remove('hidden'); }
+        function fecharModalCategoria() { document.getElementById('modal-categoria').classList.add('hidden'); }
+
+        function salvarNovaCategoria() {
+            const nome = document.getElementById('cat-nome').value;
+            const icone = document.getElementById('cat-icone').value;
+            if(!nome) return;
+
+            mockDB.categorias.push({ nome, icone, cor: 'text-blue-500' });
+            carregarCategorias();
+            fecharModalCategoria();
+            document.getElementById('cat-nome').value = '';
+        }
+
+        // ---------------------------------------------
+        // 5. ABA PLANOS (Safe to Save & Gamificação)
+        // ---------------------------------------------
+        function carregarPlanos() {
+            // Lógica do Coach Safe to Save: Analisa se há dívidas vencendo no mês
+            const somaDividasMes = mockDB.dividas.atual.reduce((acc, curr) => acc + curr.valor, 0);
+            const saldoLivre = mockDB.resumo.saldo - somaDividasMes;
+            
+            const textoSeguranca = document.getElementById('texto-seguranca-guardar');
+            const alertaBox = document.getElementById('alerta-seguranca-guardar');
+
+            if (saldoLivre > 300) {
+                alertaBox.className = "bg-green-50 border border-green-200 p-5 rounded-2xl mb-8 flex items-center gap-4";
+                textoSeguranca.innerHTML = `Parabéns! Suas dívidas estão sob controle. Você possui uma margem segura de até <strong>${formatarMoeda(saldoLivre)}</strong> para guardar este mês sem comprometer suas contas.`;
+            } else {
+                alertaBox.className = "bg-red-50 border border-red-200 p-5 rounded-2xl mb-8 flex items-center gap-4";
+                textoSeguranca.innerHTML = `<strong>Atenção:</strong> Suas dívidas do mês consomem grande parte do saldo. O ideal é não guardar valores altos agora para evitar risco de inadimplência.`;
+            }
+
+            const htmlPlanos = mockDB.planos.map(p => {
+                const porcentagem = Math.min((p.atual / p.meta) * 100, 100);
+                return `
+                <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
+                    <div class="flex justify-between items-end mb-3">
+                        <div>
+                            <h3 class="font-black text-gray-900 text-lg">${p.nome}</h3>
+                            <p class="text-xs text-gray-400 font-bold">Progresso da Meta</p>
+                        </div>
+                        <span class="text-sm font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-xl">${porcentagem.toFixed(1)}% Concluído</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-4 mb-4 overflow-hidden">
+                        <div class="${p.cor} h-4 rounded-full transition-all duration-1000" style="width: ${porcentagem}%"></div>
+                    </div>
+                    <div class="flex justify-between items-center text-sm font-bold text-gray-600">
+                        <span>Atual: ${formatarMoeda(p.atual)}</span>
+                        <span>Meta: ${formatarMoeda(p.meta)}</span>
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            document.getElementById('grid-planos').innerHTML = htmlPlanos;
+        }
+
+        function abrirModalAporte() { document.getElementById('modal-aporte').classList.remove('hidden'); }
+        function fecharModalAporte() { document.getElementById('modal-aporte').classList.add('hidden'); }
+
+        function salvarAporte() {
+            const valor = parseFloat(document.getElementById('aporte-valor').value) || 0;
+            if(valor <= 0) return;
+
+            mockDB.planos[0].atual += valor;
+            carregarPlanos();
+            fecharModalAporte();
+            document.getElementById('aporte-valor').value = '';
+            alert(`Sucesso! Você guardou ${formatarMoeda(valor)} para sua meta.`);
         }
 
         // ---------------------------------------------
@@ -449,13 +854,6 @@
             if(document.getElementById(`nav-desk-${nome}`)) document.getElementById(`nav-desk-${nome}`).classList.add('bg-blue-50', 'text-blue-600');
             if(document.getElementById(`nav-mob-${nome}`)) document.getElementById(`nav-mob-${nome}`).classList.add('text-blue-600');
         }
-
-        function simularEnvioVoz() {
-            if(!document.getElementById('input-magico').value) return;
-            document.getElementById('modal-confirmacao').classList.remove('hidden');
-        }
-        function fecharModal() { document.getElementById('modal-confirmacao').classList.add('hidden'); }
-        function confirmarSalvamento() { fecharModal(); document.getElementById('input-magico').value = ''; }
     </script>
 </body>
 </html>
