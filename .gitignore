@@ -1,0 +1,7 @@
+# Ignorar o arquivo de senhas e variáveis de ambiente
+.env
+
+# Ignorar pastas pesadas geradas automaticamente pelo Python
+__pycache__/
+venv/
+env/
