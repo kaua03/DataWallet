@@ -1,8 +1,8 @@
 // ==========================================
 // 1. CONEXÃO DIRETA COM O SUPABASE
 // ==========================================
-const supabaseUrl = 'COLOQUE_SUA_URL_DO_SUPABASE_AQUI'; 
-const supabaseKey = 'COLOQUE_SUA_CHAVE_ANON_AQUI'; 
+const supabaseUrl = 'https://aoeyeleaxbwvjmzxxdib.supabase.co'; 
+const supabaseKey = 'sb_publishable_Q6JiNxMGUdqObAMxj3EYSA_s_cYpFUk'; 
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let usuarioLogado = null;
