@@ -1,10 +1,8 @@
 // ==========================================
-// 1. CONEXÃO DIRETA COM O SUPABASE (BLINDADA)
+// 1. CONEXÃO DIRETA COM O SUPABASE
 // ==========================================
 const supabaseUrl = 'https://aoeyeleaxbwvjmzxxdib.supabase.co'; 
 const supabaseKey = 'sb_publishable_Q6JiNxMGUdqObAMxj3EYSA_s_cYpFUk'; 
-
-// MUDANÇA DE SÊNIOR: Mudamos de 'supabase' para 'supabaseClient' para não dar conflito com a CDN
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let usuarioLogado = null;
@@ -15,7 +13,7 @@ let planosGlobais = [];
 
 const formatarMoeda = (v) => `R$ ${v.toFixed(2).replace('.', ',')}`;
 
-// IGNIÇÃO SEGURA: Só roda após o HTML estar pronto
+// Checa sessão ao carregar a página
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         const { data: { session }, error } = await supabaseClient.auth.getSession();
@@ -56,6 +54,7 @@ function alternarTelaAuth(tela) {
         document.getElementById('form-login').classList.add('escondido');
         document.getElementById('form-cadastro').classList.remove('escondido');
         document.getElementById('texto-boas-vindas').innerText = "Crie sua conta para começar";
+        document.getElementById('btn-cadastrar').innerHTML = '<i class="fa-solid fa-user-plus"></i> Criar Conta';
     } else {
         document.getElementById('form-cadastro').classList.add('escondido');
         document.getElementById('form-login').classList.remove('escondido');
@@ -72,34 +71,51 @@ async function efetuarCadastro() {
     const email = document.getElementById('email-cad').value.trim();
     const senha = document.getElementById('senha-cad').value;
     
-    if(!email || !senha || senha.length < 6) return alert("E-mail e Senha (mínimo 6 caracteres) são obrigatórios.");
+    if(!email || !senha || senha.length < 6) {
+        alert("E-mail e Senha (mínimo 6 caracteres) são obrigatórios.");
+        return;
+    }
 
     const btn = document.getElementById('btn-cadastrar');
-    const txt = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Criando...';
+    const txtOriginal = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Criando conta...';
 
     try {
+        // 1. Cria a conta no Supabase Auth
         const { data, error } = await supabaseClient.auth.signUp({ email: email, password: senha });
-        if (error) throw error;
         
+        // Se der erro (ex: e-mail já existe, formato inválido), aborta o código e avisa o usuário
+        if (error) {
+            alert(`Falha no Cadastro: ${error.message}`);
+            return;
+        }
+
+        if (!data.user) {
+            alert("Atenção: O Supabase exige que você confirme o e-mail na sua caixa de entrada, ou que você desligue a opção 'Confirm Email' no painel.");
+            return;
+        }
+
         usuarioLogado = data.user;
 
-        await supabaseClient.from('categorias').insert([
+        // 2. Injeta categorias e metas padrões
+        const { error: catError } = await supabaseClient.from('categorias').insert([
             { usuario_id: usuarioLogado.id, nome: 'Alimentação', icone: 'fa-burger', cor: 'text-red-500' },
             { usuario_id: usuarioLogado.id, nome: 'Salário', icone: 'fa-building', cor: 'text-green-500' }
         ]);
-        
-        await supabaseClient.from('planos').insert([
+        if (catError) console.error("Erro ao gerar categorias padrão:", catError);
+
+        const { error: planoError } = await supabaseClient.from('planos').insert([
             { usuario_id: usuarioLogado.id, nome: 'Reserva de Emergência', valor_meta: 10000, cor: 'bg-blue-500' }
         ]);
+        if (planoError) console.error("Erro ao gerar plano padrão:", planoError);
 
         alert("Conta criada com sucesso!");
         iniciarSistema();
 
     } catch (e) {
-        alert("Erro no cadastro: " + e.message);
+        alert("Erro grave no sistema: " + e.message);
     } finally {
-        btn.innerHTML = txt;
+        btn.innerHTML = txtOriginal;
     }
 }
 
@@ -110,20 +126,24 @@ async function efetuarLogin() {
     if(!email || !senha) return alert("Preencha e-mail e senha.");
 
     const btn = document.getElementById('btn-login-desk');
-    const txt = btn.innerHTML;
+    const txtOriginal = btn.innerHTML;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Entrando...';
 
     try {
         const { data, error } = await supabaseClient.auth.signInWithPassword({ email: email, password: senha });
-        if (error) throw error;
+        
+        if (error) {
+            alert(`Falha no Login: ${error.message}`);
+            return;
+        }
         
         usuarioLogado = data.user;
         iniciarSistema();
 
     } catch (e) {
-        alert("Login falhou. Verifique as credenciais.");
+        alert("Erro de comunicação com o servidor.");
     } finally {
-        btn.innerHTML = txt;
+        btn.innerHTML = txtOriginal;
     }
 }
 
@@ -165,7 +185,7 @@ async function atualizarTudo() {
         carregarDividas();
         carregarCategorias();
         carregarPlanos();
-    } catch (erro) { console.error("Erro Crítico:", erro); }
+    } catch (erro) { console.error("Erro Crítico ao baixar dados:", erro); }
 }
 
 // ---------------------------------------------
@@ -186,10 +206,11 @@ function carregarInicio() {
         const corBg = t.tipo === 'despesa' ? 'bg-red-100' : 'bg-green-100';
         const corTxt = t.tipo === 'despesa' ? 'text-red-500' : 'text-green-500';
         
+        // Tratamento seguro de datas
         const dataFormatada = t.data_vencimento ? t.data_vencimento.split('-').reverse().join('/') : 'S/ Data';
 
-        return `<div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between"><div class="flex items-center space-x-4"><div class="w-12 h-12 ${corBg} rounded-full flex items-center justify-center ${corTxt} text-xl"><i class="fa-solid ${cat.icone}"></i></div><div><p class="text-gray-900 font-bold">${t.descricao}</p><p class="text-gray-400 text-xs font-bold">${cat.nome} • ${dataFormatada}</p></div></div><p class="${corTxt} font-black text-lg">${t.tipo === 'despesa' ? '-' : '+'} ${formatarMoeda(t.valor)}</p></div>`;
-    }).join('') || '<p class="text-center text-gray-400 py-6">Nenhuma transação.</p>';
+        return `<div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition"><div class="flex items-center space-x-4"><div class="w-12 h-12 ${corBg} rounded-full flex items-center justify-center ${corTxt} text-xl"><i class="fa-solid ${cat.icone}"></i></div><div><p class="text-gray-900 font-bold">${t.descricao}</p><p class="text-gray-400 text-xs font-bold">${cat.nome} • ${dataFormatada}</p></div></div><p class="${corTxt} font-black text-lg">${t.tipo === 'despesa' ? '-' : '+'} ${formatarMoeda(t.valor)}</p></div>`;
+    }).join('') || '<p class="text-center text-gray-400 py-6">Nenhuma transação registrada.</p>';
 }
 
 let transacaoNLP = null;
@@ -205,7 +226,7 @@ function simularEnvioVoz() {
         usuario_id: usuarioLogado.id,
         valor: val,
         tipo: isReceita ? 'receita' : 'despesa',
-        descricao: document.getElementById('input-magico').value.split(' ')[0] || 'Gasto',
+        descricao: document.getElementById('input-magico').value.split(' ')[0] || 'Registro',
         data_vencimento: new Date().toISOString().split('T')[0],
         categoria_id: categoriasGlobais.length > 0 ? categoriasGlobais[0].id : null
     };
@@ -244,13 +265,34 @@ async function confirmarSalvamentoNLP() {
 
 function atualizarDashboard() {
     let totalDespesas = 0;
-    transacoesGlobais.forEach(t => { if(t.tipo === 'despesa') totalDespesas += t.valor; });
+    const totaisCat = {};
+
+    transacoesGlobais.forEach(t => { 
+        if(t.tipo === 'despesa') {
+            totalDespesas += t.valor; 
+            const cNome = categoriasGlobais.find(c => c.id === t.categoria_id)?.nome || 'Outros';
+            totaisCat[cNome] = (totaisCat[cNome] || 0) + t.valor;
+        }
+    });
+
     document.getElementById('dash-media').innerText = formatarMoeda(totalDespesas / 30);
     document.getElementById('texto-coach').innerText = `O sistema detectou ${transacoesGlobais.length} transações oficiais vinculadas a você.`;
+
+    document.getElementById('grafico-categorias').innerHTML = Object.keys(totaisCat).map(cat => {
+        const val = totaisCat[cat];
+        const limite = 1000;
+        const perc = Math.min((val / limite) * 100, 100);
+        return `
+            <div class="mb-3">
+                <div class="flex justify-between items-end mb-1"><span class="text-sm font-bold text-gray-700">${cat}</span><span class="text-xs font-bold text-gray-500">${formatarMoeda(val)}</span></div>
+                <div class="w-full bg-gray-100 rounded-full h-2.5"><div class="bg-blue-600 h-2.5 rounded-full" style="width: ${perc}%"></div></div>
+            </div>
+        `;
+    }).join('') || '<p class="text-xs text-gray-400">Gere despesas para ver a análise.</p>';
 }
 
 function carregarDividas() {
-    const html = dividasGlobais.map(d => `<div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex justify-between"><p class="font-bold text-gray-800 text-sm">${d.descricao}</p><p class="font-black">${formatarMoeda(d.valor)}</p></div>`).join('');
+    const html = dividasGlobais.map(d => `<div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex justify-between"><p class="font-bold text-gray-800 text-sm">${d.descricao}</p><p class="font-black text-red-500">${formatarMoeda(d.valor)}</p></div>`).join('');
     document.getElementById('col-div-atual').innerHTML = html || '<p class="text-xs text-gray-400">Limpo!</p>';
 }
 
@@ -263,12 +305,19 @@ async function salvarNovaDivida() {
     const parcelas = parseInt(document.getElementById('div-parcelas').value);
     const dataBase = document.getElementById('div-data').value;
 
-    if(!desc || !valorTotal || !dataBase) return;
+    if(!desc || !valorTotal || !dataBase) return alert("Preencha todos os dados da dívida.");
+
+    const btn = document.getElementById('btn-salvar-divida');
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    
     const parcelasArray = [];
     for(let i=0; i<parcelas; i++) {
+        // Incremento matemático de meses seguro
+        const dataParc = new Date(dataBase + 'T12:00:00Z');
+        dataParc.setMonth(dataParc.getMonth() + i);
         parcelasArray.push({
             usuario_id: usuarioLogado.id, descricao: `${desc} (${i+1}/${parcelas})`, 
-            valor: valorTotal/parcelas, data_vencimento: dataBase
+            valor: valorTotal/parcelas, data_vencimento: dataParc.toISOString().split('T')[0]
         });
     }
     
@@ -279,21 +328,28 @@ async function salvarNovaDivida() {
         fecharModalDivida();
     } catch(e) {
         alert("Erro ao salvar dívida: " + e.message);
+    } finally {
+        btn.innerHTML = 'Gerar Parcelas';
     }
 }
 
 function carregarCategorias() {
     document.getElementById('grid-categorias').innerHTML = categoriasGlobais.map(c => `
-        <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm"><i class="fa-solid ${c.icone} text-blue-500 text-3xl mb-2"></i><h4 class="font-bold text-lg">${c.nome}</h4></div>
+        <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center hover:border-blue-400 transition cursor-pointer">
+            <i class="fa-solid ${c.icone} ${c.cor} text-3xl mb-2"></i><h4 class="font-bold text-lg text-gray-800">${c.nome}</h4>
+        </div>
     `).join('');
 }
 function abrirModalCategoria() { document.getElementById('modal-categoria').classList.remove('hidden'); }
 function fecharModalCategoria() { document.getElementById('modal-categoria').classList.add('hidden'); }
 
 async function salvarNovaCategoria() {
-    const nome = document.getElementById('cat-nome').value;
+    const nome = document.getElementById('cat-nome').value.trim();
     if(!nome) return;
     
+    const btn = document.getElementById('btn-salvar-categoria');
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
     try {
         const { error } = await supabaseClient.from('categorias').insert([{ usuario_id: usuarioLogado.id, nome: nome, icone: 'fa-tag', cor: 'text-blue-500' }]);
         if (error) throw error;
@@ -301,13 +357,31 @@ async function salvarNovaCategoria() {
         fecharModalCategoria();
     } catch(e) {
         alert("Erro ao criar categoria: " + e.message);
+    } finally {
+        btn.innerHTML = 'Criar';
     }
 }
 
 function carregarPlanos() {
+    const divMes = dividasGlobais.reduce((acc, curr) => acc + curr.valor, 0);
+    let saldoAtual = 0;
+    transacoesGlobais.forEach(t => { saldoAtual += (t.tipo === 'receita' ? t.valor : -t.valor); });
+    const seguro = saldoAtual - divMes;
+
+    const b = document.getElementById('alerta-seguranca-guardar');
+    const txt = document.getElementById('texto-seguranca-guardar');
+    
+    if(seguro > 0) {
+        b.className = "bg-green-50 border border-green-200 p-5 rounded-2xl mb-8 flex items-center gap-4";
+        txt.innerHTML = `Margem Segura: Você pode aportar até <strong>${formatarMoeda(seguro)}</strong> sem risco de inadimplência.`;
+    } else {
+        b.className = "bg-red-50 border border-red-200 p-5 rounded-2xl mb-8 flex items-center gap-4";
+        txt.innerHTML = `<strong>Atenção:</strong> Suas dívidas já superam seu caixa. Não é seguro guardar dinheiro agora.`;
+    }
+
     document.getElementById('grid-planos').innerHTML = planosGlobais.map(p => {
         const perc = Math.min((p.valor_atual / p.valor_meta) * 100, 100);
-        return `<div class="bg-white p-6 rounded-3xl border border-gray-100"><h3 class="font-black text-lg mb-2">${p.nome}</h3><div class="w-full bg-gray-100 rounded-full h-4"><div class="bg-blue-500 h-4 rounded-full" style="width: ${perc}%"></div></div></div>`;
+        return `<div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm"><div class="flex justify-between items-end mb-2"><h3 class="font-black text-lg">${p.nome}</h3><span class="font-bold text-blue-600">${perc.toFixed(1)}%</span></div><div class="w-full bg-gray-100 rounded-full h-4 mb-2"><div class="${p.cor} h-4 rounded-full" style="width: ${perc}%"></div></div><div class="flex justify-between text-sm font-bold text-gray-500"><span>Atual: ${formatarMoeda(p.valor_atual)}</span><span>Meta: ${formatarMoeda(p.valor_meta)}</span></div></div>`;
     }).join('');
 }
 function abrirModalAporte() { document.getElementById('modal-aporte').classList.remove('hidden'); }
@@ -316,8 +390,11 @@ function fecharModalAporte() { document.getElementById('modal-aporte').classList
 async function salvarAporte() {
     const val = parseFloat(document.getElementById('aporte-valor').value);
     if(!val || planosGlobais.length === 0) return;
-    const novoValor = planosGlobais[0].valor_atual + val;
     
+    const btn = document.getElementById('btn-salvar-aporte');
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+    const novoValor = planosGlobais[0].valor_atual + val;
     try {
         const { error } = await supabaseClient.from('planos').update({ valor_atual: novoValor }).eq('id', planosGlobais[0].id).eq('usuario_id', usuarioLogado.id);
         if (error) throw error;
@@ -325,10 +402,17 @@ async function salvarAporte() {
         fecharModalAporte();
     } catch(e) {
         alert("Erro ao salvar aporte: " + e.message);
+    } finally {
+        btn.innerHTML = 'Confirmar';
     }
 }
 
 function mudarAba(nome) {
     document.querySelectorAll('.aba-conteudo').forEach(a => a.classList.add('escondido'));
+    document.querySelectorAll('.menu-desk').forEach(b => { b.classList.remove('bg-blue-50', 'text-blue-600'); b.classList.add('text-gray-500'); });
+    document.querySelectorAll('.menu-mob').forEach(b => { b.classList.remove('text-blue-600'); b.classList.add('text-gray-400'); });
+    
     document.getElementById(`aba-${nome}`).classList.remove('escondido');
+    if(document.getElementById(`nav-desk-${nome}`)) document.getElementById(`nav-desk-${nome}`).classList.add('bg-blue-50', 'text-blue-600');
+    if(document.getElementById(`nav-mob-${nome}`)) document.getElementById(`nav-mob-${nome}`).classList.add('text-blue-600');
 }
