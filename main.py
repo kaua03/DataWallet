@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from datetime import date, timedelta
 from pydantic import BaseModel
@@ -32,7 +33,7 @@ def get_db():
 
 @app.get("/")
 def rota_principal():
-    return {"mensagem": "DataWallet API Online! O motor está girando no Supabase."}
+    return FileResponse("index.html")
 
 # ROTA A: Cadastrar Transação Manual
 @app.post("/transacoes/", response_model=schemas.TransacaoResposta)
