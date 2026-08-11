@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DataWallet - SaaS Inteligência Financeira</title>
+    <title>DataWallet - Inteligência Financeira (SaaS)</title>
     
-    <!-- CSS e Ícones -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -30,7 +29,7 @@
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans h-screen overflow-hidden flex relative">
 
-    <!-- PORTARIAS DE LOGIN E CADASTRO -->
+    <!-- PORTARIAS DE LOGIN -->
     <div id="tela-login" class="fixed inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-900 to-gray-900 z-50 fade-in">
         <div id="login-desktop" class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm mx-4 relative overflow-hidden transition-all duration-300">
             <div class="text-center mb-6">
@@ -41,6 +40,7 @@
                 <p class="text-sm text-gray-500" id="texto-boas-vindas">Seu centro de inteligência financeira</p>
             </div>
             
+            <!-- Login -->
             <div id="form-login" class="space-y-4 fade-in">
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">E-mail</label>
@@ -58,6 +58,7 @@
                 </div>
             </div>
 
+            <!-- Cadastro -->
             <div id="form-cadastro" class="space-y-4 escondido fade-in">
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">E-mail</label>
@@ -68,7 +69,7 @@
                     <input type="password" id="senha-cad" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 transition" placeholder="Mínimo 6 caracteres">
                 </div>
                 <button onclick="efetuarCadastro()" id="btn-cadastrar" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition shadow-lg flex justify-center items-center gap-2 cursor-pointer z-50 relative">
-                    <i class="fa-solid fa-user-plus"></i> Criar Conta
+                    <i class="fa-solid fa-user-plus"></i> Criando...
                 </button>
                 <div class="text-center mt-4 relative z-50">
                     <button onclick="alternarTelaAuth('login')" class="text-sm font-bold text-gray-500 hover:underline cursor-pointer">Já tem conta? Entre aqui</button>
@@ -76,6 +77,7 @@
             </div>
         </div>
 
+        <!-- Portaria Mobile (Biometria) -->
         <div id="login-mobile" class="escondido flex flex-col items-center justify-center text-white w-full h-full relative">
             <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div class="w-64 h-64 bg-white opacity-5 rounded-full blur-3xl pulse-slow"></div>
@@ -106,28 +108,17 @@
                 <h2 class="text-2xl font-black text-gray-900 tracking-tight">DataWallet</h2>
             </div>
             <nav class="flex-1 space-y-2">
-                <button onclick="mudarAba('movimentacao')" id="nav-desk-movimentacao" class="menu-desk w-full flex items-center gap-3 p-3 rounded-xl font-bold bg-blue-50 text-blue-600 transition">
-                    <i class="fa-solid fa-money-bill-transfer w-5"></i> Início
-                </button>
-                <button onclick="mudarAba('dashboard')" id="nav-desk-dashboard" class="menu-desk w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition">
-                    <i class="fa-solid fa-chart-pie w-5"></i> Dashboard (Coach)
-                </button>
-                <button onclick="mudarAba('dividas')" id="nav-desk-dividas" class="menu-desk w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition">
-                    <i class="fa-solid fa-file-invoice-dollar w-5"></i> Dívidas
-                </button>
-                <button onclick="mudarAba('categorias')" id="nav-desk-categorias" class="menu-desk w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition">
-                    <i class="fa-solid fa-layer-group w-5"></i> Categorias
-                </button>
-                <button onclick="mudarAba('planos')" id="nav-desk-planos" class="menu-desk w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition">
-                    <i class="fa-solid fa-bullseye w-5"></i> Planos
-                </button>
+                <button onclick="mudarAba('movimentacao')" id="nav-desk-movimentacao" class="menu-desk w-full flex items-center gap-3 p-3 rounded-xl font-bold bg-blue-50 text-blue-600 transition"><i class="fa-solid fa-money-bill-transfer w-5"></i> Início</button>
+                <button onclick="mudarAba('dashboard')" id="nav-desk-dashboard" class="menu-desk w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition"><i class="fa-solid fa-chart-pie w-5"></i> Dashboard</button>
+                <button onclick="mudarAba('dividas')" id="nav-desk-dividas" class="menu-desk w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition"><i class="fa-solid fa-file-invoice-dollar w-5"></i> Dívidas</button>
+                <button onclick="mudarAba('categorias')" id="nav-desk-categorias" class="menu-desk w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition"><i class="fa-solid fa-layer-group w-5"></i> Categorias</button>
+                <button onclick="mudarAba('planos')" id="nav-desk-planos" class="menu-desk w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition"><i class="fa-solid fa-bullseye w-5"></i> Planos</button>
             </nav>
             <button onclick="sair()" class="flex items-center gap-3 p-3 rounded-xl font-bold text-red-500 hover:bg-red-50 transition mt-auto">
                 <i class="fa-solid fa-right-from-bracket w-5"></i> Sair
             </button>
         </aside>
 
-        <!-- ÁREA CENTRAL DE CONTEÚDO -->
         <main class="flex-1 h-full overflow-y-auto bg-gray-50 relative pb-24 md:pb-0">
             
             <section id="aba-movimentacao" class="aba-conteudo p-4 md:p-8 max-w-5xl mx-auto fade-in">
@@ -214,6 +205,10 @@
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2"><i class="fa-solid fa-bullseye text-blue-600"></i> Metas</h2>
                     <button onclick="abrirModalAporte()" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-sm shadow-md hover:bg-blue-700 transition">+ Guardar</button>
+                </div>
+                <div id="alerta-seguranca-guardar" class="bg-green-50 border border-green-200 p-5 rounded-2xl mb-8 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-shield-halved"></i></div>
+                    <div><h4 class="font-bold text-green-900">Análise de Segurança</h4><p class="text-sm text-green-700 font-medium" id="texto-seguranca-guardar">Calculando margem segura...</p></div>
                 </div>
                 <div id="grid-planos" class="space-y-4"></div>
             </section>
