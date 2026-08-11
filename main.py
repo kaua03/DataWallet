@@ -1,25 +1,17 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-from datetime import date, timedelta
-from pydantic import BaseModel
 import models
 import schemas
 from database import engine, SessionLocal
 
-# 1. A Ordem de Construção: Isso avisa o Supabase para criar as tabelas lá no banco 
-# fisicamente, seguindo as plantas que desenhamos no models.py!
+# 1. A ORDEM DE CONSTRUÇÃO
+# O trator do SQLAlchemy vai no Supabase e cria todas as novas tabelas (Dívidas, Planos, etc)
 models.Base.metadata.create_all(bind=engine)
 
-# 2. Ligando o Gerente da API
-app = FastAPI(
-    title="DataWallet API",
-    description="Motor de Inteligência Financeira",
-    version="1.0.0"
-)
+app = FastAPI(title="DataWallet API - O Cérebro Inteligente")
 
-# 3. O Porteiro do Banco de Dados
-# Ele abre a catraca quando o celular pede algo, e fecha a catraca quando termina.
+# 2. O PORTEIRO DO BANCO DE DADOS
 def get_db():
     db = SessionLocal()
     try:
@@ -28,67 +20,103 @@ def get_db():
         db.close()
 
 # ==========================================
-# ROTAS (Os guichês de atendimento)
+# ROTA DE FRONTEND
 # ==========================================
-
 @app.get("/")
-def rota_principal():
+def ler_index():
     return FileResponse("index.html")
 
-# ROTA A: Cadastrar Transação Manual
+# ==========================================
+# ROTA DE AUTENTICAÇÃO (Login com Auto-Cadastro)
+# ==========================================
+@app.post("/login", response_model=schemas.UsuarioResposta)
+def login(credenciais: schemas.UsuarioLogin, db: Session = Depends(get_db)):
+    # 1. Procura o usuário no Supabase
+    usuario = db.query(models.Usuario).filter(models.Usuario.email == credenciais.email).first()
+    
+    # 2. Truque de Desenvolvimento: Se não achar, cria na hora!
+    if not usuario:
+        # Nota: Em produção, usaríamos Bcrypt para criptografar a senha aqui.
+        usuario = models.Usuario(nome="Admin", email=credenciais.email, senha_hash=credenciais.senha)
+        db.add(usuario)
+        db.commit()
+        db.refresh(usuario)
+        
+    # 3. Se achar, verifica se a senha bate
+    elif usuario.senha_hash != credenciais.senha:
+        raise HTTPException(status_code=401, detail="Senha incorreta")
+        
+    return usuario
+
+# ==========================================
+# ROTAS DE TRANSAÇÕES (Aba Início)
+# ==========================================
+@app.get("/transacoes/{usuario_id}", response_model=list[schemas.TransacaoResposta])
+def listar_transacoes(usuario_id: int, db: Session = Depends(get_db)):
+    return db.query(models.Transacao).filter(models.Transacao.usuario_id == usuario_id).all()
+
 @app.post("/transacoes/", response_model=schemas.TransacaoResposta)
 def criar_transacao(transacao: schemas.TransacaoCriar, db: Session = Depends(get_db)):
-    nova_transacao = models.Transacao(
-        valor=transacao.valor,
-        tipo=transacao.tipo,
-        descricao=transacao.descricao,
-        data_vencimento=transacao.data_vencimento,
-        usuario_id=transacao.usuario_id,
-        categoria_id=transacao.categoria_id
-    )
-    db.add(nova_transacao) # Coloca na esteira
-    db.commit()            # Aperta o botão verde "Pode Salvar!"
+    # O superpoder do **: Ele desempacota todo o JSON e encaixa nas colunas perfeitamente
+    nova_transacao = models.Transacao(**transacao.dict())
+    db.add(nova_transacao)
+    db.commit()
     db.refresh(nova_transacao)
     return nova_transacao
 
-# ROTA B: Listar todas as transações
-@app.get("/transacoes/", response_model=list[schemas.TransacaoResposta])
-def listar_transacoes(db: Session = Depends(get_db)):
-    return db.query(models.Transacao).all()
+# ==========================================
+# ROTAS DE DÍVIDAS (O Kanban)
+# ==========================================
+@app.get("/dividas/{usuario_id}", response_model=list[schemas.DividaResposta])
+def listar_dividas(usuario_id: int, db: Session = Depends(get_db)):
+    return db.query(models.Divida).filter(models.Divida.usuario_id == usuario_id).all()
+
+@app.post("/dividas/", response_model=schemas.DividaResposta)
+def criar_divida(divida: schemas.DividaCriar, usuario_id: int, db: Session = Depends(get_db)):
+    nova_divida = models.Divida(**divida.dict(), usuario_id=usuario_id)
+    db.add(nova_divida)
+    db.commit()
+    db.refresh(nova_divida)
+    return nova_divida
 
 # ==========================================
-# ROTA C: A MÁGICA DA VOZ (Inteligência NLP)
+# ROTAS DE CATEGORIAS
 # ==========================================
+@app.get("/categorias/{usuario_id}", response_model=list[schemas.CategoriaResposta])
+def listar_categorias(usuario_id: int, db: Session = Depends(get_db)):
+    return db.query(models.Categoria).filter(models.Categoria.usuario_id == usuario_id).all()
 
-# Um molde rápido só para receber o texto do celular
-class ComandoVoz(BaseModel):
-    texto: str
+@app.post("/categorias/", response_model=schemas.CategoriaResposta)
+def criar_categoria(categoria: schemas.CategoriaCriar, usuario_id: int, db: Session = Depends(get_db)):
+    nova_categoria = models.Categoria(**categoria.dict(), usuario_id=usuario_id)
+    db.add(nova_categoria)
+    db.commit()
+    db.refresh(nova_categoria)
+    return nova_categoria
 
-@app.post("/transacoes/analise-voz/")
-def processar_voz(comando: ComandoVoz):
-    # Exemplo: Se o celular enviar "Ifood 45 ontem"
-    palavras = comando.texto.lower().split()
+# ==========================================
+# ROTAS DE PLANOS (Metas e Aportes)
+# ==========================================
+@app.get("/planos/{usuario_id}", response_model=list[schemas.PlanoResposta])
+def listar_planos(usuario_id: int, db: Session = Depends(get_db)):
+    return db.query(models.Plano).filter(models.Plano.usuario_id == usuario_id).all()
+
+@app.post("/planos/", response_model=schemas.PlanoResposta)
+def criar_plano(plano: schemas.PlanoCriar, usuario_id: int, db: Session = Depends(get_db)):
+    novo_plano = models.Plano(**plano.dict(), usuario_id=usuario_id)
+    db.add(novo_plano)
+    db.commit()
+    db.refresh(novo_plano)
+    return novo_plano
+
+@app.put("/planos/{plano_id}/aporte", response_model=schemas.PlanoResposta)
+def fazer_aporte(plano_id: int, aporte: schemas.PlanoAporte, db: Session = Depends(get_db)):
+    plano = db.query(models.Plano).filter(models.Plano.id == plano_id).first()
+    if not plano:
+        raise HTTPException(status_code=404, detail="Plano não encontrado")
     
-    # 1. Caçando o valor numérico na frase
-    valor_encontrado = 0.0
-    for p in palavras:
-        if p.isnumeric():
-            valor_encontrado = float(p)
-            break
-            
-    # 2. Lógica de Data Inteligente
-    data_conta = date.today()
-    if "ontem" in palavras:
-        data_conta = data_conta - timedelta(days=1)
-        
-    # 3. Retornamos o "Pacote Sugerido" para o celular abrir a Janela Flutuante.
-    # Note que NÃO usamos db.commit() aqui. Nós NÃO salvamos no banco ainda!
-    return {
-        "status": "Aguardando Confirmação da Janela Flutuante",
-        "sugestao_para_tela": {
-            "descricao": palavras[0].capitalize() if palavras else "Desconhecido",
-            "valor": valor_encontrado,
-            "data_vencimento": data_conta,
-            "tipo": "Despesa"
-        }
-    }
+    # A Mágica Matemática: Soma o valor que o celular enviou com o que já existe no banco
+    plano.valor_atual += aporte.valor
+    db.commit()
+    db.refresh(plano)
+    return plano
