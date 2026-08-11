@@ -44,7 +44,7 @@
                     <label class="block text-sm font-bold text-gray-700 mb-1">Senha</label>
                     <input type="password" id="senha-login" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 transition" placeholder="••••••••" value="123456">
                 </div>
-                <button onclick="iniciarApp()" class="w-full bg-gray-900 text-white font-bold py-3 rounded-xl hover:bg-blue-600 transition shadow-lg flex justify-center items-center gap-2">
+                <button onclick="iniciarApp()" id="btn-login-desk" class="w-full bg-gray-900 text-white font-bold py-3 rounded-xl hover:bg-blue-600 transition shadow-lg flex justify-center items-center gap-2">
                     <i class="fa-solid fa-right-to-bracket"></i> Entrar
                 </button>
             </div>
@@ -168,18 +168,16 @@
                     <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
                         <i class="fa-solid fa-chart-pie text-blue-600"></i> Inteligência e Análise
                     </h2>
-                    <!-- Filtro de Período -->
                     <div class="flex items-center gap-2 bg-white p-2 rounded-2xl border border-gray-200 shadow-sm">
                         <span class="text-xs font-bold text-gray-400 px-2">PERÍODO:</span>
                         <select id="filtro-periodo" onchange="atualizarDashboard()" class="bg-transparent outline-none text-sm font-bold text-gray-800 cursor-pointer">
-                            <option value="mes_atual">Este Mês (Agosto)</option>
-                            <option value="mes_anterior">Mês Anterior (Julho)</option>
-                            <option value="ano">Ano Atual (2026)</option>
+                            <option value="mes_atual">Este Mês</option>
+                            <option value="mes_anterior">Mês Anterior</option>
+                            <option value="ano">Ano Atual</option>
                         </select>
                     </div>
                 </div>
 
-                <!-- O Coach Financeiro -->
                 <div class="bg-indigo-900 text-white p-6 md:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row gap-6 items-start mb-8 relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-40 h-40 bg-indigo-500 opacity-20 blur-3xl rounded-full"></div>
                     <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center text-3xl shrink-0 border border-white/20 shadow-inner z-10">
@@ -192,32 +190,29 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <!-- Alertas de Risco -->
                     <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
                         <h3 class="text-gray-800 font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-orange-500"></i> Alertas da Carteira</h3>
                         <div id="lista-alertas" class="space-y-3"></div>
                     </div>
 
-                    <!-- Gráfico de Gastos por Categoria -->
                     <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
                         <h3 class="text-gray-800 font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-chart-bar text-blue-500"></i> Para onde seu dinheiro vai</h3>
                         <div id="grafico-categorias" class="space-y-4"></div>
                     </div>
                 </div>
 
-                <!-- Métricas Analíticas Extras -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
                         <p class="text-xs text-gray-400 font-bold uppercase mb-1">Média Diária de Gastos</p>
-                        <p class="text-2xl font-black text-gray-800">R$ 53,37</p>
+                        <p class="text-2xl font-black text-gray-800" id="dash-media">R$ 0,00</p>
                     </div>
                     <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
                         <p class="text-xs text-gray-400 font-bold uppercase mb-1">Maior Gasto do Período</p>
-                        <p class="text-2xl font-black text-red-500">R$ 850,00 <span class="text-xs font-medium text-gray-400">(Cartão)</span></p>
+                        <p class="text-2xl font-black text-red-500" id="dash-maior">R$ 0,00</p>
                     </div>
                     <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
                         <p class="text-xs text-gray-400 font-bold uppercase mb-1">Taxa de Poupança</p>
-                        <p class="text-2xl font-black text-green-500">52,7%</p>
+                        <p class="text-2xl font-black text-green-500" id="dash-taxa">0%</p>
                     </div>
                 </div>
             </section>
@@ -236,7 +231,6 @@
                 </div>
 
                 <div class="flex flex-col md:flex-row gap-4 overflow-x-auto scroll-suave pb-4">
-                    <!-- Atrasadas -->
                     <div class="flex-1 min-w-[280px] bg-red-50 p-4 rounded-3xl border border-red-100">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-bold text-red-800 text-sm uppercase">Atrasadas</h3>
@@ -245,7 +239,6 @@
                         <div id="col-div-atrasada" class="space-y-3"></div>
                     </div>
 
-                    <!-- Mês Atual -->
                     <div class="flex-1 min-w-[280px] bg-blue-50 p-4 rounded-3xl border border-blue-100">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-bold text-blue-800 text-sm uppercase">Este Mês</h3>
@@ -254,7 +247,6 @@
                         <div id="col-div-atual" class="space-y-3"></div>
                     </div>
 
-                    <!-- Próximos Meses -->
                     <div class="flex-1 min-w-[280px] bg-gray-100 p-4 rounded-3xl border border-gray-200">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-bold text-gray-600 text-sm uppercase">Próximos Meses</h3>
@@ -295,7 +287,6 @@
                     </button>
                 </div>
 
-                <!-- Alerta de Segurança do Coach -->
                 <div id="alerta-seguranca-guardar" class="bg-green-50 border border-green-200 p-5 rounded-2xl mb-8 flex items-center gap-4">
                     <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xl shrink-0">
                         <i class="fa-solid fa-shield-halved"></i>
@@ -340,7 +331,6 @@
         <!-- MODAIS FLUTUANTES (Janelas de Ação) -->
         <!-- ========================================== -->
         
-        <!-- Modal 1: Confirmação de NLP (Início) -->
         <div id="modal-confirmacao" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center fade-in">
             <div class="bg-white w-full md:w-[450px] rounded-t-[2.5rem] md:rounded-3xl p-8 slide-up shadow-2xl relative overflow-hidden">
                 <div id="modal-bg-efeito" class="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10 blur-2xl"></div>
@@ -373,7 +363,6 @@
             </div>
         </div>
 
-        <!-- Modal 2: Nova Dívida com Parcelamento -->
         <div id="modal-divida" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center fade-in p-4">
             <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl relative">
                 <h3 class="text-xl font-black text-gray-900 mb-4"><i class="fa-solid fa-file-invoice-dollar text-blue-600"></i> Nova Conta / Dívida</h3>
@@ -394,28 +383,22 @@
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs font-bold text-gray-600 mb-1">Data de Vencimento</label>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">Data de Início</label>
                             <input type="date" id="div-data" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-medium">
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-600 mb-1">Categoria</label>
-                            <select id="div-categoria" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-medium">
-                                <option value="Alimentação">Alimentação</option>
-                                <option value="Transporte">Transporte</option>
-                                <option value="Moradia">Moradia</option>
-                                <option value="Lazer">Lazer</option>
-                            </select>
+                        <div class="flex items-end">
+                            <!-- Será ligado dinamicamente com as categorias reais no futuro, mas mantemos o input puro por agora -->
+                            <p class="text-xs text-gray-400 font-bold w-full text-center pb-2">Salvo automaticamente no seu Perfil</p>
                         </div>
                     </div>
                 </div>
                 <div class="flex space-x-3 mt-6">
                     <button onclick="fecharModalDivida()" class="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition">Cancelar</button>
-                    <button onclick="salvarNovaDivida()" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition">Gerar Parcelas</button>
+                    <button onclick="salvarNovaDivida()" id="btn-salvar-divida" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition">Gerar Parcelas</button>
                 </div>
             </div>
         </div>
 
-        <!-- Modal 3: Criar Nova Categoria Rápida -->
         <div id="modal-categoria" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center fade-in p-4">
             <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative">
                 <h3 class="text-xl font-black text-gray-900 mb-4"><i class="fa-solid fa-layer-group text-blue-600"></i> Nova Categoria</h3>
@@ -431,12 +414,11 @@
                 </div>
                 <div class="flex space-x-3 mt-6">
                     <button onclick="fecharModalCategoria()" class="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition">Cancelar</button>
-                    <button onclick="salvarNovaCategoria()" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition">Criar</button>
+                    <button onclick="salvarNovaCategoria()" id="btn-salvar-categoria" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition">Criar</button>
                 </div>
             </div>
         </div>
 
-        <!-- Modal 4: Aporte de Valor em Planos (Safe to Save) -->
         <div id="modal-aporte" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center fade-in p-4">
             <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative">
                 <h3 class="text-xl font-black text-gray-900 mb-4"><i class="fa-solid fa-bullseye text-blue-600"></i> Guardar para a Meta</h3>
@@ -448,7 +430,7 @@
                 </div>
                 <div class="flex space-x-3 mt-6">
                     <button onclick="fecharModalAporte()" class="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition">Cancelar</button>
-                    <button onclick="salvarAporte()" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition">Confirmar</button>
+                    <button onclick="salvarAporte()" id="btn-salvar-aporte" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition">Confirmar</button>
                 </div>
             </div>
         </div>
@@ -456,42 +438,20 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- JAVASCRIPT: CÉREBRO COMPLETO DE DADOS E LÓGICA -->
+    <!-- JAVASCRIPT: MOTOR REAL DE BANCO DE DADOS -->
     <!-- ========================================== -->
     <script>
-        const mockDB = {
-            resumo: { saldo: 1845.50, entradas: 3500.00, saidas: 1654.50 },
-            transacoes: [
-                { id: 1, descricao: "Ifood", categoria: "Alimentação", data: "Hoje", valor: 45.00, tipo: "despesa", icone: "fa-burger", corTxt: "text-red-500", corBg: "bg-red-100" },
-                { id: 2, descricao: "Salário da Empresa", categoria: "Salário", data: "05 Ago", valor: 3500.00, tipo: "receita", icone: "fa-building", corTxt: "text-green-500", corBg: "bg-green-100" },
-                { id: 3, descricao: "Posto Ipiranga", categoria: "Transporte", data: "02 Ago", valor: 150.00, tipo: "despesa", icone: "fa-gas-pump", corTxt: "text-orange-500", corBg: "bg-orange-100" },
-                { id: 4, descricao: "Conta de Luz", categoria: "Moradia", data: "01 Ago", valor: 180.00, tipo: "despesa", icone: "fa-bolt", corTxt: "text-blue-500", corBg: "bg-blue-100" },
-                { id: 5, descricao: "Uber", categoria: "Transporte", data: "30 Jul", valor: 28.50, tipo: "despesa", icone: "fa-car", corTxt: "text-orange-500", corBg: "bg-orange-100" },
-                { id: 6, descricao: "Cartão de Crédito", categoria: "Moradia", data: "20 Jul", valor: 850.00, tipo: "despesa", icone: "fa-credit-card", corTxt: "text-red-500", corBg: "bg-red-100" }
-            ],
-            dividas: {
-                atrasadas: [{ desc: "Internet Fibra", valor: 99.90, data: "10 Jul" }],
-                atual: [
-                    { desc: "Cartão de Crédito", valor: 850.00, data: "20 Ago" },
-                    { desc: "Financiamento Carro", valor: 650.00, data: "25 Ago" }
-                ],
-                futuras: [{ desc: "IPVA 2027 (Parcela 1)", valor: 350.00, data: "15 Jan" }]
-            },
-            categorias: [
-                { nome: "Alimentação", icone: "fa-burger", cor: "text-red-500" },
-                { nome: "Transporte", icone: "fa-car", cor: "text-orange-500" },
-                { nome: "Moradia", icone: "fa-house", cor: "text-blue-500" },
-                { nome: "Lazer", icone: "fa-gamepad", cor: "text-pink-500" }
-            ],
-            planos: [
-                { nome: "Reserva de Emergência", atual: 2500, meta: 10000, cor: "bg-blue-500" }
-            ]
-        };
+        // O MOCKDB FOI DESTRUÍDO! Bem-vindo à Engenharia de Dados de Elite.
+        let usuarioLogado = null;
+        let transacoesGlobais = [];
+        let categoriasGlobais = [];
+        let dividasGlobais = [];
+        let planosGlobais = [];
 
         const formatarMoeda = (v) => `R$ ${v.toFixed(2).replace('.', ',')}`;
 
         // ---------------------------------------------
-        // AUTENTICAÇÃO E DISPOSITIVO
+        // AUTENTICAÇÃO
         // ---------------------------------------------
         function verificarDispositivo() {
             const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
@@ -510,22 +470,79 @@
             document.getElementById('login-mobile').classList.add('escondido');
             document.getElementById('login-desktop').classList.remove('escondido');
         }
+        function fazerLoginBiometrico() { alert("Face ID acionado na versão mobile nativa."); }
 
-        function fazerLoginBiometrico() { iniciarApp(); }
+        async function iniciarApp() {
+            const email = document.getElementById('email-login').value;
+            const senha = document.getElementById('senha-login').value;
+            if(!email || !senha) return alert("Preencha e-mail e senha!");
 
-        function iniciarApp() {
-            document.getElementById('tela-login').style.display = 'none';
-            document.getElementById('app-principal').classList.remove('escondido');
-            atualizarTudo();
+            const btn = document.getElementById('btn-login-desk');
+            const txtOriginal = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Autenticando...';
+
+            try {
+                const res = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, senha })
+                });
+
+                if(res.ok) {
+                    usuarioLogado = await res.json();
+                    document.getElementById('tela-login').style.display = 'none';
+                    document.getElementById('app-principal').classList.remove('escondido');
+                    await atualizarTudo(); // Dispara o motor de fetch
+                } else {
+                    alert("Acesso negado. A API do Python está online?");
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Erro grave de conexão com o Backend Python.");
+            } finally {
+                btn.innerHTML = txtOriginal;
+            }
         }
 
         function sair() {
+            usuarioLogado = null;
             document.getElementById('app-principal').classList.add('escondido');
             document.getElementById('tela-login').style.display = 'flex';
             verificarDispositivo();
         }
 
-        function atualizarTudo() {
+        // ---------------------------------------------
+        // FETCH DO SUPABASE (O TRATOR DE DADOS)
+        // ---------------------------------------------
+        async function atualizarTudo() {
+            if (!usuarioLogado) return;
+
+            // Busca paralela para máxima performance
+            const [rTrans, rCat, rDiv, rPlan] = await Promise.all([
+                fetch(`/transacoes/${usuarioLogado.id}`),
+                fetch(`/categorias/${usuarioLogado.id}`),
+                fetch(`/dividas/${usuarioLogado.id}`),
+                fetch(`/planos/${usuarioLogado.id}`)
+            ]);
+
+            transacoesGlobais = await rTrans.json();
+            categoriasGlobais = await rCat.json();
+            dividasGlobais = await rDiv.json();
+            planosGlobais = await rPlan.json();
+
+            // Inteligência Autônoma: Cria banco inicial se for conta nova
+            if(categoriasGlobais.length === 0) {
+                await fetch(`/categorias/?usuario_id=${usuarioLogado.id}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({nome: 'Alimentação', icone: 'fa-burger', cor: 'text-red-500'}) });
+                await fetch(`/categorias/?usuario_id=${usuarioLogado.id}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({nome: 'Salário', icone: 'fa-building', cor: 'text-green-500'}) });
+                const nRes = await fetch(`/categorias/${usuarioLogado.id}`);
+                categoriasGlobais = await nRes.json();
+            }
+            if(planosGlobais.length === 0) {
+                await fetch(`/planos/?usuario_id=${usuarioLogado.id}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({nome: 'Reserva de Emergência', valor_meta: 10000, cor: 'bg-blue-500'}) });
+                const pRes = await fetch(`/planos/${usuarioLogado.id}`);
+                planosGlobais = await pRes.json();
+            }
+
             carregarInicio();
             atualizarDashboard();
             carregarDividas();
@@ -534,322 +551,303 @@
         }
 
         // ---------------------------------------------
-        // 1. ABA INÍCIO (Extrato e NLP Avançado)
+        // RENDER: ABA INÍCIO
         // ---------------------------------------------
         function carregarInicio() {
-            document.getElementById('saldo-tela').innerText = formatarMoeda(mockDB.resumo.saldo);
-            document.getElementById('total-entradas').innerText = formatarMoeda(mockDB.resumo.entradas);
-            document.getElementById('total-saidas').innerText = formatarMoeda(mockDB.resumo.saidas);
+            let saldo = 0, entradas = 0, saidas = 0;
+            
+            transacoesGlobais.forEach(t => {
+                if(t.tipo === 'receita') { entradas += t.valor; saldo += t.valor; }
+                else { saidas += t.valor; saldo -= t.valor; }
+            });
 
-            const gerarCardT = (t) => `
+            document.getElementById('saldo-tela').innerText = formatarMoeda(saldo);
+            document.getElementById('total-entradas').innerText = formatarMoeda(entradas);
+            document.getElementById('total-saidas').innerText = formatarMoeda(saidas);
+
+            const html = transacoesGlobais.slice().reverse().map(t => {
+                const cat = categoriasGlobais.find(c => c.id === t.categoria_id) || { nome: 'Geral', icone: 'fa-tag', cor: 'text-gray-500' };
+                const corBg = t.tipo === 'despesa' ? 'bg-red-100' : 'bg-green-100';
+                const corTxt = t.tipo === 'despesa' ? 'text-red-500' : 'text-green-500';
+                const dataBR = t.data_vencimento.split('-').reverse().join('/');
+
+                return `
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-                    <div class="flex items-center space-x-4"><div class="w-12 h-12 ${t.corBg} rounded-full flex items-center justify-center ${t.corTxt} text-xl"><i class="fa-solid ${t.icone}"></i></div>
-                    <div><p class="text-gray-900 font-bold">${t.descricao}</p><p class="text-gray-400 text-xs font-bold">${t.categoria} • ${t.data}</p></div></div>
-                    <p class="${t.tipo === 'despesa' ? 'text-red-500' : 'text-green-500'} font-black text-lg">${t.tipo === 'despesa' ? '-' : '+'} ${formatarMoeda(t.valor)}</p>
+                    <div class="flex items-center space-x-4"><div class="w-12 h-12 ${corBg} rounded-full flex items-center justify-center ${corTxt} text-xl"><i class="fa-solid ${cat.icone}"></i></div>
+                    <div><p class="text-gray-900 font-bold">${t.descricao}</p><p class="text-gray-400 text-xs font-bold">${cat.nome} • ${dataBR}</p></div></div>
+                    <p class="${corTxt} font-black text-lg">${t.tipo === 'despesa' ? '-' : '+'} ${formatarMoeda(t.valor)}</p>
                 </div>`;
-            document.getElementById('lista-extrato').innerHTML = mockDB.transacoes.map(gerarCardT).join('');
+            }).join('');
+            
+            document.getElementById('lista-extrato').innerHTML = html || '<p class="text-center text-gray-400 py-6">Nenhuma transação na nuvem.</p>';
         }
 
-        let transacaoTemporariaNLP = null;
+        let transacaoNLP = null;
 
         function simularEnvioVoz() {
-            const inputBruto = document.getElementById('input-magico').value;
-            if(!inputBruto) return;
+            const input = document.getElementById('input-magico').value.toLowerCase();
+            if(!input) return;
             
-            const texto = inputBruto.toLowerCase();
-            const numerosEncontrados = texto.match(/\d+(?:[.,]\d+)?/g);
-            let valorProcessado = 0;
+            const nums = input.match(/\d+(?:[.,]\d+)?/g);
+            const val = nums ? Math.max(...nums.map(n => parseFloat(n.replace(',', '.')))) : 0;
+            const isReceita = ['recebi', 'ganhei', 'pix', 'salário', 'rendimento'].some(p => input.includes(p));
+
+            const catSugerida = categoriasGlobais.length > 0 ? categoriasGlobais[0].id : 1;
+            const desc = document.getElementById('input-magico').value.split(' ')[0];
             
-            if (numerosEncontrados) {
-                valorProcessado = Math.max(...numerosEncontrados.map(n => parseFloat(n.replace(',', '.'))));
-            }
-
-            const palavrasReceita = ['recebi', 'ganhei', 'pix', 'salário', 'salario', 'rendimento'];
-            let isReceita = palavrasReceita.some(palavra => texto.includes(palavra));
-
-            transacaoTemporariaNLP = {
-                descricao: inputBruto,
-                valor: valorProcessado,
+            transacaoNLP = {
+                valor: val,
                 tipo: isReceita ? 'receita' : 'despesa',
-                categoria: isReceita ? 'Salário' : 'Outros',
-                data: texto.includes('ontem') ? 'Ontem' : 'Hoje',
-                icone: isReceita ? 'fa-building' : 'fa-tag',
-                corTxt: isReceita ? 'text-green-500' : 'text-red-500',
-                corBg: isReceita ? 'bg-green-100' : 'bg-red-100'
+                descricao: desc.charAt(0).toUpperCase() + desc.slice(1),
+                data_vencimento: new Date().toISOString().split('T')[0],
+                categoria_id: catSugerida
             };
 
-            const modalTitulo = document.getElementById('modal-titulo');
-            const confVal = document.getElementById('conf-val');
-            const badgeCat = document.getElementById('modal-badge-cat');
-            const btnSalvar = document.getElementById('btn-salvar-modal');
-            const bgEfeito = document.getElementById('modal-bg-efeito');
+            const t = document.getElementById('modal-titulo');
+            const v = document.getElementById('conf-val');
+            const b = document.getElementById('modal-badge-cat');
+            const btn = document.getElementById('btn-salvar-modal');
+            const bg = document.getElementById('modal-bg-efeito');
 
-            if (isReceita) {
-                modalTitulo.innerText = "Registrar Entrada?";
-                confVal.innerText = `+ ${formatarMoeda(valorProcessado)}`;
-                confVal.className = "text-3xl font-black text-green-500";
-                badgeCat.innerHTML = `<i class="fa-solid fa-money-bill-wave"></i> <span>Receita</span>`;
-                badgeCat.className = "flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-bold bg-green-100 text-green-600";
-                btnSalvar.className = "flex-1 py-4 text-white font-bold rounded-2xl shadow-lg transition flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700";
-                bgEfeito.className = "absolute top-0 right-0 w-32 h-32 rounded-full opacity-20 blur-2xl bg-green-500";
+            if(isReceita) {
+                t.innerText = "Registrar Entrada?"; v.innerText = `+ ${formatarMoeda(val)}`; v.className = "text-3xl font-black text-green-500";
+                b.innerHTML = `<i class="fa-solid fa-money-bill-wave"></i> <span>Receita</span>`; b.className = "flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-bold bg-green-100 text-green-600";
+                btn.className = "flex-1 py-4 text-white font-bold rounded-2xl shadow-lg transition flex justify-center gap-2 bg-green-600 hover:bg-green-700";
+                bg.className = "absolute top-0 right-0 w-32 h-32 rounded-full opacity-20 blur-2xl bg-green-500";
             } else {
-                modalTitulo.innerText = "Registrar Saída?";
-                confVal.innerText = `- ${formatarMoeda(valorProcessado)}`;
-                confVal.className = "text-3xl font-black text-red-500";
-                badgeCat.innerHTML = `<i class="fa-solid fa-tag"></i> <span>Despesa</span>`;
-                badgeCat.className = "flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-bold bg-red-100 text-red-600";
-                btnSalvar.className = "flex-1 py-4 text-white font-bold rounded-2xl shadow-lg transition flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700";
-                bgEfeito.className = "absolute top-0 right-0 w-32 h-32 rounded-full opacity-20 blur-2xl bg-red-500";
+                t.innerText = "Registrar Saída?"; v.innerText = `- ${formatarMoeda(val)}`; v.className = "text-3xl font-black text-red-500";
+                b.innerHTML = `<i class="fa-solid fa-tag"></i> <span>Despesa</span>`; b.className = "flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-bold bg-red-100 text-red-600";
+                btn.className = "flex-1 py-4 text-white font-bold rounded-2xl shadow-lg transition flex justify-center gap-2 bg-red-600 hover:bg-red-700";
+                bg.className = "absolute top-0 right-0 w-32 h-32 rounded-full opacity-20 blur-2xl bg-red-500";
             }
-            
-            document.getElementById('conf-data').innerText = transacaoTemporariaNLP.data;
+            document.getElementById('conf-data').innerText = transacaoNLP.data_vencimento.split('-').reverse().join('/');
             document.getElementById('modal-confirmacao').classList.remove('hidden');
         }
 
         function fecharModal() { document.getElementById('modal-confirmacao').classList.add('hidden'); }
-        
-        function confirmarSalvamentoNLP() { 
-            if(transacaoTemporariaNLP) {
-                mockDB.transacoes.unshift(transacaoTemporariaNLP);
-                if(transacaoTemporariaNLP.tipo === 'receita') {
-                    mockDB.resumo.saldo += transacaoTemporariaNLP.valor;
-                    mockDB.resumo.entradas += transacaoTemporariaNLP.valor;
-                } else {
-                    mockDB.resumo.saldo -= transacaoTemporariaNLP.valor;
-                    mockDB.resumo.saidas += transacaoTemporariaNLP.valor;
-                }
-                atualizarTudo();
-            }
-            fecharModal(); 
-            document.getElementById('input-magico').value = '';
+
+        async function confirmarSalvamentoNLP() {
+            if(!transacaoNLP || !usuarioLogado) return;
+            const btn = document.getElementById('btn-salvar-modal');
+            const txt = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+
+            try {
+                await fetch(`/transacoes/?usuario_id=${usuarioLogado.id}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(transacaoNLP) });
+                await atualizarTudo();
+                fecharModal();
+                document.getElementById('input-magico').value = '';
+            } catch(e) { alert("Erro de comunicação com o Python."); }
+            finally { btn.innerHTML = txt; }
         }
 
         // ---------------------------------------------
-        // 2. ABA DASHBOARD (Coach, Alertas e Gráficos por Período)
+        // RENDER: DASHBOARD
         // ---------------------------------------------
         function atualizarDashboard() {
-            const periodo = document.getElementById('filtro-periodo').value;
-            let msgCoach = "";
-            
-            if(periodo === 'mes_atual') {
-                msgCoach = "Você gastou R$ 380,00 com Delivery este mês (25% acima da média). <strong>Atenção:</strong> Você tem um boleto do Cartão de Crédito de R$ 850,00 agendado para o dia 20. Sugiro reduzir gastos com Lazer esta semana para fechar no azul.";
-            } else if(periodo === 'mes_anterior') {
-                msgCoach = "No mês anterior, sua performance foi excelente! Você poupou 42% do seu salário e quitou todas as dívidas antes do prazo.";
-            } else {
-                msgCoach = "Análise anual consolidada: Sua curva de crescimento está estável, com maior pico de despesas concentrado no setor de habitação e transporte.";
-            }
-
-            document.getElementById('texto-coach').innerHTML = msgCoach;
-
-            document.getElementById('lista-alertas').innerHTML = `
-                <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-200"><div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-500"><i class="fa-solid fa-credit-card"></i></div><p class="text-sm font-medium text-gray-700">Fatura do Cartão (R$ 850,00) vence em 9 dias.</p></div>
-                <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-200"><div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-500"><i class="fa-solid fa-lightbulb"></i></div><p class="text-sm font-medium text-gray-700">Categoria Moradia representa 40% dos seus gastos.</p></div>
-            `;
-
-            // Gráfico de Categorias dinâmico baseado nas transações
+            let totalDespesas = 0;
+            let maiorGasto = { valor: 0, descricao: "Nenhum" };
             const totaisCat = {};
-            mockDB.transacoes.forEach(t => {
+
+            transacoesGlobais.forEach(t => {
                 if(t.tipo === 'despesa') {
-                    totaisCat[t.categoria] = (totaisCat[t.categoria] || 0) + t.valor;
+                    totalDespesas += t.valor;
+                    if(t.valor > maiorGasto.valor) maiorGasto = t;
+                    const cNome = categoriasGlobais.find(c => c.id === t.categoria_id)?.nome || 'Geral';
+                    totaisCat[cNome] = (totaisCat[cNome] || 0) + t.valor;
                 }
             });
 
-            const htmlGrafico = Object.keys(totaisCat).map(cat => {
+            document.getElementById('dash-media').innerText = formatarMoeda(totalDespesas / 30);
+            document.getElementById('dash-maior').innerHTML = `${formatarMoeda(maiorGasto.valor)} <span class="text-xs font-medium text-gray-400">(${maiorGasto.descricao})</span>`;
+            
+            document.getElementById('texto-coach').innerHTML = `Sua API Python processou ${transacoesGlobais.length} transações com sucesso. O seu maior gasto atual é com <strong>${maiorGasto.descricao}</strong>.`;
+
+            document.getElementById('lista-alertas').innerHTML = `
+                <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-200"><div class="w-10 h-10 bg-red-100 rounded-full flex justify-center items-center text-red-500"><i class="fa-solid fa-cloud"></i></div><p class="text-sm font-medium text-gray-700">Conectado ao Supabase com sucesso!</p></div>
+            `;
+
+            document.getElementById('grafico-categorias').innerHTML = Object.keys(totaisCat).map(cat => {
                 const val = totaisCat[cat];
-                const limite = 1000;
+                const limite = 1500;
                 const perc = Math.min((val / limite) * 100, 100);
                 const estourou = val > limite;
                 return `
                     <div class="mb-3">
-                        <div class="flex justify-between items-end mb-1"><span class="text-sm font-bold text-gray-700">${cat}</span><span class="text-xs font-bold ${estourou ? 'text-red-500' : 'text-gray-500'}">${formatarMoeda(val)} / ${formatarMoeda(limite)}</span></div>
+                        <div class="flex justify-between items-end mb-1"><span class="text-sm font-bold text-gray-700">${cat}</span><span class="text-xs font-bold ${estourou ? 'text-red-500' : 'text-gray-500'}">${formatarMoeda(val)}</span></div>
                         <div class="w-full bg-gray-100 rounded-full h-2.5"><div class="${estourou ? 'bg-red-600' : 'bg-blue-600'} h-2.5 rounded-full" style="width: ${perc}%"></div></div>
                     </div>
                 `;
             }).join('');
-
-            document.getElementById('grafico-categorias').innerHTML = htmlGrafico;
         }
 
         // ---------------------------------------------
-        // 3. ABA DÍVIDAS (Parcelamento Inteligente)
+        // RENDER E SALVAMENTO: DÍVIDAS (O Motor Kanban)
         // ---------------------------------------------
         function carregarDividas() {
-            const gerarCardD = (d) => `
-                <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex justify-between items-center"><div class="truncate"><p class="font-bold text-gray-800 text-sm truncate">${d.desc}</p><p class="text-xs text-gray-500 font-bold"><i class="fa-regular fa-calendar"></i> ${d.data}</p></div><p class="font-black text-gray-900">${formatarMoeda(d.valor)}</p></div>
-            `;
-            const soma = (arr) => arr.reduce((acc, curr) => acc + curr.valor, 0);
+            const atrasadas = [], atual = [], futuras = [];
+            const hoje = new Date();
+            const mesAtual = hoje.getMonth();
+            const anoAtual = hoje.getFullYear();
+
+            dividasGlobais.forEach(d => {
+                // Ajuste de Fuso Horário seguro para comparar meses
+                const dData = new Date(d.data_vencimento + 'T12:00:00Z');
+                if (dData < hoje && dData.getMonth() !== mesAtual) atrasadas.push(d);
+                else if (dData.getMonth() === mesAtual && dData.getFullYear() === anoAtual) atual.push(d);
+                else futuras.push(d);
+            });
+
+            const gerarCard = (d) => `<div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex justify-between items-center"><div class="truncate"><p class="font-bold text-gray-800 text-sm truncate">${d.descricao}</p><p class="text-xs text-gray-500 font-bold"><i class="fa-regular fa-calendar"></i> ${d.data_vencimento.split('-').reverse().join('/')}</p></div><p class="font-black text-gray-900">${formatarMoeda(d.valor)}</p></div>`;
+            const somar = (arr) => arr.reduce((a, b) => a + b.valor, 0);
+
+            document.getElementById('total-div-atrasada').innerText = formatarMoeda(somar(atrasadas));
+            document.getElementById('col-div-atrasada').innerHTML = atrasadas.map(gerarCard).join('') || '<p class="text-xs text-gray-400">Limpo!</p>';
             
-            document.getElementById('total-div-atrasada').innerText = formatarMoeda(soma(mockDB.dividas.atrasadas));
-            document.getElementById('col-div-atrasada').innerHTML = mockDB.dividas.atrasadas.map(gerarCardD).join('');
+            document.getElementById('total-div-atual').innerText = formatarMoeda(somar(atual));
+            document.getElementById('col-div-atual').innerHTML = atual.map(gerarCard).join('') || '<p class="text-xs text-gray-400">Sem dívidas.</p>';
             
-            document.getElementById('total-div-atual').innerText = formatarMoeda(soma(mockDB.dividas.atual));
-            document.getElementById('col-div-atual').innerHTML = mockDB.dividas.atual.map(gerarCardD).join('');
-            
-            document.getElementById('total-div-futura').innerText = formatarMoeda(soma(mockDB.dividas.futuras));
-            document.getElementById('col-div-futura').innerHTML = mockDB.dividas.futuras.map(gerarCardD).join('');
+            document.getElementById('total-div-futura').innerText = formatarMoeda(somar(futuras));
+            document.getElementById('col-div-futura').innerHTML = futuras.map(gerarCard).join('') || '<p class="text-xs text-gray-400">Tranquilo.</p>';
         }
 
         function abrirModalDivida() { document.getElementById('modal-divida').classList.remove('hidden'); }
         function fecharModalDivida() { document.getElementById('modal-divida').classList.add('hidden'); }
 
-        function salvarNovaDivida() {
+        async function salvarNovaDivida() {
             const desc = document.getElementById('div-desc').value;
-            const valorTotal = parseFloat(document.getElementById('div-valor').value) || 0;
-            const parcelas = parseInt(document.getElementById('div-parcelas').value) || 1;
-            const dataVenc = document.getElementById('div-data').value || 'Próximo mês';
+            const valorTotal = parseFloat(document.getElementById('div-valor').value);
+            const parcelas = parseInt(document.getElementById('div-parcelas').value);
+            const dataBase = document.getElementById('div-data').value;
 
-            if(!desc || valorTotal <= 0) {
-                alert("Preencha os campos corretamente!");
-                return;
+            if(!desc || !valorTotal || !dataBase) return alert("Preencha tudo!");
+
+            const btn = document.getElementById('btn-salvar-divida');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            const promessas = [];
+            const valorP = valorTotal / parcelas;
+
+            for(let i=0; i<parcelas; i++) {
+                const dataParc = new Date(dataBase + 'T12:00:00Z');
+                dataParc.setMonth(dataParc.getMonth() + i);
+                
+                promessas.push(fetch(`/dividas/?usuario_id=${usuarioLogado.id}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ descricao: `${desc} (${i+1}/${parcelas})`, valor: valorP, data_vencimento: dataParc.toISOString().split('T')[0] })
+                }));
             }
 
-            const valorParcela = valorTotal / parcelas;
-            for(let i=1; i<=parcelas; i++) {
-                mockDB.dividas.atual.push({
-                    desc: `${desc} (${i}/${parcelas})`,
-                    valor: valorParcela,
-                    data: dataVenc
-                });
-            }
-
-            carregarDividas();
+            await Promise.all(promessas);
+            await atualizarTudo();
             fecharModalDivida();
-            document.getElementById('div-desc').value = '';
-            document.getElementById('div-valor').value = '';
+            btn.innerHTML = 'Gerar Parcelas';
         }
 
         // ---------------------------------------------
-        // 4. ABA CATEGORIAS (Ranking e Filtro Interativo)
+        // RENDER E SALVAMENTO: CATEGORIAS
         // ---------------------------------------------
         function carregarCategorias() {
-            // Calcula o total gasto por categoria para o ranking
             const gastosCat = {};
-            mockDB.transacoes.forEach(t => {
+            transacoesGlobais.forEach(t => {
                 if(t.tipo === 'despesa') {
-                    gastosCat[t.categoria] = (gastosCat[t.categoria] || 0) + t.valor;
+                    const nomeCat = categoriasGlobais.find(c => c.id === t.categoria_id)?.nome || 'Geral';
+                    gastosCat[nomeCat] = (gastosCat[nomeCat] || 0) + t.valor;
                 }
             });
 
-            // Ordena o ranking do maior para o menor gasto
-            const ranking = Object.keys(gastosCat).sort((a, b) => gastosCat[b] - gastosCat[a]);
+            const rank = Object.keys(gastosCat).sort((a, b) => gastosCat[b] - gastosCat[a]);
 
-            const html = mockDB.categorias.map((c, index) => {
-                const totalGasto = gastosCat[c.nome] || 0;
-                // Acha a posição no ranking (1°, 2°...)
-                const posicaoIndex = ranking.indexOf(c.nome);
-                const badgeRanking = posicaoIndex !== -1 ? `${posicaoIndex + 1}° em gastos no mês` : 'Sem gastos';
-
+            document.getElementById('grid-categorias').innerHTML = categoriasGlobais.map((c) => {
+                const tGasto = gastosCat[c.nome] || 0;
+                const pos = rank.indexOf(c.nome);
+                const badge = pos !== -1 ? `${pos + 1}° em gastos` : 'Sem gastos';
+                
                 return `
-                    <div onclick="filtrarPorCategoria('${c.nome}')" class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:border-blue-400 transition cursor-pointer flex flex-col justify-between">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center ${c.cor} text-2xl"><i class="fa-solid ${c.icone}"></i></div>
-                            <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-600">${badgeRanking}</span>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-gray-900 text-lg mb-1">${c.nome}</h4>
-                            <p class="text-gray-400 text-xs font-bold uppercase">Total Gasto</p>
-                            <p class="text-xl font-black text-gray-800">${formatarMoeda(totalGasto)}</p>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            document.getElementById('grid-categorias').innerHTML = html;
-        }
-
-        function filtrarCorCategoria(nomeCat) {
-            mudarAba('movimentacao');
-            // Filtra visualmente o histórico de transações na aba Início
-            const filtradas = mockDB.transacoes.filter(t => t.categoria === nomeCat);
-            const gerarCardT = (t) => `
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-                    <div class="flex items-center space-x-4"><div class="w-12 h-12 ${t.corBg} rounded-full flex items-center justify-center ${t.corTxt} text-xl"><i class="fa-solid ${t.icone}"></i></div>
-                    <div><p class="text-gray-900 font-bold">${t.descricao}</p><p class="text-gray-400 text-xs font-bold">${t.categoria} • ${t.data}</p></div></div>
-                    <p class="${t.tipo === 'despesa' ? 'text-red-500' : 'text-green-500'} font-black text-lg">${t.tipo === 'despesa' ? '-' : '+'} ${formatarMoeda(t.valor)}</p>
+                <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between mb-4"><div class="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center ${c.cor} text-2xl"><i class="fa-solid ${c.icone}"></i></div>
+                    <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-600">${badge}</span></div>
+                    <div><h4 class="font-bold text-gray-900 text-lg mb-1">${c.nome}</h4>
+                    <p class="text-gray-400 text-xs font-bold uppercase">Total Gasto</p><p class="text-xl font-black text-gray-800">${formatarMoeda(tGasto)}</p></div>
                 </div>`;
-            document.getElementById('lista-extrato').innerHTML = filtradas.length > 0 ? filtradas.map(gerarCardT).join('') : `<p class="text-center text-gray-400 py-6">Nenhuma transação encontrada para ${nomeCat}.</p>`;
+            }).join('');
         }
 
         function abrirModalCategoria() { document.getElementById('modal-categoria').classList.remove('hidden'); }
         function fecharModalCategoria() { document.getElementById('modal-categoria').classList.add('hidden'); }
 
-        function salvarNovaCategoria() {
+        async function salvarNovaCategoria() {
             const nome = document.getElementById('cat-nome').value;
             const icone = document.getElementById('cat-icone').value;
             if(!nome) return;
 
-            mockDB.categorias.push({ nome, icone, cor: 'text-blue-500' });
-            carregarCategorias();
+            const btn = document.getElementById('btn-salvar-categoria');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            await fetch(`/categorias/?usuario_id=${usuarioLogado.id}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ nome, icone, cor: 'text-blue-500' }) });
+            await atualizarTudo();
             fecharModalCategoria();
-            document.getElementById('cat-nome').value = '';
+            btn.innerHTML = 'Criar';
         }
 
         // ---------------------------------------------
-        // 5. ABA PLANOS (Safe to Save & Gamificação)
+        // RENDER E SALVAMENTO: PLANOS (Safe to Save)
         // ---------------------------------------------
         function carregarPlanos() {
-            // Lógica do Coach Safe to Save: Analisa se há dívidas vencendo no mês
-            const somaDividasMes = mockDB.dividas.atual.reduce((acc, curr) => acc + curr.valor, 0);
-            const saldoLivre = mockDB.resumo.saldo - somaDividasMes;
+            // Lógica Safe To Save
+            const mesAtual = new Date().getMonth();
+            let divMes = 0;
+            dividasGlobais.forEach(d => {
+                if(new Date(d.data_vencimento + 'T12:00:00Z').getMonth() === mesAtual) divMes += d.valor;
+            });
             
-            const textoSeguranca = document.getElementById('texto-seguranca-guardar');
-            const alertaBox = document.getElementById('alerta-seguranca-guardar');
+            let saldoAtual = 0;
+            transacoesGlobais.forEach(t => { saldoAtual += (t.tipo==='receita' ? t.valor : -t.valor); });
+            const seguro = saldoAtual - divMes;
 
-            if (saldoLivre > 300) {
-                alertaBox.className = "bg-green-50 border border-green-200 p-5 rounded-2xl mb-8 flex items-center gap-4";
-                textoSeguranca.innerHTML = `Parabéns! Suas dívidas estão sob controle. Você possui uma margem segura de até <strong>${formatarMoeda(saldoLivre)}</strong> para guardar este mês sem comprometer suas contas.`;
+            const b = document.getElementById('alerta-seguranca-guardar');
+            const txt = document.getElementById('texto-seguranca-guardar');
+            
+            if(seguro > 0) {
+                b.className = "bg-green-50 border border-green-200 p-5 rounded-2xl mb-8 flex items-center gap-4";
+                txt.innerHTML = `Margem Segura: Você pode aportar até <strong>${formatarMoeda(seguro)}</strong> sem risco.`;
             } else {
-                alertaBox.className = "bg-red-50 border border-red-200 p-5 rounded-2xl mb-8 flex items-center gap-4";
-                textoSeguranca.innerHTML = `<strong>Atenção:</strong> Suas dívidas do mês consomem grande parte do saldo. O ideal é não guardar valores altos agora para evitar risco de inadimplência.`;
+                b.className = "bg-red-50 border border-red-200 p-5 rounded-2xl mb-8 flex items-center gap-4";
+                txt.innerHTML = `<strong>Aviso da API:</strong> Suas dívidas travam seu saldo em ${formatarMoeda(divMes)}. Cuidado ao guardar.`;
             }
 
-            const htmlPlanos = mockDB.planos.map(p => {
-                const porcentagem = Math.min((p.atual / p.meta) * 100, 100);
+            document.getElementById('grid-planos').innerHTML = planosGlobais.map(p => {
+                const perc = Math.min((p.valor_atual / p.valor_meta) * 100, 100);
                 return `
                 <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
-                    <div class="flex justify-between items-end mb-3">
-                        <div>
-                            <h3 class="font-black text-gray-900 text-lg">${p.nome}</h3>
-                            <p class="text-xs text-gray-400 font-bold">Progresso da Meta</p>
-                        </div>
-                        <span class="text-sm font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-xl">${porcentagem.toFixed(1)}% Concluído</span>
-                    </div>
-                    <div class="w-full bg-gray-100 rounded-full h-4 mb-4 overflow-hidden">
-                        <div class="${p.cor} h-4 rounded-full transition-all duration-1000" style="width: ${porcentagem}%"></div>
-                    </div>
-                    <div class="flex justify-between items-center text-sm font-bold text-gray-600">
-                        <span>Atual: ${formatarMoeda(p.atual)}</span>
-                        <span>Meta: ${formatarMoeda(p.meta)}</span>
-                    </div>
-                </div>
-                `;
+                    <div class="flex justify-between items-end mb-3"><div><h3 class="font-black text-gray-900 text-lg">${p.nome}</h3>
+                    <p class="text-xs text-gray-400 font-bold">Progresso da Meta</p></div>
+                    <span class="text-sm font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-xl">${perc.toFixed(1)}%</span></div>
+                    <div class="w-full bg-gray-100 rounded-full h-4 mb-4 overflow-hidden"><div class="${p.cor} h-4 rounded-full transition-all duration-1000" style="width: ${perc}%"></div></div>
+                    <div class="flex justify-between items-center text-sm font-bold text-gray-600"><span>Atual: ${formatarMoeda(p.valor_atual)}</span><span>Meta: ${formatarMoeda(p.valor_meta)}</span></div>
+                </div>`;
             }).join('');
-
-            document.getElementById('grid-planos').innerHTML = htmlPlanos;
         }
 
         function abrirModalAporte() { document.getElementById('modal-aporte').classList.remove('hidden'); }
         function fecharModalAporte() { document.getElementById('modal-aporte').classList.add('hidden'); }
 
-        function salvarAporte() {
-            const valor = parseFloat(document.getElementById('aporte-valor').value) || 0;
-            if(valor <= 0) return;
+        async function salvarAporte() {
+            const val = parseFloat(document.getElementById('aporte-valor').value);
+            if(!val || planosGlobais.length === 0) return;
 
-            mockDB.planos[0].atual += valor;
-            carregarPlanos();
+            const btn = document.getElementById('btn-salvar-aporte');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            await fetch(`/planos/${planosGlobais[0].id}/aporte`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ valor: val }) });
+            await atualizarTudo();
             fecharModalAporte();
             document.getElementById('aporte-valor').value = '';
-            alert(`Sucesso! Você guardou ${formatarMoeda(valor)} para sua meta.`);
+            btn.innerHTML = 'Confirmar';
         }
 
-        // ---------------------------------------------
-        // NAVEGAÇÃO SPA
-        // ---------------------------------------------
         function mudarAba(nome) {
             document.querySelectorAll('.aba-conteudo').forEach(a => a.classList.add('escondido'));
             document.querySelectorAll('.menu-desk').forEach(b => { b.classList.remove('bg-blue-50', 'text-blue-600'); b.classList.add('text-gray-500'); });
             document.querySelectorAll('.menu-mob').forEach(b => { b.classList.remove('text-blue-600'); b.classList.add('text-gray-400'); });
-            
             document.getElementById(`aba-${nome}`).classList.remove('escondido');
             if(document.getElementById(`nav-desk-${nome}`)) document.getElementById(`nav-desk-${nome}`).classList.add('bg-blue-50', 'text-blue-600');
             if(document.getElementById(`nav-mob-${nome}`)) document.getElementById(`nav-mob-${nome}`).classList.add('text-blue-600');
