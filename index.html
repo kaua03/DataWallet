@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DataWallet - Inteligência Financeira</title>
-    <!-- Tailwind e FontAwesome -->
+    <title>DataWallet - SaaS Inteligência Financeira</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- O SUPERPODER: SDK Oficial do Supabase -->
+    <!-- SDK OFICIAL SUPABASE -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
@@ -27,10 +26,9 @@
 <body class="bg-gray-100 text-gray-800 font-sans h-screen overflow-hidden flex relative">
 
     <!-- ========================================== -->
-    <!-- PORTARIAS DE LOGIN E CADASTRO -->
+    <!-- PORTARIAS DE LOGIN / CADASTRO DA APLICAÇÃO -->
     <!-- ========================================== -->
     <div id="tela-login" class="fixed inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-900 to-gray-900 z-50 fade-in">
-        
         <div id="login-desktop" class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm mx-4 relative overflow-hidden transition-all duration-300">
             <div class="text-center mb-6">
                 <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-inner">
@@ -40,7 +38,7 @@
                 <p class="text-sm text-gray-500" id="texto-boas-vindas">Seu centro de inteligência financeira</p>
             </div>
             
-            <!-- FORMULÁRIO DE LOGIN -->
+            <!-- FORM DE LOGIN -->
             <div id="form-login" class="space-y-4 fade-in">
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">E-mail</label>
@@ -50,57 +48,30 @@
                     <label class="block text-sm font-bold text-gray-700 mb-1">Senha</label>
                     <input type="password" id="senha-login" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 transition" placeholder="••••••••">
                 </div>
-                <button onclick="iniciarApp()" id="btn-login-desk" class="w-full bg-gray-900 text-white font-bold py-3 rounded-xl hover:bg-blue-600 transition shadow-lg flex justify-center items-center gap-2">
+                <button onclick="efetuarLogin()" id="btn-login-desk" class="w-full bg-gray-900 text-white font-bold py-3 rounded-xl hover:bg-blue-600 transition shadow-lg flex justify-center items-center gap-2 cursor-pointer z-50 relative">
                     <i class="fa-solid fa-right-to-bracket"></i> Entrar
                 </button>
-                <div class="text-center mt-4">
-                    <button onclick="alternarTelaAuth('cadastro')" class="text-sm font-bold text-blue-600 hover:underline">Não tem conta? Cadastre-se</button>
+                <div class="text-center mt-4 relative z-50">
+                    <button onclick="alternarTelaAuth('cadastro')" class="text-sm font-bold text-blue-600 hover:underline cursor-pointer">Não tem conta? Cadastre-se</button>
                 </div>
             </div>
 
-            <!-- FORMULÁRIO DE CADASTRO -->
+            <!-- FORM DE CADASTRO -->
             <div id="form-cadastro" class="space-y-4 escondido fade-in">
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Seu Nome</label>
-                    <input type="text" id="nome-cad" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 transition" placeholder="Como quer ser chamado?">
-                </div>
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">E-mail</label>
                     <input type="email" id="email-cad" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 transition" placeholder="seu@email.com">
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Crie uma Senha</label>
-                    <input type="password" id="senha-cad" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 transition" placeholder="••••••••">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Crie uma Senha Segura</label>
+                    <input type="password" id="senha-cad" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 transition" placeholder="Mínimo 6 caracteres">
                 </div>
-                <button onclick="cadastrarUsuario()" id="btn-cadastrar" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition shadow-lg flex justify-center items-center gap-2">
+                <button onclick="efetuarCadastro()" id="btn-cadastrar" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition shadow-lg flex justify-center items-center gap-2 cursor-pointer z-50 relative">
                     <i class="fa-solid fa-user-plus"></i> Criar Conta
                 </button>
-                <div class="text-center mt-4">
-                    <button onclick="alternarTelaAuth('login')" class="text-sm font-bold text-gray-500 hover:underline">Já tem conta? Entre aqui</button>
+                <div class="text-center mt-4 relative z-50">
+                    <button onclick="alternarTelaAuth('login')" class="text-sm font-bold text-gray-500 hover:underline cursor-pointer">Já tem conta? Entre aqui</button>
                 </div>
-            </div>
-        </div>
-
-        <div id="login-mobile" class="escondido flex flex-col items-center justify-center text-white w-full h-full relative">
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div class="w-64 h-64 bg-white opacity-5 rounded-full blur-3xl pulse-slow"></div>
-            </div>
-            
-            <div class="z-10 flex flex-col items-center text-center">
-                <div class="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center text-4xl mb-6 backdrop-blur-md border border-white/20 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-                    <i class="fa-solid fa-lock text-blue-200"></i>
-                </div>
-                <h1 class="text-4xl font-black tracking-tight mb-2">DataWallet</h1>
-                <p class="text-blue-200 font-medium text-sm mb-16">Desbloqueie seu aplicativo</p>
-                
-                <button onclick="fazerLoginBiometrico()" class="bg-white/20 px-8 py-4 rounded-full font-bold backdrop-blur-md flex items-center gap-3 border border-white/30 shadow-lg hover:bg-white/30 transition pulse-slow cursor-pointer">
-                    <i class="fa-solid fa-fingerprint text-2xl text-blue-100"></i> 
-                    <span>Toque para desbloquear</span>
-                </button>
-
-                <button onclick="forcarLoginPadrao()" class="mt-12 text-blue-200 text-sm font-bold hover:text-white transition flex items-center gap-2">
-                    <i class="fa-solid fa-keyboard"></i> Usar login padrão
-                </button>
             </div>
         </div>
     </div>
@@ -110,7 +81,6 @@
     <!-- ========================================== -->
     <div id="app-principal" class="escondido w-full h-full flex flex-col md:flex-row">
         
-        <!-- MENU LATERAL (PC) -->
         <aside class="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 p-6 h-full shadow-lg z-20">
             <div class="flex items-center gap-3 mb-10">
                 <i class="fa-solid fa-wallet text-blue-600 text-3xl"></i>
@@ -142,7 +112,6 @@
         <!-- ÁREA CENTRAL DE CONTEÚDO -->
         <main class="flex-1 h-full overflow-y-auto bg-gray-50 relative pb-24 md:pb-0">
             
-            <!-- ABA 1: INÍCIO / MOVIMENTAÇÕES (NLP Ativo) -->
             <section id="aba-movimentacao" class="aba-conteudo p-4 md:p-8 max-w-5xl mx-auto fade-in">
                 <div class="bg-gradient-to-br from-blue-900 to-gray-900 text-white p-6 md:p-10 rounded-[2rem] shadow-xl mb-6 flex flex-col md:flex-row md:items-center justify-between relative overflow-hidden">
                     <div class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white opacity-5 blur-2xl"></div>
@@ -180,28 +149,16 @@
 
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-gray-800 font-black text-lg">Histórico de Transações</h3>
-                    <div class="flex gap-2">
-                        <span class="bg-gray-900 text-white px-3 py-1 rounded-lg text-xs font-bold cursor-pointer">Todas</span>
-                        <span class="bg-white border border-gray-200 text-gray-600 px-3 py-1 rounded-lg text-xs font-bold cursor-pointer">Filtrar</span>
-                    </div>
                 </div>
                 <div id="lista-extrato" class="space-y-3"></div>
             </section>
 
-            <!-- ABA 2: DASHBOARD (COACH & ANALYTICS) -->
+            <!-- DASHBOARD -->
             <section id="aba-dashboard" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                     <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
                         <i class="fa-solid fa-chart-pie text-blue-600"></i> Inteligência e Análise
                     </h2>
-                    <div class="flex items-center gap-2 bg-white p-2 rounded-2xl border border-gray-200 shadow-sm">
-                        <span class="text-xs font-bold text-gray-400 px-2">PERÍODO:</span>
-                        <select id="filtro-periodo" onchange="atualizarDashboard()" class="bg-transparent outline-none text-sm font-bold text-gray-800 cursor-pointer">
-                            <option value="mes_atual">Este Mês</option>
-                            <option value="mes_anterior">Mês Anterior</option>
-                            <option value="ano">Ano Atual</option>
-                        </select>
-                    </div>
                 </div>
 
                 <div class="bg-indigo-900 text-white p-6 md:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row gap-6 items-start mb-8 relative overflow-hidden">
@@ -220,103 +177,63 @@
                         <h3 class="text-gray-800 font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-orange-500"></i> Alertas da Carteira</h3>
                         <div id="lista-alertas" class="space-y-3"></div>
                     </div>
-
                     <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
                         <h3 class="text-gray-800 font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-chart-bar text-blue-500"></i> Para onde seu dinheiro vai</h3>
                         <div id="grafico-categorias" class="space-y-4"></div>
                     </div>
                 </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
-                        <p class="text-xs text-gray-400 font-bold uppercase mb-1">Média Diária de Gastos</p>
-                        <p class="text-2xl font-black text-gray-800" id="dash-media">R$ 0,00</p>
-                    </div>
-                    <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
-                        <p class="text-xs text-gray-400 font-bold uppercase mb-1">Maior Gasto do Período</p>
-                        <p class="text-2xl font-black text-red-500" id="dash-maior">R$ 0,00</p>
-                    </div>
-                    <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
-                        <p class="text-xs text-gray-400 font-bold uppercase mb-1">Taxa de Poupança</p>
-                        <p class="text-2xl font-black text-green-500" id="dash-taxa">0%</p>
-                    </div>
-                </div>
             </section>
 
-            <!-- ABA 3: DÍVIDAS (COM PARCELAMENTO) -->
+            <!-- DÍVIDAS -->
             <section id="aba-dividas" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
                         <i class="fa-solid fa-file-invoice-dollar text-blue-600"></i> Controle de Dívidas
                     </h2>
                     <button onclick="abrirModalDivida()" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-sm shadow-md hover:bg-blue-700 transition flex items-center gap-2">
-                        <i class="fa-solid fa-plus"></i> Nova Conta / Dívida
+                        <i class="fa-solid fa-plus"></i> Nova Dívida
                     </button>
                 </div>
 
                 <div class="flex flex-col md:flex-row gap-4 overflow-x-auto scroll-suave pb-4">
                     <div class="flex-1 min-w-[280px] bg-red-50 p-4 rounded-3xl border border-red-100">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-red-800 text-sm uppercase">Atrasadas</h3>
-                            <span class="bg-red-200 text-red-800 text-xs font-bold px-2 py-1 rounded-lg" id="total-div-atrasada">R$ 0,00</span>
-                        </div>
+                        <h3 class="font-bold text-red-800 text-sm uppercase mb-4">Atrasadas</h3>
                         <div id="col-div-atrasada" class="space-y-3"></div>
                     </div>
-
                     <div class="flex-1 min-w-[280px] bg-blue-50 p-4 rounded-3xl border border-blue-100">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-blue-800 text-sm uppercase">Este Mês</h3>
-                            <span class="bg-blue-200 text-blue-800 text-xs font-bold px-2 py-1 rounded-lg" id="total-div-atual">R$ 0,00</span>
-                        </div>
+                        <h3 class="font-bold text-blue-800 text-sm uppercase mb-4">Este Mês</h3>
                         <div id="col-div-atual" class="space-y-3"></div>
                     </div>
-
                     <div class="flex-1 min-w-[280px] bg-gray-100 p-4 rounded-3xl border border-gray-200">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-gray-600 text-sm uppercase">Próximos Meses</h3>
-                            <span class="bg-gray-200 text-gray-600 text-xs font-bold px-2 py-1 rounded-lg" id="total-div-futura">R$ 0,00</span>
-                        </div>
+                        <h3 class="font-bold text-gray-600 text-sm uppercase mb-4">Próximos Meses</h3>
                         <div id="col-div-futura" class="space-y-3"></div>
                     </div>
                 </div>
             </section>
 
-            <!-- ABA 4: CATEGORIAS (RANKING E FILTRO) -->
+            <!-- CATEGORIAS -->
             <section id="aba-categorias" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
-                        <i class="fa-solid fa-layer-group text-blue-600"></i> Pastas de Organização
+                        <i class="fa-solid fa-layer-group text-blue-600"></i> Pastas
                     </h2>
                     <button onclick="abrirModalCategoria()" class="text-blue-600 font-bold bg-blue-50 px-4 py-2 rounded-xl text-sm hover:bg-blue-100 transition">
                         + Nova Categoria
                     </button>
                 </div>
-                
-                <p class="text-sm text-gray-500 mb-6">Clique em uma categoria para ver o resumo e os gastos detalhados.</p>
                 <div id="grid-categorias" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
             </section>
             
-            <!-- ABA 5: PLANOS (METAS E COFFEE SAFE) -->
+            <!-- PLANOS -->
             <section id="aba-planos" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
-                        <i class="fa-solid fa-bullseye text-blue-600"></i> Metas e Planos (Safe to Save)
+                        <i class="fa-solid fa-bullseye text-blue-600"></i> Metas
                     </h2>
                     <button onclick="abrirModalAporte()" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-sm shadow-md hover:bg-blue-700 transition">
-                        + Guardar Valor
+                        + Guardar
                     </button>
                 </div>
-
-                <div id="alerta-seguranca-guardar" class="bg-green-50 border border-green-200 p-5 rounded-2xl mb-8 flex items-center gap-4">
-                    <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xl shrink-0">
-                        <i class="fa-solid fa-shield-halved"></i>
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-green-900">Análise de Segurança Concluída</h4>
-                        <p class="text-sm text-green-700 font-medium" id="texto-seguranca-guardar">Calculando margem segura livre de dívidas...</p>
-                    </div>
-                </div>
-
                 <div id="grid-planos" class="space-y-4"></div>
             </section>
 
@@ -325,25 +242,21 @@
         <!-- MENU INFERIOR (Celular) -->
         <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t border-gray-200 px-4 py-3 flex justify-between items-center z-20">
             <button onclick="mudarAba('movimentacao')" id="nav-mob-movimentacao" class="menu-mob flex flex-col items-center text-blue-600 transition">
-                <i class="fa-solid fa-house text-xl mb-1"></i>
-                <span class="text-[10px] font-bold">Início</span>
+                <i class="fa-solid fa-house text-xl mb-1"></i><span class="text-[10px] font-bold">Início</span>
             </button>
             <button onclick="mudarAba('dashboard')" id="nav-mob-dashboard" class="menu-mob flex flex-col items-center text-gray-400 hover:text-gray-600 transition">
-                <i class="fa-solid fa-chart-pie text-xl mb-1"></i>
-                <span class="text-[10px] font-bold">Análise</span>
+                <i class="fa-solid fa-chart-pie text-xl mb-1"></i><span class="text-[10px] font-bold">Análise</span>
             </button>
             <div class="relative -top-6">
-                <button onclick="mudarAba('movimentacao')" class="w-14 h-14 bg-blue-600 text-white rounded-full flex justify-center items-center text-xl shadow-[0_10px_20px_rgba(37,99,235,0.3)] border-4 border-gray-50 hover:scale-105 transition transform">
+                <button onclick="mudarAba('movimentacao')" class="w-14 h-14 bg-blue-600 text-white rounded-full flex justify-center items-center text-xl shadow-[0_10px_20px_rgba(37,99,235,0.3)] border-4 border-gray-50">
                     <i class="fa-solid fa-plus"></i>
                 </button>
             </div>
             <button onclick="mudarAba('dividas')" id="nav-mob-dividas" class="menu-mob flex flex-col items-center text-gray-400 hover:text-gray-600 transition">
-                <i class="fa-solid fa-file-invoice-dollar text-xl mb-1"></i>
-                <span class="text-[10px] font-bold">Dívidas</span>
+                <i class="fa-solid fa-file-invoice-dollar text-xl mb-1"></i><span class="text-[10px] font-bold">Dívidas</span>
             </button>
             <button onclick="mudarAba('categorias')" id="nav-mob-categorias" class="menu-mob flex flex-col items-center text-gray-400 hover:text-gray-600 transition">
-                <i class="fa-solid fa-layer-group text-xl mb-1"></i>
-                <span class="text-[10px] font-bold">Pastas</span>
+                <i class="fa-solid fa-layer-group text-xl mb-1"></i><span class="text-[10px] font-bold">Pastas</span>
             </button>
         </nav>
 
@@ -354,12 +267,8 @@
         <div id="modal-confirmacao" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center fade-in">
             <div class="bg-white w-full md:w-[450px] rounded-t-[2.5rem] md:rounded-3xl p-8 slide-up shadow-2xl relative overflow-hidden">
                 <div id="modal-bg-efeito" class="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10 blur-2xl"></div>
-                <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6 md:hidden"></div>
-                
                 <h3 class="text-2xl font-black text-gray-900 mb-2 text-center" id="modal-titulo">Registrar Operação?</h3>
-                <p class="text-center text-sm text-gray-500 mb-6 font-medium">Análise inteligente da sua frase</p>
-                
-                <div class="bg-gray-50 p-5 rounded-2xl space-y-4 border border-gray-100 mb-8">
+                <div class="bg-gray-50 p-5 rounded-2xl space-y-4 border border-gray-100 mb-8 mt-4">
                     <div class="flex justify-between items-center pb-3 border-b border-gray-200">
                         <span class="text-gray-500 font-bold text-sm">Classificação</span>
                         <div id="modal-badge-cat" class="flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-bold"></div>
@@ -373,10 +282,9 @@
                         <strong id="conf-val" class="text-3xl font-black">R$ 0,00</strong>
                     </div>
                 </div>
-                
                 <div class="flex space-x-4">
-                    <button onclick="fecharModal()" class="flex-1 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition">Corrigir</button>
-                    <button onclick="confirmarSalvamentoNLP()" id="btn-salvar-modal" class="flex-1 py-4 text-white font-bold rounded-2xl shadow-lg transition flex items-center justify-center gap-2">
+                    <button onclick="fecharModal()" class="flex-1 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl transition">Corrigir</button>
+                    <button onclick="confirmarSalvamentoNLP()" id="btn-salvar-modal" class="flex-1 py-4 text-white font-bold rounded-2xl shadow-lg flex justify-center gap-2">
                         <i class="fa-solid fa-check"></i> Confirmar
                     </button>
                 </div>
@@ -385,86 +293,55 @@
 
         <div id="modal-divida" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center fade-in p-4">
             <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl relative">
-                <h3 class="text-xl font-black text-gray-900 mb-4"><i class="fa-solid fa-file-invoice-dollar text-blue-600"></i> Nova Conta / Dívida</h3>
+                <h3 class="text-xl font-black text-gray-900 mb-4">Nova Dívida</h3>
                 <div class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 mb-1">Descrição da Conta</label>
-                        <input type="text" id="div-desc" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-medium" placeholder="Ex: Notebook Novo">
-                    </div>
+                    <input type="text" id="div-desc" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3" placeholder="Ex: Notebook Novo">
                     <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-600 mb-1">Valor Total (R$)</label>
-                            <input type="number" id="div-valor" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-medium" placeholder="1200.00">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-600 mb-1">Qtd Parcelas</label>
-                            <input type="number" id="div-parcelas" value="1" min="1" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-medium">
-                        </div>
+                        <input type="number" id="div-valor" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3" placeholder="Valor (1200.00)">
+                        <input type="number" id="div-parcelas" value="1" min="1" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3">
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-600 mb-1">Data de Início</label>
-                            <input type="date" id="div-data" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-medium">
-                        </div>
-                        <div class="flex items-end">
-                            <p class="text-xs text-gray-400 font-bold w-full text-center pb-2">Salvo automaticamente no seu Perfil</p>
-                        </div>
-                    </div>
+                    <input type="date" id="div-data" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3">
                 </div>
                 <div class="flex space-x-3 mt-6">
-                    <button onclick="fecharModalDivida()" class="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition">Cancelar</button>
-                    <button onclick="salvarNovaDivida()" id="btn-salvar-divida" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition">Gerar Parcelas</button>
+                    <button onclick="fecharModalDivida()" class="flex-1 py-3 bg-gray-100 font-bold rounded-xl">Cancelar</button>
+                    <button onclick="salvarNovaDivida()" id="btn-salvar-divida" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl">Gerar Parcelas</button>
                 </div>
             </div>
         </div>
 
         <div id="modal-categoria" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center fade-in p-4">
-            <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative">
-                <h3 class="text-xl font-black text-gray-900 mb-4"><i class="fa-solid fa-layer-group text-blue-600"></i> Nova Categoria</h3>
+            <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
+                <h3 class="text-xl font-black text-gray-900 mb-4">Nova Categoria</h3>
                 <div class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 mb-1">Nome da Categoria</label>
-                        <input type="text" id="cat-nome" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-medium" placeholder="Ex: Educação">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 mb-1">Ícone FontAwesome</label>
-                        <input type="text" id="cat-icone" value="fa-book" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-medium" placeholder="fa-book">
-                    </div>
+                    <input type="text" id="cat-nome" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3" placeholder="Ex: Educação">
+                    <input type="text" id="cat-icone" value="fa-book" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3" placeholder="fa-book">
                 </div>
                 <div class="flex space-x-3 mt-6">
-                    <button onclick="fecharModalCategoria()" class="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition">Cancelar</button>
-                    <button onclick="salvarNovaCategoria()" id="btn-salvar-categoria" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition">Criar</button>
+                    <button onclick="fecharModalCategoria()" class="flex-1 py-3 bg-gray-100 font-bold rounded-xl">Cancelar</button>
+                    <button onclick="salvarNovaCategoria()" id="btn-salvar-categoria" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl">Criar</button>
                 </div>
             </div>
         </div>
 
         <div id="modal-aporte" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center fade-in p-4">
-            <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative">
-                <h3 class="text-xl font-black text-gray-900 mb-4"><i class="fa-solid fa-bullseye text-blue-600"></i> Guardar para a Meta</h3>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 mb-1">Valor a Guardar (R$)</label>
-                        <input type="number" id="aporte-valor" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-medium" placeholder="300.00">
-                    </div>
-                </div>
+            <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
+                <h3 class="text-xl font-black text-gray-900 mb-4">Guardar Valor</h3>
+                <input type="number" id="aporte-valor" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3" placeholder="300.00">
                 <div class="flex space-x-3 mt-6">
-                    <button onclick="fecharModalAporte()" class="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition">Cancelar</button>
-                    <button onclick="salvarAporte()" id="btn-salvar-aporte" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition">Confirmar</button>
+                    <button onclick="fecharModalAporte()" class="flex-1 py-3 bg-gray-100 font-bold rounded-xl">Cancelar</button>
+                    <button onclick="salvarAporte()" id="btn-salvar-aporte" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl">Confirmar</button>
                 </div>
             </div>
         </div>
-
     </div>
 
     <!-- ========================================== -->
-    <!-- JAVASCRIPT: MOTOR REAL SUPABASE (BAAS) -->
+    <!-- JAVASCRIPT: O MOTOR DE AUTENTICAÇÃO E DADOS -->
     <!-- ========================================== -->
     <script>
-        // ==========================================
-        // 1. CONEXÃO DIRETA COM O SUPABASE
-        // ==========================================
-        const supabaseUrl = 'COLOQUE_SUA_URL_DO_SUPABASE_AQUI'; // Ex: https://xyz.supabase.co
-        const supabaseKey = 'COLOQUE_SUA_CHAVE_ANON_AQUI'; // A chave pública anon
+        // ATENÇÃO: COLOQUE SEUS DADOS REAIS ABAIXO!
+        const supabaseUrl = 'COLOQUE_SUA_URL_DO_SUPABASE_AQUI'; 
+        const supabaseKey = 'COLOQUE_SUA_CHAVE_ANON_AQUI'; 
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         let usuarioLogado = null;
@@ -475,130 +352,94 @@
 
         const formatarMoeda = (v) => `R$ ${v.toFixed(2).replace('.', ',')}`;
 
-        // ---------------------------------------------
-        // CONTROLE VISUAL DE LOGIN / CADASTRO
-        // ---------------------------------------------
-        function verificarDispositivo() {
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
-            if (isMobile) {
-                document.getElementById('login-mobile').classList.remove('escondido');
-                document.getElementById('login-desktop').classList.add('escondido');
-            } else {
-                document.getElementById('login-desktop').classList.remove('escondido');
-                document.getElementById('login-mobile').classList.add('escondido');
+        // Checa se o usuário já tem uma sessão salva no navegador (Não precisa relogar)
+        window.onload = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                usuarioLogado = session.user;
+                iniciarSistema();
             }
-        }
-        verificarDispositivo();
-        window.addEventListener('resize', verificarDispositivo);
+        };
 
-        function forcarLoginPadrao() {
-            document.getElementById('login-mobile').classList.add('escondido');
-            document.getElementById('login-desktop').classList.remove('escondido');
-        }
-
-        // Alterna entre a tela de Login e a tela de Cadastro nativamente
         function alternarTelaAuth(tela) {
-            const formLogin = document.getElementById('form-login');
-            const formCad = document.getElementById('form-cadastro');
-            const txtBoasVindas = document.getElementById('texto-boas-vindas');
-
             if (tela === 'cadastro') {
-                formLogin.classList.add('escondido');
-                formCad.classList.remove('escondido');
-                txtBoasVindas.innerText = "Crie sua conta para começar";
+                document.getElementById('form-login').classList.add('escondido');
+                document.getElementById('form-cadastro').classList.remove('escondido');
+                document.getElementById('texto-boas-vindas').innerText = "Crie sua conta para começar";
             } else {
-                formCad.classList.add('escondido');
-                formLogin.classList.remove('escondido');
-                txtBoasVindas.innerText = "Seu centro de inteligência financeira";
+                document.getElementById('form-cadastro').classList.add('escondido');
+                document.getElementById('form-login').classList.remove('escondido');
+                document.getElementById('texto-boas-vindas').innerText = "Seu centro de inteligência financeira";
             }
         }
 
-        function fazerLoginBiometrico() { alert("Face ID acionado na versão mobile nativa."); }
-
-        // ---------------------------------------------
-        // 2. AUTENTICAÇÃO E CADASTRO REAL NO SUPABASE
-        // ---------------------------------------------
-        async function cadastrarUsuario() {
-            const nome = document.getElementById('nome-cad').value.trim();
+        // --- SISTEMA DE CADASTRO REAL COM LGPD ---
+        async function efetuarCadastro() {
             const email = document.getElementById('email-cad').value.trim();
             const senha = document.getElementById('senha-cad').value;
-
-            if(!nome || !email || !senha) return alert("Preencha todos os campos do cadastro!");
+            
+            if(!email || !senha || senha.length < 6) return alert("E-mail e Senha (mínimo 6 caracteres) são obrigatórios.");
 
             const btn = document.getElementById('btn-cadastrar');
-            const txtOrig = btn.innerHTML;
+            const txt = btn.innerHTML;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Criando...';
 
             try {
-                // Verifica se o email já existe no Supabase
-                const { data: userExistente } = await supabase.from('usuarios').select('id').eq('email', email).single();
-                if (userExistente) {
-                    alert("Este e-mail já está cadastrado. Faça login!");
-                    alternarTelaAuth('login');
-                    return;
-                }
-
-                // Insere o novo usuário diretamente no banco
-                const { data: novoUser, error } = await supabase.from('usuarios')
-                    .insert([{ nome: nome, email: email, senha_hash: senha }])
-                    .select().single();
+                // Criação oficial pelo Cofre do Supabase (Auth)
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: senha,
+                });
 
                 if (error) throw error;
+                
+                usuarioLogado = data.user;
 
-                // Cria as configurações automáticas para o novo usuário
+                // Rotina de Inicialização de Conta Nova (Categorias e Metas Padrões)
                 await supabase.from('categorias').insert([
-                    { usuario_id: novoUser.id, nome: 'Alimentação', icone: 'fa-burger', cor: 'text-red-500' },
-                    { usuario_id: novoUser.id, nome: 'Salário', icone: 'fa-building', cor: 'text-green-500' }
+                    { usuario_id: usuarioLogado.id, nome: 'Alimentação', icone: 'fa-burger', cor: 'text-red-500' },
+                    { usuario_id: usuarioLogado.id, nome: 'Salário', icone: 'fa-building', cor: 'text-green-500' }
                 ]);
-
                 await supabase.from('planos').insert([
-                    { usuario_id: novoUser.id, nome: 'Reserva de Emergência', valor_meta: 10000, cor: 'bg-blue-500' }
+                    { usuario_id: usuarioLogado.id, nome: 'Reserva de Emergência', valor_meta: 10000, cor: 'bg-blue-500' }
                 ]);
 
-                alert("Conta criada com sucesso! Entrando no sistema...");
-                usuarioLogado = novoUser;
+                alert("Conta criada com sucesso!");
                 iniciarSistema();
 
-            } catch (erro) {
-                console.error("Erro no cadastro:", erro);
-                alert("Erro ao criar conta. Verifique sua conexão.");
+            } catch (e) {
+                alert("Erro no cadastro: " + e.message);
             } finally {
-                btn.innerHTML = txtOrig;
+                btn.innerHTML = txt;
             }
         }
 
-        async function iniciarApp() {
+        // --- SISTEMA DE LOGIN REAL COM LGPD ---
+        async function efetuarLogin() {
             const email = document.getElementById('email-login').value.trim();
             const senha = document.getElementById('senha-login').value;
             
-            if(!email || !senha) return alert("Preencha e-mail e senha!");
+            if(!email || !senha) return alert("Preencha e-mail e senha.");
 
             const btn = document.getElementById('btn-login-desk');
-            const txtOriginal = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Autenticando...';
+            const txt = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Entrando...';
 
             try {
-                // Busca o usuário diretamente no Supabase! FIM DO PYTHON.
-                const { data: user, error } = await supabase
-                    .from('usuarios')
-                    .select('*')
-                    .eq('email', email)
-                    .single();
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: senha,
+                });
 
-                if (error || !user) {
-                    alert("Usuário não encontrado. Verifique o e-mail ou crie uma conta!");
-                    alternarTelaAuth('cadastro');
-                } else if (user.senha_hash !== senha) {
-                    alert("Senha incorreta!");
-                } else {
-                    usuarioLogado = user;
-                    iniciarSistema();
-                }
-            } catch(e) {
-                console.error("Erro no login:", e);
-                alert("Erro ao conectar com o banco de dados.");
+                if (error) throw error;
+                
+                usuarioLogado = data.user;
+                iniciarSistema();
+
+            } catch (e) {
+                alert("Login falhou. Verifique as credenciais.");
             } finally {
-                btn.innerHTML = txtOriginal;
+                btn.innerHTML = txt;
             }
         }
 
@@ -608,118 +449,96 @@
             atualizarTudo();
         }
 
-        function sair() {
+        async function sair() {
+            await supabase.auth.signOut();
             usuarioLogado = null;
-            document.getElementById('email-login').value = '';
-            document.getElementById('senha-login').value = '';
             document.getElementById('app-principal').classList.add('escondido');
             document.getElementById('tela-login').style.display = 'flex';
-            alternarTelaAuth('login');
-            verificarDispositivo();
+            document.getElementById('email-login').value = '';
+            document.getElementById('senha-login').value = '';
         }
 
         // ---------------------------------------------
-        // 3. O MOTOR DE BUSCA (Fetch Direto no Banco Multi-tenant)
+        // BUSCA DE DADOS (COM RLS BLINDADO)
         // ---------------------------------------------
         async function atualizarTudo() {
             if (!usuarioLogado) return;
 
             try {
-                // Buscando TUDO com proteção de segurança (Filtro por usuário)
-                const [resTrans, resCat, resDiv, resPlan] = await Promise.all([
-                    supabase.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).order('id', { ascending: false }),
-                    supabase.from('categorias').select('*').eq('usuario_id', usuarioLogado.id),
-                    supabase.from('dividas').select('*').eq('usuario_id', usuarioLogado.id),
-                    supabase.from('planos').select('*').eq('usuario_id', usuarioLogado.id)
+                // A segurança está no banco de dados (RLS). Ele só trará os dados que pertencem a este usuário logado.
+                const [rTrans, rCat, rDiv, rPlan] = await Promise.all([
+                    supabase.from('transacoes').select('*').order('id', { ascending: false }),
+                    supabase.from('categorias').select('*'),
+                    supabase.from('dividas').select('*'),
+                    supabase.from('planos').select('*')
                 ]);
 
-                transacoesGlobais = resTrans.data || [];
-                categoriasGlobais = resCat.data || [];
-                dividasGlobais = resDiv.data || [];
-                planosGlobais = resPlan.data || [];
+                transacoesGlobais = rTrans.data || [];
+                categoriasGlobais = rCat.data || [];
+                dividasGlobais = rDiv.data || [];
+                planosGlobais = rPlan.data || [];
 
                 carregarInicio();
                 atualizarDashboard();
                 carregarDividas();
                 carregarCategorias();
                 carregarPlanos();
-
             } catch (erro) {
-                console.error("Erro ao buscar dados:", erro);
+                console.error("Erro Crítico:", erro);
             }
         }
 
         // ---------------------------------------------
-        // RENDER: ABA INÍCIO E GRAVAÇÃO NLP
+        // RESTANTE DAS FUNÇÕES (Renderização e Inserção)
         // ---------------------------------------------
         function carregarInicio() {
             let saldo = 0, entradas = 0, saidas = 0;
-            
             transacoesGlobais.forEach(t => {
                 if(t.tipo === 'receita') { entradas += t.valor; saldo += t.valor; }
                 else { saidas += t.valor; saldo -= t.valor; }
             });
-
             document.getElementById('saldo-tela').innerText = formatarMoeda(saldo);
             document.getElementById('total-entradas').innerText = formatarMoeda(entradas);
             document.getElementById('total-saidas').innerText = formatarMoeda(saidas);
 
-            const html = transacoesGlobais.map(t => {
-                const cat = categoriasGlobais.find(c => c.id === t.categoria_id) || { nome: 'Geral', icone: 'fa-tag', cor: 'text-gray-500' };
+            document.getElementById('lista-extrato').innerHTML = transacoesGlobais.map(t => {
+                const cat = categoriasGlobais.find(c => c.id === t.categoria_id) || { nome: 'Geral', icone: 'fa-tag' };
                 const corBg = t.tipo === 'despesa' ? 'bg-red-100' : 'bg-green-100';
                 const corTxt = t.tipo === 'despesa' ? 'text-red-500' : 'text-green-500';
-                const dataBR = t.data_vencimento.split('-').reverse().join('/');
-
                 return `
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                     <div class="flex items-center space-x-4"><div class="w-12 h-12 ${corBg} rounded-full flex items-center justify-center ${corTxt} text-xl"><i class="fa-solid ${cat.icone}"></i></div>
-                    <div><p class="text-gray-900 font-bold">${t.descricao}</p><p class="text-gray-400 text-xs font-bold">${cat.nome} • ${dataBR}</p></div></div>
+                    <div><p class="text-gray-900 font-bold">${t.descricao}</p><p class="text-gray-400 text-xs font-bold">${cat.nome} • ${t.data_vencimento}</p></div></div>
                     <p class="${corTxt} font-black text-lg">${t.tipo === 'despesa' ? '-' : '+'} ${formatarMoeda(t.valor)}</p>
                 </div>`;
-            }).join('');
-            
-            document.getElementById('lista-extrato').innerHTML = html || '<p class="text-center text-gray-400 py-6">Nenhuma transação na nuvem.</p>';
+            }).join('') || '<p class="text-center text-gray-400 py-6">Nenhuma transação.</p>';
         }
 
         let transacaoNLP = null;
-
         function simularEnvioVoz() {
             const input = document.getElementById('input-magico').value.toLowerCase();
             if(!input) return;
             
             const nums = input.match(/\d+(?:[.,]\d+)?/g);
             const val = nums ? Math.max(...nums.map(n => parseFloat(n.replace(',', '.')))) : 0;
-            const isReceita = ['recebi', 'ganhei', 'pix', 'salário', 'rendimento'].some(p => input.includes(p));
+            const isReceita = ['recebi', 'ganhei', 'pix', 'salário'].some(p => input.includes(p));
 
-            const catSugerida = categoriasGlobais.length > 0 ? categoriasGlobais[0].id : null;
-            const desc = document.getElementById('input-magico').value.split(' ')[0];
-            
             transacaoNLP = {
+                usuario_id: usuarioLogado.id, // Vínculo de Segurança
                 valor: val,
                 tipo: isReceita ? 'receita' : 'despesa',
-                descricao: desc.charAt(0).toUpperCase() + desc.slice(1),
+                descricao: input.split(' ')[0].toUpperCase(),
                 data_vencimento: new Date().toISOString().split('T')[0],
-                categoria_id: catSugerida
+                categoria_id: categoriasGlobais.length > 0 ? categoriasGlobais[0].id : null
             };
 
             const t = document.getElementById('modal-titulo');
             const v = document.getElementById('conf-val');
-            const b = document.getElementById('modal-badge-cat');
-            const btn = document.getElementById('btn-salvar-modal');
-            const bg = document.getElementById('modal-bg-efeito');
-
-            if(isReceita) {
-                t.innerText = "Registrar Entrada?"; v.innerText = `+ ${formatarMoeda(val)}`; v.className = "text-3xl font-black text-green-500";
-                b.innerHTML = `<i class="fa-solid fa-money-bill-wave"></i> <span>Receita</span>`; b.className = "flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-bold bg-green-100 text-green-600";
-                btn.className = "flex-1 py-4 text-white font-bold rounded-2xl shadow-lg transition flex justify-center gap-2 bg-green-600 hover:bg-green-700";
-                bg.className = "absolute top-0 right-0 w-32 h-32 rounded-full opacity-20 blur-2xl bg-green-500";
-            } else {
-                t.innerText = "Registrar Saída?"; v.innerText = `- ${formatarMoeda(val)}`; v.className = "text-3xl font-black text-red-500";
-                b.innerHTML = `<i class="fa-solid fa-tag"></i> <span>Despesa</span>`; b.className = "flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-bold bg-red-100 text-red-600";
-                btn.className = "flex-1 py-4 text-white font-bold rounded-2xl shadow-lg transition flex justify-center gap-2 bg-red-600 hover:bg-red-700";
-                bg.className = "absolute top-0 right-0 w-32 h-32 rounded-full opacity-20 blur-2xl bg-red-500";
-            }
-            document.getElementById('conf-data').innerText = transacaoNLP.data_vencimento.split('-').reverse().join('/');
+            
+            t.innerText = isReceita ? "Registrar Entrada?" : "Registrar Saída?";
+            v.innerText = `${isReceita ? '+' : '-'} ${formatarMoeda(val)}`;
+            v.className = `text-3xl font-black ${isReceita ? 'text-green-500' : 'text-red-500'}`;
+            
             document.getElementById('modal-confirmacao').classList.remove('hidden');
         }
 
@@ -728,98 +547,27 @@
         async function confirmarSalvamentoNLP() {
             if(!transacaoNLP || !usuarioLogado) return;
             const btn = document.getElementById('btn-salvar-modal');
-            const txt = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
 
             try {
-                const { error } = await supabase.from('transacoes').insert([{
-                    usuario_id: usuarioLogado.id,
-                    categoria_id: transacaoNLP.categoria_id,
-                    valor: transacaoNLP.valor,
-                    tipo: transacaoNLP.tipo,
-                    descricao: transacaoNLP.descricao,
-                    data_vencimento: transacaoNLP.data_vencimento
-                }]);
-                
-                if (error) throw error;
+                await supabase.from('transacoes').insert([transacaoNLP]);
                 await atualizarTudo();
                 fecharModal();
                 document.getElementById('input-magico').value = '';
-            } catch(e) { 
-                console.error(e);
-                alert("Erro ao gravar no Supabase."); 
-            } finally { 
-                btn.innerHTML = txt; 
-            }
+            } catch(e) { alert("Erro ao gravar."); }
+            finally { btn.innerHTML = '<i class="fa-solid fa-check"></i> Confirmar'; }
         }
 
-        // ---------------------------------------------
-        // RENDER: DASHBOARD
-        // ---------------------------------------------
         function atualizarDashboard() {
             let totalDespesas = 0;
-            let maiorGasto = { valor: 0, descricao: "Nenhum" };
-            const totaisCat = {};
-
-            transacoesGlobais.forEach(t => {
-                if(t.tipo === 'despesa') {
-                    totalDespesas += t.valor;
-                    if(t.valor > maiorGasto.valor) maiorGasto = t;
-                    const cNome = categoriasGlobais.find(c => c.id === t.categoria_id)?.nome || 'Geral';
-                    totaisCat[cNome] = (totaisCat[cNome] || 0) + t.valor;
-                }
-            });
-
+            transacoesGlobais.forEach(t => { if(t.tipo === 'despesa') totalDespesas += t.valor; });
             document.getElementById('dash-media').innerText = formatarMoeda(totalDespesas / 30);
-            document.getElementById('dash-maior').innerHTML = `${formatarMoeda(maiorGasto.valor)} <span class="text-xs font-medium text-gray-400">(${maiorGasto.descricao})</span>`;
-            
-            document.getElementById('texto-coach').innerHTML = `Sua API Supabase processou ${transacoesGlobais.length} transações com sucesso. O seu maior gasto atual é com <strong>${maiorGasto.descricao}</strong>.`;
-
-            document.getElementById('lista-alertas').innerHTML = `
-                <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-200"><div class="w-10 h-10 bg-green-100 rounded-full flex justify-center items-center text-green-500"><i class="fa-solid fa-cloud"></i></div><p class="text-sm font-medium text-gray-700">Conectado ao Supabase BaaS com sucesso!</p></div>
-            `;
-
-            document.getElementById('grafico-categorias').innerHTML = Object.keys(totaisCat).map(cat => {
-                const val = totaisCat[cat];
-                const limite = 1500;
-                const perc = Math.min((val / limite) * 100, 100);
-                const estourou = val > limite;
-                return `
-                    <div class="mb-3">
-                        <div class="flex justify-between items-end mb-1"><span class="text-sm font-bold text-gray-700">${cat}</span><span class="text-xs font-bold ${estourou ? 'text-red-500' : 'text-gray-500'}">${formatarMoeda(val)}</span></div>
-                        <div class="w-full bg-gray-100 rounded-full h-2.5"><div class="${estourou ? 'bg-red-600' : 'bg-blue-600'} h-2.5 rounded-full" style="width: ${perc}%"></div></div>
-                    </div>
-                `;
-            }).join('');
+            document.getElementById('texto-coach').innerText = `O sistema detectou ${transacoesGlobais.length} transações oficiais vinculadas a você.`;
         }
 
-        // ---------------------------------------------
-        // RENDER E SALVAMENTO: DÍVIDAS
-        // ---------------------------------------------
         function carregarDividas() {
-            const atrasadas = [], atual = [], futuras = [];
-            const hoje = new Date();
-            const mesAtual = hoje.getMonth();
-            const anoAtual = hoje.getFullYear();
-
-            dividasGlobais.forEach(d => {
-                const dData = new Date(d.data_vencimento + 'T12:00:00Z');
-                if (dData < hoje && dData.getMonth() !== mesAtual) atrasadas.push(d);
-                else if (dData.getMonth() === mesAtual && dData.getFullYear() === anoAtual) atual.push(d);
-                else futuras.push(d);
-            });
-
-            const gerarCard = (d) => `<div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex justify-between items-center"><div class="truncate"><p class="font-bold text-gray-800 text-sm truncate">${d.descricao}</p><p class="text-xs text-gray-500 font-bold"><i class="fa-regular fa-calendar"></i> ${d.data_vencimento.split('-').reverse().join('/')}</p></div><p class="font-black text-gray-900">${formatarMoeda(d.valor)}</p></div>`;
-            const somar = (arr) => arr.reduce((a, b) => a + b.valor, 0);
-
-            document.getElementById('total-div-atrasada').innerText = formatarMoeda(somar(atrasadas));
-            document.getElementById('col-div-atrasada').innerHTML = atrasadas.map(gerarCard).join('') || '<p class="text-xs text-gray-400">Limpo!</p>';
-            
-            document.getElementById('total-div-atual').innerText = formatarMoeda(somar(atual));
-            document.getElementById('col-div-atual').innerHTML = atual.map(gerarCard).join('') || '<p class="text-xs text-gray-400">Sem dívidas.</p>';
-            
-            document.getElementById('total-div-futura').innerText = formatarMoeda(somar(futuras));
-            document.getElementById('col-div-futura').innerHTML = futuras.map(gerarCard).join('') || '<p class="text-xs text-gray-400">Tranquilo.</p>';
+            const html = dividasGlobais.map(d => `<div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex justify-between"><p class="font-bold text-gray-800 text-sm">${d.descricao}</p><p class="font-black">${formatarMoeda(d.valor)}</p></div>`).join('');
+            document.getElementById('col-div-atual').innerHTML = html || '<p class="text-xs text-gray-400">Limpo!</p>';
         }
 
         function abrirModalDivida() { document.getElementById('modal-divida').classList.remove('hidden'); }
@@ -831,171 +579,54 @@
             const parcelas = parseInt(document.getElementById('div-parcelas').value);
             const dataBase = document.getElementById('div-data').value;
 
-            if(!desc || !valorTotal || !dataBase) return alert("Preencha tudo!");
-
-            const btn = document.getElementById('btn-salvar-divida');
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            if(!desc || !valorTotal || !dataBase) return;
             const parcelasArray = [];
-            const valorP = valorTotal / parcelas;
-
             for(let i=0; i<parcelas; i++) {
-                const dataParc = new Date(dataBase + 'T12:00:00Z');
-                dataParc.setMonth(dataParc.getMonth() + i);
-                
                 parcelasArray.push({
-                    usuario_id: usuarioLogado.id,
-                    descricao: `${desc} (${i+1}/${parcelas})`, 
-                    valor: valorP, 
-                    data_vencimento: dataParc.toISOString().split('T')[0]
+                    usuario_id: usuarioLogado.id, descricao: `${desc} (${i+1}/${parcelas})`, 
+                    valor: valorTotal/parcelas, data_vencimento: dataBase
                 });
             }
-
-            try {
-                const { error } = await supabase.from('dividas').insert(parcelasArray);
-                if (error) throw error;
-                await atualizarTudo();
-                fecharModalDivida();
-                document.getElementById('div-desc').value = '';
-                document.getElementById('div-valor').value = '';
-            } catch (e) {
-                console.error(e);
-                alert("Erro ao salvar dívida no Supabase.");
-            } finally {
-                btn.innerHTML = 'Gerar Parcelas';
-            }
+            await supabase.from('dividas').insert(parcelasArray);
+            await atualizarTudo();
+            fecharModalDivida();
         }
 
-        // ---------------------------------------------
-        // RENDER E SALVAMENTO: CATEGORIAS
-        // ---------------------------------------------
         function carregarCategorias() {
-            const gastosCat = {};
-            transacoesGlobais.forEach(t => {
-                if(t.tipo === 'despesa') {
-                    const nomeCat = categoriasGlobais.find(c => c.id === t.categoria_id)?.nome || 'Geral';
-                    gastosCat[nomeCat] = (gastosCat[nomeCat] || 0) + t.valor;
-                }
-            });
-
-            const rank = Object.keys(gastosCat).sort((a, b) => gastosCat[b] - gastosCat[a]);
-
-            document.getElementById('grid-categorias').innerHTML = categoriasGlobais.map((c) => {
-                const tGasto = gastosCat[c.nome] || 0;
-                const pos = rank.indexOf(c.nome);
-                const badge = pos !== -1 ? `${pos + 1}° em gastos` : 'Sem gastos';
-                
-                return `
-                <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-between">
-                    <div class="flex items-center justify-between mb-4"><div class="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center ${c.cor} text-2xl"><i class="fa-solid ${c.icone}"></i></div>
-                    <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-600">${badge}</span></div>
-                    <div><h4 class="font-bold text-gray-900 text-lg mb-1">${c.nome}</h4>
-                    <p class="text-gray-400 text-xs font-bold uppercase">Total Gasto</p><p class="text-xl font-black text-gray-800">${formatarMoeda(tGasto)}</p></div>
-                </div>`;
-            }).join('');
+            document.getElementById('grid-categorias').innerHTML = categoriasGlobais.map(c => `
+                <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm"><i class="fa-solid ${c.icone} ${c.cor} text-3xl mb-2"></i><h4 class="font-bold text-lg">${c.nome}</h4></div>
+            `).join('');
         }
-
         function abrirModalCategoria() { document.getElementById('modal-categoria').classList.remove('hidden'); }
         function fecharModalCategoria() { document.getElementById('modal-categoria').classList.add('hidden'); }
-
         async function salvarNovaCategoria() {
             const nome = document.getElementById('cat-nome').value;
-            const icone = document.getElementById('cat-icone').value;
             if(!nome) return;
-
-            const btn = document.getElementById('btn-salvar-categoria');
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-            try {
-                const { error } = await supabase.from('categorias').insert([{
-                    usuario_id: usuarioLogado.id, nome: nome, icone: icone, cor: 'text-blue-500'
-                }]);
-                if (error) throw error;
-                await atualizarTudo();
-                fecharModalCategoria();
-                document.getElementById('cat-nome').value = '';
-            } catch (e) {
-                console.error(e);
-                alert("Erro ao criar categoria no Supabase.");
-            } finally {
-                btn.innerHTML = 'Criar';
-            }
+            await supabase.from('categorias').insert([{ usuario_id: usuarioLogado.id, nome: nome, icone: 'fa-tag', cor: 'text-blue-500' }]);
+            await atualizarTudo();
+            fecharModalCategoria();
         }
 
-        // ---------------------------------------------
-        // RENDER E SALVAMENTO: PLANOS (Safe to Save)
-        // ---------------------------------------------
         function carregarPlanos() {
-            const mesAtual = new Date().getMonth();
-            let divMes = 0;
-            dividasGlobais.forEach(d => {
-                if(new Date(d.data_vencimento + 'T12:00:00Z').getMonth() === mesAtual) divMes += d.valor;
-            });
-            
-            let saldoAtual = 0;
-            transacoesGlobais.forEach(t => { saldoAtual += (t.tipo==='receita' ? t.valor : -t.valor); });
-            const seguro = saldoAtual - divMes;
-
-            const b = document.getElementById('alerta-seguranca-guardar');
-            const txt = document.getElementById('texto-seguranca-guardar');
-            
-            if(seguro > 0) {
-                b.className = "bg-green-50 border border-green-200 p-5 rounded-2xl mb-8 flex items-center gap-4";
-                txt.innerHTML = `Margem Segura: Você pode aportar até <strong>${formatarMoeda(seguro)}</strong> sem risco.`;
-            } else {
-                b.className = "bg-red-50 border border-red-200 p-5 rounded-2xl mb-8 flex items-center gap-4";
-                txt.innerHTML = `<strong>Aviso da API:</strong> Suas dívidas travam seu saldo em ${formatarMoeda(divMes)}. Cuidado ao guardar.`;
-            }
-
             document.getElementById('grid-planos').innerHTML = planosGlobais.map(p => {
                 const perc = Math.min((p.valor_atual / p.valor_meta) * 100, 100);
-                return `
-                <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
-                    <div class="flex justify-between items-end mb-3"><div><h3 class="font-black text-gray-900 text-lg">${p.nome}</h3>
-                    <p class="text-xs text-gray-400 font-bold">Progresso da Meta</p></div>
-                    <span class="text-sm font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-xl">${perc.toFixed(1)}%</span></div>
-                    <div class="w-full bg-gray-100 rounded-full h-4 mb-4 overflow-hidden"><div class="${p.cor} h-4 rounded-full transition-all duration-1000" style="width: ${perc}%"></div></div>
-                    <div class="flex justify-between items-center text-sm font-bold text-gray-600"><span>Atual: ${formatarMoeda(p.valor_atual)}</span><span>Meta: ${formatarMoeda(p.valor_meta)}</span></div>
-                </div>`;
+                return `<div class="bg-white p-6 rounded-3xl border border-gray-100"><h3 class="font-black text-lg mb-2">${p.nome}</h3><div class="w-full bg-gray-100 rounded-full h-4"><div class="${p.cor} h-4 rounded-full" style="width: ${perc}%"></div></div></div>`;
             }).join('');
         }
-
         function abrirModalAporte() { document.getElementById('modal-aporte').classList.remove('hidden'); }
         function fecharModalAporte() { document.getElementById('modal-aporte').classList.add('hidden'); }
-
         async function salvarAporte() {
             const val = parseFloat(document.getElementById('aporte-valor').value);
             if(!val || planosGlobais.length === 0) return;
-
-            const btn = document.getElementById('btn-salvar-aporte');
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-            try {
-                // Soma o valor que está no banco com o novo valor
-                const novoValor = planosGlobais[0].valor_atual + val;
-                
-                const { error } = await supabase.from('planos')
-                    .update({ valor_atual: novoValor })
-                    .eq('id', planosGlobais[0].id)
-                    .eq('usuario_id', usuarioLogado.id); // Blindagem de Segurança
-
-                if (error) throw error;
-                await atualizarTudo();
-                fecharModalAporte();
-                document.getElementById('aporte-valor').value = '';
-                alert(`Sucesso! Você guardou ${formatarMoeda(val)} para sua meta.`);
-            } catch (e) {
-                console.error(e);
-                alert("Erro ao atualizar a meta no Supabase.");
-            } finally {
-                btn.innerHTML = 'Confirmar';
-            }
+            const novoValor = planosGlobais[0].valor_atual + val;
+            await supabase.from('planos').update({ valor_atual: novoValor }).eq('id', planosGlobais[0].id).eq('usuario_id', usuarioLogado.id);
+            await atualizarTudo();
+            fecharModalAporte();
         }
 
         function mudarAba(nome) {
             document.querySelectorAll('.aba-conteudo').forEach(a => a.classList.add('escondido'));
-            document.querySelectorAll('.menu-desk').forEach(b => { b.classList.remove('bg-blue-50', 'text-blue-600'); b.classList.add('text-gray-500'); });
-            document.querySelectorAll('.menu-mob').forEach(b => { b.classList.remove('text-blue-600'); b.classList.add('text-gray-400'); });
             document.getElementById(`aba-${nome}`).classList.remove('escondido');
-            if(document.getElementById(`nav-desk-${nome}`)) document.getElementById(`nav-desk-${nome}`).classList.add('bg-blue-50', 'text-blue-600');
-            if(document.getElementById(`nav-mob-${nome}`)) document.getElementById(`nav-mob-${nome}`).classList.add('text-blue-600');
         }
     </script>
 </body>
