@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataWallet</title>
+    <!-- Tailwind CSS (Design responsivo e moderno) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Animações Fluidas e Modernas */
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        .slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        /* Ocultar barra de rolagem para visual de aplicativo nativo */
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-gray-200 flex justify-center h-screen overflow-hidden font-sans">
+
+    <!-- Container do "Celular" (Trava a largura no computador para parecer mobile) -->
+    <div class="w-full max-w-md bg-gray-50 h-full flex flex-col relative shadow-2xl overflow-hidden">
+        
+        <!-- Header (O Painel Principal) -->
+        <div class="bg-gradient-to-br from-blue-900 to-gray-900 text-white p-6 rounded-b-[2.5rem] shadow-lg z-10 relative">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-xl font-bold tracking-wider">DataWallet</h1>
+                <div class="w-10 h-10 bg-white/20 rounded-full flex justify-center items-center backdrop-blur-sm cursor-pointer hover:bg-white/30 transition">
+                    <i class="fa-solid fa-fingerprint text-xl"></i>
+                </div>
+            </div>
+            <p class="text-blue-200 text-sm font-medium">Saldo Disponível</p>
+            <h2 class="text-4xl font-extrabold mt-1 tracking-tight">R$ 0,00</h2>
+        </div>
+
+        <!-- Barra de Comando Rápido (Onde a Mágica Acontece) -->
+        <div class="px-6 -mt-6 z-20">
+            <div class="bg-white p-2 rounded-2xl shadow-xl flex items-center space-x-3 slide-up border border-gray-100">
+                <button class="bg-blue-100 p-3 rounded-xl text-blue-600 hover:bg-blue-200 transition">
+                    <i class="fa-solid fa-microphone"></i>
+                </button>
+                <input type="text" id="input-magico" placeholder="Ex: Ifood 45 ontem..."
+                       class="flex-1 bg-transparent outline-none text-gray-700 placeholder-gray-400 font-medium">
+                <button onclick="analisarTexto()" class="bg-gray-900 text-white p-3 rounded-xl hover:bg-blue-600 transition shadow-md">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Área de Inteligência de Dados -->
+        <div class="flex-1 overflow-y-auto px-6 pt-8 pb-24 space-y-4">
+            <div class="flex justify-between items-end mb-2">
+                <h3 class="text-gray-800 font-bold text-lg">Últimas Movimentações</h3>
+                <span class="text-blue-600 text-sm font-bold cursor-pointer">Ver todas</span>
+            </div>
+            
+            <div id="lista-transacoes" class="space-y-3">
+                <!-- Exemplo de como ficará o visual de uma transação carregada -->
+                <div class="bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between border border-gray-100 fade-in">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-500">
+                            <i class="fa-solid fa-burger"></i>
+                        </div>
+                        <div>
+                            <p class="text-gray-800 font-bold">Ifood</p>
+                            <p class="text-gray-400 text-xs">Ontem</p>
+                        </div>
+                    </div>
+                    <p class="text-red-500 font-bold">- R$ 45,00</p>
+                </div>
+                <!-- Fim do Exemplo -->
+            </div>
+        </div>
+
+        <!-- JANELA FLUTUANTE DE CONFIRMAÇÃO (Invisível até você dar o comando) -->
+        <div id="modal-confirmacao" class="hidden absolute inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-end justify-center fade-in">
+            <div class="bg-white w-full rounded-t-[2.5rem] p-8 slide-up shadow-2xl">
+                <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6"></div>
+                <h3 class="text-2xl font-extrabold text-gray-800 mb-6 text-center">Tudo certo?</h3>
+                
+                <div class="bg-gray-50 p-5 rounded-2xl space-y-3 border border-gray-100 mb-8">
+                    <div class="flex justify-between items-center pb-3 border-b border-gray-200">
+                        <span class="text-gray-500 font-medium">Descrição</span>
+                        <strong id="conf-desc" class="text-gray-900 text-lg">...</strong>
+                    </div>
+                    <div class="flex justify-between items-center pb-3 border-b border-gray-200">
+                        <span class="text-gray-500 font-medium">Data Identificada</span>
+                        <strong id="conf-data" class="text-gray-900 text-lg">...</strong>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-500 font-medium">Valor Estimado</span>
+                        <strong id="conf-val" class="text-red-500 text-2xl font-black">...</strong>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-4">
+                    <button onclick="fecharModal()" class="flex-1 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition">Editar</button>
+                    <button onclick="salvarDefinitivo()" class="flex-1 py-4 bg-gray-900 text-white font-bold rounded-2xl shadow-xl hover:bg-blue-600 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-check"></i> Registrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- O Cérebro do Frontend (JavaScript) -->
+    <script>
+        let dadosPendentes = null;
+
+        // 1. Envia a frase digitada para a inteligência da sua API Python
+        async function analisarTexto() {
+            const texto = document.getElementById('input-magico').value;
+            if(!texto) return;
+
+            try {
+                // Chama a Rota C que criamos no main.py
+                const resposta = await fetch('/transacoes/analise-voz/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ texto: texto })
+                });
+                
+                const dados = await resposta.json();
+                dadosPendentes = dados.sugestao_para_tela;
+                
+                // Preenche a Janela Flutuante com a inteligência do Python
+                document.getElementById('conf-desc').innerText = dadosPendentes.descricao;
+                document.getElementById('conf-val').innerText = `R$ ${dadosPendentes.valor.toFixed(2)}`;
+                document.getElementById('conf-data').innerText = dadosPendentes.data_vencimento;
+                
+                // Exibe a Janela Flutuante com animação
+                document.getElementById('modal-confirmacao').classList.remove('hidden');
+                
+            } catch (erro) {
+                console.error("Erro na comunicação com a API", erro);
+            }
+        }
+
+        // 2. Fecha a Janela para o usuário corrigir se a API errou
+        function fecharModal() {
+            document.getElementById('modal-confirmacao').classList.add('hidden');
+        }
+
+        // 3. Salva de verdade no Supabase! (Será conectado na próxima etapa)
+        function salvarDefinitivo() {
+            alert("Perfeito! Na próxima etapa vamos ligar este botão ao banco de dados!");
+            fecharModal();
+            document.getElementById('input-magico').value = '';
+        }
+    </script>
+</body>
+</html>
