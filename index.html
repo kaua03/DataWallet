@@ -4,11 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DataWallet - SaaS Inteligência Financeira</title>
+    
+    <!-- CSS e Ícones -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- SDK OFICIAL SUPABASE -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- O SEU MOTOR EXTERNO (JavaScript) -->
+    <script src="app.js" defer></script>
     
     <style>
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
@@ -25,9 +30,7 @@
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans h-screen overflow-hidden flex relative">
 
-    <!-- ========================================== -->
-    <!-- PORTARIAS DE LOGIN / CADASTRO DA APLICAÇÃO -->
-    <!-- ========================================== -->
+    <!-- PORTARIAS DE LOGIN E CADASTRO -->
     <div id="tela-login" class="fixed inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-900 to-gray-900 z-50 fade-in">
         <div id="login-desktop" class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm mx-4 relative overflow-hidden transition-all duration-300">
             <div class="text-center mb-6">
@@ -38,7 +41,6 @@
                 <p class="text-sm text-gray-500" id="texto-boas-vindas">Seu centro de inteligência financeira</p>
             </div>
             
-            <!-- FORM DE LOGIN -->
             <div id="form-login" class="space-y-4 fade-in">
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">E-mail</label>
@@ -56,7 +58,6 @@
                 </div>
             </div>
 
-            <!-- FORM DE CADASTRO -->
             <div id="form-cadastro" class="space-y-4 escondido fade-in">
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">E-mail</label>
@@ -74,11 +75,29 @@
                 </div>
             </div>
         </div>
+
+        <div id="login-mobile" class="escondido flex flex-col items-center justify-center text-white w-full h-full relative">
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div class="w-64 h-64 bg-white opacity-5 rounded-full blur-3xl pulse-slow"></div>
+            </div>
+            <div class="z-10 flex flex-col items-center text-center">
+                <div class="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center text-4xl mb-6 backdrop-blur-md border border-white/20 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+                    <i class="fa-solid fa-lock text-blue-200"></i>
+                </div>
+                <h1 class="text-4xl font-black tracking-tight mb-2">DataWallet</h1>
+                <p class="text-blue-200 font-medium text-sm mb-16">Desbloqueie seu aplicativo</p>
+                <button onclick="fazerLoginBiometrico()" class="bg-white/20 px-8 py-4 rounded-full font-bold backdrop-blur-md flex items-center gap-3 border border-white/30 shadow-lg hover:bg-white/30 transition pulse-slow cursor-pointer">
+                    <i class="fa-solid fa-fingerprint text-2xl text-blue-100"></i> 
+                    <span>Toque para desbloquear</span>
+                </button>
+                <button onclick="forcarLoginPadrao()" class="mt-12 text-blue-200 text-sm font-bold hover:text-white transition flex items-center gap-2">
+                    <i class="fa-solid fa-keyboard"></i> Usar login padrão
+                </button>
+            </div>
+        </div>
     </div>
 
-    <!-- ========================================== -->
     <!-- ESTRUTURA PRINCIPAL DO APP -->
-    <!-- ========================================== -->
     <div id="app-principal" class="escondido w-full h-full flex flex-col md:flex-row">
         
         <aside class="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 p-6 h-full shadow-lg z-20">
@@ -86,7 +105,6 @@
                 <i class="fa-solid fa-wallet text-blue-600 text-3xl"></i>
                 <h2 class="text-2xl font-black text-gray-900 tracking-tight">DataWallet</h2>
             </div>
-            
             <nav class="flex-1 space-y-2">
                 <button onclick="mudarAba('movimentacao')" id="nav-desk-movimentacao" class="menu-desk w-full flex items-center gap-3 p-3 rounded-xl font-bold bg-blue-50 text-blue-600 transition">
                     <i class="fa-solid fa-money-bill-transfer w-5"></i> Início
@@ -119,7 +137,6 @@
                         <p class="text-blue-200 text-sm font-medium flex items-center gap-2"><i class="fa-solid fa-building-columns"></i> Saldo Disponível</p>
                         <h2 class="text-4xl md:text-5xl font-black mt-1 tracking-tight" id="saldo-tela">R$ 0,00</h2>
                     </div>
-                    
                     <div class="mt-6 md:mt-0 w-full md:w-[450px] bg-white/10 p-1.5 rounded-2xl flex items-center backdrop-blur-md border border-white/20 z-10 shadow-lg">
                         <button class="p-3 text-blue-200 hover:text-white transition"><i class="fa-solid fa-microphone"></i></button>
                         <input type="text" id="input-magico" placeholder="Ex: Recebi 2500 de salário ou Ifood 45" class="flex-1 bg-transparent outline-none text-white placeholder-blue-200 px-2 font-medium">
@@ -153,86 +170,50 @@
                 <div id="lista-extrato" class="space-y-3"></div>
             </section>
 
-            <!-- DASHBOARD -->
             <section id="aba-dashboard" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                    <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
-                        <i class="fa-solid fa-chart-pie text-blue-600"></i> Inteligência e Análise
-                    </h2>
+                    <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2"><i class="fa-solid fa-chart-pie text-blue-600"></i> Inteligência e Análise</h2>
                 </div>
-
                 <div class="bg-indigo-900 text-white p-6 md:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row gap-6 items-start mb-8 relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-40 h-40 bg-indigo-500 opacity-20 blur-3xl rounded-full"></div>
-                    <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center text-3xl shrink-0 border border-white/20 shadow-inner z-10">
-                        <i class="fa-solid fa-robot text-indigo-200"></i>
-                    </div>
-                    <div class="z-10">
-                        <h3 class="font-bold text-xl mb-2 text-indigo-100">Seu Coach Financeiro</h3>
-                        <p class="text-indigo-50 font-medium text-sm md:text-base leading-relaxed" id="texto-coach"></p>
-                    </div>
+                    <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center text-3xl shrink-0 border border-white/20 shadow-inner z-10"><i class="fa-solid fa-robot text-indigo-200"></i></div>
+                    <div class="z-10"><h3 class="font-bold text-xl mb-2 text-indigo-100">Seu Coach Financeiro</h3><p class="text-indigo-50 font-medium text-sm md:text-base leading-relaxed" id="texto-coach"></p></div>
                 </div>
-
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-                        <h3 class="text-gray-800 font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-orange-500"></i> Alertas da Carteira</h3>
-                        <div id="lista-alertas" class="space-y-3"></div>
-                    </div>
-                    <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-                        <h3 class="text-gray-800 font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-chart-bar text-blue-500"></i> Para onde seu dinheiro vai</h3>
-                        <div id="grafico-categorias" class="space-y-4"></div>
-                    </div>
+                    <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm"><h3 class="text-gray-800 font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-orange-500"></i> Alertas da Carteira</h3><div id="lista-alertas" class="space-y-3"></div></div>
+                    <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm"><h3 class="text-gray-800 font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-chart-bar text-blue-500"></i> Para onde seu dinheiro vai</h3><div id="grafico-categorias" class="space-y-4"></div></div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center"><p class="text-xs text-gray-400 font-bold uppercase mb-1">Média Diária</p><p class="text-2xl font-black text-gray-800" id="dash-media">R$ 0,00</p></div>
+                    <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center"><p class="text-xs text-gray-400 font-bold uppercase mb-1">Maior Gasto</p><p class="text-2xl font-black text-red-500" id="dash-maior">R$ 0,00</p></div>
+                    <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center"><p class="text-xs text-gray-400 font-bold uppercase mb-1">Status API</p><p class="text-xl font-black text-green-500" id="dash-taxa">Online</p></div>
                 </div>
             </section>
 
-            <!-- DÍVIDAS -->
             <section id="aba-dividas" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
-                        <i class="fa-solid fa-file-invoice-dollar text-blue-600"></i> Controle de Dívidas
-                    </h2>
-                    <button onclick="abrirModalDivida()" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-sm shadow-md hover:bg-blue-700 transition flex items-center gap-2">
-                        <i class="fa-solid fa-plus"></i> Nova Dívida
-                    </button>
+                    <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2"><i class="fa-solid fa-file-invoice-dollar text-blue-600"></i> Controle de Dívidas</h2>
+                    <button onclick="abrirModalDivida()" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-sm shadow-md hover:bg-blue-700 transition flex items-center gap-2">+ Nova Dívida</button>
                 </div>
-
                 <div class="flex flex-col md:flex-row gap-4 overflow-x-auto scroll-suave pb-4">
-                    <div class="flex-1 min-w-[280px] bg-red-50 p-4 rounded-3xl border border-red-100">
-                        <h3 class="font-bold text-red-800 text-sm uppercase mb-4">Atrasadas</h3>
-                        <div id="col-div-atrasada" class="space-y-3"></div>
-                    </div>
-                    <div class="flex-1 min-w-[280px] bg-blue-50 p-4 rounded-3xl border border-blue-100">
-                        <h3 class="font-bold text-blue-800 text-sm uppercase mb-4">Este Mês</h3>
-                        <div id="col-div-atual" class="space-y-3"></div>
-                    </div>
-                    <div class="flex-1 min-w-[280px] bg-gray-100 p-4 rounded-3xl border border-gray-200">
-                        <h3 class="font-bold text-gray-600 text-sm uppercase mb-4">Próximos Meses</h3>
-                        <div id="col-div-futura" class="space-y-3"></div>
-                    </div>
+                    <div class="flex-1 min-w-[280px] bg-red-50 p-4 rounded-3xl border border-red-100"><h3 class="font-bold text-red-800 text-sm uppercase mb-4">Atrasadas</h3><div id="col-div-atrasada" class="space-y-3"></div></div>
+                    <div class="flex-1 min-w-[280px] bg-blue-50 p-4 rounded-3xl border border-blue-100"><h3 class="font-bold text-blue-800 text-sm uppercase mb-4">Este Mês</h3><div id="col-div-atual" class="space-y-3"></div></div>
+                    <div class="flex-1 min-w-[280px] bg-gray-100 p-4 rounded-3xl border border-gray-200"><h3 class="font-bold text-gray-600 text-sm uppercase mb-4">Próximos Meses</h3><div id="col-div-futura" class="space-y-3"></div></div>
                 </div>
             </section>
 
-            <!-- CATEGORIAS -->
             <section id="aba-categorias" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
-                        <i class="fa-solid fa-layer-group text-blue-600"></i> Pastas
-                    </h2>
-                    <button onclick="abrirModalCategoria()" class="text-blue-600 font-bold bg-blue-50 px-4 py-2 rounded-xl text-sm hover:bg-blue-100 transition">
-                        + Nova Categoria
-                    </button>
+                    <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2"><i class="fa-solid fa-layer-group text-blue-600"></i> Pastas</h2>
+                    <button onclick="abrirModalCategoria()" class="text-blue-600 font-bold bg-blue-50 px-4 py-2 rounded-xl text-sm hover:bg-blue-100 transition">+ Nova Categoria</button>
                 </div>
                 <div id="grid-categorias" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
             </section>
             
-            <!-- PLANOS -->
             <section id="aba-planos" class="aba-conteudo escondido p-4 md:p-8 max-w-5xl mx-auto fade-in">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
-                        <i class="fa-solid fa-bullseye text-blue-600"></i> Metas
-                    </h2>
-                    <button onclick="abrirModalAporte()" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-sm shadow-md hover:bg-blue-700 transition">
-                        + Guardar
-                    </button>
+                    <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2"><i class="fa-solid fa-bullseye text-blue-600"></i> Metas</h2>
+                    <button onclick="abrirModalAporte()" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-sm shadow-md hover:bg-blue-700 transition">+ Guardar</button>
                 </div>
                 <div id="grid-planos" class="space-y-4"></div>
             </section>
@@ -241,52 +222,26 @@
 
         <!-- MENU INFERIOR (Celular) -->
         <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t border-gray-200 px-4 py-3 flex justify-between items-center z-20">
-            <button onclick="mudarAba('movimentacao')" id="nav-mob-movimentacao" class="menu-mob flex flex-col items-center text-blue-600 transition">
-                <i class="fa-solid fa-house text-xl mb-1"></i><span class="text-[10px] font-bold">Início</span>
-            </button>
-            <button onclick="mudarAba('dashboard')" id="nav-mob-dashboard" class="menu-mob flex flex-col items-center text-gray-400 hover:text-gray-600 transition">
-                <i class="fa-solid fa-chart-pie text-xl mb-1"></i><span class="text-[10px] font-bold">Análise</span>
-            </button>
-            <div class="relative -top-6">
-                <button onclick="mudarAba('movimentacao')" class="w-14 h-14 bg-blue-600 text-white rounded-full flex justify-center items-center text-xl shadow-[0_10px_20px_rgba(37,99,235,0.3)] border-4 border-gray-50">
-                    <i class="fa-solid fa-plus"></i>
-                </button>
-            </div>
-            <button onclick="mudarAba('dividas')" id="nav-mob-dividas" class="menu-mob flex flex-col items-center text-gray-400 hover:text-gray-600 transition">
-                <i class="fa-solid fa-file-invoice-dollar text-xl mb-1"></i><span class="text-[10px] font-bold">Dívidas</span>
-            </button>
-            <button onclick="mudarAba('categorias')" id="nav-mob-categorias" class="menu-mob flex flex-col items-center text-gray-400 hover:text-gray-600 transition">
-                <i class="fa-solid fa-layer-group text-xl mb-1"></i><span class="text-[10px] font-bold">Pastas</span>
-            </button>
+            <button onclick="mudarAba('movimentacao')" id="nav-mob-movimentacao" class="menu-mob flex flex-col items-center text-blue-600 transition"><i class="fa-solid fa-house text-xl mb-1"></i><span class="text-[10px] font-bold">Início</span></button>
+            <button onclick="mudarAba('dashboard')" id="nav-mob-dashboard" class="menu-mob flex flex-col items-center text-gray-400 hover:text-gray-600 transition"><i class="fa-solid fa-chart-pie text-xl mb-1"></i><span class="text-[10px] font-bold">Análise</span></button>
+            <div class="relative -top-6"><button onclick="mudarAba('movimentacao')" class="w-14 h-14 bg-blue-600 text-white rounded-full flex justify-center items-center text-xl shadow-[0_10px_20px_rgba(37,99,235,0.3)] border-4 border-gray-50"><i class="fa-solid fa-plus"></i></button></div>
+            <button onclick="mudarAba('dividas')" id="nav-mob-dividas" class="menu-mob flex flex-col items-center text-gray-400 hover:text-gray-600 transition"><i class="fa-solid fa-file-invoice-dollar text-xl mb-1"></i><span class="text-[10px] font-bold">Dívidas</span></button>
+            <button onclick="mudarAba('categorias')" id="nav-mob-categorias" class="menu-mob flex flex-col items-center text-gray-400 hover:text-gray-600 transition"><i class="fa-solid fa-layer-group text-xl mb-1"></i><span class="text-[10px] font-bold">Pastas</span></button>
         </nav>
 
-        <!-- ========================================== -->
-        <!-- MODAIS FLUTUANTES (Janelas de Ação) -->
-        <!-- ========================================== -->
-        
+        <!-- MODAIS FLUTUANTES -->
         <div id="modal-confirmacao" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center fade-in">
             <div class="bg-white w-full md:w-[450px] rounded-t-[2.5rem] md:rounded-3xl p-8 slide-up shadow-2xl relative overflow-hidden">
                 <div id="modal-bg-efeito" class="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10 blur-2xl"></div>
                 <h3 class="text-2xl font-black text-gray-900 mb-2 text-center" id="modal-titulo">Registrar Operação?</h3>
                 <div class="bg-gray-50 p-5 rounded-2xl space-y-4 border border-gray-100 mb-8 mt-4">
-                    <div class="flex justify-between items-center pb-3 border-b border-gray-200">
-                        <span class="text-gray-500 font-bold text-sm">Classificação</span>
-                        <div id="modal-badge-cat" class="flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-bold"></div>
-                    </div>
-                    <div class="flex justify-between items-center pb-3 border-b border-gray-200">
-                        <span class="text-gray-500 font-bold text-sm">Data Detectada</span>
-                        <strong id="conf-data" class="text-gray-900">Hoje</strong>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-500 font-bold text-sm">Valor Processado</span>
-                        <strong id="conf-val" class="text-3xl font-black">R$ 0,00</strong>
-                    </div>
+                    <div class="flex justify-between items-center pb-3 border-b border-gray-200"><span class="text-gray-500 font-bold text-sm">Classificação</span><div id="modal-badge-cat" class="flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-bold"></div></div>
+                    <div class="flex justify-between items-center pb-3 border-b border-gray-200"><span class="text-gray-500 font-bold text-sm">Data Detectada</span><strong id="conf-data" class="text-gray-900">Hoje</strong></div>
+                    <div class="flex justify-between items-center"><span class="text-gray-500 font-bold text-sm">Valor Processado</span><strong id="conf-val" class="text-3xl font-black">R$ 0,00</strong></div>
                 </div>
                 <div class="flex space-x-4">
                     <button onclick="fecharModal()" class="flex-1 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl transition">Corrigir</button>
-                    <button onclick="confirmarSalvamentoNLP()" id="btn-salvar-modal" class="flex-1 py-4 text-white font-bold rounded-2xl shadow-lg flex justify-center gap-2">
-                        <i class="fa-solid fa-check"></i> Confirmar
-                    </button>
+                    <button onclick="confirmarSalvamentoNLP()" id="btn-salvar-modal" class="flex-1 py-4 text-white font-bold rounded-2xl shadow-lg flex justify-center gap-2"><i class="fa-solid fa-check"></i> Confirmar</button>
                 </div>
             </div>
         </div>
@@ -296,10 +251,7 @@
                 <h3 class="text-xl font-black text-gray-900 mb-4">Nova Dívida</h3>
                 <div class="space-y-4">
                     <input type="text" id="div-desc" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3" placeholder="Ex: Notebook Novo">
-                    <div class="grid grid-cols-2 gap-3">
-                        <input type="number" id="div-valor" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3" placeholder="Valor (1200.00)">
-                        <input type="number" id="div-parcelas" value="1" min="1" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3">
-                    </div>
+                    <div class="grid grid-cols-2 gap-3"><input type="number" id="div-valor" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3" placeholder="Valor (1200.00)"><input type="number" id="div-parcelas" value="1" min="1" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3"></div>
                     <input type="date" id="div-data" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3">
                 </div>
                 <div class="flex space-x-3 mt-6">
@@ -334,300 +286,5 @@
             </div>
         </div>
     </div>
-
-    <!-- ========================================== -->
-    <!-- JAVASCRIPT: O MOTOR DE AUTENTICAÇÃO E DADOS -->
-    <!-- ========================================== -->
-    <script>
-        // ATENÇÃO: COLOQUE SEUS DADOS REAIS ABAIXO!
-        const supabaseUrl = 'COLOQUE_SUA_URL_DO_SUPABASE_AQUI'; 
-        const supabaseKey = 'COLOQUE_SUA_CHAVE_ANON_AQUI'; 
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-        let usuarioLogado = null;
-        let transacoesGlobais = [];
-        let categoriasGlobais = [];
-        let dividasGlobais = [];
-        let planosGlobais = [];
-
-        const formatarMoeda = (v) => `R$ ${v.toFixed(2).replace('.', ',')}`;
-
-        // Checa se o usuário já tem uma sessão salva no navegador (Não precisa relogar)
-        window.onload = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                usuarioLogado = session.user;
-                iniciarSistema();
-            }
-        };
-
-        function alternarTelaAuth(tela) {
-            if (tela === 'cadastro') {
-                document.getElementById('form-login').classList.add('escondido');
-                document.getElementById('form-cadastro').classList.remove('escondido');
-                document.getElementById('texto-boas-vindas').innerText = "Crie sua conta para começar";
-            } else {
-                document.getElementById('form-cadastro').classList.add('escondido');
-                document.getElementById('form-login').classList.remove('escondido');
-                document.getElementById('texto-boas-vindas').innerText = "Seu centro de inteligência financeira";
-            }
-        }
-
-        // --- SISTEMA DE CADASTRO REAL COM LGPD ---
-        async function efetuarCadastro() {
-            const email = document.getElementById('email-cad').value.trim();
-            const senha = document.getElementById('senha-cad').value;
-            
-            if(!email || !senha || senha.length < 6) return alert("E-mail e Senha (mínimo 6 caracteres) são obrigatórios.");
-
-            const btn = document.getElementById('btn-cadastrar');
-            const txt = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Criando...';
-
-            try {
-                // Criação oficial pelo Cofre do Supabase (Auth)
-                const { data, error } = await supabase.auth.signUp({
-                    email: email,
-                    password: senha,
-                });
-
-                if (error) throw error;
-                
-                usuarioLogado = data.user;
-
-                // Rotina de Inicialização de Conta Nova (Categorias e Metas Padrões)
-                await supabase.from('categorias').insert([
-                    { usuario_id: usuarioLogado.id, nome: 'Alimentação', icone: 'fa-burger', cor: 'text-red-500' },
-                    { usuario_id: usuarioLogado.id, nome: 'Salário', icone: 'fa-building', cor: 'text-green-500' }
-                ]);
-                await supabase.from('planos').insert([
-                    { usuario_id: usuarioLogado.id, nome: 'Reserva de Emergência', valor_meta: 10000, cor: 'bg-blue-500' }
-                ]);
-
-                alert("Conta criada com sucesso!");
-                iniciarSistema();
-
-            } catch (e) {
-                alert("Erro no cadastro: " + e.message);
-            } finally {
-                btn.innerHTML = txt;
-            }
-        }
-
-        // --- SISTEMA DE LOGIN REAL COM LGPD ---
-        async function efetuarLogin() {
-            const email = document.getElementById('email-login').value.trim();
-            const senha = document.getElementById('senha-login').value;
-            
-            if(!email || !senha) return alert("Preencha e-mail e senha.");
-
-            const btn = document.getElementById('btn-login-desk');
-            const txt = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Entrando...';
-
-            try {
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email: email,
-                    password: senha,
-                });
-
-                if (error) throw error;
-                
-                usuarioLogado = data.user;
-                iniciarSistema();
-
-            } catch (e) {
-                alert("Login falhou. Verifique as credenciais.");
-            } finally {
-                btn.innerHTML = txt;
-            }
-        }
-
-        function iniciarSistema() {
-            document.getElementById('tela-login').style.display = 'none';
-            document.getElementById('app-principal').classList.remove('escondido');
-            atualizarTudo();
-        }
-
-        async function sair() {
-            await supabase.auth.signOut();
-            usuarioLogado = null;
-            document.getElementById('app-principal').classList.add('escondido');
-            document.getElementById('tela-login').style.display = 'flex';
-            document.getElementById('email-login').value = '';
-            document.getElementById('senha-login').value = '';
-        }
-
-        // ---------------------------------------------
-        // BUSCA DE DADOS (COM RLS BLINDADO)
-        // ---------------------------------------------
-        async function atualizarTudo() {
-            if (!usuarioLogado) return;
-
-            try {
-                // A segurança está no banco de dados (RLS). Ele só trará os dados que pertencem a este usuário logado.
-                const [rTrans, rCat, rDiv, rPlan] = await Promise.all([
-                    supabase.from('transacoes').select('*').order('id', { ascending: false }),
-                    supabase.from('categorias').select('*'),
-                    supabase.from('dividas').select('*'),
-                    supabase.from('planos').select('*')
-                ]);
-
-                transacoesGlobais = rTrans.data || [];
-                categoriasGlobais = rCat.data || [];
-                dividasGlobais = rDiv.data || [];
-                planosGlobais = rPlan.data || [];
-
-                carregarInicio();
-                atualizarDashboard();
-                carregarDividas();
-                carregarCategorias();
-                carregarPlanos();
-            } catch (erro) {
-                console.error("Erro Crítico:", erro);
-            }
-        }
-
-        // ---------------------------------------------
-        // RESTANTE DAS FUNÇÕES (Renderização e Inserção)
-        // ---------------------------------------------
-        function carregarInicio() {
-            let saldo = 0, entradas = 0, saidas = 0;
-            transacoesGlobais.forEach(t => {
-                if(t.tipo === 'receita') { entradas += t.valor; saldo += t.valor; }
-                else { saidas += t.valor; saldo -= t.valor; }
-            });
-            document.getElementById('saldo-tela').innerText = formatarMoeda(saldo);
-            document.getElementById('total-entradas').innerText = formatarMoeda(entradas);
-            document.getElementById('total-saidas').innerText = formatarMoeda(saidas);
-
-            document.getElementById('lista-extrato').innerHTML = transacoesGlobais.map(t => {
-                const cat = categoriasGlobais.find(c => c.id === t.categoria_id) || { nome: 'Geral', icone: 'fa-tag' };
-                const corBg = t.tipo === 'despesa' ? 'bg-red-100' : 'bg-green-100';
-                const corTxt = t.tipo === 'despesa' ? 'text-red-500' : 'text-green-500';
-                return `
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-                    <div class="flex items-center space-x-4"><div class="w-12 h-12 ${corBg} rounded-full flex items-center justify-center ${corTxt} text-xl"><i class="fa-solid ${cat.icone}"></i></div>
-                    <div><p class="text-gray-900 font-bold">${t.descricao}</p><p class="text-gray-400 text-xs font-bold">${cat.nome} • ${t.data_vencimento}</p></div></div>
-                    <p class="${corTxt} font-black text-lg">${t.tipo === 'despesa' ? '-' : '+'} ${formatarMoeda(t.valor)}</p>
-                </div>`;
-            }).join('') || '<p class="text-center text-gray-400 py-6">Nenhuma transação.</p>';
-        }
-
-        let transacaoNLP = null;
-        function simularEnvioVoz() {
-            const input = document.getElementById('input-magico').value.toLowerCase();
-            if(!input) return;
-            
-            const nums = input.match(/\d+(?:[.,]\d+)?/g);
-            const val = nums ? Math.max(...nums.map(n => parseFloat(n.replace(',', '.')))) : 0;
-            const isReceita = ['recebi', 'ganhei', 'pix', 'salário'].some(p => input.includes(p));
-
-            transacaoNLP = {
-                usuario_id: usuarioLogado.id, // Vínculo de Segurança
-                valor: val,
-                tipo: isReceita ? 'receita' : 'despesa',
-                descricao: input.split(' ')[0].toUpperCase(),
-                data_vencimento: new Date().toISOString().split('T')[0],
-                categoria_id: categoriasGlobais.length > 0 ? categoriasGlobais[0].id : null
-            };
-
-            const t = document.getElementById('modal-titulo');
-            const v = document.getElementById('conf-val');
-            
-            t.innerText = isReceita ? "Registrar Entrada?" : "Registrar Saída?";
-            v.innerText = `${isReceita ? '+' : '-'} ${formatarMoeda(val)}`;
-            v.className = `text-3xl font-black ${isReceita ? 'text-green-500' : 'text-red-500'}`;
-            
-            document.getElementById('modal-confirmacao').classList.remove('hidden');
-        }
-
-        function fecharModal() { document.getElementById('modal-confirmacao').classList.add('hidden'); }
-
-        async function confirmarSalvamentoNLP() {
-            if(!transacaoNLP || !usuarioLogado) return;
-            const btn = document.getElementById('btn-salvar-modal');
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-
-            try {
-                await supabase.from('transacoes').insert([transacaoNLP]);
-                await atualizarTudo();
-                fecharModal();
-                document.getElementById('input-magico').value = '';
-            } catch(e) { alert("Erro ao gravar."); }
-            finally { btn.innerHTML = '<i class="fa-solid fa-check"></i> Confirmar'; }
-        }
-
-        function atualizarDashboard() {
-            let totalDespesas = 0;
-            transacoesGlobais.forEach(t => { if(t.tipo === 'despesa') totalDespesas += t.valor; });
-            document.getElementById('dash-media').innerText = formatarMoeda(totalDespesas / 30);
-            document.getElementById('texto-coach').innerText = `O sistema detectou ${transacoesGlobais.length} transações oficiais vinculadas a você.`;
-        }
-
-        function carregarDividas() {
-            const html = dividasGlobais.map(d => `<div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex justify-between"><p class="font-bold text-gray-800 text-sm">${d.descricao}</p><p class="font-black">${formatarMoeda(d.valor)}</p></div>`).join('');
-            document.getElementById('col-div-atual').innerHTML = html || '<p class="text-xs text-gray-400">Limpo!</p>';
-        }
-
-        function abrirModalDivida() { document.getElementById('modal-divida').classList.remove('hidden'); }
-        function fecharModalDivida() { document.getElementById('modal-divida').classList.add('hidden'); }
-
-        async function salvarNovaDivida() {
-            const desc = document.getElementById('div-desc').value;
-            const valorTotal = parseFloat(document.getElementById('div-valor').value);
-            const parcelas = parseInt(document.getElementById('div-parcelas').value);
-            const dataBase = document.getElementById('div-data').value;
-
-            if(!desc || !valorTotal || !dataBase) return;
-            const parcelasArray = [];
-            for(let i=0; i<parcelas; i++) {
-                parcelasArray.push({
-                    usuario_id: usuarioLogado.id, descricao: `${desc} (${i+1}/${parcelas})`, 
-                    valor: valorTotal/parcelas, data_vencimento: dataBase
-                });
-            }
-            await supabase.from('dividas').insert(parcelasArray);
-            await atualizarTudo();
-            fecharModalDivida();
-        }
-
-        function carregarCategorias() {
-            document.getElementById('grid-categorias').innerHTML = categoriasGlobais.map(c => `
-                <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm"><i class="fa-solid ${c.icone} ${c.cor} text-3xl mb-2"></i><h4 class="font-bold text-lg">${c.nome}</h4></div>
-            `).join('');
-        }
-        function abrirModalCategoria() { document.getElementById('modal-categoria').classList.remove('hidden'); }
-        function fecharModalCategoria() { document.getElementById('modal-categoria').classList.add('hidden'); }
-        async function salvarNovaCategoria() {
-            const nome = document.getElementById('cat-nome').value;
-            if(!nome) return;
-            await supabase.from('categorias').insert([{ usuario_id: usuarioLogado.id, nome: nome, icone: 'fa-tag', cor: 'text-blue-500' }]);
-            await atualizarTudo();
-            fecharModalCategoria();
-        }
-
-        function carregarPlanos() {
-            document.getElementById('grid-planos').innerHTML = planosGlobais.map(p => {
-                const perc = Math.min((p.valor_atual / p.valor_meta) * 100, 100);
-                return `<div class="bg-white p-6 rounded-3xl border border-gray-100"><h3 class="font-black text-lg mb-2">${p.nome}</h3><div class="w-full bg-gray-100 rounded-full h-4"><div class="${p.cor} h-4 rounded-full" style="width: ${perc}%"></div></div></div>`;
-            }).join('');
-        }
-        function abrirModalAporte() { document.getElementById('modal-aporte').classList.remove('hidden'); }
-        function fecharModalAporte() { document.getElementById('modal-aporte').classList.add('hidden'); }
-        async function salvarAporte() {
-            const val = parseFloat(document.getElementById('aporte-valor').value);
-            if(!val || planosGlobais.length === 0) return;
-            const novoValor = planosGlobais[0].valor_atual + val;
-            await supabase.from('planos').update({ valor_atual: novoValor }).eq('id', planosGlobais[0].id).eq('usuario_id', usuarioLogado.id);
-            await atualizarTudo();
-            fecharModalAporte();
-        }
-
-        function mudarAba(nome) {
-            document.querySelectorAll('.aba-conteudo').forEach(a => a.classList.add('escondido'));
-            document.getElementById(`aba-${nome}`).classList.remove('escondido');
-        }
-    </script>
 </body>
 </html>
