@@ -56,9 +56,9 @@ def listar_transacoes(usuario_id: int, db: Session = Depends(get_db)):
     return db.query(models.Transacao).filter(models.Transacao.usuario_id == usuario_id).all()
 
 @app.post("/transacoes/", response_model=schemas.TransacaoResposta)
-def criar_transacao(transacao: schemas.TransacaoCriar, db: Session = Depends(get_db)):
-    # O superpoder do **: Ele desempacota todo o JSON e encaixa nas colunas perfeitamente
-    nova_transacao = models.Transacao(**transacao.dict())
+def criar_transacao(transacao: schemas.TransacaoCriar, usuario_id: int, db: Session = Depends(get_db)):
+    # Agora a API exige saber de quem é a conta antes de guardar!
+    nova_transacao = models.Transacao(**transacao.dict(), usuario_id=usuario_id)
     db.add(nova_transacao)
     db.commit()
     db.refresh(nova_transacao)
