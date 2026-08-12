@@ -9,7 +9,9 @@ const supabaseKey = 'sb_publishable_Q6JiNxMGUdqObAMxj3EYSA_s_cYpFUk';
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 // Ferramenta global de moeda para não repetir código
-const formatarMoeda = (v) => `R$ ${v.toFixed(2).replace('.', ',')}`;
+const formatarMoeda = (v) => {
+    return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+};
 
 // Escudo Protetor Global: Verifica se o usuário tem permissão para estar na tela
 async function verificarSessaoSegura() {
