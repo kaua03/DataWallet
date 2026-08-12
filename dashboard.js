@@ -12,6 +12,19 @@ let grafTop = null;
 
 let statsGlobais = { receitas: 0, despesas: 0, saldo: 0, taxaPoupanca: 0, mediaDiaria: 0, maiorGasto: null, topCategoria: null, transacoesNoPeriodo: 0 };
 
+// DICIONÁRIO DE CORES SÊNIOR (As cores agora são consistentes em todos os gráficos)
+const coresPorCategoria = {
+    'Alimentação': { hex: '#3b82f6', tw: 'bg-blue-500' },          // Azul
+    'Veículo & Transporte': { hex: '#6366f1', tw: 'bg-indigo-500' },// Índigo
+    'Moradia': { hex: '#14b8a6', tw: 'bg-teal-500' },              // Teal
+    'Estudo & Carreira': { hex: '#a855f7', tw: 'bg-purple-500' },   // Roxo
+    'Saúde & Imprevistos': { hex: '#ec4899', tw: 'bg-pink-500' },  // Rosa
+    'Lazer & Pessoal': { hex: '#f97316', tw: 'bg-orange-500' },    // Laranja
+    'Assinaturas & Serviços': { hex: '#8b5cf6', tw: 'bg-violet-500' }, // Violeta
+    'Renda & Salário': { hex: '#10b981', tw: 'bg-emerald-500' },   // Verde
+    'Outros': { hex: '#94a3b8', tw: 'bg-slate-400' }               // Cinza
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
     usuarioLogado = await verificarSessaoSegura();
     if (!usuarioLogado) return; 
@@ -87,7 +100,7 @@ function processarEAtualizarTudo() {
     });
 
     let totalDespesas = 0, totalReceitas = 0;
-    let maiorGasto = { valor: 0, descricao: "Nenhum" };
+    let maiorGasto = { valor: 0, descricao: "Nenhum", categoria: "Nenhuma" };
     const gastosPorCategoria = {};
     const topGastos = [];
     const agrupamentoTemporal = {}; 
@@ -107,15 +120,24 @@ function processarEAtualizarTudo() {
         }
         if(!agrupamentoTemporal[chaveTempo]) agrupamentoTemporal[chaveTempo] = { rec: 0, des: 0 };
 
+        const catNomeBase = categoriasGlobais.find(c => c.id === t.categoria_id)?.nome || 'Outros';
+        
+        // Pega só o primeiro nome se houver barra ou parênteses para achar no dicionário
+        let catNomeCurto = catNomeBase;
+        if(catNomeBase.includes('Alimentação')) catNomeCurto = 'Alimentação';
+        if(catNomeBase.includes('Veículo')) catNomeCurto = 'Veículo & Transporte';
+        if(catNomeBase.includes('Estudo')) catNomeCurto = 'Estudo & Carreira';
+        if(catNomeBase.includes('Saúde')) catNomeCurto = 'Saúde & Imprevistos';
+
         if(t.tipo === 'despesa') {
             totalDespesas += t.valor; 
             agrupamentoTemporal[chaveTempo].des += t.valor;
+            t.categoriaNome = catNomeCurto; // Guarda a categoria para o Top 5
             topGastos.push(t);
             
-            if(t.valor > maiorGasto.valor) maiorGasto = t;
+            if(t.valor > maiorGasto.valor) maiorGasto = { valor: t.valor, descricao: t.descricao, categoria: catNomeCurto };
             
-            const catNome = categoriasGlobais.find(c => c.id === t.categoria_id)?.nome || 'Outros';
-            gastosPorCategoria[catNome] = (gastosPorCategoria[catNome] || 0) + t.valor;
+            gastosPorCategoria[catNomeCurto] = (gastosPorCategoria[catNomeCurto] || 0) + t.valor;
         } else {
             totalReceitas += t.valor;
             agrupamentoTemporal[chaveTempo].rec += t.valor;
@@ -139,7 +161,7 @@ function processarEAtualizarTudo() {
     document.getElementById('kpi-despesas').innerText = formatarMoeda(totalDespesas);
     
     let taxaTexto = taxa.toFixed(1) + "%";
-    let corTaxa = taxa >= 20 ? 'bg-indigo-600' : (taxa > 0 ? 'bg-sky-500' : 'bg-rose-500');
+    let corTaxa = taxa >= 20 ? 'bg-emerald-500' : (taxa > 0 ? 'bg-indigo-500' : 'bg-rose-500');
     document.getElementById('kpi-taxa-texto').innerText = taxaTexto;
     
     let percentualBarra = Math.min(Math.max(taxa, 0), 100); 
@@ -153,15 +175,15 @@ function processarEAtualizarTudo() {
 }
 
 // ---------------------------------------------
-// LISTA DE CATEGORIAS HTML (Progress Bars Fortes)
+// LISTA DE CATEGORIAS HTML
 // ---------------------------------------------
 function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
-    const paleta = ['bg-indigo-600', 'bg-blue-500', 'bg-sky-400', 'bg-teal-400', 'bg-slate-400', 'bg-gray-400'];
-    
-    const html = ordenadas.map((cat, index) => {
+    const html = ordenadas.map(cat => {
         const valor = gastos[cat];
         const perc = totalGeral > 0 ? ((valor / totalGeral) * 100).toFixed(1) : 0;
-        const cor = paleta[index % paleta.length];
+        
+        // Pega a cor do Dicionário Global
+        const corBase = coresPorCategoria[cat] ? coresPorCategoria[cat].tw : coresPorCategoria['Outros'].tw;
         
         return `
         <div>
@@ -173,7 +195,7 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
                 </div>
             </div>
             <div class="w-full bg-slate-100 rounded-full h-2">
-                <div class="${cor} h-2 rounded-full transition-all duration-1000" style="width: ${perc}%"></div>
+                <div class="${corBase} h-2 rounded-full transition-all duration-1000" style="width: ${perc}%"></div>
             </div>
         </div>
         `;
@@ -183,14 +205,14 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
 }
 
 // ---------------------------------------------
-// ENGENHARIA VISUAL DOS GRÁFICOS (ESTÉTICA CORPORATIVA SÊNIOR)
+// ENGENHARIA VISUAL DOS GRÁFICOS
 // ---------------------------------------------
 function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, top5, totalDespesas) {
     Chart.defaults.font.family = "'Inter', sans-serif";
-    Chart.defaults.color = '#64748b'; 
+    Chart.defaults.color = '#94a3b8'; 
 
     const tooltipPro = {
-        backgroundColor: '#0f172a', // Slate 900 sólido
+        backgroundColor: '#0f172a', 
         titleFont: { size: 12, family: 'Inter', weight: 'bold' },
         bodyFont: { size: 13, family: 'Inter', weight: 'bold' },
         padding: 12,
@@ -213,14 +235,13 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
     chavesTempo.forEach(c => {
         labelsT.push(c);
         dadosRec.push(agrupamentoTemporal[c].rec);
-        // Despesa Vira Negativo para descer do Eixo
         dadosDes.push(-Math.abs(agrupamentoTemporal[c].des)); 
         
         acumuladoAtual += (agrupamentoTemporal[c].rec - agrupamentoTemporal[c].des);
         dadosAcumulados.push(acumuladoAtual);
     });
 
-    // 1. GRÁFICO COMBO MASTER SÊNIOR (Cores Sólidas e Eixo Forte)
+    // 1. GRÁFICO COMBO MASTER (Cores Vermelho/Verde como pedido)
     const ctxC = document.getElementById('graficoCombo').getContext('2d');
     if (grafCombo) grafCombo.destroy();
 
@@ -233,11 +254,11 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
                     type: 'line',
                     label: 'Saldo Acumulado',
                     data: dadosAcumulados,
-                    borderColor: '#f97316', // Laranja Ouro Corporativo
+                    borderColor: '#4f46e5', // Indigo 600
                     borderWidth: 3,
-                    tension: 0.1, // Linha mais reta e analítica
+                    tension: 0.1, 
                     pointBackgroundColor: '#ffffff',
-                    pointBorderColor: '#f97316',
+                    pointBorderColor: '#4f46e5',
                     pointBorderWidth: 2,
                     pointRadius: 5,
                     pointHoverRadius: 7,
@@ -247,7 +268,7 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
                     type: 'bar',
                     label: 'Entradas',
                     data: dadosRec,
-                    backgroundColor: '#06b6d4', // Ciano Sólido Sênior
+                    backgroundColor: '#10b981', // Emerald 500 (Verde)
                     borderRadius: 2,     
                     maxBarThickness: 40, 
                 },
@@ -255,7 +276,7 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
                     type: 'bar',
                     label: 'Saídas',
                     data: dadosDes,
-                    backgroundColor: '#1e293b', // Chumbo Escuro Sólido
+                    backgroundColor: '#ef4444', // Red 500 (Vermelho)
                     borderRadius: 2,
                     maxBarThickness: 40,
                 }
@@ -280,7 +301,6 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
                 y: { 
                     stacked: true, 
                     grid: { 
-                        // EIXO ZERO DESTACADO EM PRETO PARA SEPARAR LUCRO/PREJUÍZO
                         color: (ctx) => ctx.tick.value === 0 ? '#334155' : '#e2e8f0',
                         lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1,
                         borderDash: (ctx) => ctx.tick.value === 0 ? [] : [4, 4]
@@ -295,31 +315,38 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
         }
     });
 
-    // 2. PIZZA (Doughnut Forte e Robusto)
+    // 2. PIZZA (Doughnut com Cores do Dicionário)
     const ctxP = document.getElementById('graficoPizza').getContext('2d');
     if (grafPizza) grafPizza.destroy();
 
-    const paletaCorp = ['#4f46e5', '#06b6d4', '#f97316', '#ec4899', '#8b5cf6', '#64748b'];
-    let lblP = [], datP = [];
+    let lblP = [], datP = [], coresP = [];
     
-    if (categoriasOrdenadas.length === 0) { lblP = ['Vazio']; datP = [1]; } 
+    if (categoriasOrdenadas.length === 0) { lblP = ['Vazio']; datP = [1]; coresP = ['#f1f5f9']; } 
     else {
         let soma = 0;
         for (let i = 0; i < Math.min(5, categoriasOrdenadas.length); i++) {
-            lblP.push(categoriasOrdenadas[i]); datP.push(gastosPorCategoria[categoriasOrdenadas[i]]);
-            soma += gastosPorCategoria[categoriasOrdenadas[i]];
+            const nomeCat = categoriasOrdenadas[i];
+            lblP.push(nomeCat); 
+            datP.push(gastosPorCategoria[nomeCat]);
+            // Pega a cor correspondente no dicionário
+            coresP.push(coresPorCategoria[nomeCat] ? coresPorCategoria[nomeCat].hex : coresPorCategoria['Outros'].hex);
+            soma += gastosPorCategoria[nomeCat];
         }
-        if (categoriasOrdenadas.length > 5) { lblP.push('Outros'); datP.push(totalDespesas - soma); }
+        if (categoriasOrdenadas.length > 5) { 
+            lblP.push('Outros'); 
+            datP.push(totalDespesas - soma); 
+            coresP.push(coresPorCategoria['Outros'].hex);
+        }
     }
 
     document.getElementById('pizza-total').innerText = formatarMoeda(totalDespesas);
 
     grafPizza = new Chart(ctxP, {
         type: 'doughnut',
-        data: { labels: lblP, datasets: [{ data: datP, backgroundColor: categoriasOrdenadas.length === 0 ? ['#f1f5f9'] : paletaCorp, borderWidth: 3, borderColor: '#ffffff', borderRadius: 4, hoverOffset: 6 }] },
+        data: { labels: lblP, datasets: [{ data: datP, backgroundColor: coresP, borderWidth: 3, borderColor: '#ffffff', borderRadius: 4, hoverOffset: 6 }] },
         options: { 
             responsive: true, maintainAspectRatio: false, 
-            cutout: '65%', // Gráfico mais "Grosso" e substancial
+            cutout: '65%', 
             plugins: { 
                 legend: { display: false }, 
                 tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${formatarMoeda(categoriasOrdenadas.length === 0 ? 0 : ctx.raw)}` } } 
@@ -327,7 +354,7 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
         }
     });
 
-    // 3. TOP 5 GASTOS (Barras Sólidas Indigo)
+    // 3. TOP 5 GASTOS (Barras com a Cor da Categoria Correspondente)
     const ctxT = document.getElementById('graficoTopGastos').getContext('2d');
     if (grafTop) grafTop.destroy();
 
@@ -340,9 +367,10 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
             }) : ['Nenhum'],
             datasets: [{
                 data: top5.length > 0 ? top5.map(t => t.valor) : [0],
-                backgroundColor: '#4f46e5', // Indigo 600 Sólido
+                // Acha a cor correspondente para cada barrinha individualmente
+                backgroundColor: top5.length > 0 ? top5.map(t => coresPorCategoria[t.categoriaNome] ? coresPorCategoria[t.categoriaNome].hex : coresPorCategoria['Outros'].hex) : '#94a3b8',
                 borderRadius: 4,
-                maxBarThickness: 16 // Barras com presença
+                maxBarThickness: 16 
             }]
         },
         options: {
