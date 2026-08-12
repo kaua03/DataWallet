@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pastas e Categorias - DataWallet</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- DEPENDÊNCIAS DO MOTOR -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js" defer></script>
+    <script src="categorias.js" defer></script>
+    
+    <style>
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        .slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans h-screen overflow-hidden flex relative fade-in">
+
+    <!-- MENU LATERAL (PC) -->
+    <aside class="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 p-6 h-full shadow-lg z-20">
+        <div class="flex items-center gap-3 mb-10">
+            <i class="fa-solid fa-wallet text-blue-600 text-3xl"></i>
+            <h2 class="text-2xl font-black text-gray-900 tracking-tight">DataWallet</h2>
+        </div>
+        
+        <nav class="flex-1 space-y-2">
+            <a href="movimentacoes.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition">
+                <i class="fa-solid fa-money-bill-transfer w-5"></i> Início
+            </a>
+            <a href="dashboard.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition">
+                <i class="fa-solid fa-chart-pie w-5"></i> Dashboard (Coach)
+            </a>
+            <a href="dividas.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition">
+                <i class="fa-solid fa-file-invoice-dollar w-5"></i> Dívidas
+            </a>
+            <!-- ATIVO (Azul) -->
+            <a href="categorias.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold bg-blue-50 text-blue-600 transition">
+                <i class="fa-solid fa-layer-group w-5"></i> Categorias
+            </a>
+            <a href="planos.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition">
+                <i class="fa-solid fa-bullseye w-5"></i> Planos
+            </a>
+        </nav>
+        <button onclick="sairDoSistema()" class="flex items-center gap-3 p-3 rounded-xl font-bold text-red-500 hover:bg-red-50 transition mt-auto">
+            <i class="fa-solid fa-right-from-bracket w-5"></i> Sair
+        </button>
+    </aside>
+
+    <!-- ÁREA CENTRAL DE CONTEÚDO -->
+    <main class="flex-1 h-full overflow-y-auto bg-gray-50 relative pb-24 md:pb-0 p-4 md:p-8">
+        <section class="max-w-5xl mx-auto">
+            
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-blue-600"></i> Pastas de Organização
+                </h2>
+                <button onclick="abrirModalCategoria()" class="text-blue-600 font-bold bg-blue-50 px-4 py-2 rounded-xl text-sm hover:bg-blue-100 transition shadow-sm">
+                    + Nova Pasta
+                </button>
+            </div>
+            
+            <p class="text-sm text-gray-500 mb-6 font-medium">Veja o ranking de pastas que mais consomem o seu orçamento.</p>
+            
+            <!-- GRID DE CATEGORIAS -->
+            <div id="grid-categorias" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <!-- Skeleton Loading -->
+                <p class="text-gray-400 text-sm font-bold"><i class="fa-solid fa-spinner fa-spin"></i> Carregando pastas...</p>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- MENU INFERIOR (Celular) -->
+    <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t border-gray-200 px-4 py-3 flex justify-between items-center z-20">
+        <a href="movimentacoes.html" class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition"><i class="fa-solid fa-house text-xl mb-1"></i><span class="text-[10px] font-bold">Início</span></a>
+        <a href="dashboard.html" class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition"><i class="fa-solid fa-chart-pie text-xl mb-1"></i><span class="text-[10px] font-bold">Análise</span></a>
+        <div class="relative -top-6">
+            <a href="movimentacoes.html" class="w-14 h-14 bg-blue-600 text-white rounded-full flex justify-center items-center text-xl shadow-[0_10px_20px_rgba(37,99,235,0.3)] border-4 border-gray-50"><i class="fa-solid fa-plus"></i></a>
+        </div>
+        <a href="dividas.html" class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition"><i class="fa-solid fa-file-invoice-dollar text-xl mb-1"></i><span class="text-[10px] font-bold">Dívidas</span></a>
+        <!-- ATIVO (Azul) -->
+        <a href="categorias.html" class="flex flex-col items-center text-blue-600 transition"><i class="fa-solid fa-layer-group text-xl mb-1"></i><span class="text-[10px] font-bold">Pastas</span></a>
+    </nav>
+
+    <!-- MODAL: NOVA CATEGORIA -->
+    <div id="modal-categoria" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center fade-in md:p-4">
+        <div class="bg-white w-full max-w-sm rounded-t-[2.5rem] md:rounded-3xl p-6 shadow-2xl relative slide-up">
+            <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6 md:hidden"></div>
+            
+            <h3 class="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
+                <i class="fa-solid fa-layer-group text-blue-600"></i> Criar Nova Pasta
+            </h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">Nome da Pasta</label>
+                    <input type="text" id="cat-nome" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-medium" placeholder="Ex: Educação">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">Ícone FontAwesome (Opcional)</label>
+                    <input type="text" id="cat-icone" value="fa-tag" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-medium" placeholder="Ex: fa-book">
+                    <p class="text-[10px] text-gray-400 mt-1">Deixe fa-tag para usar o ícone padrão.</p>
+                </div>
+                <!-- Mini Seletor de Cores de Elite -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-2">Cor da Pasta</label>
+                    <div class="flex gap-3">
+                        <button onclick="selecionarCor('text-blue-500')" class="w-8 h-8 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center border-2 border-blue-500 color-btn"><i class="fa-solid fa-check text-xs"></i></button>
+                        <button onclick="selecionarCor('text-red-500')" class="w-8 h-8 rounded-full bg-red-100 text-red-500 flex items-center justify-center border-2 border-transparent color-btn"></button>
+                        <button onclick="selecionarCor('text-green-500')" class="w-8 h-8 rounded-full bg-green-100 text-green-500 flex items-center justify-center border-2 border-transparent color-btn"></button>
+                        <button onclick="selecionarCor('text-purple-500')" class="w-8 h-8 rounded-full bg-purple-100 text-purple-500 flex items-center justify-center border-2 border-transparent color-btn"></button>
+                        <button onclick="selecionarCor('text-orange-500')" class="w-8 h-8 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center border-2 border-transparent color-btn"></button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex space-x-3 mt-8">
+                <button onclick="fecharModalCategoria()" class="flex-1 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition">Cancelar</button>
+                <button onclick="salvarNovaCategoria()" id="btn-salvar-categoria" class="flex-1 py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-md hover:bg-blue-700 transition">Criar Pasta</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
