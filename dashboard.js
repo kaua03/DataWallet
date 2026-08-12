@@ -1,189 +1,323 @@
 // ==========================================
-// dashboard.js - MOTOR DE BUSINESS INTELLIGENCE
+// dashboard.js - MOTOR DE DATA SCIENCE E COACH IA
 // ==========================================
 
 let usuarioLogado = null;
 let transacoesGlobais = [];
 let categoriasGlobais = [];
-let dividasGlobais = [];
+let graficoBalancoInstancia = null;
+let graficoPizzaInstancia = null;
 
-// Ignição da Tela
+// Variáveis para a IA do Coach ler em tempo real
+let statsGlobais = {
+    receitas: 0, despesas: 0, saldo: 0, taxaPoupanca: 0, 
+    mediaDiaria: 0, maiorGasto: null, topCategoria: null, transacoesNoPeriodo: 0
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
     usuarioLogado = await verificarSessaoSegura();
-    if (!usuarioLogado) return; // O config.js já tratou de redirecionar se não tiver login
+    if (!usuarioLogado) return; 
 
-    // Escuta a mudança do filtro de período para recalcular os dados na hora
-    document.getElementById('filtro-periodo').addEventListener('change', renderizarDashboard);
+    // Ouve a mudança do filtro
+    document.getElementById('filtro-periodo').addEventListener('change', processarEAtualizarTudo);
+
+    // Ouve Enter no Chat
+    document.getElementById('input-coach').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') enviarMensagemCoach();
+    });
 
     await carregarDadosDoBanco();
 });
 
-// 1. O EXTRATOR (Puxa os dados isolados do usuário)
 async function carregarDadosDoBanco() {
     try {
-        const [rTrans, rCat, rDiv] = await Promise.all([
+        const [rTrans, rCat] = await Promise.all([
             supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id),
-            supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id),
-            supabaseClient.from('dividas').select('*').eq('usuario_id', usuarioLogado.id)
+            supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
         ]);
 
         transacoesGlobais = rTrans.data || [];
         categoriasGlobais = rCat.data || [];
-        dividasGlobais = rDiv.data || [];
 
-        renderizarDashboard();
+        processarEAtualizarTudo();
+
     } catch (e) {
-        console.error("Erro ao puxar dados para análise:", e.message);
-        document.getElementById('texto-coach').innerHTML = "Ocorreu um erro ao carregar seus dados.";
+        console.error("Erro ao puxar dados:", e.message);
     }
 }
 
-// 2. O CÉREBRO ANALÍTICO (Processa o Período e a Matemática)
-function renderizarDashboard() {
+// ---------------------------------------------
+// O MOTOR DE PROCESSAMENTO (Matemática e Gráficos)
+// ---------------------------------------------
+function processarEAtualizarTudo() {
     const periodoSelect = document.getElementById('filtro-periodo').value;
     const dataAtual = new Date();
-    
-    // Filtragem de Transações por Data
+    const mesAtual = dataAtual.getMonth();
+    const anoAtual = dataAtual.getFullYear();
+
+    // 1. FILTRO DE TEMPO
     const transacoesFiltradas = transacoesGlobais.filter(t => {
-        if (!t.data_vencimento) return false;
-        
+        if (!t.data_vencimento) return true;
         const dTransacao = new Date(t.data_vencimento + 'T12:00:00Z');
         
         if (periodoSelect === 'mes_atual') {
-            return dTransacao.getMonth() === dataAtual.getMonth() && dTransacao.getFullYear() === dataAtual.getFullYear();
-        } else if (periodoSelect === 'mes_anterior') {
-            const mesAnt = dataAtual.getMonth() === 0 ? 11 : dataAtual.getMonth() - 1;
-            const anoAnt = dataAtual.getMonth() === 0 ? dataAtual.getFullYear() - 1 : dataAtual.getFullYear();
+            return dTransacao.getMonth() === mesAtual && dTransacao.getFullYear() === anoAtual;
+        } else if (periodoSelect === 'mes_passado') {
+            const mesAnt = mesAtual === 0 ? 11 : mesAtual - 1;
+            const anoAnt = mesAtual === 0 ? anoAtual - 1 : anoAtual;
             return dTransacao.getMonth() === mesAnt && dTransacao.getFullYear() === anoAnt;
         } else if (periodoSelect === 'ano_atual') {
-            return dTransacao.getFullYear() === dataAtual.getFullYear();
+            return dTransacao.getFullYear() === anoAtual;
         }
-        return true;
+        return true; // 'tudo'
     });
 
-    // Matemática Financeira do Período
+    // 2. MATEMÁTICA
     let totalDespesas = 0;
     let totalReceitas = 0;
     let maiorGasto = { valor: 0, descricao: "Nenhum" };
-    const totaisCat = {};
+    const gastosPorCategoria = {};
 
     transacoesFiltradas.forEach(t => { 
         if(t.tipo === 'despesa') {
             totalDespesas += t.valor; 
-            if(t.valor > maiorGasto.valor) maiorGasto = t; // Encontra o maior gasto
+            if(t.valor > maiorGasto.valor) maiorGasto = t;
             
-            const cNome = categoriasGlobais.find(c => c.id === t.categoria_id)?.nome || 'Outros';
-            totaisCat[cNome] = (totaisCat[cNome] || 0) + t.valor;
+            const catNome = categoriasGlobais.find(c => c.id === t.categoria_id)?.nome || 'Outros';
+            gastosPorCategoria[catNome] = (gastosPorCategoria[catNome] || 0) + t.valor;
         } else {
             totalReceitas += t.valor;
         }
     });
 
-    // 3. ATUALIZAÇÃO DAS MÉTRICAS EXTRAS
-    const diasNoPeriodo = periodoSelect === 'ano_atual' ? 365 : 30; // Aproximação de cálculo
-    const mediaDiaria = totalDespesas > 0 ? (totalDespesas / diasNoPeriodo) : 0;
-    
-    // Taxa de Poupança = ((Receitas - Despesas) / Receitas) * 100
-    let taxaPoupanca = 0;
-    let corTaxa = 'text-gray-500';
-    
-    if (totalReceitas > 0) {
-        taxaPoupanca = ((totalReceitas - totalDespesas) / totalReceitas) * 100;
-        if (taxaPoupanca >= 20) corTaxa = 'text-green-500';
-        else if (taxaPoupanca > 0) corTaxa = 'text-blue-500';
-        else corTaxa = 'text-red-500';
-    } else if (totalDespesas > 0) {
-        // Gastou sem receber nada no período
-        taxaPoupanca = -100;
-        corTaxa = 'text-red-500';
-    }
+    // Taxa de Poupança e Média Diária
+    let taxa = 0;
+    if (totalReceitas > 0) taxa = ((totalReceitas - totalDespesas) / totalReceitas) * 100;
+    else if (totalDespesas > 0) taxa = -100;
 
-    document.getElementById('dash-media').innerText = formatarMoeda(mediaDiaria);
+    const diasNoPeriodo = periodoSelect === 'mes_atual' ? dataAtual.getDate() : 30; // Aproximação pra métrica diária
+    const media = totalDespesas > 0 ? (totalDespesas / diasNoPeriodo) : 0;
+
+    // Atualiza Stats Globais para o Coach ler
+    const categoriasOrdenadas = Object.keys(gastosPorCategoria).sort((a, b) => gastosPorCategoria[b] - gastosPorCategoria[a]);
+    
+    statsGlobais = {
+        receitas: totalReceitas,
+        despesas: totalDespesas,
+        saldo: totalReceitas - totalDespesas,
+        taxaPoupanca: taxa,
+        mediaDiaria: media,
+        maiorGasto: maiorGasto,
+        topCategoria: categoriasOrdenadas.length > 0 ? { nome: categoriasOrdenadas[0], valor: gastosPorCategoria[categoriasOrdenadas[0]] } : null,
+        transacoesNoPeriodo: transacoesFiltradas.length
+    };
+
+    // 3. RENDERIZA OS CARDS (DOM)
+    document.getElementById('dash-media').innerText = formatarMoeda(media);
+    document.getElementById('dash-taxa').innerText = `${taxa.toFixed(1)}%`;
+    document.getElementById('dash-taxa').className = `text-xl md:text-2xl font-black ${taxa >= 20 ? 'text-green-500' : (taxa > 0 ? 'text-blue-500' : 'text-red-500')}`;
     
     if (maiorGasto.valor > 0) {
-        document.getElementById('dash-maior').innerHTML = `${formatarMoeda(maiorGasto.valor)} <br><span class="text-xs font-medium text-gray-400">(${maiorGasto.descricao})</span>`;
+        document.getElementById('dash-maior').innerText = formatarMoeda(maiorGasto.valor);
+        document.getElementById('dash-maior-desc').innerText = maiorGasto.descricao;
     } else {
         document.getElementById('dash-maior').innerText = "R$ 0,00";
+        document.getElementById('dash-maior-desc').innerText = "--";
     }
 
-    document.getElementById('dash-taxa').innerText = `${taxaPoupanca.toFixed(1)}%`;
-    document.getElementById('dash-taxa').className = `text-2xl font-black ${corTaxa}`;
+    const badgeStatus = document.getElementById('dash-status');
+    if (taxa >= 20) { badgeStatus.innerText = "Excelente"; badgeStatus.className = "mt-2 text-xs font-black px-3 py-1 rounded-full bg-green-100 text-green-600 inline-block uppercase"; }
+    else if (taxa > 0) { badgeStatus.innerText = "Estável"; badgeStatus.className = "mt-2 text-xs font-black px-3 py-1 rounded-full bg-blue-100 text-blue-600 inline-block uppercase"; }
+    else { badgeStatus.innerText = "Em Risco"; badgeStatus.className = "mt-2 text-xs font-black px-3 py-1 rounded-full bg-red-100 text-red-600 inline-block uppercase"; }
 
-    // 4. ATUALIZAÇÃO DO GRÁFICO (Barras de Categoria)
-    const categoriasOrdenadas = Object.keys(totaisCat).sort((a, b) => totaisCat[b] - totaisCat[a]);
-    
-    document.getElementById('grafico-categorias').innerHTML = categoriasOrdenadas.map(cat => {
-        const val = totaisCat[cat];
-        // O limite visual da barra será 40% das receitas ou um teto fixo
-        const limite = totalReceitas > 0 ? totalReceitas * 0.4 : 1000; 
-        const perc = Math.min((val / limite) * 100, 100);
-        
-        return `
-            <div class="mb-3">
-                <div class="flex justify-between items-end mb-1">
-                    <span class="text-sm font-bold text-gray-700">${cat}</span>
-                    <span class="text-xs font-bold text-gray-500">${formatarMoeda(val)}</span>
-                </div>
-                <div class="w-full bg-gray-100 rounded-full h-2.5">
-                    <div class="bg-blue-600 h-2.5 rounded-full transition-all duration-1000" style="width: ${perc}%"></div>
-                </div>
-            </div>
-        `;
-    }).join('') || '<p class="text-sm font-bold text-gray-400 text-center py-4">Sem gastos neste período.</p>';
+    // 4. ATUALIZA GRÁFICOS (CHART.JS)
+    renderizarGraficos(totalReceitas, totalDespesas, gastosPorCategoria, categoriasOrdenadas);
 
-    // 5. INTELIGÊNCIA DO COACH FINANCEIRO & ALERTAS
-    gerarCoachEAlertas(taxaPoupanca, totalDespesas, totalReceitas, transacoesFiltradas.length);
+    // 5. MENSAGEM INICIAL DO COACH
+    iniciarCoach();
 }
 
-function gerarCoachEAlertas(taxa, despesas, receitas, qtdTransacoes) {
-    const coach = document.getElementById('texto-coach');
-    const alertas = document.getElementById('lista-alertas');
-    let listaAlertasHTML = '';
+function renderizarGraficos(receitas, despesas, gastosPorCategoria, categoriasOrdenadas) {
+    // Cores Padrão DataWallet
+    const corReceita = '#22c55e'; // Green 500
+    const corDespesa = '#ef4444'; // Red 500
+    const paletaCores = ['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#eab308', '#14b8a6', '#64748b'];
 
-    // Lógica Comportamental do Coach
-    if (qtdTransacoes === 0) {
-        coach.innerHTML = "Não encontrei registros neste período. Lance suas despesas na aba de Início para eu poder analisá-las.";
-    } else if (taxa < 0) {
-        coach.innerHTML = "<strong>Atenção Máxima!</strong> Você gastou mais do que ganhou neste período. Operar no prejuízo prejudica seu patrimônio. Revise os gastos com urgência.";
-    } else if (taxa >= 20) {
-        coach.innerHTML = `Excepcional! Você manteve uma Taxa de Poupança de ${taxa.toFixed(1)}%. Este é o padrão de excelência financeira. Continue investindo a diferença.`;
-    } else {
-        coach.innerHTML = `Sua carteira está estável, mas sua poupança de ${taxa.toFixed(1)}% está abaixo da meta ideal. O recomendado é reter no mínimo 20% do que você ganha.`;
-    }
-
-    // Lógica de Alertas (Dívidas vencendo nos próximos 15 dias)
-    const hoje = new Date();
-    const dataLimite = new Date();
-    dataLimite.setDate(hoje.getDate() + 15);
-
-    const dividasProximas = dividasGlobais.filter(d => {
-        const v = new Date(d.data_vencimento + 'T12:00:00Z');
-        return v >= hoje && v <= dataLimite && d.status !== 'Paga';
+    // GRÁFICO 1: Balanço (Barras)
+    const ctxBalanco = document.getElementById('graficoBalanco').getContext('2d');
+    if (graficoBalancoInstancia) graficoBalancoInstancia.destroy();
+    
+    graficoBalancoInstancia = new Chart(ctxBalanco, {
+        type: 'bar',
+        data: {
+            labels: ['Entradas', 'Saídas'],
+            datasets: [{
+                data: [receitas, despesas],
+                backgroundColor: [corReceita, corDespesa],
+                borderRadius: 8,
+                borderSkipped: false,
+                barPercentage: 0.6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => formatarMoeda(ctx.raw) } } },
+            scales: { y: { beginAtZero: true, display: false }, x: { grid: { display: false } } }
+        }
     });
 
-    if (dividasProximas.length > 0) {
-        dividasProximas.forEach(d => {
-            const dataF = d.data_vencimento.split('-').reverse().join('/');
-            listaAlertasHTML += `
-            <div class="flex items-center gap-3 bg-red-50 p-3 rounded-xl border border-red-200">
-                <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-red-500 shadow-sm shrink-0"><i class="fa-solid fa-calendar-xmark"></i></div>
-                <div><p class="text-sm font-bold text-red-900">${d.descricao}</p><p class="text-xs text-red-700">${formatarMoeda(d.valor)} vence até ${dataF}.</p></div>
-            </div>`;
-        });
+    // GRÁFICO 2: Pizza de Despesas (Doughnut)
+    const ctxPizza = document.getElementById('graficoPizza').getContext('2d');
+    if (graficoPizzaInstancia) graficoPizzaInstancia.destroy();
+
+    // Pega as top 5 categorias e agrupa o resto em "Outros"
+    let labelsPizza = [];
+    let dadosPizza = [];
+    
+    if (categoriasOrdenadas.length === 0) {
+        labelsPizza = ['Sem Gastos'];
+        dadosPizza = [1];
+    } else {
+        let somaTop5 = 0;
+        for (let i = 0; i < Math.min(5, categoriasOrdenadas.length); i++) {
+            labelsPizza.push(categoriasOrdenadas[i]);
+            dadosPizza.push(gastosPorCategoria[categoriasOrdenadas[i]]);
+            somaTop5 += gastosPorCategoria[categoriasOrdenadas[i]];
+        }
+        if (categoriasOrdenadas.length > 5) {
+            labelsPizza.push('Outros');
+            dadosPizza.push(despesas - somaTop5);
+        }
     }
 
-    if (despesas > (receitas * 0.8) && receitas > 0) {
-        listaAlertasHTML += `
-        <div class="flex items-center gap-3 bg-yellow-50 p-3 rounded-xl border border-yellow-200">
-            <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-yellow-500 shadow-sm shrink-0"><i class="fa-solid fa-lightbulb"></i></div>
-            <p class="text-sm font-medium text-yellow-800">Cuidado: Seus gastos já consumiram mais de 80% da sua receita do período.</p>
-        </div>`;
+    graficoPizzaInstancia = new Chart(ctxPizza, {
+        type: 'doughnut',
+        data: {
+            labels: labelsPizza,
+            datasets: [{
+                data: dadosPizza,
+                backgroundColor: categoriasOrdenadas.length === 0 ? ['#f1f5f9'] : paletaCores,
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10, weight: 'bold' } } },
+                tooltip: { callbacks: { label: (ctx) => ` ${formatarMoeda(categoriasOrdenadas.length === 0 ? 0 : ctx.raw)}` } }
+            }
+        }
+    });
+}
+
+// ---------------------------------------------
+// O COACH FINANCEIRO (INTELIGÊNCIA ARTIFICIAL)
+// ---------------------------------------------
+const chatBox = document.getElementById('chat-box');
+
+function adicionarMensagemNoChat(texto, isUsuario = false) {
+    const div = document.createElement('div');
+    if (isUsuario) {
+        div.className = "bg-indigo-500 text-white p-3 rounded-2xl rounded-tr-sm self-end max-w-[85%] text-sm font-medium shadow-sm slide-up";
+        div.innerText = texto;
+    } else {
+        div.className = "bg-white/10 text-indigo-50 p-3 rounded-2xl rounded-tl-sm self-start max-w-[90%] text-sm font-medium border border-white/10 shadow-sm slide-up";
+        div.innerHTML = texto; // Permite formatação HTML na resposta do bot
+    }
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight; // Rola pra baixo
+}
+
+function iniciarCoach() {
+    chatBox.innerHTML = ''; // Limpa o chat
+    let saudacao = "";
+    
+    if (statsGlobais.transacoesNoPeriodo === 0) {
+        saudacao = "Olá! Não encontrei movimentações neste período. Filtre outro mês ou registre novos dados na aba de Início.";
+    } else if (statsGlobais.taxaPoupanca < 0) {
+        saudacao = "<b>Alerta Vermelho!</b> Identifiquei que você está gastando mais do que ganha neste período. Como posso ajudar? Peça um <i>relatório</i> ou <i>dicas</i>.";
+    } else {
+        saudacao = `Tudo sob controle! Sua taxa de poupança está em <b>${statsGlobais.taxaPoupanca.toFixed(1)}%</b>. O que deseja analisar hoje?`;
+    }
+    
+    adicionarMensagemNoChat(saudacao, false);
+}
+
+function atalhoCoach(comando) {
+    document.getElementById('input-coach').value = comando;
+    enviarMensagemCoach();
+}
+
+function enviarMensagemCoach() {
+    const input = document.getElementById('input-coach');
+    const texto = input.value.trim();
+    if (!texto) return;
+
+    // 1. Mostra a mensagem do usuário
+    adicionarMensagemNoChat(texto, true);
+    input.value = '';
+
+    // 2. Simula o "Digitando..."
+    const typingDiv = document.createElement('div');
+    typingDiv.className = "text-indigo-300 text-xs italic mt-2 self-start slide-up";
+    typingDiv.id = "coach-typing";
+    typingDiv.innerText = "Processando dados...";
+    chatBox.appendChild(typingDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    // 3. Processa a resposta após 1 segundo (pra dar efeito de IA real)
+    setTimeout(() => {
+        document.getElementById('coach-typing').remove();
+        gerarRespostaIA(texto.toLowerCase());
+    }, 1000);
+}
+
+function gerarRespostaIA(pergunta) {
+    let resposta = "";
+
+    if (statsGlobais.transacoesNoPeriodo === 0) {
+        resposta = "Desculpe, eu preciso de dados para trabalhar. Não há movimentações lançadas no período selecionado.";
+        return adicionarMensagemNoChat(resposta, false);
     }
 
-    alertas.innerHTML = listaAlertasHTML || `
-        <div class="flex items-center gap-3 bg-green-50 p-3 rounded-xl border border-green-200 h-full">
-            <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-green-500 shadow-sm shrink-0"><i class="fa-solid fa-check"></i></div>
-            <p class="text-sm font-bold text-green-800">Nenhum risco de caixa ou vencimento iminente detectado.</p>
-        </div>
-    `;
+    // LÓGICA DE INFERÊNCIA DO COACH
+    if (pergunta.includes('relatório') || pergunta.includes('relatorio') || pergunta.includes('resumo')) {
+        resposta = `
+            📊 <b>Relatório Executivo:</b><br><br>
+            Entradas: <span class="text-green-400 font-bold">${formatarMoeda(statsGlobais.receitas)}</span><br>
+            Saídas: <span class="text-red-400 font-bold">${formatarMoeda(statsGlobais.despesas)}</span><br>
+            Resultado do Período: <b>${formatarMoeda(statsGlobais.saldo)}</b><br><br>
+            Sua maior despesa unificada foi com <b>${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'Nada'}</b>, totalizando ${formatarMoeda(statsGlobais.topCategoria ? statsGlobais.topCategoria.valor : 0)}.
+        `;
+    } 
+    else if (pergunta.includes('dica') || pergunta.includes('economizar') || pergunta.includes('cortar')) {
+        if (!statsGlobais.topCategoria || statsGlobais.topCategoria.nome.includes('Moradia') || statsGlobais.topCategoria.nome.includes('Saúde')) {
+             resposta = "Seus maiores gastos estão em pastas essenciais (Moradia/Saúde). Recomendo focar em aumentar sua renda antes de fazer cortes agressivos de qualidade de vida.";
+        } else {
+             const economia = statsGlobais.topCategoria.valor * 0.20; // Sugere corte de 20%
+             resposta = `💡 <b>Sugestão de Corte:</b><br><br>
+             Notei que sua pasta de <b>${statsGlobais.topCategoria.nome}</b> está alta (${formatarMoeda(statsGlobais.topCategoria.valor)}).<br><br>
+             Se você conseguir reduzir apenas 20% deste gasto no próximo mês, você colocaria <b>${formatarMoeda(economia)} diretos no seu bolso</b>. Topa o desafio?`;
+        }
+    }
+    else if (pergunta.includes('previsão') || pergunta.includes('previsao') || pergunta.includes('futuro')) {
+        if (statsGlobais.mediaDiaria === 0) {
+            resposta = "Não há saídas suficientes para calcular a sua taxa de queima diária.";
+        } else {
+            const gastoMensalEstimado = statsGlobais.mediaDiaria * 30;
+            resposta = `🔮 <b>Projeção Matemática:</b><br><br>
+            Você está gastando em média <b>${formatarMoeda(statsGlobais.mediaDiaria)} por dia</b>.<br><br>
+            Se mantiver esse ritmo (sem frear), você terminará um mês de 30 dias com <b>${formatarMoeda(gastoMensalEstimado)}</b> em saídas. Planeje-se!`;
+        }
+    }
+    else {
+        resposta = "Eu sou um Coach Focado em Dados. Tente me pedir um <b>Relatório</b>, dicas de <b>Onde Economizar</b> ou uma <b>Previsão</b> financeira baseada no seu caixa atual.";
+    }
+
+    adicionarMensagemNoChat(resposta, false);
 }
