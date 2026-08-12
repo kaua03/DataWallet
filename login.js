@@ -41,7 +41,6 @@ async function efetuarCadastro() {
         
         if (error) throw error;
 
-        // Se o Supabase exigir confirmação de e-mail (caso você esqueça de desativar), ele previne o erro:
         if (!data.session) {
             alert("Cadastro realizado! Autopreenhendo seus dados para login.");
             document.getElementById('email-login').value = email;
@@ -52,10 +51,18 @@ async function efetuarCadastro() {
         }
         
         const usuarioLogado = data.user;
+        
+        // A MAGIA SÊNIOR: Criação automática do ecossistema do usuário
         await supabaseClient.from('categorias').insert([
-            { usuario_id: usuarioLogado.id, nome: 'Alimentação', icone: 'fa-burger', cor: 'text-red-500' },
-            { usuario_id: usuarioLogado.id, nome: 'Salário', icone: 'fa-building', cor: 'text-green-500' }
+            { usuario_id: usuarioLogado.id, nome: 'Alimentação', icone: 'fa-utensils', cor: 'text-orange-500' },
+            { usuario_id: usuarioLogado.id, nome: 'Veículo & Transporte', icone: 'fa-car', cor: 'text-gray-700' },
+            { usuario_id: usuarioLogado.id, nome: 'Moradia', icone: 'fa-house', cor: 'text-blue-500' },
+            { usuario_id: usuarioLogado.id, nome: 'Estudo', icone: 'fa-graduation-cap', cor: 'text-purple-500' },
+            { usuario_id: usuarioLogado.id, nome: 'Saúde & Imprevistos', icone: 'fa-kit-medical', cor: 'text-red-500' },
+            { usuario_id: usuarioLogado.id, nome: 'Lazer & Estilo', icone: 'fa-gamepad', cor: 'text-pink-500' },
+            { usuario_id: usuarioLogado.id, nome: 'Renda & Salário', icone: 'fa-building-columns', cor: 'text-green-500' }
         ]);
+
         await supabaseClient.from('planos').insert([
             { usuario_id: usuarioLogado.id, nome: 'Reserva de Emergência', valor_meta: 10000, cor: 'bg-blue-500' }
         ]);
