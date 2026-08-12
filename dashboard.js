@@ -293,60 +293,6 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
     });
 }
 
-// ---------------------------------------------
-// MOTOR DE IA CONVERSACIONAL (NLP SÊNIOR)
-// ---------------------------------------------
-function toggleCoach() {
-    const janela = document.getElementById('janela-coach');
-    if (janela.classList.contains('hidden')) {
-        janela.classList.remove('hidden');
-        if(document.getElementById('chat-box').innerHTML === "") iniciarCoach(); // Só inicia se estiver vazio
-    } else {
-        janela.classList.add('hidden');
-    }
-}
-
-const chatBox = document.getElementById('chat-box');
-
-function adicionarMensagemNoChat(texto, isUsuario = false) {
-    const div = document.createElement('div');
-    if (isUsuario) {
-        div.className = "bg-indigo-600 text-white p-3 rounded-2xl rounded-tr-sm self-end max-w-[85%] text-sm font-medium shadow-sm slide-up-chat";
-        div.innerText = texto;
-    } else {
-        div.className = "bg-slate-800 border border-slate-700 text-slate-100 p-4 rounded-2xl rounded-tl-sm self-start max-w-[90%] text-sm font-medium shadow-sm slide-up-chat leading-relaxed";
-        div.innerHTML = texto; 
-    }
-    chatBox.appendChild(div);
-    chatBox.scrollTop = chatBox.scrollHeight; 
-}
-
-function iniciarCoach() {
-    chatBox.innerHTML = ''; 
-    adicionarMensagemNoChat("Olá, Kauã! Sou o seu Consultor Financeiro. Estou conectado aos seus dados em tempo real.<br><br>Você pode me perguntar coisas como: <br><i>'Como estou este mês?'</i><br><i>'Minha carteira corre perigo?'</i><br><i>'Onde gastei mais?'</i>", false);
-}
-
-function enviarMensagemCoach() {
-    const input = document.getElementById('input-coach');
-    const texto = input.value.trim();
-    if (!texto) return;
-
-    adicionarMensagemNoChat(texto, true);
-    input.value = '';
-
-    const typingDiv = document.createElement('div');
-    typingDiv.className = "text-slate-500 text-xs italic mt-2 self-start slide-up-chat flex items-center gap-2";
-    typingDiv.id = "coach-typing";
-    typingDiv.innerHTML = "<i class='fa-solid fa-circle-notch fa-spin text-indigo-500'></i> Analisando...";
-    chatBox.appendChild(typingDiv);
-    chatBox.scrollTop = chatBox.scrollHeight;
-
-    setTimeout(() => {
-        document.getElementById('coach-typing').remove();
-        gerarRespostaIA(texto.toLowerCase());
-    }, 1200);
-}
-
 async function gerarRespostaIA(pergunta) {
     if (statsGlobais.transacoesNoPeriodo === 0) {
         document.getElementById('coach-typing')?.remove();
@@ -368,7 +314,7 @@ DADOS REAIS DO USUÁRIO NESTE EXATO MOMENTO:
 - Centro de custo mais oneroso: ${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'Nenhum'} (R$ ${statsGlobais.topCategoria ? statsGlobais.topCategoria.valor : 0})
 - Maior gasto isolado: ${statsGlobais.maiorGasto.descricao} (R$ ${statsGlobais.maiorGasto.valor})
 
-REGRA: Responda à pergunta cruzando a intenção do usuário com os dados acima. Se a margem for negativa, alerte sobre a queima de caixa.
+REGRA: Responda à pergunta cruzando a intenção do usuário com os dados acima. Seja natural. Se a margem for negativa, alerte sobre a queima de caixa.
     `;
 
     const payload = {
@@ -378,15 +324,14 @@ REGRA: Responda à pergunta cruzando a intenção do usuário com os dados acima
     };
 
     try {
-        // 2. A URL LIMPA (Sem a chave no final)
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
+        // 2. A CORREÇÃO DE OURO: A chave enviada via URL para não bloquear no navegador
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
         
-        // 3. O MOTOBOY (Imitando exatamente o seu cURL)
+        // 3. O Motoboy faz a requisição sem cabeçalhos bloqueáveis
         const respostaDaNuvem = await fetch(url, {
             method: 'POST',
             headers: { 
-                'Content-Type': 'application/json',
-                'x-goog-api-key': GEMINI_API_KEY // A CHAVE VAI AQUI AGORA!
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(payload)
         });
