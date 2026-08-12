@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise e Coach - DataWallet</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- DEPENDÊNCIAS DO MOTOR (Isolado) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/config.js" defer></script>
+    <script src="js/dashboard.js" defer></script>
+    
+    <style>
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans h-screen overflow-hidden flex relative fade-in">
+
+    <!-- MENU LATERAL (PC) -->
+    <aside class="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 p-6 h-full shadow-lg z-20">
+        <div class="flex items-center gap-3 mb-10">
+            <i class="fa-solid fa-wallet text-blue-600 text-3xl"></i>
+            <h2 class="text-2xl font-black text-gray-900 tracking-tight">DataWallet</h2>
+        </div>
+        
+        <nav class="flex-1 space-y-2">
+            <!-- Inativo -->
+            <a href="movimentacoes.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition">
+                <i class="fa-solid fa-money-bill-transfer w-5"></i> Início
+            </a>
+            <!-- ATIVO (Azul) -->
+            <a href="dashboard.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold bg-blue-50 text-blue-600 transition">
+                <i class="fa-solid fa-chart-pie w-5"></i> Dashboard (Coach)
+            </a>
+            <!-- Inativos -->
+            <a href="dividas.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition">
+                <i class="fa-solid fa-file-invoice-dollar w-5"></i> Dívidas
+            </a>
+            <a href="categorias.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition">
+                <i class="fa-solid fa-layer-group w-5"></i> Categorias
+            </a>
+            <a href="planos.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition">
+                <i class="fa-solid fa-bullseye w-5"></i> Planos
+            </a>
+        </nav>
+        <button onclick="sairDoSistema()" class="flex items-center gap-3 p-3 rounded-xl font-bold text-red-500 hover:bg-red-50 transition mt-auto">
+            <i class="fa-solid fa-right-from-bracket w-5"></i> Sair
+        </button>
+    </aside>
+
+    <!-- ÁREA CENTRAL (Dashboard) -->
+    <main class="flex-1 h-full overflow-y-auto bg-gray-50 relative pb-24 md:pb-0 p-4 md:p-8">
+        <section class="max-w-5xl mx-auto">
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie text-blue-600"></i> Inteligência e Análise
+                </h2>
+                
+                <!-- Filtro de Período -->
+                <div class="flex items-center gap-2 bg-white p-2 rounded-2xl border border-gray-200 shadow-sm">
+                    <span class="text-xs font-bold text-gray-400 px-2">PERÍODO:</span>
+                    <select id="filtro-periodo" class="bg-transparent outline-none text-sm font-bold text-gray-800 cursor-pointer">
+                        <option value="mes_atual">Este Mês</option>
+                        <option value="mes_anterior">Mês Anterior</option>
+                        <option value="ano_atual">Ano Atual</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Coach Financeiro -->
+            <div class="bg-indigo-900 text-white p-6 md:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row gap-6 items-start mb-8 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-40 h-40 bg-indigo-500 opacity-20 blur-3xl rounded-full"></div>
+                <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center text-3xl shrink-0 border border-white/20 shadow-inner z-10">
+                    <i class="fa-solid fa-robot text-indigo-200"></i>
+                </div>
+                <div class="z-10">
+                    <h3 class="font-bold text-xl mb-2 text-indigo-100">Seu Coach Financeiro</h3>
+                    <p class="text-indigo-50 font-medium text-sm md:text-base leading-relaxed" id="texto-coach">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Processando inteligência de dados...
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <!-- Alertas -->
+                <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col">
+                    <h3 class="text-gray-800 font-bold mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation text-orange-500"></i> Alertas da Carteira
+                    </h3>
+                    <div id="lista-alertas" class="space-y-3 flex-1">
+                        <p class="text-xs text-gray-400">Verificando segurança...</p>
+                    </div>
+                </div>
+
+                <!-- Gráfico de Gastos -->
+                <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+                    <h3 class="text-gray-800 font-bold mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-bar text-blue-500"></i> Para onde seu dinheiro vai
+                    </h3>
+                    <div id="grafico-categorias" class="space-y-4"></div>
+                </div>
+            </div>
+
+            <!-- Métricas Extras -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
+                    <p class="text-xs text-gray-400 font-bold uppercase mb-1">Média Diária de Gastos</p>
+                    <p class="text-2xl font-black text-gray-800" id="dash-media">R$ 0,00</p>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
+                    <p class="text-xs text-gray-400 font-bold uppercase mb-1">Maior Gasto do Período</p>
+                    <p class="text-2xl font-black text-red-500" id="dash-maior">R$ 0,00</p>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
+                    <p class="text-xs text-gray-400 font-bold uppercase mb-1">Taxa de Poupança</p>
+                    <p class="text-2xl font-black text-green-500" id="dash-taxa">0%</p>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- MENU INFERIOR (Celular) -->
+    <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t border-gray-200 px-4 py-3 flex justify-between items-center z-20">
+        <a href="movimentacoes.html" class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition"><i class="fa-solid fa-house text-xl mb-1"></i><span class="text-[10px] font-bold">Início</span></a>
+        <!-- ATIVO (Azul) -->
+        <a href="dashboard.html" class="flex flex-col items-center text-blue-600 transition"><i class="fa-solid fa-chart-pie text-xl mb-1"></i><span class="text-[10px] font-bold">Análise</span></a>
+        
+        <div class="relative -top-6">
+            <a href="movimentacoes.html" class="w-14 h-14 bg-blue-600 text-white rounded-full flex justify-center items-center text-xl shadow-[0_10px_20px_rgba(37,99,235,0.3)] border-4 border-gray-50"><i class="fa-solid fa-plus"></i></a>
+        </div>
+        
+        <a href="dividas.html" class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition"><i class="fa-solid fa-file-invoice-dollar text-xl mb-1"></i><span class="text-[10px] font-bold">Dívidas</span></a>
+        <a href="categorias.html" class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition"><i class="fa-solid fa-layer-group text-xl mb-1"></i><span class="text-[10px] font-bold">Pastas</span></a>
+    </nav>
+
+</body>
+</html>
