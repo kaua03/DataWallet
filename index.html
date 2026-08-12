@@ -10,25 +10,44 @@
     
     <!-- LIGAÇÃO COM O BANCO DE DADOS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- IMPORTANTE: Este arquivo PRECISA existir na pasta 'js' -->
     <script src="js/config.js"></script>
     
     <script>
-        // O Roteador Inteligente
+        // O Roteador Inteligente Blindado (Com Tratamento de Erro)
         document.addEventListener('DOMContentLoaded', async () => {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) {
-                window.location.replace('movimentacoes.html'); // Logado vai para o Início
-            } else {
-                window.location.replace('login.html'); // Deslogado vai para a Rua
+            try {
+                // Verifica se o arquivo config.js foi lido corretamente
+                if (typeof supabaseClient === 'undefined') {
+                    throw new Error("Arquivo config.js não encontrado. O motor não ligou.");
+                }
+
+                const { data: { session }, error } = await supabaseClient.auth.getSession();
+                
+                if (error) throw error;
+
+                if (session) {
+                    window.location.replace('movimentacoes.html'); // Logado vai para o Início
+                } else {
+                    window.location.replace('login.html'); // Deslogado vai para a Rua
+                }
+            } catch (erro) {
+                console.error("FALHA NO ROTEADOR:", erro.message);
+                // PLANO B: Se der qualquer erro, manda para o Login para não travar a tela
+                window.location.replace('login.html'); 
             }
         });
     </script>
 </head>
 <body class="bg-gradient-to-br from-blue-900 to-gray-900 flex items-center justify-center h-screen">
-    <!-- Tela preta elegante enquanto o sistema decide a rota -->
-    <div class="text-white text-xl font-bold flex items-center gap-3">
-        <i class="fa-solid fa-spinner fa-spin text-blue-500 text-3xl"></i> 
-        <span>Inicializando Cofre de Segurança...</span>
+    <!-- Tela elegante enquanto o sistema decide a rota -->
+    <div class="text-white text-xl font-bold flex flex-col items-center gap-4">
+        <i class="fa-solid fa-spinner fa-spin text-blue-500 text-5xl"></i> 
+        <span class="tracking-widest">Inicializando Cofre de Segurança...</span>
+        <p class="text-xs text-gray-400 font-normal mt-2 text-center max-w-xs">
+            Se esta tela demorar, verifique o Console (F12)
+        </p>
     </div>
 </body>
 </html>
