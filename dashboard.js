@@ -153,7 +153,7 @@ function processarEAtualizarTudo() {
 }
 
 // ---------------------------------------------
-// LISTA DE CATEGORIAS HTML (Correção de Quebra de Linha)
+// LISTA DE CATEGORIAS HTML (Progress Bars)
 // ---------------------------------------------
 function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
     const paleta = ['bg-indigo-600', 'bg-blue-500', 'bg-sky-400', 'bg-teal-400', 'bg-slate-400', 'bg-gray-300'];
@@ -163,7 +163,6 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
         const perc = totalGeral > 0 ? ((valor / totalGeral) * 100).toFixed(1) : 0;
         const cor = paleta[index % paleta.length];
         
-        // Uso do whitespace-nowrap e flex-1 para impedir a quebra feia do valor
         return `
         <div>
             <div class="flex justify-between items-end mb-1.5 gap-2">
@@ -184,7 +183,7 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
 }
 
 // ---------------------------------------------
-// ENGENHARIA VISUAL DOS GRÁFICOS (CHART.JS ELITE)
+// ENGENHARIA VISUAL DOS GRÁFICOS (CHART.JS SÊNIOR)
 // ---------------------------------------------
 function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, top5, totalDespesas) {
     Chart.defaults.font.family = "'Inter', sans-serif";
@@ -207,19 +206,22 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
     
     const labelsT = [];
     const dadosRec = [];
-    const dadosDes = [];
+    const dadosDes = []; // Estes serão negativos no gráfico
     const dadosAcumulados = [];
     let acumuladoAtual = 0;
 
     chavesTempo.forEach(c => {
         labelsT.push(c);
         dadosRec.push(agrupamentoTemporal[c].rec);
-        dadosDes.push(agrupamentoTemporal[c].des);
+        
+        // MÁGICA DE WALL STREET: Transformamos a despesa em número negativo para descer do Eixo Zero
+        dadosDes.push(-Math.abs(agrupamentoTemporal[c].des)); 
+        
         acumuladoAtual += (agrupamentoTemporal[c].rec - agrupamentoTemporal[c].des);
         dadosAcumulados.push(acumuladoAtual);
     });
 
-    // 1. GRÁFICO COMBO MASTER SÊNIOR (Agora com 3 barras e 1 linha)
+    // 1. GRÁFICO COMBO MASTER (Barras Divergentes + Linha)
     const ctxC = document.getElementById('graficoCombo').getContext('2d');
     if (grafCombo) grafCombo.destroy();
 
@@ -228,8 +230,8 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
     gradRec.addColorStop(1, 'rgba(16, 185, 129, 0.3)');
 
     const gradDes = ctxC.createLinearGradient(0, 0, 0, 400);
-    gradDes.addColorStop(0, 'rgba(244, 63, 94, 0.9)'); 
-    gradDes.addColorStop(1, 'rgba(244, 63, 94, 0.3)');
+    gradDes.addColorStop(0, 'rgba(244, 63, 94, 0.3)'); // Ao contrário porque ela desce
+    gradDes.addColorStop(1, 'rgba(244, 63, 94, 0.9)');
 
     grafCombo = new Chart(ctxC, {
         type: 'bar',
@@ -238,27 +240,18 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
             datasets: [
                 {
                     type: 'line',
-                    label: 'Picos de Gastos',
-                    data: dadosDes, // A linha acompanha os gastos do dia
-                    borderColor: '#f43f5e', // Rose 500
+                    label: 'Saldo Acumulado',
+                    data: dadosAcumulados,
+                    borderColor: '#4f46e5', // Indigo 600
                     borderWidth: 2,
-                    tension: 0.3,
+                    tension: 0.2, // Curva quase reta (corporativa)
                     pointBackgroundColor: '#ffffff',
-                    pointBorderColor: '#f43f5e',
+                    pointBorderColor: '#4f46e5',
                     pointBorderWidth: 2,
                     pointRadius: 4,
                     pointHoverRadius: 6,
                     fill: false,
-                    yAxisID: 'y'
-                },
-                {
-                    type: 'bar',
-                    label: 'Saldo Acumulado',
-                    data: dadosAcumulados,
-                    backgroundColor: 'rgba(79, 70, 229, 0.85)', // Indigo 600
-                    borderRadius: 4,
-                    maxBarThickness: 25, // Trava para não virar uma "salsicha" em dias únicos
-                    yAxisID: 'y'
+                    stack: 'linha' // Isola a linha para não somar com as barras
                 },
                 {
                     type: 'bar',
@@ -266,8 +259,8 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
                     data: dadosRec,
                     backgroundColor: gradRec,
                     borderRadius: 4,     
-                    maxBarThickness: 25, 
-                    yAxisID: 'y'
+                    maxBarThickness: 30, 
+                    stack: 'barras'
                 },
                 {
                     type: 'bar',
@@ -275,8 +268,8 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
                     data: dadosDes,
                     backgroundColor: gradDes,
                     borderRadius: 4,
-                    maxBarThickness: 25,
-                    yAxisID: 'y'
+                    maxBarThickness: 30,
+                    stack: 'barras' // Força empilhamento com a receita no mesmo dia
                 }
             ]
         },
@@ -285,16 +278,40 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
             interaction: { mode: 'index', intersect: false },
             plugins: { 
                 legend: { display: false }, 
-                tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${formatarMoeda(ctx.raw)}` } } 
+                tooltip: { 
+                    ...tooltipPro, 
+                    callbacks: { 
+                        // Formatação mágica: Lê o número negativo e mostra como Real absoluto na tooltip
+                        label: (ctx) => ` ${ctx.dataset.label}: ${formatarMoeda(Math.abs(ctx.raw))}` 
+                    } 
+                } 
             },
             scales: {
-                x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-                y: { grid: { borderDash: [4, 4], color: '#f1f5f9' }, beginAtZero: true, border: { display: false }, ticks: { font: { size: 10 } } }
+                x: { 
+                    stacked: true, // Alinha as barras na mesma coluna
+                    grid: { display: false }, 
+                    ticks: { font: { size: 10 } } 
+                },
+                y: { 
+                    stacked: true, 
+                    grid: { 
+                        // EIXO ZERO EM DESTAQUE (Linha base sólida)
+                        color: (ctx) => ctx.tick.value === 0 ? '#94a3b8' : '#f1f5f9',
+                        lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1,
+                        borderDash: (ctx) => ctx.tick.value === 0 ? [] : [4, 4]
+                    }, 
+                    border: { display: false }, 
+                    ticks: { 
+                        font: { size: 10 },
+                        // Formata o eixo lateral tirando o sinal de menos
+                        callback: (value) => value >= 0 ? `R$ ${value}` : `-R$ ${Math.abs(value)}`
+                    } 
+                }
             }
         }
     });
 
-    // 2. PIZZA (Doughnut Extremamente Fino)
+    // 2. PIZZA (Doughnut Extremamente Fino - Header Externo)
     const ctxP = document.getElementById('graficoPizza').getContext('2d');
     if (grafPizza) grafPizza.destroy();
 
@@ -316,7 +333,13 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
     grafPizza = new Chart(ctxP, {
         type: 'doughnut',
         data: { labels: lblP, datasets: [{ data: datP, backgroundColor: categoriasOrdenadas.length === 0 ? ['#f8fafc'] : paletaCorp, borderWidth: 2, borderColor: '#ffffff', hoverOffset: 4 }] },
-        options: { responsive: true, maintainAspectRatio: false, cutout: '85%', plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${formatarMoeda(categoriasOrdenadas.length === 0 ? 0 : ctx.raw)}` } } } }
+        options: { 
+            responsive: true, maintainAspectRatio: false, cutout: '80%', 
+            plugins: { 
+                legend: { display: false }, 
+                tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${formatarMoeda(categoriasOrdenadas.length === 0 ? 0 : ctx.raw)}` } } 
+            } 
+        }
     });
 
     // 3. TOP 5 GASTOS (Barras Horizontais Profissionais)
@@ -324,8 +347,8 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
     if (grafTop) grafTop.destroy();
 
     const gradTop = ctxT.createLinearGradient(0, 0, 400, 0);
-    gradTop.addColorStop(0, '#64748b'); // Slate 500
-    gradTop.addColorStop(1, '#334155'); // Slate 700
+    gradTop.addColorStop(0, '#64748b'); 
+    gradTop.addColorStop(1, '#334155'); 
 
     grafTop = new Chart(ctxT, {
         type: 'bar',
