@@ -1,5 +1,5 @@
 // ==========================================
-// dashboard.js - MOTOR DE BUSINESS INTELLIGENCE SÊNIOR
+// dashboard.js - MOTOR DE BUSINESS INTELLIGENCE E IA CONTEXTUAL
 // ==========================================
 
 let usuarioLogado = null;
@@ -12,17 +12,16 @@ let grafTop = null;
 
 let statsGlobais = { receitas: 0, despesas: 0, saldo: 0, taxaPoupanca: 0, mediaDiaria: 0, maiorGasto: null, topCategoria: null, transacoesNoPeriodo: 0 };
 
-// DICIONÁRIO DE CORES SÊNIOR (As cores agora são consistentes em todos os gráficos)
 const coresPorCategoria = {
-    'Alimentação': { hex: '#3b82f6', tw: 'bg-blue-500' },          // Azul
-    'Veículo & Transporte': { hex: '#6366f1', tw: 'bg-indigo-500' },// Índigo
-    'Moradia': { hex: '#14b8a6', tw: 'bg-teal-500' },              // Teal
-    'Estudo & Carreira': { hex: '#a855f7', tw: 'bg-purple-500' },   // Roxo
-    'Saúde & Imprevistos': { hex: '#ec4899', tw: 'bg-pink-500' },  // Rosa
-    'Lazer & Pessoal': { hex: '#f97316', tw: 'bg-orange-500' },    // Laranja
-    'Assinaturas & Serviços': { hex: '#8b5cf6', tw: 'bg-violet-500' }, // Violeta
-    'Renda & Salário': { hex: '#10b981', tw: 'bg-emerald-500' },   // Verde
-    'Outros': { hex: '#94a3b8', tw: 'bg-slate-400' }               // Cinza
+    'Alimentação': { hex: '#3b82f6', tw: 'bg-blue-500' },          
+    'Veículo & Transporte': { hex: '#6366f1', tw: 'bg-indigo-500' },
+    'Moradia': { hex: '#14b8a6', tw: 'bg-teal-500' },              
+    'Estudo & Carreira': { hex: '#a855f7', tw: 'bg-purple-500' },   
+    'Saúde & Imprevistos': { hex: '#ec4899', tw: 'bg-pink-500' },  
+    'Lazer & Pessoal': { hex: '#f97316', tw: 'bg-orange-500' },    
+    'Assinaturas & Serviços': { hex: '#8b5cf6', tw: 'bg-violet-500' }, 
+    'Renda & Salário': { hex: '#10b981', tw: 'bg-emerald-500' },   
+    'Outros': { hex: '#94a3b8', tw: 'bg-slate-400' }               
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -49,12 +48,9 @@ async function carregarDadosDoBanco() {
             supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id),
             supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
         ]);
-
         transacoesGlobais = rTrans.data || [];
         categoriasGlobais = rCat.data || [];
-
         processarEAtualizarTudo();
-
     } catch (e) { console.error("Erro ao puxar dados:", e.message); }
 }
 
@@ -122,7 +118,6 @@ function processarEAtualizarTudo() {
 
         const catNomeBase = categoriasGlobais.find(c => c.id === t.categoria_id)?.nome || 'Outros';
         
-        // Pega só o primeiro nome se houver barra ou parênteses para achar no dicionário
         let catNomeCurto = catNomeBase;
         if(catNomeBase.includes('Alimentação')) catNomeCurto = 'Alimentação';
         if(catNomeBase.includes('Veículo')) catNomeCurto = 'Veículo & Transporte';
@@ -132,11 +127,10 @@ function processarEAtualizarTudo() {
         if(t.tipo === 'despesa') {
             totalDespesas += t.valor; 
             agrupamentoTemporal[chaveTempo].des += t.valor;
-            t.categoriaNome = catNomeCurto; // Guarda a categoria para o Top 5
+            t.categoriaNome = catNomeCurto; 
             topGastos.push(t);
             
             if(t.valor > maiorGasto.valor) maiorGasto = { valor: t.valor, descricao: t.descricao, categoria: catNomeCurto };
-            
             gastosPorCategoria[catNomeCurto] = (gastosPorCategoria[catNomeCurto] || 0) + t.valor;
         } else {
             totalReceitas += t.valor;
@@ -171,18 +165,12 @@ function processarEAtualizarTudo() {
 
     renderizarListaCategorias(categoriasOrdenadas, gastosPorCategoria, totalDespesas);
     renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, topGastos.slice(0,5), totalDespesas);
-    iniciarCoach();
 }
 
-// ---------------------------------------------
-// LISTA DE CATEGORIAS HTML
-// ---------------------------------------------
 function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
     const html = ordenadas.map(cat => {
         const valor = gastos[cat];
         const perc = totalGeral > 0 ? ((valor / totalGeral) * 100).toFixed(1) : 0;
-        
-        // Pega a cor do Dicionário Global
         const corBase = coresPorCategoria[cat] ? coresPorCategoria[cat].tw : coresPorCategoria['Outros'].tw;
         
         return `
@@ -200,48 +188,31 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
         </div>
         `;
     }).join('');
-
     document.getElementById('lista-categorias-progress').innerHTML = html || '<p class="text-xs text-slate-400 font-bold">Sem despesas.</p>';
 }
 
-// ---------------------------------------------
-// ENGENHARIA VISUAL DOS GRÁFICOS
-// ---------------------------------------------
 function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, top5, totalDespesas) {
     Chart.defaults.font.family = "'Inter', sans-serif";
     Chart.defaults.color = '#94a3b8'; 
 
-    const tooltipPro = {
-        backgroundColor: '#0f172a', 
-        titleFont: { size: 12, family: 'Inter', weight: 'bold' },
-        bodyFont: { size: 13, family: 'Inter', weight: 'bold' },
-        padding: 12,
-        cornerRadius: 6,
-        displayColors: true,
-        boxPadding: 4
-    };
+    const tooltipPro = { backgroundColor: '#0f172a', titleFont: { size: 12, family: 'Inter', weight: 'bold' }, bodyFont: { size: 13, family: 'Inter', weight: 'bold' }, padding: 12, cornerRadius: 6, displayColors: true, boxPadding: 4 };
 
     const chavesTempo = Object.keys(agrupamentoTemporal).sort((a,b) => {
         if(a==='S/D') return -1; if(b==='S/D') return 1;
         return 1; 
     });
     
-    const labelsT = [];
-    const dadosRec = [];
-    const dadosDes = []; 
-    const dadosAcumulados = [];
+    const labelsT = [], dadosRec = [], dadosDes = [], dadosAcumulados = [];
     let acumuladoAtual = 0;
 
     chavesTempo.forEach(c => {
         labelsT.push(c);
         dadosRec.push(agrupamentoTemporal[c].rec);
         dadosDes.push(-Math.abs(agrupamentoTemporal[c].des)); 
-        
         acumuladoAtual += (agrupamentoTemporal[c].rec - agrupamentoTemporal[c].des);
         dadosAcumulados.push(acumuladoAtual);
     });
 
-    // 1. GRÁFICO COMBO MASTER (Cores Vermelho/Verde como pedido)
     const ctxC = document.getElementById('graficoCombo').getContext('2d');
     if (grafCombo) grafCombo.destroy();
 
@@ -251,92 +222,46 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
             labels: labelsT.length > 0 ? labelsT : ['Sem Dados'],
             datasets: [
                 {
-                    type: 'line',
-                    label: 'Saldo Acumulado',
-                    data: dadosAcumulados,
-                    borderColor: '#4f46e5', // Indigo 600
-                    borderWidth: 3,
-                    tension: 0.1, 
-                    pointBackgroundColor: '#ffffff',
-                    pointBorderColor: '#4f46e5',
-                    pointBorderWidth: 2,
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                    fill: false
+                    type: 'line', label: 'Saldo Acumulado', data: dadosAcumulados, borderColor: '#4f46e5', borderWidth: 3, tension: 0.1, 
+                    pointBackgroundColor: '#ffffff', pointBorderColor: '#4f46e5', pointBorderWidth: 2, pointRadius: 5, pointHoverRadius: 7, fill: false
                 },
                 {
-                    type: 'bar',
-                    label: 'Entradas',
-                    data: dadosRec,
-                    backgroundColor: '#10b981', // Emerald 500 (Verde)
-                    borderRadius: 2,     
-                    maxBarThickness: 40, 
+                    type: 'bar', label: 'Entradas', data: dadosRec, backgroundColor: '#10b981', borderRadius: 2, maxBarThickness: 40, 
                 },
                 {
-                    type: 'bar',
-                    label: 'Saídas',
-                    data: dadosDes,
-                    backgroundColor: '#ef4444', // Red 500 (Vermelho)
-                    borderRadius: 2,
-                    maxBarThickness: 40,
+                    type: 'bar', label: 'Saídas', data: dadosDes, backgroundColor: '#ef4444', borderRadius: 2, maxBarThickness: 40,
                 }
             ]
         },
         options: {
-            responsive: true, maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            plugins: { 
-                legend: { display: false }, 
-                tooltip: { 
-                    ...tooltipPro, 
-                    callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${formatarMoeda(Math.abs(ctx.raw))}` } 
-                } 
-            },
+            responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${formatarMoeda(Math.abs(ctx.raw))}` } } },
             scales: {
-                x: { 
-                    stacked: true, 
-                    grid: { display: false }, 
-                    ticks: { font: { size: 11, weight: 'bold' } } 
-                },
+                x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11, weight: 'bold' } } },
                 y: { 
                     stacked: true, 
-                    grid: { 
-                        color: (ctx) => ctx.tick.value === 0 ? '#334155' : '#e2e8f0',
-                        lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1,
-                        borderDash: (ctx) => ctx.tick.value === 0 ? [] : [4, 4]
-                    }, 
+                    grid: { color: (ctx) => ctx.tick.value === 0 ? '#334155' : '#e2e8f0', lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1, borderDash: (ctx) => ctx.tick.value === 0 ? [] : [4, 4] }, 
                     border: { display: false }, 
-                    ticks: { 
-                        font: { size: 10, weight: 'bold' },
-                        callback: (value) => value >= 0 ? `R$ ${value}` : `-R$ ${Math.abs(value)}`
-                    } 
+                    ticks: { font: { size: 10, weight: 'bold' }, callback: (value) => value >= 0 ? `R$ ${value}` : `-R$ ${Math.abs(value)}` } 
                 }
             }
         }
     });
 
-    // 2. PIZZA (Doughnut com Cores do Dicionário)
     const ctxP = document.getElementById('graficoPizza').getContext('2d');
     if (grafPizza) grafPizza.destroy();
 
     let lblP = [], datP = [], coresP = [];
-    
     if (categoriasOrdenadas.length === 0) { lblP = ['Vazio']; datP = [1]; coresP = ['#f1f5f9']; } 
     else {
         let soma = 0;
         for (let i = 0; i < Math.min(5, categoriasOrdenadas.length); i++) {
             const nomeCat = categoriasOrdenadas[i];
-            lblP.push(nomeCat); 
-            datP.push(gastosPorCategoria[nomeCat]);
-            // Pega a cor correspondente no dicionário
+            lblP.push(nomeCat); datP.push(gastosPorCategoria[nomeCat]);
             coresP.push(coresPorCategoria[nomeCat] ? coresPorCategoria[nomeCat].hex : coresPorCategoria['Outros'].hex);
             soma += gastosPorCategoria[nomeCat];
         }
-        if (categoriasOrdenadas.length > 5) { 
-            lblP.push('Outros'); 
-            datP.push(totalDespesas - soma); 
-            coresP.push(coresPorCategoria['Outros'].hex);
-        }
+        if (categoriasOrdenadas.length > 5) { lblP.push('Outros'); datP.push(totalDespesas - soma); coresP.push(coresPorCategoria['Outros'].hex); }
     }
 
     document.getElementById('pizza-total').innerText = formatarMoeda(totalDespesas);
@@ -344,38 +269,24 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
     grafPizza = new Chart(ctxP, {
         type: 'doughnut',
         data: { labels: lblP, datasets: [{ data: datP, backgroundColor: coresP, borderWidth: 3, borderColor: '#ffffff', borderRadius: 4, hoverOffset: 6 }] },
-        options: { 
-            responsive: true, maintainAspectRatio: false, 
-            cutout: '65%', 
-            plugins: { 
-                legend: { display: false }, 
-                tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${formatarMoeda(categoriasOrdenadas.length === 0 ? 0 : ctx.raw)}` } } 
-            } 
-        }
+        options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${formatarMoeda(categoriasOrdenadas.length === 0 ? 0 : ctx.raw)}` } } } }
     });
 
-    // 3. TOP 5 GASTOS (Barras com a Cor da Categoria Correspondente)
     const ctxT = document.getElementById('graficoTopGastos').getContext('2d');
     if (grafTop) grafTop.destroy();
 
     grafTop = new Chart(ctxT, {
         type: 'bar',
         data: {
-            labels: top5.length > 0 ? top5.map(t => {
-                const limit = 15;
-                return t.descricao.length > limit ? t.descricao.substring(0, limit) + '...' : t.descricao;
-            }) : ['Nenhum'],
+            labels: top5.length > 0 ? top5.map(t => t.descricao.length > 15 ? t.descricao.substring(0, 15) + '...' : t.descricao) : ['Nenhum'],
             datasets: [{
                 data: top5.length > 0 ? top5.map(t => t.valor) : [0],
-                // Acha a cor correspondente para cada barrinha individualmente
                 backgroundColor: top5.length > 0 ? top5.map(t => coresPorCategoria[t.categoriaNome] ? coresPorCategoria[t.categoriaNome].hex : coresPorCategoria['Outros'].hex) : '#94a3b8',
-                borderRadius: 4,
-                maxBarThickness: 16 
+                borderRadius: 4, maxBarThickness: 16 
             }]
         },
         options: {
-            indexAxis: 'y',
-            responsive: true, maintainAspectRatio: false,
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${formatarMoeda(ctx.raw)}` } } },
             scales: { x: { display: false }, y: { grid: { display: false }, border: { display: false }, ticks: { font: { weight: 'bold', size: 11 }, color: '#334155' } } }
         }
@@ -383,13 +294,13 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
 }
 
 // ---------------------------------------------
-// O COACH FLUTUANTE (WIDGET IA)
+// MOTOR DE IA CONVERSACIONAL (NLP SÊNIOR)
 // ---------------------------------------------
 function toggleCoach() {
     const janela = document.getElementById('janela-coach');
     if (janela.classList.contains('hidden')) {
         janela.classList.remove('hidden');
-        iniciarCoach();
+        if(document.getElementById('chat-box').innerHTML === "") iniciarCoach(); // Só inicia se estiver vazio
     } else {
         janela.classList.add('hidden');
     }
@@ -412,22 +323,7 @@ function adicionarMensagemNoChat(texto, isUsuario = false) {
 
 function iniciarCoach() {
     chatBox.innerHTML = ''; 
-    let saudacao = "";
-    
-    if (statsGlobais.transacoesNoPeriodo === 0) {
-        saudacao = "Base de dados vazia para o período selecionado. Ajuste os filtros no painel superior.";
-    } else if (statsGlobais.taxaPoupanca < 0) {
-        saudacao = "<b class='text-rose-400'>Alerta de Queima!</b> O fluxo de caixa operou no negativo neste período. Solicite um <i>Relatório</i> ou um plano para <i>Otimizar Custos</i>.";
-    } else {
-        saudacao = `Caixa saudável. A retenção líquida está em <b class='text-emerald-400'>${statsGlobais.taxaPoupanca.toFixed(1)}%</b>. O que vamos auditar hoje?`;
-    }
-    
-    adicionarMensagemNoChat(saudacao, false);
-}
-
-function atalhoCoach(comando) {
-    document.getElementById('input-coach').value = comando;
-    enviarMensagemCoach();
+    adicionarMensagemNoChat("Olá, Kauã! Sou o seu Consultor Financeiro. Estou conectado aos seus dados em tempo real.<br><br>Você pode me perguntar coisas como: <br><i>'Como estou este mês?'</i><br><i>'Minha carteira corre perigo?'</i><br><i>'Onde gastei mais?'</i>", false);
 }
 
 function enviarMensagemCoach() {
@@ -441,56 +337,72 @@ function enviarMensagemCoach() {
     const typingDiv = document.createElement('div');
     typingDiv.className = "text-slate-500 text-xs italic mt-2 self-start slide-up-chat flex items-center gap-2";
     typingDiv.id = "coach-typing";
-    typingDiv.innerHTML = "<i class='fa-solid fa-circle-notch fa-spin text-indigo-500'></i> Processando algoritmos...";
+    typingDiv.innerHTML = "<i class='fa-solid fa-circle-notch fa-spin text-indigo-500'></i> Analisando...";
     chatBox.appendChild(typingDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
 
     setTimeout(() => {
         document.getElementById('coach-typing').remove();
         gerarRespostaIA(texto.toLowerCase());
-    }, 1000);
+    }, 1200);
 }
 
+// O CÉREBRO DE INTENÇÕES (Regex Mapping)
 function gerarRespostaIA(pergunta) {
     let resposta = "";
 
     if (statsGlobais.transacoesNoPeriodo === 0) {
-        resposta = "O algoritmo requer dados populados para gerar predições. Altere o período analisado.";
-        return adicionarMensagemNoChat(resposta, false);
+        return adicionarMensagemNoChat("Sendo bem direto: eu não tenho dados para analisar nesse período. Vá em Movimentações e registre alguma coisa, ou mude o filtro ali em cima.", false);
     }
 
-    if (pergunta.includes('relatório') || pergunta.includes('relatorio')) {
-        resposta = `
-            📊 <b class="text-indigo-300">Fechamento Executivo:</b><br><br>
-            <span class="text-emerald-400"><i class="fa-solid fa-arrow-turn-up"></i> Captação:</span> <b>${formatarMoeda(statsGlobais.receitas)}</b><br>
-            <span class="text-rose-400"><i class="fa-solid fa-arrow-turn-down"></i> Queima:</span> <b>${formatarMoeda(statsGlobais.despesas)}</b><br>
-            <span class="text-slate-400"><i class="fa-solid fa-scale-balanced"></i> Margem Líquida:</span> <b class="${statsGlobais.saldo < 0 ? 'text-rose-400' : 'text-emerald-400'} text-lg">${formatarMoeda(statsGlobais.saldo)}</b><br><br>
-            O centro de custo mais oneroso foi <b>${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'Nada'}</b>, responsável por ${formatarMoeda(statsGlobais.topCategoria ? statsGlobais.topCategoria.valor : 0)} das saídas.
-        `;
-    } 
-    else if (pergunta.includes('cortar') || pergunta.includes('economizar') || pergunta.includes('otimizar')) {
-        if (!statsGlobais.topCategoria) {
-             resposta = "Estrutura enxuta detectada. Foco prioritário deve ser na alavancagem de receita.";
+    // 1. Intenção: PERIGO / RISCO / QUEBRANDO
+    if (/(perigo|risco|alerta|ruim|mal|quebrando|falindo|fudido|preocupar|medo)/.test(pergunta)) {
+        if (statsGlobais.taxaPoupanca < 0) {
+            resposta = `Sendo muito franco: **Sim, você está sangrando caixa.**<br><br>Sua margem atual é de <b class="text-rose-500">${statsGlobais.taxaPoupanca.toFixed(1)}%</b>. Você gastou ${formatarMoeda(Math.abs(statsGlobais.saldo))} a mais do que captou. Precisamos puxar o freio de mão imediatamente, principalmente em <b>${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'seus gastos'}</b>.`;
+        } else if (statsGlobais.taxaPoupanca < 20) {
+            resposta = `Você não está quebrando, mas está na **zona de atenção**.<br><br>Sua margem de segurança é de apenas <b class="text-indigo-400">${statsGlobais.taxaPoupanca.toFixed(1)}%</b>. O ideal para não passar sufoco em imprevistos é reter no mínimo 20%. Tente cortar um pouco do que está indo para <b>${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'Lazer'}</b>.`;
         } else {
-             const economia = statsGlobais.topCategoria.valor * 0.15; 
-             resposta = `💡 <b class="text-indigo-300">Plano de Otimização:</b><br><br>
-             Identificamos um alto volume de capital direcionado para <b>${statsGlobais.topCategoria.nome}</b>.<br><br>
-             Recomendação: Aplicar tática de contenção e reduzir 15% neste centro de custo no próximo ciclo. O impacto projetado será de <b class="text-emerald-400">+${formatarMoeda(economia)} no seu caixa livre</b>.`;
+            resposta = `Pode respirar fundo. Sua carteira está **blindada**.<br><br>Você reteve incríveis <b class="text-emerald-500">${statsGlobais.taxaPoupanca.toFixed(1)}%</b> do que ganhou. Esse é exatamente o comportamento que constrói patrimônio sólido no longo prazo.`;
         }
     }
-    else if (pergunta.includes('previsão') || pergunta.includes('previsao') || pergunta.includes('burn')) {
+    // 2. Intenção: SAÚDE / BOM / BEM
+    else if (/(bem|bom|saudável|seguro|tranquilo|positivo|lucro)/.test(pergunta)) {
+        if (statsGlobais.taxaPoupanca >= 20) {
+            resposta = `Você está excelente! Mantendo ${statsGlobais.taxaPoupanca.toFixed(1)}% de margem, você tem fôlego para investir ou montar sua reserva de emergência sem estresse.`;
+        } else if (statsGlobais.taxaPoupanca > 0) {
+            resposta = `Você está bem, operando no azul com ${formatarMoeda(statsGlobais.saldo)} de sobra. Mas não relaxe, essa margem ainda é fina.`;
+        } else {
+            resposta = `Infelizmente não. O seu fluxo está negativo. Você queimou ${formatarMoeda(statsGlobais.despesas)} e captou apenas ${formatarMoeda(statsGlobais.receitas)}.`;
+        }
+    }
+    // 3. Intenção: ONDE GASTEI MAIS / VILÃO
+    else if (/(maior gasto|vilão|sugando|sugou|onde gastei|pior|gasto mais|gastando mais)/.test(pergunta)) {
+        resposta = `O principal ralo do seu dinheiro hoje é a pasta de <b class="text-indigo-400">${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'Nenhuma'}</b>, que consumiu <b>${formatarMoeda(statsGlobais.topCategoria ? statsGlobais.topCategoria.valor : 0)}</b>.<br><br>E o lançamento isolado mais caro foi "${statsGlobais.maiorGasto.descricao}" custando ${formatarMoeda(statsGlobais.maiorGasto.valor)}.`;
+    }
+    // 4. Intenção: FUTURO / BURN RATE / PREVISÃO
+    else if (/(futuro|previsão|previsao|terminar|fim do mês|burn rate|projeção|projecao)/.test(pergunta)) {
         if (statsGlobais.mediaDiaria === 0) {
-            resposta = "Volume insuficiente de saídas para gerar um cálculo de Burn Rate preciso.";
+            resposta = "Não há queima de caixa (saídas) suficiente para calcular o seu Burn Rate diário.";
         } else {
-            const gastoMensalEstimado = statsGlobais.mediaDiaria * 30;
-            resposta = `🔮 <b class="text-indigo-300">Análise de Burn Rate:</b><br><br>
-            A velocidade atual de queima é de <b>${formatarMoeda(statsGlobais.mediaDiaria)} / dia</b>.<br><br>
-            Mantendo a tração de despesas atual, o algoritmo projeta que um ciclo completo (30 dias) drenará <b>${formatarMoeda(gastoMensalEstimado)}</b> do seu caixa total.`;
+            const gastoEstimado = statsGlobais.mediaDiaria * 30;
+            resposta = `A matemática não mente: sua velocidade atual de queima é de <b>${formatarMoeda(statsGlobais.mediaDiaria)} por dia</b>.<br><br>Se você não mudar o ritmo, a projeção é que você feche 30 dias gastando <b>${formatarMoeda(gastoEstimado)}</b>. Esse valor cabe na sua receita atual?`;
         }
     }
-    else {
-        resposta = "Operando como Motor de BI.<br>Solicite o <b>Relatório Executivo</b>, táticas para <b>Otimizar Custos</b> ou uma projeção de <b>Burn Rate</b>.";
+    // 5. Intenção: RESUMO / STATUS
+    else if (/(resumo|relatório|relatorio|status|como estou|balanço)/.test(pergunta)) {
+        resposta = `Aqui está o seu raio-x do período:<br><br>🟢 Entradas: <b>${formatarMoeda(statsGlobais.receitas)}</b><br>🔴 Saídas: <b>${formatarMoeda(statsGlobais.despesas)}</b><br>⚖️ Saldo: <b class="${statsGlobais.saldo < 0 ? 'text-rose-500' : 'text-emerald-500'}">${formatarMoeda(statsGlobais.saldo)}</b><br><br>Sua margem de segurança atual é de ${statsGlobais.taxaPoupanca.toFixed(1)}%.`;
     }
+    // 6. Intenção: SAUDAÇÃO
+    else if (/(oi|olá|ola|boa tarde|bom dia|boa noite|fala ai)/.test(pergunta)) {
+        resposta = "Olá! Pode me perguntar qualquer coisa sobre os seus gastos, saúde da carteira ou previsões. Como posso te ajudar hoje?";
+    }
+    // FALLBACK: O Robô tenta ser útil mesmo se não entender a pergunta específica
+    else {
+        resposta = `Eu ainda estou aprendendo a conversar, mas olhando seus números, notei que sua margem é de ${statsGlobais.taxaPoupanca.toFixed(1)}%. <br><br>Você pode me perguntar diretamente: <i>"Estou em perigo?"</i> ou <i>"Onde gastei mais?"</i>`;
+    }
+
+    // Processa os 'bolds' em markdown para HTML antes de imprimir
+    resposta = resposta.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
 
     adicionarMensagemNoChat(resposta, false);
 }
