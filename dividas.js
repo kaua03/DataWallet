@@ -1,166 +1,165 @@
 // ==========================================
-// dividas.js - MOTOR KANBAN DE CONTAS E DÍVIDAS
+// dividas.js - MOTOR KANBAN DE CONTAS A PAGAR
 // ==========================================
 
 let usuarioLogado = null;
-let dividasGlobais = [];
+let despesasPendentes = [];
 
-// Ignição da Tela
 document.addEventListener('DOMContentLoaded', async () => {
-    // Escudo Protetor via config.js
     usuarioLogado = await verificarSessaoSegura();
     if (!usuarioLogado) return; 
 
-    // O Auto-Preenchimento inteligente do input de data para a data de Hoje
-    document.getElementById('div-data').value = new Date().toISOString().split('T')[0];
-
-    await carregarDadosDoBanco();
+    await carregarDividasDoBanco();
 });
 
-// 1. O EXTRATOR (Puxa APENAS as dívidas)
-async function carregarDadosDoBanco() {
+// Busca todas as transações do tipo "despesa"
+async function carregarDividasDoBanco() {
     try {
         const { data, error } = await supabaseClient
-            .from('dividas')
+            .from('transacoes')
             .select('*')
             .eq('usuario_id', usuarioLogado.id)
-            .order('data_vencimento', { ascending: true }); // Traz da mais antiga para a mais nova
+            .eq('tipo', 'despesa')
+            // Se você tiver uma coluna "pago" no banco, descomente a linha abaixo no futuro:
+            // .eq('pago', false) 
+            .order('data_vencimento', { ascending: true });
 
         if (error) throw error;
         
-        dividasGlobais = data || [];
-        renderizarKanban();
+        despesasPendentes = data || [];
+        processarEAtualizarKanban();
 
     } catch (e) {
         console.error("Erro ao puxar dívidas:", e.message);
     }
 }
 
-// 2. O CÉREBRO DISTRIBUIDOR (Kanban)
-function renderizarKanban() {
-    const atrasadas = [];
-    const atual = [];
-    const futuras = [];
+// O Cérebro do Tempo: Separa as dívidas nas 3 colunas
+function processarEAtualizarKanban() {
+    const hojeData = new Date();
+    hojeData.setHours(0, 0, 0, 0); // Zera as horas para comparar só o dia
     
-    // Captura do Mês e Ano correntes de forma segura
-    const dataHoje = new Date();
-    const mesAtual = dataHoje.getMonth();
-    const anoAtual = dataHoje.getFullYear();
+    const mesAtual = hojeData.getMonth();
+    const anoAtual = hojeData.getFullYear();
 
-    // Filtra as dívidas nas 3 colunas baseadas na Data
-    dividasGlobais.forEach(d => {
-        // T12:00:00Z evita bugs de fuso horário que fazem o dia voltar para o dia anterior
-        const dData = new Date(d.data_vencimento + 'T12:00:00Z');
+    let arrAtrasadas = [];
+    let arrMes = [];
+    let arrFuturo = [];
+
+    let totAtrasadas = 0, totMes = 0, totFuturo = 0;
+
+    despesasPendentes.forEach(d => {
+        if (!d.data_vencimento) return; // Ignora se não tiver data
         
-        // Se a data inteira for menor que hoje E não for deste mês atual -> Atrasada
-        if (dData < dataHoje && dData.getMonth() !== mesAtual) {
-            atrasadas.push(d);
+        // Corrige o fuso horário para a data do banco não voltar 1 dia
+        const dVenc = new Date(d.data_vencimento + 'T12:00:00Z');
+        dVenc.setHours(0, 0, 0, 0);
+
+        const mesVenc = dVenc.getMonth();
+        const anoVenc = dVenc.getFullYear();
+
+        // LÓGICA DE DISTRIBUIÇÃO
+        if (dVenc < hojeData) {
+            // Se a data já passou de hoje = Atrasada
+            arrAtrasadas.push(d);
+            totAtrasadas += d.valor;
         } 
-        // Se bater no mês e ano exatos de hoje -> Este Mês
-        else if (dData.getMonth() === mesAtual && dData.getFullYear() === anoAtual) {
-            atual.push(d);
+        else if (mesVenc === mesAtual && anoVenc === anoAtual) {
+            // Se não está atrasada, e está no mesmo mês/ano atual = Este Mês
+            arrMes.push(d);
+            totMes += d.valor;
         } 
-        // Tudo que sobrar (meses ou anos à frente) -> Futuras
-        else {
-            futuras.push(d);
+        else if (dVenc > hojeData) {
+            // Se é maior que o mês atual = Futuro
+            arrFuturo.push(d);
+            totFuturo += d.valor;
         }
     });
 
-    // Função interna para desenhar cada card
-    const gerarCardD = (d, corTexto, corBorda) => `
-        <div class="bg-white p-3 rounded-xl border ${corBorda} shadow-sm flex justify-between items-center hover:shadow-md transition">
-            <div class="truncate pr-2">
-                <p class="font-bold text-gray-800 text-sm truncate">${d.descricao}</p>
-                <p class="text-xs text-gray-500 font-bold mt-0.5">
-                    <i class="fa-regular fa-calendar"></i> ${d.data_vencimento.split('-').reverse().join('/')}
-                </p>
+    // Atualiza KPIs no topo da tela
+    document.getElementById('kpi-atrasadas').innerText = formatarMoeda(totAtrasadas);
+    document.getElementById('kpi-mes').innerText = formatarMoeda(totMes);
+    document.getElementById('kpi-futuro').innerText = formatarMoeda(totFuturo);
+
+    // Atualiza os Badges (bolinhas com números) nas colunas
+    document.getElementById('badge-atrasadas').innerText = arrAtrasadas.length;
+    document.getElementById('badge-mes').innerText = arrMes.length;
+    document.getElementById('badge-futuro').innerText = arrFuturo.length;
+
+    // Renderiza o HTML nas 3 colunas
+    renderizarColuna('lista-atrasadas', arrAtrasadas, 'atrasada');
+    renderizarColuna('lista-mes', arrMes, 'mes');
+    renderizarColuna('lista-futuro', arrFuturo, 'futuro');
+}
+
+// A Fábrica de Cards Sênior
+function renderizarColuna(idContainer, arrayDados, tipoColuna) {
+    const container = document.getElementById(idContainer);
+    
+    if (arrayDados.length === 0) {
+        container.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-8 opacity-50">
+                <i class="fa-solid fa-mug-hot text-3xl text-slate-300 mb-2"></i>
+                <p class="text-xs font-bold text-slate-400">Tudo limpo por aqui.</p>
+            </div>`;
+        return;
+    }
+
+    // Configuração de cores baseado na coluna
+    let corBordaLateral = '';
+    let corValor = '';
+    let corIconeData = '';
+
+    if (tipoColuna === 'atrasada') {
+        corBordaLateral = 'border-l-rose-500';
+        corValor = 'text-rose-600';
+        corIconeData = 'text-rose-400';
+    } else if (tipoColuna === 'mes') {
+        corBordaLateral = 'border-l-indigo-500';
+        corValor = 'text-slate-900';
+        corIconeData = 'text-indigo-400';
+    } else {
+        corBordaLateral = 'border-l-slate-400';
+        corValor = 'text-slate-500';
+        corIconeData = 'text-slate-400';
+    }
+
+    const htmlCards = arrayDados.map(d => {
+        const dataStr = d.data_vencimento.split('-').reverse().join('/');
+        
+        return `
+        <div class="bg-white rounded-xl p-4 border border-slate-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border-l-4 ${corBordaLateral} hover:-translate-y-0.5 hover:shadow-md transition-all group relative">
+            
+            <div class="flex justify-between items-start gap-2 mb-3">
+                <h4 class="font-bold text-sm text-slate-800 leading-tight">${d.descricao}</h4>
+                <span class="font-black text-base ${corValor} whitespace-nowrap">${formatarMoeda(d.valor)}</span>
             </div>
-            <p class="font-black ${corTexto} shrink-0">${formatarMoeda(d.valor)}</p>
+            
+            <div class="flex items-center justify-between mt-auto">
+                <div class="flex items-center gap-1.5 text-xs font-bold text-slate-500">
+                    <i class="fa-regular fa-calendar ${corIconeData}"></i> 
+                    <span>${dataStr}</span>
+                </div>
+                
+                <!-- Botão Fake de Ação para o futuro -->
+                <button title="Marcar como Pago" class="w-6 h-6 rounded bg-slate-50 text-slate-300 hover:bg-emerald-50 hover:text-emerald-500 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <i class="fa-solid fa-check"></i>
+                </button>
+            </div>
         </div>
-    `;
+        `;
+    }).join('');
 
-    // Função de soma do array de objetos
-    const somaArr = (arr) => arr.reduce((acc, curr) => acc + curr.valor, 0);
-
-    // 1. Injeta Coluna ATRASADAS
-    document.getElementById('total-div-atrasada').innerText = formatarMoeda(somaArr(atrasadas));
-    document.getElementById('col-div-atrasada').innerHTML = atrasadas.map(d => gerarCardD(d, 'text-red-600', 'border-red-100')).join('') || '<p class="text-xs text-gray-400 font-bold text-center mt-4">Nenhuma conta atrasada. Você está em dia!</p>';
-
-    // 2. Injeta Coluna ESTE MÊS
-    document.getElementById('total-div-atual').innerText = formatarMoeda(somaArr(atual));
-    document.getElementById('col-div-atual').innerHTML = atual.map(d => gerarCardD(d, 'text-blue-600', 'border-blue-100')).join('') || '<p class="text-xs text-gray-400 font-bold text-center mt-4">Nenhuma conta para este mês.</p>';
-
-    // 3. Injeta Coluna FUTURAS
-    document.getElementById('total-div-futura').innerText = formatarMoeda(somaArr(futuras));
-    document.getElementById('col-div-futura').innerHTML = futuras.map(d => gerarCardD(d, 'text-gray-600', 'border-gray-200')).join('') || '<p class="text-xs text-gray-400 font-bold text-center mt-4">Nenhuma previsão de gastos futuros.</p>';
+    container.innerHTML = htmlCards;
 }
 
 // ---------------------------------------------
-// 3. O GERADOR AUTOMÁTICO DE PARCELAS
+// CONTROLES DE UI (Modal)
 // ---------------------------------------------
-function abrirModalDivida() { 
-    document.getElementById('modal-divida').classList.remove('hidden'); 
+function abrirModalNovaDivida() {
+    document.getElementById('modal-divida').classList.remove('hidden');
 }
 
-function fecharModalDivida() { 
-    document.getElementById('modal-divida').classList.add('hidden'); 
-}
-
-async function salvarNovaDivida() {
-    const desc = document.getElementById('div-desc').value.trim();
-    const valorTotal = parseFloat(document.getElementById('div-valor').value);
-    const parcelas = parseInt(document.getElementById('div-parcelas').value);
-    const dataBase = document.getElementById('div-data').value;
-
-    if(!desc || !valorTotal || !dataBase || isNaN(parcelas) || parcelas < 1) {
-        return alert("Preencha corretamente a Descrição, Valor Total, Parcelas e Data Inicial.");
-    }
-
-    const btn = document.getElementById('btn-salvar-divida');
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Calculando...';
-    
-    // Calcula o valor de cada fatia da dívida
-    const valorParcela = valorTotal / parcelas;
-    const parcelasParaOBanco = [];
-
-    // O Loop de Fatiamento Temporal
-    for(let i = 0; i < parcelas; i++) {
-        const dataParc = new Date(dataBase + 'T12:00:00Z');
-        
-        // A Mágica do JS: se for Dezembro (mês 11) e somar 1, ele vira Janeiro do ano seguinte sozinho.
-        dataParc.setMonth(dataParc.getMonth() + i);
-        
-        const stringData = dataParc.toISOString().split('T')[0];
-        
-        // Se for só 1 parcela, não coloca "(1/1)" no nome. Se for mais, ele enumera.
-        const nomeFinal = parcelas > 1 ? `${desc} (${i+1}/${parcelas})` : desc;
-
-        parcelasParaOBanco.push({
-            usuario_id: usuarioLogado.id, 
-            descricao: nomeFinal, 
-            valor: valorParcela, 
-            data_vencimento: stringData,
-            status: 'Pendente'
-        });
-    }
-    
-    try {
-        // Envio em Lote (Batch Insert) para o Supabase
-        const { error } = await supabaseClient.from('dividas').insert(parcelasParaOBanco);
-        
-        if (error) throw error;
-        
-        // Limpa o formulário e recarrega
-        document.getElementById('div-desc').value = '';
-        document.getElementById('div-valor').value = '';
-        document.getElementById('div-parcelas').value = '1';
-        
-        fecharModalDivida();
-        await carregarDadosDoBanco(); // O Kanban será redesenhado com as parcelas novas!
-
-    } catch(e) {
-        alert("Erro ao salvar dívida na nuvem: " + e.message);
-    } finally {
-        btn.innerHTML = '<i class="fa-solid fa-layer-group"></i> Gerar Parcelas';
-    }
+function fecharModalNovaDivida() {
+    document.getElementById('modal-divida').classList.add('hidden');
 }
