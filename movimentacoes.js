@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function carregarDadosDoBanco() {
     try {
         const [resTrans, resCat] = await Promise.all([
+            // Puxamos TUDO, inclusive a nova coluna de Timestamp (criado_em)
             supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).order('data_vencimento', { ascending: false }).order('id', { ascending: false }),
             supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id).order('nome', { ascending: true })
         ]);
@@ -65,7 +66,14 @@ function renderizarInterface() {
         const corBg = isReceita ? 'bg-green-100' : 'bg-red-100';
         const corTxt = isReceita ? 'text-green-500' : 'text-red-500';
         const sinal = isReceita ? '+' : '-';
-        const dataFormatada = t.data_vencimento ? t.data_vencimento.split('-').reverse().join('/') : '--/--/----';
+        
+        // Tratamento da Data e Hora Exata
+        let dataStr = t.data_vencimento ? t.data_vencimento.split('-').reverse().join('/') : '--/--/----';
+        let horaStr = '--:--';
+        if (t.criado_em) {
+            const dataObj = new Date(t.criado_em);
+            horaStr = dataObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute:'2-digit' });
+        }
 
         return `
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between hover:shadow-md transition group gap-3 sm:gap-0">
@@ -75,7 +83,9 @@ function renderizarInterface() {
                 </div>
                 <div class="truncate pr-2">
                     <p class="text-gray-900 font-bold truncate">${t.descricao}</p>
-                    <p class="text-gray-400 text-xs font-bold truncate">${cat.nome} • ${dataFormatada}</p>
+                    <p class="text-gray-400 text-xs font-bold truncate flex items-center gap-1">
+                        ${cat.nome} • <i class="fa-regular fa-calendar ml-1"></i> ${dataStr} <i class="fa-regular fa-clock ml-1"></i> ${horaStr}
+                    </p>
                 </div>
             </div>
             
@@ -116,7 +126,7 @@ const dicionarioDeInteligencia = [
         { titulo: 'Combustível', palavras: ['gasolina', 'álcool', 'alcool', 'etanol', 'diesel', 'posto', 'combustível', 'combustivel'] },
         { titulo: 'Peças / Manutenção', palavras: ['oficina', 'mecânico', 'peça', 'pneu', 'óleo', 'revisão'] },
         { titulo: 'Serviços Auto', palavras: ['estacionamento', 'pedágio', 'lavagem', 'lava rápido'] },
-        { titulo: 'Transporte Público/App', palavras: ['uber', '99', 'ônibus', 'passagem', 'metrô'] }
+        { titulo: 'Transporte', palavras: ['uber', '99', 'ônibus', 'passagem', 'metrô'] }
     ]},
     { pasta: 'moradia', regras: [
         { titulo: 'Aluguel', palavras: ['aluguel', 'condomínio'] },
@@ -126,7 +136,7 @@ const dicionarioDeInteligencia = [
         { titulo: 'Reparos e Casa', palavras: ['reparo', 'faxina', 'limpeza', 'material de construção'] }
     ]},
     { pasta: 'estudo', regras: [
-        { titulo: 'Mensalidade Escolar', palavras: ['faculdade', 'escola', 'mensalidade'] },
+        { titulo: 'Mensalidade', palavras: ['faculdade', 'escola', 'mensalidade'] },
         { titulo: 'Cursos Extras', palavras: ['curso', 'certificado', 'prova', 'concurso'] },
         { titulo: 'Material Didático', palavras: ['livro', 'caderno', 'material', 'papelaria'] }
     ]},
@@ -157,13 +167,11 @@ function inferirCategoriaETitulo(texto, isReceita) {
         };
     }
 
-    // Procura no Dicionário
+    // Varre o Dicionário de Correlação
     for (const d of dicionarioDeInteligencia) {
         for (const regra of d.regras) {
             if (regra.palavras.some(palavra => texto.includes(palavra))) {
-                // Acha a categoria baseada na nossa lista atual de categorias do banco
                 let busca = d.pasta;
-                // Ajustes para as palavras exatas das categorias que criamos no login.js
                 if (busca === 'veículo') busca = 'veículo';
                 if (busca === 'saúde') busca = 'imprevistos'; 
 
@@ -173,12 +181,12 @@ function inferirCategoriaETitulo(texto, isReceita) {
         }
     }
 
-    // FILTRO DE STOP WORDS (Se não achou no dicionário, pega o substantivo principal)
+    // FILTRO STOP WORDS (Data Science)
     let palavras = texto.split(' ');
     const palavrasInuteis = ['comprei', 'gastei', 'paguei', 'botei', 'coloquei', 'um', 'uma', 'uns', 'umas', 'de', 'da', 'do', 'no', 'na', 'para', 'com', 'novo', 'nova'];
     
     while (palavras.length > 0 && palavrasInuteis.includes(palavras[0])) {
-        palavras.shift(); // Remove a palavra inútil do começo
+        palavras.shift(); 
     }
 
     let descLimpa = palavras.length > 0 ? palavras[0] : 'Registro';
@@ -197,10 +205,10 @@ function atualizarCoresTipoModal() {
     const btnReceita = document.getElementById('btn-tipo-receita');
 
     if (isReceita) {
-        btnReceita.className = "border-2 border-green-500 bg-green-50 text-green-600 rounded-xl p-3 flex justify-center items-center gap-2 font-bold text-sm transition-all";
+        btnReceita.className = "border-2 border-green-500 bg-green-50 text-green-600 rounded-xl p-3 flex justify-center items-center gap-2 font-bold text-sm transition-all cursor-pointer";
         btnDespesa.className = "border-2 border-gray-200 bg-gray-50 text-gray-400 rounded-xl p-3 flex justify-center items-center gap-2 font-bold text-sm transition-all hover:bg-gray-100 cursor-pointer";
     } else {
-        btnDespesa.className = "border-2 border-red-500 bg-red-50 text-red-600 rounded-xl p-3 flex justify-center items-center gap-2 font-bold text-sm transition-all";
+        btnDespesa.className = "border-2 border-red-500 bg-red-50 text-red-600 rounded-xl p-3 flex justify-center items-center gap-2 font-bold text-sm transition-all cursor-pointer";
         btnReceita.className = "border-2 border-gray-200 bg-gray-50 text-gray-400 rounded-xl p-3 flex justify-center items-center gap-2 font-bold text-sm transition-all hover:bg-gray-100 cursor-pointer";
     }
 }
@@ -250,9 +258,7 @@ function abrirModalEdicao(id) {
     document.getElementById('modal-transacao').classList.remove('hidden');
 }
 
-function fecharModal() { 
-    document.getElementById('modal-transacao').classList.add('hidden'); 
-}
+function fecharModal() { document.getElementById('modal-transacao').classList.add('hidden'); }
 
 async function salvarTransacaoFinal() {
     const id = document.getElementById('modal-id').value;
@@ -278,13 +284,10 @@ async function salvarTransacaoFinal() {
 
     try {
         if (id) {
-            const { error } = await supabaseClient.from('transacoes').update(payload).eq('id', id).eq('usuario_id', usuarioLogado.id);
-            if (error) throw error;
+            await supabaseClient.from('transacoes').update(payload).eq('id', id).eq('usuario_id', usuarioLogado.id);
         } else {
-            const { error } = await supabaseClient.from('transacoes').insert([payload]);
-            if (error) throw error;
+            await supabaseClient.from('transacoes').insert([payload]);
         }
-        
         await carregarDadosDoBanco();
         fecharModal();
         document.getElementById('input-magico').value = '';
@@ -315,18 +318,14 @@ function ativarMicrofone() {
     btnMic.innerHTML = '<i class="fa-solid fa-microphone-lines fa-beat text-red-500"></i>';
 
     recognition.onresult = (event) => {
-        const transcricao = event.results[0][0].transcript;
-        document.getElementById('input-magico').value = transcricao;
+        document.getElementById('input-magico').value = event.results[0][0].transcript;
         processarFrase(); 
     };
 
     recognition.onerror = (e) => { 
-        console.error("Erro Mic:", e);
-        if (e.error === 'not-allowed') alert("Permissão de microfone negada. Clique no cadeado na barra de endereço para liberar.");
+        if (e.error === 'not-allowed') alert("Permissão negada. Clique no cadeado na barra de endereço para liberar.");
         btnMic.innerHTML = iconeAntigo; 
     };
-    
     recognition.onend = () => { btnMic.innerHTML = iconeAntigo; };
-
     recognition.start();
 }
