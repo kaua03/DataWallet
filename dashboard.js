@@ -1,15 +1,13 @@
 // ==========================================
-// dashboard.js - MOTOR DE DATA SCIENCE E COACH IA
+// dashboard.js - MOTOR DE BUSINESS INTELLIGENCE E IA
 // ==========================================
 
 let usuarioLogado = null;
 let transacoesGlobais = [];
 let categoriasGlobais = [];
 
-// Instâncias dos Gráficos para poder destruir e recriar na filtragem
-let grafBalanco = null;
+let grafCombo = null;
 let grafPizza = null;
-let grafEvolucao = null;
 let grafTop = null;
 
 let statsGlobais = { receitas: 0, despesas: 0, saldo: 0, taxaPoupanca: 0, mediaDiaria: 0, maiorGasto: null, topCategoria: null, transacoesNoPeriodo: 0 };
@@ -18,7 +16,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     usuarioLogado = await verificarSessaoSegura();
     if (!usuarioLogado) return; 
 
-    document.getElementById('filtro-periodo').addEventListener('change', processarEAtualizarTudo);
+    // Inicializa Filtros (Auto-preenche o Mês Atual)
+    const hoje = new Date();
+    document.getElementById('input-mes').value = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+    document.getElementById('input-ano').value = hoje.getFullYear();
+    
+    document.getElementById('filtro-periodo').value = 'por_mes';
+    mudarTipoFiltro();
 
     document.getElementById('input-coach').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') enviarMensagemCoach();
@@ -43,45 +47,81 @@ async function carregarDadosDoBanco() {
 }
 
 // ---------------------------------------------
-// O MOTOR DE PROCESSAMENTO (Matemática Pura)
+// CONTROLE DE FILTROS NA TELA
+// ---------------------------------------------
+function mudarTipoFiltro() {
+    const tipo = document.getElementById('filtro-periodo').value;
+    document.getElementById('box-mes').classList.add('hidden');
+    document.getElementById('box-ano').classList.add('hidden');
+    document.getElementById('box-personalizado').classList.add('hidden');
+
+    if (tipo === 'por_mes') document.getElementById('box-mes').classList.remove('hidden');
+    else if (tipo === 'por_ano') document.getElementById('box-ano').classList.remove('hidden');
+    else if (tipo === 'personalizado') document.getElementById('box-personalizado').classList.remove('hidden');
+
+    processarEAtualizarTudo();
+}
+
+// ---------------------------------------------
+// MOTOR ANALÍTICO (Data Science)
 // ---------------------------------------------
 function processarEAtualizarTudo() {
-    const periodoSelect = document.getElementById('filtro-periodo').value;
+    const tipoFiltro = document.getElementById('filtro-periodo').value;
     const dataAtual = new Date();
-    const mesAtual = dataAtual.getMonth();
-    const anoAtual = dataAtual.getFullYear();
 
-    // 1. Filtragem Base
+    // 1. Filtrar Transações
     const transacoesFiltradas = transacoesGlobais.filter(t => {
         if (!t.data_vencimento) return true;
-        const dTransacao = new Date(t.data_vencimento + 'T12:00:00Z');
+        const d = new Date(t.data_vencimento + 'T12:00:00Z');
         
-        if (periodoSelect === 'mes_atual') return dTransacao.getMonth() === mesAtual && dTransacao.getFullYear() === anoAtual;
-        if (periodoSelect === 'mes_passado') {
-            const mAnt = mesAtual === 0 ? 11 : mesAtual - 1;
-            const aAnt = mesAtual === 0 ? anoAtual - 1 : anoAtual;
-            return dTransacao.getMonth() === mAnt && dTransacao.getFullYear() === aAnt;
+        if (tipoFiltro === 'por_mes') {
+            const val = document.getElementById('input-mes').value;
+            if(!val) return true;
+            const [anoF, mesF] = val.split('-');
+            return d.getMonth() === (parseInt(mesF) - 1) && d.getFullYear() === parseInt(anoF);
+        } else if (tipoFiltro === 'por_ano') {
+            const val = document.getElementById('input-ano').value;
+            if(!val) return true;
+            return d.getFullYear() === parseInt(val);
+        } else if (tipoFiltro === 'personalizado') {
+            const dIni = document.getElementById('input-data-inicio').value;
+            const dFim = document.getElementById('input-data-fim').value;
+            let valid = true;
+            if (dIni) valid = valid && d >= new Date(dIni + 'T12:00:00Z');
+            if (dFim) valid = valid && d <= new Date(dFim + 'T12:00:00Z');
+            return valid;
         }
-        if (periodoSelect === 'ano_atual') return dTransacao.getFullYear() === anoAtual;
         return true; 
     });
 
-    // 2. Extração Analítica
+    // 2. Extração e Agrupamento
     let totalDespesas = 0, totalReceitas = 0;
     let maiorGasto = { valor: 0, descricao: "Nenhum" };
     const gastosPorCategoria = {};
-    const agregacaoDiaria = {}; // Para o Gráfico de Evolução Tempora
-    const topDespesasIsoladas = []; // Para o Gráfico de Top 5
+    const topGastos = [];
+    const agrupamentoTemporal = {}; // Para o Combo Chart
+
+    // Define se o Combo Chart agrupa por Dia (Ex: "12/08") ou por Mês (Ex: "Ago/2026")
+    const agruparPorMes = (tipoFiltro === 'por_ano' || tipoFiltro === 'tudo');
 
     transacoesFiltradas.forEach(t => { 
-        // Agregação Temporal (Datas)
-        const dFmt = t.data_vencimento ? t.data_vencimento.split('-').reverse().slice(0, 2).join('/') : 'S/D';
-        if(!agregacaoDiaria[dFmt]) agregacaoDiaria[dFmt] = { r: 0, d: 0 };
+        // Lógica de Agrupamento de Tempo
+        let chaveTempo = 'S/D';
+        if (t.data_vencimento) {
+            const partes = t.data_vencimento.split('-'); // [AAAA, MM, DD]
+            if (agruparPorMes) {
+                const mesesAbv = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+                chaveTempo = `${mesesAbv[parseInt(partes[1])-1]}/${partes[0].slice(2)}`; // Ex: "Ago/26"
+            } else {
+                chaveTempo = `${partes[2]}/${partes[1]}`; // Ex: "12/08"
+            }
+        }
+        if(!agrupamentoTemporal[chaveTempo]) agrupamentoTemporal[chaveTempo] = { rec: 0, des: 0 };
 
         if(t.tipo === 'despesa') {
             totalDespesas += t.valor; 
-            agregacaoDiaria[dFmt].d += t.valor;
-            topDespesasIsoladas.push(t);
+            agrupamentoTemporal[chaveTempo].des += t.valor;
+            topGastos.push(t);
             
             if(t.valor > maiorGasto.valor) maiorGasto = t;
             
@@ -89,158 +129,212 @@ function processarEAtualizarTudo() {
             gastosPorCategoria[catNome] = (gastosPorCategoria[catNome] || 0) + t.valor;
         } else {
             totalReceitas += t.valor;
-            agregacaoDiaria[dFmt].r += t.valor;
+            agrupamentoTemporal[chaveTempo].rec += t.valor;
         }
     });
 
-    // Matemática de Resumo
     let taxa = 0;
     if (totalReceitas > 0) taxa = ((totalReceitas - totalDespesas) / totalReceitas) * 100;
     else if (totalDespesas > 0) taxa = -100;
 
-    const diasNoPeriodo = periodoSelect === 'mes_atual' ? dataAtual.getDate() : 30; 
+    const diasNoPeriodo = tipoFiltro === 'por_mes' ? 30 : 365; 
     const media = totalDespesas > 0 ? (totalDespesas / diasNoPeriodo) : 0;
 
     const categoriasOrdenadas = Object.keys(gastosPorCategoria).sort((a, b) => gastosPorCategoria[b] - gastosPorCategoria[a]);
-    topDespesasIsoladas.sort((a, b) => b.valor - a.valor); // Ordena as maiores despesas individuais
+    topGastos.sort((a, b) => b.valor - a.valor);
 
-    // Atualiza Memória do Coach
-    statsGlobais = {
-        receitas: totalReceitas, despesas: totalDespesas, saldo: totalReceitas - totalDespesas,
-        taxaPoupanca: taxa, mediaDiaria: media, maiorGasto: maiorGasto,
-        topCategoria: categoriasOrdenadas.length > 0 ? { nome: categoriasOrdenadas[0], valor: gastosPorCategoria[categoriasOrdenadas[0]] } : null,
-        transacoesNoPeriodo: transacoesFiltradas.length
-    };
+    // Memória da IA
+    statsGlobais = { receitas: totalReceitas, despesas: totalDespesas, saldo: totalReceitas - totalDespesas, taxaPoupanca: taxa, mediaDiaria: media, maiorGasto: maiorGasto, topCategoria: categoriasOrdenadas.length > 0 ? { nome: categoriasOrdenadas[0], valor: gastosPorCategoria[categoriasOrdenadas[0]] } : null, transacoesNoPeriodo: transacoesFiltradas.length };
 
-    // 3. Atualiza DOM Cards
-    document.getElementById('dash-media').innerText = formatarMoeda(media);
-    document.getElementById('dash-taxa').innerText = `${taxa.toFixed(1)}%`;
-    document.getElementById('dash-taxa').className = `text-xl md:text-2xl font-black mt-1 ${taxa >= 20 ? 'text-green-500' : (taxa > 0 ? 'text-blue-500' : 'text-red-500')}`;
+    // 3. Atualizar DOM Cards KPIs
+    document.getElementById('kpi-saldo').innerText = formatarMoeda(totalReceitas - totalDespesas);
+    document.getElementById('kpi-receitas').innerText = formatarMoeda(totalReceitas);
+    document.getElementById('kpi-despesas').innerText = formatarMoeda(totalDespesas);
     
-    if (maiorGasto.valor > 0) {
-        document.getElementById('dash-maior').innerText = formatarMoeda(maiorGasto.valor);
-        document.getElementById('dash-maior-desc').innerText = maiorGasto.descricao;
-    } else {
-        document.getElementById('dash-maior').innerText = "R$ 0,00";
-        document.getElementById('dash-maior-desc').innerText = "--";
-    }
+    let taxaTexto = taxa.toFixed(1) + "%";
+    let corTaxa = taxa >= 20 ? 'bg-green-500' : (taxa > 0 ? 'bg-blue-500' : 'bg-red-500');
+    document.getElementById('kpi-taxa-texto').innerText = taxaTexto;
+    
+    // Animação da Barra de Progresso da Poupança
+    let percentualBarra = Math.min(Math.max(taxa, 0), 100); 
+    const barra = document.getElementById('kpi-taxa-barra');
+    barra.style.width = `${percentualBarra}%`;
+    barra.className = `h-2 rounded-full transition-all duration-1000 ${corTaxa}`;
 
-    const badgeStatus = document.getElementById('dash-status');
-    if (taxa >= 20) { badgeStatus.innerText = "Excelente"; badgeStatus.className = "mt-1 text-xs font-black px-3 py-1 rounded-full bg-green-100 text-green-600 inline-block uppercase"; }
-    else if (taxa > 0) { badgeStatus.innerText = "Estável"; badgeStatus.className = "mt-1 text-xs font-black px-3 py-1 rounded-full bg-blue-100 text-blue-600 inline-block uppercase"; }
-    else { badgeStatus.innerText = "Em Risco"; badgeStatus.className = "mt-1 text-xs font-black px-3 py-1 rounded-full bg-red-100 text-red-600 inline-block uppercase"; }
+    // Atualiza a lista visual de Categorias
+    renderizarListaCategorias(categoriasOrdenadas, gastosPorCategoria, totalDespesas);
 
-    // 4. Renderiza os Gráficos
-    renderizarGraficos(totalReceitas, totalDespesas, gastosPorCategoria, categoriasOrdenadas, agregacaoDiaria, topDespesasIsoladas.slice(0,5));
+    // 4. Renderiza Gráficos Sênior
+    renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, topGastos.slice(0,5), totalDespesas);
 
-    // Reinicia o Coach se o Modal já estivesse aberto
     iniciarCoach();
 }
 
 // ---------------------------------------------
-// ENGENHARIA VISUAL DE GRÁFICOS (CHART.JS 3D)
+// LISTA DE CATEGORIAS HTML (Progress Bars)
 // ---------------------------------------------
-function renderizarGraficos(receitas, despesas, gastosPorCategoria, categoriasOrdenadas, agregacaoDiaria, top5Despesas) {
-    Chart.defaults.font.family = "'Inter', sans-serif";
-    Chart.defaults.color = '#64748b';
-
-    // 1. GRÁFICO DE BALANÇO (BARRA 3D GLOSSY)
-    const ctxB = document.getElementById('graficoBalanco').getContext('2d');
-    if (grafBalanco) grafBalanco.destroy();
+function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
+    const paleta = ['text-blue-500 bg-blue-500', 'text-purple-500 bg-purple-500', 'text-pink-500 bg-pink-500', 'text-orange-500 bg-orange-500', 'text-teal-500 bg-teal-500', 'text-gray-500 bg-gray-500'];
     
-    // O Efeito 3D com Gradiente no Canvas
-    const gradRec = ctxB.createLinearGradient(0, 0, 0, 400);
-    gradRec.addColorStop(0, '#4ade80'); // Verde claro topo
-    gradRec.addColorStop(1, '#166534'); // Verde escuro base
+    const html = ordenadas.map((cat, index) => {
+        const valor = gastos[cat];
+        const perc = totalGeral > 0 ? ((valor / totalGeral) * 100).toFixed(1) : 0;
+        const classesCor = paleta[index % paleta.length].split(' '); // [text-cor, bg-cor]
+        
+        return `
+        <div>
+            <div class="flex justify-between items-end mb-1">
+                <span class="text-sm font-bold text-gray-700 truncate w-32" title="${cat}">${cat}</span>
+                <div class="text-right">
+                    <span class="text-xs font-black text-gray-900 block">${formatarMoeda(valor)}</span>
+                    <span class="text-[10px] font-bold ${classesCor[0]}">${perc}%</span>
+                </div>
+            </div>
+            <div class="w-full bg-gray-100 rounded-full h-1.5">
+                <div class="${classesCor[1]} h-1.5 rounded-full transition-all duration-1000" style="width: ${perc}%"></div>
+            </div>
+        </div>
+        `;
+    }).join('');
 
-    const gradDes = ctxB.createLinearGradient(0, 0, 0, 400);
-    gradDes.addColorStop(0, '#f87171'); // Vermelho claro topo
-    gradDes.addColorStop(1, '#991b1b'); // Vermelho escuro base
+    document.getElementById('lista-categorias-progress').innerHTML = html || '<p class="text-xs text-gray-400 font-bold">Sem despesas.</p>';
+}
 
-    grafBalanco = new Chart(ctxB, {
+// ---------------------------------------------
+// ENGENHARIA DOS GRÁFICOS (CHART.JS COMBO)
+// ---------------------------------------------
+function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, top5, totalDespesas) {
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.color = '#94a3b8'; // Slate 400
+
+    // PREPARAÇÃO DADOS DO TEMPO (Ordenação lógica)
+    const chavesTempo = Object.keys(agrupamentoTemporal).sort((a,b) => {
+        if(a==='S/D') return -1; if(b==='S/D') return 1;
+        // Ordenação simplificada (melhorar se necessário para multianos)
+        return 1; 
+    });
+    
+    const labelsT = [];
+    const dadosRec = [];
+    const dadosDes = [];
+    const dadosAcumulados = [];
+    let acumuladoAtual = 0;
+
+    chavesTempo.forEach(c => {
+        labelsT.push(c);
+        dadosRec.push(agrupamentoTemporal[c].rec);
+        dadosDes.push(agrupamentoTemporal[c].des);
+        
+        // A Linha do Combo Chart soma Receitas e subtrai Despesas dia a dia
+        acumuladoAtual += (agrupamentoTemporal[c].rec - agrupamentoTemporal[c].des);
+        dadosAcumulados.push(acumuladoAtual);
+    });
+
+    // 1. GRÁFICO COMBO MASTER (Barras + Linha)
+    const ctxC = document.getElementById('graficoCombo').getContext('2d');
+    if (grafCombo) grafCombo.destroy();
+
+    grafCombo = new Chart(ctxC, {
         type: 'bar',
         data: {
-            labels: ['Captado (Entradas)', 'Queimado (Saídas)'],
-            datasets: [{
-                data: [receitas, despesas],
-                backgroundColor: [gradRec, gradDes],
-                borderRadius: 16, // Arredonda muito para dar volume
-                borderSkipped: false,
-                barPercentage: 0.5
-            }]
+            labels: labelsT.length > 0 ? labelsT : ['Vazio'],
+            datasets: [
+                {
+                    type: 'line',
+                    label: 'Saldo Acumulado',
+                    data: dadosAcumulados,
+                    borderColor: '#3b82f6', // Azul principal
+                    borderWidth: 3,
+                    tension: 0.4, // Curva suave
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#3b82f6',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    yAxisID: 'y'
+                },
+                {
+                    type: 'bar',
+                    label: 'Entradas',
+                    data: dadosRec,
+                    backgroundColor: 'rgba(34, 197, 94, 0.8)', // Verde
+                    borderRadius: 4,
+                    barPercentage: 0.6,
+                    yAxisID: 'y'
+                },
+                {
+                    type: 'bar',
+                    label: 'Saídas',
+                    data: dadosDes,
+                    backgroundColor: 'rgba(239, 68, 68, 0.8)', // Vermelho
+                    borderRadius: 4,
+                    barPercentage: 0.6,
+                    yAxisID: 'y'
+                }
+            ]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => ` ${formatarMoeda(ctx.raw)}` } } },
-            scales: { y: { display: false }, x: { grid: { display: false }, border: { display: false }, ticks: { font: { weight: 'bold' } } } }
+            interaction: { mode: 'index', intersect: false },
+            plugins: { 
+                legend: { display: false }, 
+                tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${formatarMoeda(ctx.raw)}` } } 
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: { grid: { borderDash: [4, 4], color: '#f1f5f9' }, beginAtZero: true }
+            }
         }
     });
 
-    // 2. GRÁFICO DE PIZZA (DOUGHNUT)
+    // 2. PIZZA (Doughnut Clean)
     const ctxP = document.getElementById('graficoPizza').getContext('2d');
     if (grafPizza) grafPizza.destroy();
 
-    const paleta = ['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#eab308', '#14b8a6', '#64748b'];
+    const paletaHex = ['#3b82f6', '#a855f7', '#ec4899', '#f97316', '#14b8a6', '#64748b'];
     let lblP = [], datP = [];
-    if (categoriasOrdenadas.length === 0) { lblP = ['Sem Gastos']; datP = [1]; } 
+    
+    if (categoriasOrdenadas.length === 0) { lblP = ['Vazio']; datP = [1]; } 
     else {
         let soma = 0;
         for (let i = 0; i < Math.min(5, categoriasOrdenadas.length); i++) {
             lblP.push(categoriasOrdenadas[i]); datP.push(gastosPorCategoria[categoriasOrdenadas[i]]);
             soma += gastosPorCategoria[categoriasOrdenadas[i]];
         }
-        if (categoriasOrdenadas.length > 5) { lblP.push('Outros'); datP.push(despesas - soma); }
+        if (categoriasOrdenadas.length > 5) { lblP.push('Outros'); datP.push(totalDespesas - soma); }
     }
+
+    // Injeta o Total Dinâmico no centro da Pizza
+    document.getElementById('pizza-total').innerText = formatarMoeda(totalDespesas);
 
     grafPizza = new Chart(ctxP, {
         type: 'doughnut',
-        data: { labels: lblP, datasets: [{ data: datP, backgroundColor: categoriasOrdenadas.length === 0 ? ['#f1f5f9'] : paleta, borderWidth: 3, borderColor: '#ffffff', hoverOffset: 8 }] },
-        options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10, weight: 'bold' } } } } }
+        data: { labels: lblP, datasets: [{ data: datP, backgroundColor: categoriasOrdenadas.length === 0 ? ['#f8fafc'] : paletaHex, borderWidth: 0, hoverOffset: 6 }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '80%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => ` ${formatarMoeda(categoriasOrdenadas.length === 0 ? 0 : ctx.raw)}` } } } }
     });
 
-    // 3. GRÁFICO DE EVOLUÇÃO TEMPORAL (LINHAS)
-    const ctxE = document.getElementById('graficoEvolucao').getContext('2d');
-    if (grafEvolucao) grafEvolucao.destroy();
-
-    const diasOrdenados = Object.keys(agregacaoDiaria).sort((a,b) => {
-        if(a==='S/D') return -1; if(b==='S/D') return 1;
-        return parseInt(a.split('/')[0]) - parseInt(b.split('/')[0]);
-    });
-    const linhaRec = diasOrdenados.map(d => agregacaoDiaria[d].r);
-    const linhaDes = diasOrdenados.map(d => agregacaoDiaria[d].d);
-
-    grafEvolucao = new Chart(ctxE, {
-        type: 'line',
-        data: {
-            labels: diasOrdenados,
-            datasets: [
-                { label: 'Entradas', data: linhaRec, borderColor: '#22c55e', backgroundColor: 'rgba(34, 197, 94, 0.1)', borderWidth: 3, tension: 0.4, fill: true, pointRadius: 4 },
-                { label: 'Saídas', data: linhaDes, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.05)', borderWidth: 3, tension: 0.4, fill: true, pointRadius: 4 }
-            ]
-        },
-        options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, scales: { y: { display: false }, x: { grid: { display: false } } } }
-    });
-
-    // 4. GRÁFICO DE TOP 5 GASTOS INDIVIDUAIS (BARRAS HORIZONTAIS)
+    // 3. TOP 5 GASTOS (Barra Horizontal Fina)
     const ctxT = document.getElementById('graficoTopGastos').getContext('2d');
     if (grafTop) grafTop.destroy();
 
     grafTop = new Chart(ctxT, {
         type: 'bar',
         data: {
-            labels: top5Despesas.length > 0 ? top5Despesas.map(t => t.descricao) : ['Nenhum'],
+            labels: top5.length > 0 ? top5.map(t => {
+                const limit = 15;
+                return t.descricao.length > limit ? t.descricao.substring(0, limit) + '...' : t.descricao;
+            }) : ['Nenhum'],
             datasets: [{
-                data: top5Despesas.length > 0 ? top5Despesas.map(t => t.valor) : [0],
-                backgroundColor: '#f97316', // Laranja Sênior
-                borderRadius: 6,
-                barPercentage: 0.6
+                data: top5.length > 0 ? top5.map(t => t.valor) : [0],
+                backgroundColor: '#f97316',
+                borderRadius: 4,
+                barPercentage: 0.4 // Barras bem finas e elegantes
             }]
         },
         options: {
-            indexAxis: 'y', // Vira o gráfico de lado
+            indexAxis: 'y',
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => ` ${formatarMoeda(ctx.raw)}` } } },
-            scales: { x: { display: false }, y: { grid: { display: false }, border: { display: false }, ticks: { font: { weight: 'bold', size: 10 } } } }
+            scales: { x: { display: false }, y: { grid: { display: false }, border: { display: false }, ticks: { font: { weight: 'bold', size: 11 }, color: '#475569' } } }
         }
     });
 }
@@ -263,10 +357,10 @@ const chatBox = document.getElementById('chat-box');
 function adicionarMensagemNoChat(texto, isUsuario = false) {
     const div = document.createElement('div');
     if (isUsuario) {
-        div.className = "bg-gradient-to-r from-indigo-500 to-purple-500 text-white p-3 rounded-2xl rounded-tr-sm self-end max-w-[85%] text-sm font-medium shadow-sm slide-up-chat";
+        div.className = "bg-blue-600 text-white p-3 rounded-2xl rounded-tr-sm self-end max-w-[85%] text-sm font-medium shadow-sm slide-up-chat";
         div.innerText = texto;
     } else {
-        div.className = "bg-white/10 text-indigo-50 p-4 rounded-2xl rounded-tl-sm self-start max-w-[90%] text-sm font-medium border border-white/10 shadow-sm slide-up-chat leading-relaxed";
+        div.className = "bg-gray-800 text-gray-100 p-4 rounded-2xl rounded-tl-sm self-start max-w-[90%] text-sm font-medium border border-gray-700 shadow-sm slide-up-chat leading-relaxed";
         div.innerHTML = texto; 
     }
     chatBox.appendChild(div);
@@ -278,11 +372,11 @@ function iniciarCoach() {
     let saudacao = "";
     
     if (statsGlobais.transacoesNoPeriodo === 0) {
-        saudacao = "Olá! Não encontrei movimentações neste período. Filtre outro mês ali em cima ou registre novos dados na aba de Início.";
+        saudacao = "Olá! Não encontrei movimentações neste período. Ajuste o filtro no painel superior.";
     } else if (statsGlobais.taxaPoupanca < 0) {
-        saudacao = "<b>Alerta Vermelho! 🚨</b> Identifiquei que você está gastando mais do que ganha neste período. Como posso ajudar? Peça um <i>relatório</i> ou <i>onde cortar</i>.";
+        saudacao = "<b>Alerta Crítico! 🚨</b> Identifiquei que você queimou mais caixa do que captou. Peça um <i>Relatório</i> ou <i>Redução de Custos</i> abaixo.";
     } else {
-        saudacao = `Tudo sob controle! Sua taxa de poupança está em <b>${statsGlobais.taxaPoupanca.toFixed(1)}%</b>. O que deseja analisar hoje?`;
+        saudacao = `Tudo sob controle! Sua taxa de poupança está saudável em <b>${statsGlobais.taxaPoupanca.toFixed(1)}%</b>. O que vamos analisar hoje?`;
     }
     
     adicionarMensagemNoChat(saudacao, false);
@@ -302,57 +396,57 @@ function enviarMensagemCoach() {
     input.value = '';
 
     const typingDiv = document.createElement('div');
-    typingDiv.className = "text-indigo-300 text-xs italic mt-2 self-start slide-up-chat flex items-center gap-2";
+    typingDiv.className = "text-gray-400 text-xs italic mt-2 self-start slide-up-chat flex items-center gap-2";
     typingDiv.id = "coach-typing";
-    typingDiv.innerHTML = "<i class='fa-solid fa-circle-notch fa-spin'></i> Processando algoritmos...";
+    typingDiv.innerHTML = "<i class='fa-solid fa-circle-notch fa-spin text-blue-500'></i> Extraindo matriz de dados...";
     chatBox.appendChild(typingDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
 
     setTimeout(() => {
         document.getElementById('coach-typing').remove();
         gerarRespostaIA(texto.toLowerCase());
-    }, 1200); // Simulador de requisição de IA (1.2 segundos)
+    }, 1200);
 }
 
 function gerarRespostaIA(pergunta) {
     let resposta = "";
 
     if (statsGlobais.transacoesNoPeriodo === 0) {
-        resposta = "Desculpe, eu preciso de dados para trabalhar. Não há movimentações lançadas no período selecionado.";
+        resposta = "Desculpe, o motor precisa de dados para rodar as previsões. Tente alterar o filtro.";
         return adicionarMensagemNoChat(resposta, false);
     }
 
-    if (pergunta.includes('relatório') || pergunta.includes('relatorio') || pergunta.includes('resumo')) {
+    if (pergunta.includes('relatório') || pergunta.includes('relatorio')) {
         resposta = `
-            📊 <b>Relatório Executivo:</b><br><br>
-            <span class="text-green-400"><i class="fa-solid fa-arrow-up"></i> Entradas:</span> <b>${formatarMoeda(statsGlobais.receitas)}</b><br>
-            <span class="text-red-400"><i class="fa-solid fa-arrow-down"></i> Saídas:</span> <b>${formatarMoeda(statsGlobais.despesas)}</b><br>
-            <span class="text-indigo-300"><i class="fa-solid fa-scale-balanced"></i> Resultado:</span> <b class="${statsGlobais.saldo < 0 ? 'text-red-400' : 'text-green-400'} text-lg">${formatarMoeda(statsGlobais.saldo)}</b><br><br>
-            Sua maior despesa unificada foi com a pasta <b>${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'Nada'}</b>, totalizando ${formatarMoeda(statsGlobais.topCategoria ? statsGlobais.topCategoria.valor : 0)}.
+            📊 <b>Fechamento Executivo:</b><br><br>
+            <span class="text-green-400"><i class="fa-solid fa-plus"></i> Captado:</span> <b>${formatarMoeda(statsGlobais.receitas)}</b><br>
+            <span class="text-red-400"><i class="fa-solid fa-minus"></i> Queimado:</span> <b>${formatarMoeda(statsGlobais.despesas)}</b><br>
+            <span class="text-blue-300"><i class="fa-solid fa-equals"></i> Saldo Líquido:</span> <b class="${statsGlobais.saldo < 0 ? 'text-red-400' : 'text-green-400'} text-lg">${formatarMoeda(statsGlobais.saldo)}</b><br><br>
+            Cuidado com a pasta de <b>${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'Nada'}</b>, ela sugou ${formatarMoeda(statsGlobais.topCategoria ? statsGlobais.topCategoria.valor : 0)} do seu caixa.
         `;
     } 
-    else if (pergunta.includes('dica') || pergunta.includes('economizar') || pergunta.includes('cortar')) {
-        if (!statsGlobais.topCategoria || statsGlobais.topCategoria.nome.includes('Moradia') || statsGlobais.topCategoria.nome.includes('Saúde')) {
-             resposta = "Seus maiores gastos estão em pastas essenciais (Moradia/Saúde). Recomendo focar em aumentar sua captação de renda antes de fazer cortes agressivos de qualidade de vida.";
+    else if (pergunta.includes('cortar') || pergunta.includes('economizar') || pergunta.includes('redução')) {
+        if (!statsGlobais.topCategoria) {
+             resposta = "Seu caixa está enxuto. Continue focado em gerar mais receita.";
         } else {
-             const economia = statsGlobais.topCategoria.valor * 0.20; 
-             resposta = `💡 <b>Plano de Ação Sugerido:</b><br><br>
-             Notei que sua pasta de <b>${statsGlobais.topCategoria.nome}</b> está muito pesada (${formatarMoeda(statsGlobais.topCategoria.valor)}).<br><br>
-             Se você aplicar uma regra de contenção e reduzir <b>apenas 20%</b> deste gasto no próximo mês, você colocará <b>${formatarMoeda(economia)} diretos no seu caixa livre</b>. Você consegue!`;
+             const economia = statsGlobais.topCategoria.valor * 0.15; 
+             resposta = `💡 <b>Estratégia de Retenção:</b><br><br>
+             O ralo do seu caixa hoje é a pasta <b>${statsGlobais.topCategoria.nome}</b>.<br><br>
+             Meta para o próximo ciclo: force uma redução de apenas 15% nela. Isso vai injetar <b>${formatarMoeda(economia)} diretos na sua margem de lucro</b>. O gráfico de Fluxo agradece!`;
         }
     }
-    else if (pergunta.includes('previsão') || pergunta.includes('previsao') || pergunta.includes('futuro')) {
+    else if (pergunta.includes('previsão') || pergunta.includes('previsao') || pergunta.includes('burn')) {
         if (statsGlobais.mediaDiaria === 0) {
-            resposta = "Ainda não tenho dados de queima diária suficientes para projetar o futuro com exatidão.";
+            resposta = "Não há queima diária suficiente para traçar uma projeção (Burn Rate).";
         } else {
             const gastoMensalEstimado = statsGlobais.mediaDiaria * 30;
-            resposta = `🔮 <b>Projeção Matemática de Burn Rate:</b><br><br>
-            Sua velocidade de queima de caixa é de <b>${formatarMoeda(statsGlobais.mediaDiaria)} por dia</b>.<br><br>
-            Se você mantiver a tração atual e não frear, você terminará um mês completo consumindo <b>${formatarMoeda(gastoMensalEstimado)}</b>. Fique de olho no Gráfico de Evolução!`;
+            resposta = `🔮 <b>Análise de Burn Rate:</b><br><br>
+            Sua velocidade de queima é de <b>${formatarMoeda(statsGlobais.mediaDiaria)} / dia</b>.<br><br>
+            Projeção matemática: Se você não puxar o freio, o sistema estima que você fechará um ciclo de 30 dias queimando <b>${formatarMoeda(gastoMensalEstimado)}</b>. Fique atento à linha azul no gráfico Combo!`;
         }
     }
     else {
-        resposta = "Sou um analista focado em métricas.<br>Tente pedir um <b>Relatório</b>, dicas de <b>Onde Cortar</b> ou uma <b>Previsão</b> matemática.";
+        resposta = "Sou um motor lógico de BI.<br>Tente pedir o <b>Relatório Mensal</b>, um plano de <b>Redução de Custos</b> ou uma <b>Previsão de Burn Rate</b>.";
     }
 
     adicionarMensagemNoChat(resposta, false);
