@@ -14,21 +14,20 @@
     <script src="movimentacoes.js" defer></script>
     
     <style>
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        .slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         ::-webkit-scrollbar { display: none; }
         
-        /* Estilização para o Radio Button Customizado */
-        input[type="radio"]:checked + div {
-            border-color: currentColor;
-            background-color: currentColor;
-            color: white !important;
+        /* ANIMAÇÕES FLUIDAS (Padrão Sênior) */
+        .modal-bg-fade { animation: bgFade 0.3s ease-out forwards; }
+        .modal-pop { animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        @keyframes bgFade { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { 
+            from { opacity: 0; transform: scale(0.90) translateY(20px); } 
+            to { opacity: 1; transform: scale(1) translateY(0); } 
         }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans h-screen overflow-hidden flex relative fade-in">
+<body class="bg-gray-100 text-gray-800 font-sans h-screen overflow-hidden flex relative">
 
     <!-- MENU LATERAL (PC) PADRONIZADO -->
     <aside class="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 p-6 h-full shadow-lg z-20">
@@ -72,13 +71,13 @@
                 
                 <div class="mt-6 md:mt-0 w-full md:w-[450px] bg-white/10 p-1.5 rounded-2xl flex items-center backdrop-blur-md border border-white/20 z-10 shadow-lg">
                     <!-- BOTÃO MICROFONE REAL -->
-                    <button id="btn-mic" onclick="ativarMicrofone()" class="p-3 text-blue-200 hover:text-white transition" title="Falar registro">
+                    <button id="btn-mic" onclick="ativarMicrofone()" class="p-3 text-blue-200 hover:text-white transition cursor-pointer" title="Falar registro">
                         <i class="fa-solid fa-microphone"></i>
                     </button>
                     
                     <input type="text" id="input-magico" placeholder="Ex: Recebi 2500 de salário" class="flex-1 bg-transparent outline-none text-white placeholder-blue-200 px-2 font-medium">
                     
-                    <button onclick="processarFrase()" class="bg-white text-gray-900 p-3 rounded-xl hover:bg-blue-500 hover:text-white transition shadow-md flex items-center gap-2">
+                    <button onclick="processarFrase()" class="bg-white text-gray-900 p-3 rounded-xl hover:bg-blue-500 hover:text-white transition shadow-md flex items-center gap-2 cursor-pointer">
                         <span class="hidden md:inline font-bold text-sm">Registrar</span>
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
@@ -112,7 +111,7 @@
         </section>
     </main>
 
-    <!-- MENU INFERIOR (Celular) PADRONIZADO E SEM O "+" -->
+    <!-- MENU INFERIOR (Celular) PADRONIZADO -->
     <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t border-gray-200 px-4 py-2 flex justify-between items-center z-20">
         <a href="movimentacoes.html" class="flex flex-col items-center text-blue-600 transition p-2"><i class="fa-solid fa-house text-lg mb-1"></i><span class="text-[10px] font-bold">Início</span></a>
         <a href="dashboard.html" class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition p-2"><i class="fa-solid fa-chart-pie text-lg mb-1"></i><span class="text-[10px] font-bold">Análise</span></a>
@@ -121,9 +120,10 @@
         <a href="planos.html" class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition p-2"><i class="fa-solid fa-bullseye text-lg mb-1"></i><span class="text-[10px] font-bold">Metas</span></a>
     </nav>
 
-    <!-- MODAL DE EDIÇÃO E CONFIRMAÇÃO (TOTALMENTE EDITÁVEL) -->
-    <div id="modal-transacao" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center fade-in">
-        <div class="bg-white w-full md:w-[450px] rounded-t-[2.5rem] md:rounded-3xl p-6 md:p-8 slide-up shadow-2xl relative overflow-y-auto max-h-[90vh]">
+    <!-- MODAL EDITÁVEL BLINDADO (Com pop-in fluído) -->
+    <div id="modal-transacao" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center modal-bg-fade">
+        <!-- Adicionada a classe modal-pop para animação Sênior -->
+        <div class="bg-white w-full md:w-[450px] rounded-t-[2.5rem] md:rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-y-auto max-h-[90vh] modal-pop">
             <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6 md:hidden"></div>
             
             <h3 class="text-xl font-black text-gray-900 mb-6 flex items-center gap-2" id="modal-titulo">
@@ -131,28 +131,27 @@
             </h3>
             
             <div class="space-y-4">
-                
-                <!-- ID Escondido para saber se é Edição ou Nova -->
                 <input type="hidden" id="modal-id">
 
-                <!-- Toggle Receita / Despesa -->
+                <!-- Toggle Receita / Despesa Blindado (Ambos sempre visíveis) -->
                 <div class="flex gap-4">
                     <label class="flex-1 cursor-pointer">
+                        <!-- O input radio fica escondido de verdade, quem aparece são as DIVs abaixo -->
                         <input type="radio" name="modal-tipo" value="despesa" class="hidden" onchange="atualizarCoresTipoModal()">
-                        <div class="border-2 border-gray-200 text-gray-500 rounded-xl p-3 flex justify-center items-center gap-2 font-bold text-sm transition-all" id="btn-tipo-despesa">
+                        <div id="btn-tipo-despesa" class="border-2 border-gray-200 bg-gray-50 text-gray-400 rounded-xl p-3 flex justify-center items-center gap-2 font-bold text-sm transition-all hover:bg-gray-100">
                             <i class="fa-solid fa-arrow-trend-down"></i> Saída
                         </div>
                     </label>
                     <label class="flex-1 cursor-pointer">
                         <input type="radio" name="modal-tipo" value="receita" class="hidden" onchange="atualizarCoresTipoModal()">
-                        <div class="border-2 border-gray-200 text-gray-500 rounded-xl p-3 flex justify-center items-center gap-2 font-bold text-sm transition-all" id="btn-tipo-receita">
+                        <div id="btn-tipo-receita" class="border-2 border-gray-200 bg-gray-50 text-gray-400 rounded-xl p-3 flex justify-center items-center gap-2 font-bold text-sm transition-all hover:bg-gray-100">
                             <i class="fa-solid fa-arrow-trend-up"></i> Entrada
                         </div>
                     </label>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Descrição</label>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">Título Padronizado (Descrição)</label>
                     <input type="text" id="modal-desc" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-bold text-gray-900">
                 </div>
 
@@ -170,7 +169,7 @@
                 <div>
                     <label class="block text-xs font-bold text-gray-500 mb-1">Pasta Destino</label>
                     <select id="modal-cat" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500 font-bold text-gray-900">
-                        <!-- Puxado via JS -->
+                        <!-- Preenchido via JS -->
                     </select>
                 </div>
             </div>
