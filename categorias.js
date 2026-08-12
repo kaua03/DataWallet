@@ -127,13 +127,17 @@ function abrirExtrato(idCategoria, nome, cor, icone) {
     
     categoriaAtivaModal = { id: idCategoria, nome: nome };
     
-    // Reseta o filtro para "Por Mês" e preenche o Mês Atual automaticamente
+    // Reseta o filtro para "Por Mês"
     document.getElementById('filtro-extrato-periodo').value = 'por_mes';
     
+    // Preenche a caixa "Por Mês" com o Mês Atual
     const hoje = new Date();
     const ano = hoje.getFullYear();
     const mes = String(hoje.getMonth() + 1).padStart(2, '0');
     document.getElementById('input-mes-especifico').value = `${ano}-${mes}`;
+    
+    // Preenche a caixa "Por Ano" com o Ano Atual
+    document.getElementById('input-ano-especifico').value = ano;
     
     aplicarFiltroExtrato();
     document.getElementById('modal-extrato').classList.remove('hidden');
@@ -143,24 +147,26 @@ function aplicarFiltroExtrato() {
     if (!categoriaAtivaModal) return;
 
     const tipoFiltro = document.getElementById('filtro-extrato-periodo').value;
+    
     const divDatas = document.getElementById('filtro-extrato-datas');
     const divMes = document.getElementById('filtro-extrato-mes');
+    const divAno = document.getElementById('filtro-extrato-ano');
 
     // Esconde tudo primeiro
     divDatas.classList.add('hidden');
     divMes.classList.add('hidden');
+    divAno.classList.add('hidden');
 
-    // Mostra o input correto de acordo com a seleção
+    // Mostra apenas o input que corresponde ao filtro selecionado
     if (tipoFiltro === 'personalizado') {
         divDatas.classList.remove('hidden');
     } else if (tipoFiltro === 'por_mes') {
         divMes.classList.remove('hidden');
+    } else if (tipoFiltro === 'por_ano') {
+        divAno.classList.remove('hidden');
     }
 
     let historico = transacoesGlobais.filter(t => t.categoria_id === categoriaAtivaModal.id);
-
-    const dataHoje = new Date();
-    const anoAtual = dataHoje.getFullYear();
 
     // Filtra matematicamente
     historico = historico.filter(t => {
@@ -169,14 +175,14 @@ function aplicarFiltroExtrato() {
 
         if (tipoFiltro === 'por_mes') {
             const valorMes = document.getElementById('input-mes-especifico').value;
-            if (!valorMes) return true; // Se o usuário limpar o input, mostra tudo
-            
-            // O input type="month" devolve "AAAA-MM"
+            if (!valorMes) return true; 
             const [anoFiltro, mesFiltro] = valorMes.split('-');
             return dTransacao.getMonth() === (parseInt(mesFiltro) - 1) && dTransacao.getFullYear() === parseInt(anoFiltro);
             
-        } else if (tipoFiltro === 'ano_atual') {
-            return dTransacao.getFullYear() === anoAtual;
+        } else if (tipoFiltro === 'por_ano') {
+            const valorAno = document.getElementById('input-ano-especifico').value;
+            if (!valorAno) return true;
+            return dTransacao.getFullYear() === parseInt(valorAno);
             
         } else if (tipoFiltro === 'personalizado') {
             const dataInicio = document.getElementById('extrato-data-inicio').value;
@@ -198,7 +204,6 @@ function aplicarFiltroExtrato() {
         let dataStr = t.data_vencimento ? t.data_vencimento.split('-').reverse().join('/') : '--/--/----';
         let horaStr = '--:--';
         
-        // Puxando o horário atômico de Auditoria (Timestamp real de criação)
         if (t.criado_em) {
             const dataObj = new Date(t.criado_em);
             horaStr = dataObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute:'2-digit' });
