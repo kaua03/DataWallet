@@ -153,7 +153,7 @@ function processarEAtualizarTudo() {
 }
 
 // ---------------------------------------------
-// LISTA DE CATEGORIAS (Design Sênior FinTech)
+// LISTA DE CATEGORIAS HTML (Correção de Quebra de Linha)
 // ---------------------------------------------
 function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
     const paleta = ['bg-indigo-600', 'bg-blue-500', 'bg-sky-400', 'bg-teal-400', 'bg-slate-400', 'bg-gray-300'];
@@ -163,13 +163,14 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
         const perc = totalGeral > 0 ? ((valor / totalGeral) * 100).toFixed(1) : 0;
         const cor = paleta[index % paleta.length];
         
+        // Uso do whitespace-nowrap e flex-1 para impedir a quebra feia do valor
         return `
         <div>
-            <div class="flex justify-between items-end mb-1.5">
-                <span class="text-xs font-bold text-slate-700 truncate w-32" title="${cat}">${cat}</span>
-                <div class="text-right flex items-center gap-2">
+            <div class="flex justify-between items-end mb-1.5 gap-2">
+                <span class="text-xs font-bold text-slate-700 truncate flex-1" title="${cat}">${cat}</span>
+                <div class="text-right flex items-center gap-2 shrink-0">
                     <span class="text-[10px] font-bold text-slate-400">${perc}%</span>
-                    <span class="text-sm font-black text-slate-900 w-20 text-right">${formatarMoeda(valor)}</span>
+                    <span class="text-sm font-black text-slate-900 whitespace-nowrap">${formatarMoeda(valor)}</span>
                 </div>
             </div>
             <div class="w-full bg-slate-100 rounded-full h-1.5">
@@ -187,11 +188,10 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
 // ---------------------------------------------
 function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, top5, totalDespesas) {
     Chart.defaults.font.family = "'Inter', sans-serif";
-    Chart.defaults.color = '#94a3b8'; // Slate 400
+    Chart.defaults.color = '#94a3b8'; 
 
-    // Design Sênior de Tooltips (Dark Mode elegante para os gráficos)
     const tooltipPro = {
-        backgroundColor: 'rgba(15, 23, 42, 0.95)', // Slate 900
+        backgroundColor: 'rgba(15, 23, 42, 0.95)', 
         titleFont: { size: 12, family: 'Inter', weight: 'bold' },
         bodyFont: { size: 13, family: 'Inter', weight: 'bold' },
         padding: 12,
@@ -219,17 +219,16 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
         dadosAcumulados.push(acumuladoAtual);
     });
 
-    // 1. GRÁFICO COMBO MASTER (Sênior)
+    // 1. GRÁFICO COMBO MASTER SÊNIOR (Agora com 3 barras e 1 linha)
     const ctxC = document.getElementById('graficoCombo').getContext('2d');
     if (grafCombo) grafCombo.destroy();
 
-    // Gradientes Corporativos
     const gradRec = ctxC.createLinearGradient(0, 0, 0, 400);
-    gradRec.addColorStop(0, 'rgba(16, 185, 129, 0.9)'); // Emerald
+    gradRec.addColorStop(0, 'rgba(16, 185, 129, 0.9)'); 
     gradRec.addColorStop(1, 'rgba(16, 185, 129, 0.3)');
 
     const gradDes = ctxC.createLinearGradient(0, 0, 0, 400);
-    gradDes.addColorStop(0, 'rgba(244, 63, 94, 0.9)'); // Rose
+    gradDes.addColorStop(0, 'rgba(244, 63, 94, 0.9)'); 
     gradDes.addColorStop(1, 'rgba(244, 63, 94, 0.3)');
 
     grafCombo = new Chart(ctxC, {
@@ -239,18 +238,26 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
             datasets: [
                 {
                     type: 'line',
+                    label: 'Picos de Gastos',
+                    data: dadosDes, // A linha acompanha os gastos do dia
+                    borderColor: '#f43f5e', // Rose 500
+                    borderWidth: 2,
+                    tension: 0.3,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#f43f5e',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: false,
+                    yAxisID: 'y'
+                },
+                {
+                    type: 'bar',
                     label: 'Saldo Acumulado',
                     data: dadosAcumulados,
-                    borderColor: '#4f46e5', // Indigo 600
-                    borderWidth: 2,
-                    tension: 0.3, // Curva elegante
-                    pointBackgroundColor: '#ffffff',
-                    pointBorderColor: '#4f46e5',
-                    pointBorderWidth: 2,
-                    pointRadius: 3,
-                    pointHoverRadius: 5,
-                    fill: true,
-                    backgroundColor: 'rgba(79, 70, 229, 0.05)', // Sombra fraca sob a linha
+                    backgroundColor: 'rgba(79, 70, 229, 0.85)', // Indigo 600
+                    borderRadius: 4,
+                    maxBarThickness: 25, // Trava para não virar uma "salsicha" em dias únicos
                     yAxisID: 'y'
                 },
                 {
@@ -258,8 +265,8 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
                     label: 'Entradas',
                     data: dadosRec,
                     backgroundColor: gradRec,
-                    borderRadius: 4,     // Borda reta-suave (Corporate)
-                    maxBarThickness: 30, // Barras mais finas e elegantes
+                    borderRadius: 4,     
+                    maxBarThickness: 25, 
                     yAxisID: 'y'
                 },
                 {
@@ -268,7 +275,7 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
                     data: dadosDes,
                     backgroundColor: gradDes,
                     borderRadius: 4,
-                    maxBarThickness: 30,
+                    maxBarThickness: 25,
                     yAxisID: 'y'
                 }
             ]
@@ -331,7 +338,7 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
                 data: top5.length > 0 ? top5.map(t => t.valor) : [0],
                 backgroundColor: gradTop,
                 borderRadius: 3,
-                maxBarThickness: 12 // Barras horizontais muito finas
+                maxBarThickness: 12 
             }]
         },
         options: {
