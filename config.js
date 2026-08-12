@@ -2,7 +2,7 @@
 // js/config.js - O COFRE CENTRAL DA APLICAÇÃO
 // ==========================================
 
-const GEMINI_API_KEY = "COLE_AQUI_A_SUA_CHAVE_AIzaSy...";
+const GEMINI_API_KEY = "AQ.Ab8RN6I4nYL39NkQCeSwEgukBHNRgTjkzMLLpISYizRGzKdtsQ";
 
 const supabaseUrl = 'https://aoeyeleaxbwvjmzxxdib.supabase.co'; 
 const supabaseKey = 'sb_publishable_Q6JiNxMGUdqObAMxj3EYSA_s_cYpFUk'; 
