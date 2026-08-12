@@ -1,5 +1,5 @@
 // ==========================================
-// dashboard.js - MOTOR DE BUSINESS INTELLIGENCE E IA CONTEXTUAL
+// dashboard.js - MOTOR DE BUSINESS INTELLIGENCE E IA (GEMINI API)
 // ==========================================
 
 let usuarioLogado = null;
@@ -69,7 +69,6 @@ function mudarTipoFiltro() {
 
 function processarEAtualizarTudo() {
     const tipoFiltro = document.getElementById('filtro-periodo').value;
-    const dataAtual = new Date();
 
     const transacoesFiltradas = transacoesGlobais.filter(t => {
         if (!t.data_vencimento) return true;
@@ -293,41 +292,100 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
     });
 }
 
+// ==========================================
+// MÓDULO DA INTERFACE DO COACH (UI)
+// ==========================================
+function toggleCoach() {
+    const janela = document.getElementById('janela-coach');
+    if (janela.classList.contains('hidden')) {
+        janela.classList.remove('hidden');
+        if(document.getElementById('chat-box').innerHTML === "") iniciarCoach();
+    } else {
+        janela.classList.add('hidden');
+    }
+}
+
+const chatBox = document.getElementById('chat-box');
+
+function adicionarMensagemNoChat(texto, isUsuario = false) {
+    const div = document.createElement('div');
+    if (isUsuario) {
+        div.className = "bg-indigo-600 text-white p-3 rounded-2xl rounded-tr-sm self-end max-w-[85%] text-sm font-medium shadow-sm slide-up-chat";
+        div.innerText = texto;
+    } else {
+        div.className = "bg-slate-800 border border-slate-700 text-slate-100 p-4 rounded-2xl rounded-tl-sm self-start max-w-[90%] text-sm font-medium shadow-sm slide-up-chat leading-relaxed";
+        div.innerHTML = texto; 
+    }
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight; 
+}
+
+function iniciarCoach() {
+    chatBox.innerHTML = ''; 
+    adicionarMensagemNoChat("Olá, Kauã! Sou o seu Consultor de IA. Estou conectado aos seus dados em tempo real.<br><br>Você pode me fazer perguntas naturais como: <br><i>'Como estou este mês?'</i><br><i>'Minha carteira corre perigo?'</i><br><i>'Qual foi o meu ralo de dinheiro?'</i>", false);
+}
+
+function atalhoCoach(comando) {
+    document.getElementById('input-coach').value = comando;
+    enviarMensagemCoach();
+}
+
+function enviarMensagemCoach() {
+    const input = document.getElementById('input-coach');
+    const texto = input.value.trim();
+    if (!texto) return;
+
+    adicionarMensagemNoChat(texto, true);
+    input.value = '';
+
+    const typingDiv = document.createElement('div');
+    typingDiv.className = "text-slate-500 text-xs italic mt-2 self-start slide-up-chat flex items-center gap-2";
+    typingDiv.id = "coach-typing";
+    typingDiv.innerHTML = "<i class='fa-solid fa-circle-notch fa-spin text-indigo-500'></i> Processando na Nuvem...";
+    chatBox.appendChild(typingDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    // Envia para o motor da IA
+    gerarRespostaIA(texto);
+}
+
+// ==========================================
+// MOTOR DE INTELIGÊNCIA ARTIFICIAL (GEMINI VIA API)
+// ==========================================
 async function gerarRespostaIA(pergunta) {
     if (statsGlobais.transacoesNoPeriodo === 0) {
         document.getElementById('coach-typing')?.remove();
-        return adicionarMensagemNoChat("O algoritmo requer dados populados para gerar predições. Altere o período analisado.", false);
+        return adicionarMensagemNoChat("O algoritmo requer dados populados para gerar predições. Altere o período analisado no painel superior.", false);
     }
 
-    // 1. O RAG (O Contexto que deixa a IA genial)
+    // 1. O RAG (O Contexto Invisível que alimenta o raciocínio da IA)
     const promptDeSistema = `
-Você é o Consultor IA do DataWallet, um aplicativo financeiro corporativo de elite.
-Sua postura é profissional, direta, inteligente e analítica.
-Sempre formate sua resposta em HTML limpo (use <b>, <i>, e <br>). NÃO use Markdown como **.
+Você é o Consultor IA do DataWallet, um aplicativo financeiro corporativo de elite construído pelo Kauã.
+Sua postura é profissional, direta, inteligente e analítica. Evite textos extremamente longos. Vá direto ao ponto.
+Sempre formate sua resposta em HTML limpo para exibir na tela web (use <b>, <i>, e <br>). NÃO use Markdown comum como ** ou *.
 
-DADOS REAIS DO USUÁRIO NESTE EXATO MOMENTO:
-- Total Captado: R$ ${statsGlobais.receitas}
-- Total Queimado: R$ ${statsGlobais.despesas}
-- Saldo Líquido: R$ ${statsGlobais.saldo}
-- Margem de Poupança: ${statsGlobais.taxaPoupanca.toFixed(1)}%
+AQUI ESTÃO OS DADOS REAIS E MATEMÁTICOS DO USUÁRIO NESTE EXATO MOMENTO:
+- Total Captado (Entradas): R$ ${statsGlobais.receitas.toFixed(2)}
+- Total Queimado (Saídas): R$ ${statsGlobais.despesas.toFixed(2)}
+- Saldo Líquido do Período: R$ ${statsGlobais.saldo.toFixed(2)}
+- Margem de Poupança (Retenção): ${statsGlobais.taxaPoupanca.toFixed(1)}%
 - Burn Rate (Queima Média Diária): R$ ${statsGlobais.mediaDiaria.toFixed(2)} / dia
-- Centro de custo mais oneroso: ${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'Nenhum'} (R$ ${statsGlobais.topCategoria ? statsGlobais.topCategoria.valor : 0})
-- Maior gasto isolado: ${statsGlobais.maiorGasto.descricao} (R$ ${statsGlobais.maiorGasto.valor})
+- Centro de custo mais oneroso: ${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'Nenhum'} (R$ ${statsGlobais.topCategoria ? statsGlobais.topCategoria.valor.toFixed(2) : 0})
+- Maior gasto isolado (o vilão individual): ${statsGlobais.maiorGasto.descricao} (R$ ${statsGlobais.maiorGasto.valor.toFixed(2)})
 
-REGRA: Responda à pergunta cruzando a intenção do usuário com os dados acima. Seja natural. Se a margem for negativa, alerte sobre a queima de caixa.
+REGRA ESTRITA: Responda à pergunta do usuário usando APENAS a intenção dele cruzada com os dados acima. Aja como um humano sênior analisando a carteira. Se a margem for negativa, alerte severamente sobre a queima de caixa.
     `;
 
     const payload = {
         contents: [{
-            parts: [{ text: promptDeSistema + "\n\nPergunta do usuário: " + pergunta }]
+            parts: [{ text: promptDeSistema + "\n\nPergunta real do usuário: " + pergunta }]
         }]
     };
 
     try {
-        // 2. A CORREÇÃO DE OURO: A chave enviada via URL para não bloquear no navegador
+        // 2. A Chamada Segura para o Navegador (Chave na URL)
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
         
-        // 3. O Motoboy faz a requisição sem cabeçalhos bloqueáveis
         const respostaDaNuvem = await fetch(url, {
             method: 'POST',
             headers: { 
@@ -338,19 +396,22 @@ REGRA: Responda à pergunta cruzando a intenção do usuário com os dados acima
 
         if (!respostaDaNuvem.ok) {
             const erroDetalhe = await respostaDaNuvem.json();
-            console.error("Motivo do bloqueio:", erroDetalhe);
+            console.error("Motivo do bloqueio pela API:", erroDetalhe);
             throw new Error("Acesso bloqueado pela API do Google.");
         }
 
         const dados = await respostaDaNuvem.json();
-        const textoRespostaIA = dados.candidates[0].content.parts[0].text;
+        let textoRespostaIA = dados.candidates[0].content.parts[0].text;
+
+        // O Gemini às vezes teima em usar **, vamos limpar isso via Regex para garantir HTML perfeito
+        textoRespostaIA = textoRespostaIA.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
 
         document.getElementById('coach-typing')?.remove();
         adicionarMensagemNoChat(textoRespostaIA, false);
 
     } catch (erro) {
-        console.error(erro);
+        console.error("Falha no Catch do Fetch:", erro);
         document.getElementById('coach-typing')?.remove();
-        adicionarMensagemNoChat("<b>Erro de Conexão:</b> Os servidores do Google rejeitaram a chamada. Verifique a aba Console (F12) para detalhes.", false);
+        adicionarMensagemNoChat("<b>Erro de Conexão:</b> Não consegui me conectar aos servidores do Google no momento. Verifique se o seu GEMINI_API_KEY no config.js está correto.", false);
     }
 }
