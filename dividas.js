@@ -1,5 +1,5 @@
 // ==========================================
-// dividas.js - MOTOR KANBAN DE PASSIVOS SÊNIOR (4 COLUNAS)
+// dividas.js - MOTOR KANBAN DE PASSIVOS SÊNIOR
 // ==========================================
 
 let usuarioLogado = null;
@@ -15,9 +15,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     iniciarDragToScroll(); 
 });
 
-// ==========================================
-// MOTOR UX: DRAG TO SCROLL 
-// ==========================================
 function iniciarDragToScroll() {
     const slider = document.getElementById('container-scroll');
     if(!slider) return;
@@ -51,9 +48,6 @@ function iniciarDragToScroll() {
     });
 }
 
-// ==========================================
-// FORMATAÇÃO E MÁSCARAS
-// ==========================================
 function aplicarMascaraMoeda(input) {
     let valor = input.value.replace(/\D/g, ''); 
     if (valor === '') { input.value = ''; return; }
@@ -69,9 +63,6 @@ function desmascararMoeda(str) {
     return parseFloat(str.replace(/\./g, '').replace(',', '.'));
 }
 
-// ==========================================
-// NÚCLEO DE DADOS
-// ==========================================
 async function carregarDadosDoBanco() {
     try {
         const [rTrans, rCat] = await Promise.all([
@@ -98,7 +89,6 @@ function processarEAtualizarKanban() {
     const mesAtual = hojeData.getMonth();
     const anoAtual = hojeData.getFullYear();
 
-    // Inicia as 4 Colunas Fixas
     const agrupamentos = {
         'Atrasadas': [],
         'Este Mês': [],
@@ -147,9 +137,6 @@ function processarEAtualizarKanban() {
     renderizarColunas(agrupamentos);
 }
 
-// ---------------------------------------------
-// RENDERIZAÇÃO DO HTML
-// ---------------------------------------------
 function renderizarColunas(agrupamentos) {
     const board = document.getElementById('board-dividas');
     let html = '';
@@ -184,7 +171,6 @@ function renderizarColunas(agrupamentos) {
                 
                 let htmlDivisor = '';
 
-                // O Divisor Mágico atua no Futuro e no Passado
                 if ((nomeColuna === 'Próximos Meses' || nomeColuna === 'Histórico de Pagas') && mesAnoAtualDoCard !== mesAnoCorrente) {
                     htmlDivisor = `
                     <div class="flex items-center gap-3 mt-6 mb-3 first:mt-1">
@@ -229,16 +215,17 @@ function renderizarColunas(agrupamentos) {
         }
 
         html += `
-        <div id="${idColunaSanitizado}" class="w-[340px] shrink-0 bg-slate-100/50 rounded-2xl border border-slate-200/60 flex flex-col max-h-full transition-all duration-300">
+        <div id="${idColunaSanitizado}" class="w-[340px] shrink-0 bg-slate-100/50 rounded-2xl border border-slate-200/60 flex flex-col max-h-full transition-all duration-300 relative">
             
-            <div onclick="toggleColuna('${idColunaSanitizado}')" class="p-4 border-b border-slate-200/80 flex justify-between items-center bg-white rounded-t-2xl shrink-0 cursor-pointer hover:bg-slate-50 transition relative">
+            <div onclick="toggleColuna('${idColunaSanitizado}')" class="p-4 border-b border-slate-200/80 flex justify-between items-center bg-white rounded-t-2xl shrink-0 cursor-pointer hover:bg-slate-50 transition relative z-10">
                 <div class="esconder-no-min flex items-center gap-2">
                     <i class="fa-solid ${config.icon} text-${config.titleColor}"></i>
                     <h3 class="font-bold text-${config.titleColor} text-sm">${nomeColuna}</h3>
                 </div>
                 
-                <div class="hidden mostrar-no-min flex-col items-center justify-center w-full gap-3 py-2">
-                    <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm transform rotate-90">${transacoesDaColuna.length}</span>
+                <!-- NÚMERO CORRIGIDO: Retirado o 'transform rotate-90' -->
+                <div class="hidden mostrar-no-min flex-col items-center justify-start w-full gap-3 pt-2">
+                    <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm">${transacoesDaColuna.length}</span>
                     <h3 class="font-black text-slate-400 text-xs tracking-widest uppercase transform rotate-180" style="writing-mode: vertical-rl;">${nomeColuna}</h3>
                 </div>
                 
@@ -250,10 +237,11 @@ function renderizarColunas(agrupamentos) {
 
             <div class="esconder-no-min p-3 flex-1 overflow-y-auto coluna-scroll">
                 ${cardsHtml}
-                <div class="pt-3 mt-3 border-t border-slate-200 border-dashed text-right px-1">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase">Total:</span>
-                    <span class="text-xs font-black text-slate-700 ml-1">${formatarMoeda(somaColuna)}</span>
-                </div>
+            </div>
+
+            <div class="esconder-no-min p-3 bg-white/50 border-t border-slate-200/80 text-right px-4 rounded-b-2xl shrink-0 backdrop-blur-sm z-10">
+                <span class="text-[10px] font-bold text-slate-400 uppercase">Total da Coluna:</span>
+                <span class="text-sm font-black text-slate-700 ml-1">${formatarMoeda(somaColuna)}</span>
             </div>
         </div>`;
     });
@@ -261,9 +249,6 @@ function renderizarColunas(agrupamentos) {
     board.innerHTML = html;
 }
 
-// ---------------------------------------------
-// AÇÕES DO KANBAN
-// ---------------------------------------------
 function toggleColuna(id) {
     const col = document.getElementById(id);
     col.classList.toggle('coluna-minimizada');
@@ -278,27 +263,19 @@ async function alterarStatusPagamento(idTransacao, novoStatusPago) {
     try {
         const { error } = await supabaseClient.from('transacoes').update({ pago: novoStatusPago }).eq('id', idTransacao);
         if (error) throw error;
-
         const idx = transacoesGlobais.findIndex(t => t.id === idTransacao);
         if (idx !== -1) transacoesGlobais[idx].pago = novoStatusPago;
-
         processarEAtualizarKanban();
     } catch (e) { alert("Erro ao atualizar: " + e.message); }
 }
 
-// ---------------------------------------------
-// CRUD: CRIAR, EDITAR E EXCLUIR
-// ---------------------------------------------
 function abrirModalNovaDivida() { 
     document.getElementById('form-divida').reset();
     document.getElementById('divida-id').value = ''; 
-    
     document.getElementById('modal-titulo').innerHTML = '<i class="fa-solid fa-file-signature text-indigo-500"></i> Lançar Contas';
     document.getElementById('modal-subtitulo').innerText = 'Contas ou parcelamentos lançados aqui entram como "Pendentes".';
-    
     document.getElementById('wrapper-parcelas').classList.remove('hidden');
     document.getElementById('wrapper-categoria').classList.replace('col-span-3', 'col-span-2');
-
     document.getElementById('divida-data').value = new Date().toISOString().split('T')[0];
     document.getElementById('modal-divida').classList.remove('hidden'); 
 }
@@ -306,7 +283,6 @@ function abrirModalNovaDivida() {
 function abrirModalEdicao(idTransacao) {
     const t = transacoesGlobais.find(x => x.id === idTransacao);
     if (!t) return;
-
     document.getElementById('divida-id').value = t.id;
     document.getElementById('divida-desc').value = t.descricao;
     
@@ -320,24 +296,18 @@ function abrirModalEdicao(idTransacao) {
 
     document.getElementById('modal-titulo').innerHTML = '<i class="fa-solid fa-pen text-indigo-500"></i> Editar Parcela';
     document.getElementById('modal-subtitulo').innerText = 'Altere as informações deste lançamento específico.';
-
     document.getElementById('wrapper-parcelas').classList.add('hidden');
     document.getElementById('wrapper-categoria').classList.replace('col-span-2', 'col-span-3');
-
     document.getElementById('modal-divida').classList.remove('hidden');
 }
 
-function fecharModalNovaDivida() {
-    document.getElementById('modal-divida').classList.add('hidden');
-}
+function fecharModalNovaDivida() { document.getElementById('modal-divida').classList.add('hidden'); }
 
 async function excluirDivida(idTransacao) {
     if (!confirm("Tem certeza que deseja excluir este lançamento permanentemente?")) return;
-
     try {
         const { error } = await supabaseClient.from('transacoes').delete().eq('id', idTransacao);
         if (error) throw error;
-
         transacoesGlobais = transacoesGlobais.filter(t => t.id !== idTransacao);
         processarEAtualizarKanban();
     } catch (e) { alert("Erro ao excluir: " + e.message); }
@@ -364,10 +334,7 @@ async function salvarDivida(event) {
     try {
         if (idExistente) {
             const { data, error } = await supabaseClient.from('transacoes').update({
-                descricao: descBase,
-                valor: valorFloat,
-                data_vencimento: dataInicialISO,
-                categoria_id: catId
+                descricao: descBase, valor: valorFloat, data_vencimento: dataInicialISO, categoria_id: catId
             }).eq('id', idExistente).select();
 
             if (error) throw error;
@@ -388,13 +355,7 @@ async function salvarDivida(event) {
                 let descFinal = qtdParcelas > 1 ? `${descBase} (${i + 1}/${qtdParcelas})` : descBase;
 
                 loteInsercao.push({
-                    usuario_id: usuarioLogado.id,
-                    tipo: 'despesa',
-                    descricao: descFinal,
-                    valor: valorFloat, 
-                    data_vencimento: dataFormatada,
-                    categoria_id: catId,
-                    pago: false
+                    usuario_id: usuarioLogado.id, tipo: 'despesa', descricao: descFinal, valor: valorFloat, data_vencimento: dataFormatada, categoria_id: catId, pago: false
                 });
             }
 
