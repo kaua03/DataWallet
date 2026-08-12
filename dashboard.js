@@ -1,5 +1,5 @@
 // ==========================================
-// dashboard.js - MOTOR DE BUSINESS INTELLIGENCE E IA
+// dashboard.js - MOTOR DE BUSINESS INTELLIGENCE SÊNIOR
 // ==========================================
 
 let usuarioLogado = null;
@@ -153,10 +153,10 @@ function processarEAtualizarTudo() {
 }
 
 // ---------------------------------------------
-// LISTA DE CATEGORIAS HTML (Progress Bars)
+// LISTA DE CATEGORIAS HTML (Progress Bars Fortes)
 // ---------------------------------------------
 function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
-    const paleta = ['bg-indigo-600', 'bg-blue-500', 'bg-sky-400', 'bg-teal-400', 'bg-slate-400', 'bg-gray-300'];
+    const paleta = ['bg-indigo-600', 'bg-blue-500', 'bg-sky-400', 'bg-teal-400', 'bg-slate-400', 'bg-gray-400'];
     
     const html = ordenadas.map((cat, index) => {
         const valor = gastos[cat];
@@ -172,8 +172,8 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
                     <span class="text-sm font-black text-slate-900 whitespace-nowrap">${formatarMoeda(valor)}</span>
                 </div>
             </div>
-            <div class="w-full bg-slate-100 rounded-full h-1.5">
-                <div class="${cor} h-1.5 rounded-full transition-all duration-1000" style="width: ${perc}%"></div>
+            <div class="w-full bg-slate-100 rounded-full h-2">
+                <div class="${cor} h-2 rounded-full transition-all duration-1000" style="width: ${perc}%"></div>
             </div>
         </div>
         `;
@@ -183,14 +183,14 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
 }
 
 // ---------------------------------------------
-// ENGENHARIA VISUAL DOS GRÁFICOS (CHART.JS SÊNIOR)
+// ENGENHARIA VISUAL DOS GRÁFICOS (ESTÉTICA CORPORATIVA SÊNIOR)
 // ---------------------------------------------
 function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, top5, totalDespesas) {
     Chart.defaults.font.family = "'Inter', sans-serif";
-    Chart.defaults.color = '#94a3b8'; 
+    Chart.defaults.color = '#64748b'; 
 
     const tooltipPro = {
-        backgroundColor: 'rgba(15, 23, 42, 0.95)', 
+        backgroundColor: '#0f172a', // Slate 900 sólido
         titleFont: { size: 12, family: 'Inter', weight: 'bold' },
         bodyFont: { size: 13, family: 'Inter', weight: 'bold' },
         padding: 12,
@@ -206,70 +206,58 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
     
     const labelsT = [];
     const dadosRec = [];
-    const dadosDes = []; // Estes serão negativos no gráfico
+    const dadosDes = []; 
     const dadosAcumulados = [];
     let acumuladoAtual = 0;
 
     chavesTempo.forEach(c => {
         labelsT.push(c);
         dadosRec.push(agrupamentoTemporal[c].rec);
-        
-        // MÁGICA DE WALL STREET: Transformamos a despesa em número negativo para descer do Eixo Zero
+        // Despesa Vira Negativo para descer do Eixo
         dadosDes.push(-Math.abs(agrupamentoTemporal[c].des)); 
         
         acumuladoAtual += (agrupamentoTemporal[c].rec - agrupamentoTemporal[c].des);
         dadosAcumulados.push(acumuladoAtual);
     });
 
-    // 1. GRÁFICO COMBO MASTER (Barras Divergentes + Linha)
+    // 1. GRÁFICO COMBO MASTER SÊNIOR (Cores Sólidas e Eixo Forte)
     const ctxC = document.getElementById('graficoCombo').getContext('2d');
     if (grafCombo) grafCombo.destroy();
-
-    const gradRec = ctxC.createLinearGradient(0, 0, 0, 400);
-    gradRec.addColorStop(0, 'rgba(16, 185, 129, 0.9)'); 
-    gradRec.addColorStop(1, 'rgba(16, 185, 129, 0.3)');
-
-    const gradDes = ctxC.createLinearGradient(0, 0, 0, 400);
-    gradDes.addColorStop(0, 'rgba(244, 63, 94, 0.3)'); // Ao contrário porque ela desce
-    gradDes.addColorStop(1, 'rgba(244, 63, 94, 0.9)');
 
     grafCombo = new Chart(ctxC, {
         type: 'bar',
         data: {
-            labels: labelsT.length > 0 ? labelsT : ['Vazio'],
+            labels: labelsT.length > 0 ? labelsT : ['Sem Dados'],
             datasets: [
                 {
                     type: 'line',
                     label: 'Saldo Acumulado',
                     data: dadosAcumulados,
-                    borderColor: '#4f46e5', // Indigo 600
-                    borderWidth: 2,
-                    tension: 0.2, // Curva quase reta (corporativa)
+                    borderColor: '#f97316', // Laranja Ouro Corporativo
+                    borderWidth: 3,
+                    tension: 0.1, // Linha mais reta e analítica
                     pointBackgroundColor: '#ffffff',
-                    pointBorderColor: '#4f46e5',
+                    pointBorderColor: '#f97316',
                     pointBorderWidth: 2,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                    fill: false,
-                    stack: 'linha' // Isola a linha para não somar com as barras
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    fill: false
                 },
                 {
                     type: 'bar',
                     label: 'Entradas',
                     data: dadosRec,
-                    backgroundColor: gradRec,
-                    borderRadius: 4,     
-                    maxBarThickness: 30, 
-                    stack: 'barras'
+                    backgroundColor: '#06b6d4', // Ciano Sólido Sênior
+                    borderRadius: 2,     
+                    maxBarThickness: 40, 
                 },
                 {
                     type: 'bar',
                     label: 'Saídas',
                     data: dadosDes,
-                    backgroundColor: gradDes,
-                    borderRadius: 4,
-                    maxBarThickness: 30,
-                    stack: 'barras' // Força empilhamento com a receita no mesmo dia
+                    backgroundColor: '#1e293b', // Chumbo Escuro Sólido
+                    borderRadius: 2,
+                    maxBarThickness: 40,
                 }
             ]
         },
@@ -280,30 +268,26 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
                 legend: { display: false }, 
                 tooltip: { 
                     ...tooltipPro, 
-                    callbacks: { 
-                        // Formatação mágica: Lê o número negativo e mostra como Real absoluto na tooltip
-                        label: (ctx) => ` ${ctx.dataset.label}: ${formatarMoeda(Math.abs(ctx.raw))}` 
-                    } 
+                    callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${formatarMoeda(Math.abs(ctx.raw))}` } 
                 } 
             },
             scales: {
                 x: { 
-                    stacked: true, // Alinha as barras na mesma coluna
+                    stacked: true, 
                     grid: { display: false }, 
-                    ticks: { font: { size: 10 } } 
+                    ticks: { font: { size: 11, weight: 'bold' } } 
                 },
                 y: { 
                     stacked: true, 
                     grid: { 
-                        // EIXO ZERO EM DESTAQUE (Linha base sólida)
-                        color: (ctx) => ctx.tick.value === 0 ? '#94a3b8' : '#f1f5f9',
+                        // EIXO ZERO DESTACADO EM PRETO PARA SEPARAR LUCRO/PREJUÍZO
+                        color: (ctx) => ctx.tick.value === 0 ? '#334155' : '#e2e8f0',
                         lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1,
                         borderDash: (ctx) => ctx.tick.value === 0 ? [] : [4, 4]
                     }, 
                     border: { display: false }, 
                     ticks: { 
-                        font: { size: 10 },
-                        // Formata o eixo lateral tirando o sinal de menos
+                        font: { size: 10, weight: 'bold' },
                         callback: (value) => value >= 0 ? `R$ ${value}` : `-R$ ${Math.abs(value)}`
                     } 
                 }
@@ -311,11 +295,11 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
         }
     });
 
-    // 2. PIZZA (Doughnut Extremamente Fino - Header Externo)
+    // 2. PIZZA (Doughnut Forte e Robusto)
     const ctxP = document.getElementById('graficoPizza').getContext('2d');
     if (grafPizza) grafPizza.destroy();
 
-    const paletaCorp = ['#4f46e5', '#3b82f6', '#38bdf8', '#2dd4bf', '#94a3b8', '#cbd5e1'];
+    const paletaCorp = ['#4f46e5', '#06b6d4', '#f97316', '#ec4899', '#8b5cf6', '#64748b'];
     let lblP = [], datP = [];
     
     if (categoriasOrdenadas.length === 0) { lblP = ['Vazio']; datP = [1]; } 
@@ -332,9 +316,10 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
 
     grafPizza = new Chart(ctxP, {
         type: 'doughnut',
-        data: { labels: lblP, datasets: [{ data: datP, backgroundColor: categoriasOrdenadas.length === 0 ? ['#f8fafc'] : paletaCorp, borderWidth: 2, borderColor: '#ffffff', hoverOffset: 4 }] },
+        data: { labels: lblP, datasets: [{ data: datP, backgroundColor: categoriasOrdenadas.length === 0 ? ['#f1f5f9'] : paletaCorp, borderWidth: 3, borderColor: '#ffffff', borderRadius: 4, hoverOffset: 6 }] },
         options: { 
-            responsive: true, maintainAspectRatio: false, cutout: '80%', 
+            responsive: true, maintainAspectRatio: false, 
+            cutout: '65%', // Gráfico mais "Grosso" e substancial
             plugins: { 
                 legend: { display: false }, 
                 tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${formatarMoeda(categoriasOrdenadas.length === 0 ? 0 : ctx.raw)}` } } 
@@ -342,13 +327,9 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
         }
     });
 
-    // 3. TOP 5 GASTOS (Barras Horizontais Profissionais)
+    // 3. TOP 5 GASTOS (Barras Sólidas Indigo)
     const ctxT = document.getElementById('graficoTopGastos').getContext('2d');
     if (grafTop) grafTop.destroy();
-
-    const gradTop = ctxT.createLinearGradient(0, 0, 400, 0);
-    gradTop.addColorStop(0, '#64748b'); 
-    gradTop.addColorStop(1, '#334155'); 
 
     grafTop = new Chart(ctxT, {
         type: 'bar',
@@ -359,16 +340,16 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
             }) : ['Nenhum'],
             datasets: [{
                 data: top5.length > 0 ? top5.map(t => t.valor) : [0],
-                backgroundColor: gradTop,
-                borderRadius: 3,
-                maxBarThickness: 12 
+                backgroundColor: '#4f46e5', // Indigo 600 Sólido
+                borderRadius: 4,
+                maxBarThickness: 16 // Barras com presença
             }]
         },
         options: {
             indexAxis: 'y',
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${formatarMoeda(ctx.raw)}` } } },
-            scales: { x: { display: false }, y: { grid: { display: false }, border: { display: false }, ticks: { font: { weight: 'bold', size: 10 }, color: '#475569' } } }
+            scales: { x: { display: false }, y: { grid: { display: false }, border: { display: false }, ticks: { font: { weight: 'bold', size: 11 }, color: '#334155' } } }
         }
     });
 }
