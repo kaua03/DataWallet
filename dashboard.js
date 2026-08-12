@@ -383,6 +383,9 @@ REGRA ESTRITA: Responda à pergunta do usuário usando APENAS a intenção dele 
     };
 
     try {
+
+        console.log("A chave que o sistema está usando é: ", GEMINI_API_KEY);
+        
         // 2. A Chamada Segura para o Navegador (Chave na URL)
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
         
