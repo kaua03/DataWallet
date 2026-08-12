@@ -83,15 +83,20 @@
                     <span class="text-xs font-bold text-gray-500 uppercase"><i class="fa-solid fa-filter"></i> Filtrar por Período</span>
                     <select id="filtro-extrato-periodo" onchange="aplicarFiltroExtrato()" class="bg-white border border-gray-200 text-gray-700 text-sm rounded-lg outline-none px-3 py-1.5 font-bold shadow-sm cursor-pointer">
                         <option value="tudo">Todo o Histórico</option>
-                        <option value="por_mes">Mês Específico</option>
-                        <option value="ano_atual">Este Ano</option>
-                        <option value="personalizado">Personalizado...</option>
+                        <option value="por_mes">Por Mês</option>
+                        <option value="por_ano">Por Ano</option>
+                        <option value="personalizado">Personalizado</option>
                     </select>
                 </div>
                 
                 <!-- Input: Mês Específico (Escondido por padrão) -->
                 <div id="filtro-extrato-mes" class="hidden flex items-center gap-2 mt-1">
                     <input type="month" id="input-mes-especifico" onchange="aplicarFiltroExtrato()" class="w-full bg-white border border-gray-200 text-gray-700 text-sm rounded-lg px-3 py-2 outline-none font-bold shadow-inner cursor-pointer">
+                </div>
+
+                <!-- Input: Ano Específico (Escondido por padrão) -->
+                <div id="filtro-extrato-ano" class="hidden flex items-center gap-2 mt-1">
+                    <input type="number" id="input-ano-especifico" onchange="aplicarFiltroExtrato()" min="2000" max="2100" step="1" class="w-full bg-white border border-gray-200 text-gray-700 text-sm rounded-lg px-3 py-2 outline-none font-bold shadow-inner cursor-pointer" placeholder="Ex: 2026">
                 </div>
 
                 <!-- Inputs: Datas Específicas (Escondidas por padrão) -->
