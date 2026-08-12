@@ -347,70 +347,65 @@ function enviarMensagemCoach() {
     }, 1200);
 }
 
-// ==========================================
-// A NOVA INTELIGÊNCIA ARTIFICIAL (GEMINI 1.5 FLASH)
-// ==========================================
-
 async function gerarRespostaIA(pergunta) {
-    // 1. Regra de segurança: O Coach precisa de dados para raciocinar
     if (statsGlobais.transacoesNoPeriodo === 0) {
         document.getElementById('coach-typing')?.remove();
-        return adicionarMensagemNoChat("Meu motor lógico requer dados para gerar predições. Por favor, ajuste os filtros ou adicione transações.", false);
+        return adicionarMensagemNoChat("O algoritmo requer dados populados para gerar predições. Altere o período analisado.", false);
     }
 
-    // 2. O RAG (Geração Aumentada por Recuperação) - O Contexto Invisível
+    // 1. O RAG (O Contexto que deixa a IA genial)
     const promptDeSistema = `
-Você é o Consultor IA do DataWallet, um aplicativo financeiro de elite.
-Sua postura é profissional, direta, inteligente e encorajadora (estilo Faria Lima/Wall Street).
-Sempre formate sua resposta em HTML limpo para a tela (use <b>, <i>, e <br> para pular linhas). NÃO use Markdown como ** ou *.
+Você é o Consultor IA do DataWallet, um aplicativo financeiro corporativo de elite.
+Sua postura é profissional, direta, inteligente e analítica.
+Sempre formate sua resposta em HTML limpo (use <b>, <i>, e <br>). NÃO use Markdown como **.
 
-AQUI ESTÃO OS DADOS REAIS DO USUÁRIO NESTE EXATO MOMENTO:
-- Total Captado (Entradas): R$ ${statsGlobais.receitas}
-- Total Queimado (Saídas): R$ ${statsGlobais.despesas}
-- Saldo Líquido do Período: R$ ${statsGlobais.saldo}
-- Taxa de Retenção (Poupança): ${statsGlobais.taxaPoupanca.toFixed(1)}%
-- Velocidade de Queima (Média Diária): R$ ${statsGlobais.mediaDiaria.toFixed(2)} / dia
+DADOS REAIS DO USUÁRIO NESTE EXATO MOMENTO:
+- Total Captado: R$ ${statsGlobais.receitas}
+- Total Queimado: R$ ${statsGlobais.despesas}
+- Saldo Líquido: R$ ${statsGlobais.saldo}
+- Margem de Poupança: ${statsGlobais.taxaPoupanca.toFixed(1)}%
+- Burn Rate (Queima Média Diária): R$ ${statsGlobais.mediaDiaria.toFixed(2)} / dia
 - Centro de custo mais oneroso: ${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'Nenhum'} (R$ ${statsGlobais.topCategoria ? statsGlobais.topCategoria.valor : 0})
 - Maior gasto isolado: ${statsGlobais.maiorGasto.descricao} (R$ ${statsGlobais.maiorGasto.valor})
 
-REGRA DE OURO: Responda à pergunta do usuário baseando-se EXCLUSIVAMENTE nos dados acima. Se a taxa de poupança for menor que 0, alerte sobre a queima de caixa. Se for maior que 20%, elogie a segurança.
+REGRA: Responda à pergunta cruzando a intenção do usuário com os dados acima. Se a margem for negativa, alerte sobre a queima de caixa.
     `;
 
-    // 3. O Pacote (Payload) que será enviado aos servidores do Google
     const payload = {
         contents: [{
-            parts: [
-                { text: promptDeSistema + "\n\nPergunta do usuário: " + pergunta }
-            ]
+            parts: [{ text: promptDeSistema + "\n\nPergunta do usuário: " + pergunta }]
         }]
     };
 
     try {
-        // 4. A Chamada Fetch (O Motoboy indo até a API)
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        // 2. A URL LIMPA (Sem a chave no final)
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
         
+        // 3. O MOTOBOY (Imitando exatamente o seu cURL)
         const respostaDaNuvem = await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'x-goog-api-key': GEMINI_API_KEY // A CHAVE VAI AQUI AGORA!
+            },
             body: JSON.stringify(payload)
         });
 
-        // 5. Tratamento de Erros da API
         if (!respostaDaNuvem.ok) {
-            throw new Error("Falha na comunicação com o servidor cerebral.");
+            const erroDetalhe = await respostaDaNuvem.json();
+            console.error("Motivo do bloqueio:", erroDetalhe);
+            throw new Error("Acesso bloqueado pela API do Google.");
         }
 
-        // 6. Decodificando a resposta do Google
         const dados = await respostaDaNuvem.json();
         const textoRespostaIA = dados.candidates[0].content.parts[0].text;
 
-        // 7. Renderizando a inteligência na tela
         document.getElementById('coach-typing')?.remove();
         adicionarMensagemNoChat(textoRespostaIA, false);
 
     } catch (erro) {
         console.error(erro);
         document.getElementById('coach-typing')?.remove();
-        adicionarMensagemNoChat("<b>Erro de Conexão:</b> Os servidores da IA estão inacessíveis no momento. Verifique sua chave de API ou conexão de rede.", false);
+        adicionarMensagemNoChat("<b>Erro de Conexão:</b> Os servidores do Google rejeitaram a chamada. Verifique a aba Console (F12) para detalhes.", false);
     }
 }
