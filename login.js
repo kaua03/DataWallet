@@ -1,12 +1,11 @@
 // ==========================================
-// js/login.js - MOTOR DE AUTENTICAÇÃO E CADASTRO
+// login.js - MOTOR DE AUTENTICAÇÃO E CADASTRO
 // ==========================================
 
-// Ignição: Se o usuário já tiver logado antes, pula essa tela automaticamente
 document.addEventListener('DOMContentLoaded', async () => {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) {
-        window.location.replace("index.html"); // Rota do roteador
+        window.location.replace("index.html"); 
     }
 });
 
@@ -22,7 +21,6 @@ function alternarTelaAuth(tela) {
     }
 }
 
-// O NOVO SISTEMA DE CADASTRO QUE ENVIA O NOME PARA O GATILHO SQL
 async function efetuarCadastro() {
     const nome = document.getElementById('nome-cad') ? document.getElementById('nome-cad').value.trim() : "Usuário";
     const email = document.getElementById('email-cad').value.trim();
@@ -35,20 +33,24 @@ async function efetuarCadastro() {
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Criando...';
 
     try {
-        // Envia E-mail, Senha e os "Metadados" (O Nome) para o robô do Supabase
         const { data, error } = await supabaseClient.auth.signUp({ 
             email: email, 
             password: senha,
-            options: {
-                data: {
-                    nome: nome // É AQUI que o gatilho SQL puxa o nome!
-                }
-            }
+            options: { data: { nome: nome } }
         });
         
         if (error) throw error;
+
+        // Se o Supabase exigir confirmação de e-mail (caso você esqueça de desativar), ele previne o erro:
+        if (!data.session) {
+            alert("Cadastro realizado! Autopreenhendo seus dados para login.");
+            document.getElementById('email-login').value = email;
+            document.getElementById('senha-login').value = senha;
+            alternarTelaAuth('login');
+            btn.innerHTML = txtOriginal;
+            return;
+        }
         
-        // Setup inicial das categorias
         const usuarioLogado = data.user;
         await supabaseClient.from('categorias').insert([
             { usuario_id: usuarioLogado.id, nome: 'Alimentação', icone: 'fa-burger', cor: 'text-red-500' },
@@ -58,8 +60,7 @@ async function efetuarCadastro() {
             { usuario_id: usuarioLogado.id, nome: 'Reserva de Emergência', valor_meta: 10000, cor: 'bg-blue-500' }
         ]);
 
-        alert("Conta criada! Redirecionando...");
-        window.location.replace("index.html"); // Manda pro Roteador
+        window.location.replace("index.html"); 
 
     } catch (e) {
         alert("Erro no cadastro: " + e.message);
