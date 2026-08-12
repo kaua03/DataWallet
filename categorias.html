@@ -3,29 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pastas e Categorias - DataWallet</title>
+    <title>Categorias - DataWallet</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- DEPENDÊNCIAS DO MOTOR -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js" defer></script>
     <script src="categorias.js" defer></script>
     
     <style>
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        .slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         .slide-right { animation: slideRight 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes slideRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar { width: 6px; display: none; /* Esconde visualmente mas permite scroll */ }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans h-screen overflow-hidden flex relative fade-in">
 
-    <!-- MENU LATERAL -->
+    <!-- MENU LATERAL (PC) PADRONIZADO -->
     <aside class="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 p-6 h-full shadow-lg z-20">
         <div class="flex items-center gap-3 mb-10">
             <i class="fa-solid fa-wallet text-blue-600 text-3xl"></i>
@@ -33,42 +31,63 @@
         </div>
         
         <nav class="flex-1 space-y-2">
-            <a href="movimentacoes.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition"><i class="fa-solid fa-money-bill-transfer w-5"></i> Início</a>
-            <a href="dashboard.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition"><i class="fa-solid fa-chart-pie w-5"></i> Dashboard</a>
-            <a href="dividas.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition"><i class="fa-solid fa-file-invoice-dollar w-5"></i> Dívidas</a>
-            <a href="categorias.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold bg-blue-50 text-blue-600 transition"><i class="fa-solid fa-layer-group w-5"></i> Pastas</a>
-            <a href="planos.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition"><i class="fa-solid fa-bullseye w-5"></i> Planos</a>
+            <a href="movimentacoes.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 hover:text-blue-600 transition">
+                <i class="fa-solid fa-money-bill-transfer w-5"></i> Movimentações
+            </a>
+            <a href="dashboard.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 hover:text-blue-600 transition">
+                <i class="fa-solid fa-chart-pie w-5"></i> Dashboard
+            </a>
+            <a href="dividas.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 hover:text-blue-600 transition">
+                <i class="fa-solid fa-file-invoice-dollar w-5"></i> Dívidas
+            </a>
+            <!-- ATIVO -->
+            <a href="categorias.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold bg-blue-50 text-blue-600 transition">
+                <i class="fa-solid fa-tags w-5"></i> Categorias
+            </a>
+            <a href="planos.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 hover:text-blue-600 transition">
+                <i class="fa-solid fa-bullseye w-5"></i> Metas
+            </a>
         </nav>
-        <button onclick="sairDoSistema()" class="flex items-center gap-3 p-3 rounded-xl font-bold text-red-500 hover:bg-red-50 transition mt-auto"><i class="fa-solid fa-right-from-bracket w-5"></i> Sair</button>
+        <button onclick="sairDoSistema()" class="flex items-center gap-3 p-3 rounded-xl font-bold text-red-500 hover:bg-red-50 transition mt-auto">
+            <i class="fa-solid fa-right-from-bracket w-5"></i> Sair
+        </button>
     </aside>
 
+    <!-- ÁREA CENTRAL -->
     <main class="flex-1 h-full overflow-y-auto bg-gray-50 relative pb-24 md:pb-0 p-4 md:p-8">
         <section class="max-w-5xl mx-auto">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2"><i class="fa-solid fa-folder-open text-blue-600"></i> Pastas de Organização</h2>
-            </div>
-            <p class="text-sm text-gray-500 mb-8 font-medium">Suas despesas são organizadas e analisadas automaticamente. <strong class="text-blue-600">Clique em uma pasta para ver o extrato.</strong></p>
             
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
+                    <i class="fa-solid fa-tags text-blue-600"></i> Gestão de Categorias
+                </h2>
+            </div>
+            
+            <p class="text-sm text-gray-500 mb-8 font-medium">Suas despesas são organizadas e analisadas automaticamente. <strong class="text-blue-600 cursor-pointer">Clique em uma pasta para ver o extrato.</strong></p>
+            
+            <!-- GRID DE CATEGORIAS (Injetado pelo JS) -->
             <div id="grid-categorias" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 <p class="text-gray-400 text-sm font-bold"><i class="fa-solid fa-spinner fa-spin"></i> Processando inteligência...</p>
             </div>
+
         </section>
     </main>
 
-   <!-- MENU INFERIOR (Celular) PADRONIZADO E SEM O "+" -->
+    <!-- MENU INFERIOR (Celular) PADRONIZADO -->
     <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t border-gray-200 px-4 py-2 flex justify-between items-center z-20">
-        <a href="movimentacoes.html" class="flex flex-col items-center text-gray-400 hover:text-blue-600 transition p-2"><i class="fa-solid fa-house text-lg mb-1"></i><span class="text-[10px] font-bold">Início</span></a>
-        <a href="dashboard.html" class="flex flex-col items-center text-gray-400 hover:text-blue-600 transition p-2"><i class="fa-solid fa-chart-pie text-lg mb-1"></i><span class="text-[10px] font-bold">Análise</span></a>
+        <a href="movimentacoes.html" class="flex flex-col items-center text-gray-400 hover:text-blue-600 transition p-2"><i class="fa-solid fa-money-bill-transfer text-lg mb-1"></i><span class="text-[10px] font-bold">Movimentar</span></a>
+        <a href="dashboard.html" class="flex flex-col items-center text-gray-400 hover:text-blue-600 transition p-2"><i class="fa-solid fa-chart-pie text-lg mb-1"></i><span class="text-[10px] font-bold">Dashboard</span></a>
         <a href="dividas.html" class="flex flex-col items-center text-gray-400 hover:text-blue-600 transition p-2"><i class="fa-solid fa-file-invoice-dollar text-lg mb-1"></i><span class="text-[10px] font-bold">Dívidas</span></a>
-        <a href="categorias.html" class="flex flex-col items-center text-gray-400 hover:text-blue-600 transition p-2"><i class="fa-solid fa-folder-open text-lg mb-1"></i><span class="text-[10px] font-bold">Pastas</span></a>
+        <!-- ATIVO -->
+        <a href="categorias.html" class="flex flex-col items-center text-blue-600 transition p-2"><i class="fa-solid fa-tags text-lg mb-1"></i><span class="text-[10px] font-bold">Categorias</span></a>
         <a href="planos.html" class="flex flex-col items-center text-gray-400 hover:text-blue-600 transition p-2"><i class="fa-solid fa-bullseye text-lg mb-1"></i><span class="text-[10px] font-bold">Metas</span></a>
     </nav>
 
-    <!-- MODAL DE EXTRATO DA CATEGORIA (Com Data e Hora) -->
+    <!-- MODAL DE EXTRATO DA CATEGORIA (Aba Lateral Fluida) -->
     <div id="modal-extrato" class="hidden fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex justify-end fade-in">
         <div class="bg-white w-full md:w-[450px] h-full shadow-2xl relative slide-right flex flex-col">
             
-            <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
                 <div class="flex items-center gap-4">
                     <div id="extrato-icone" class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl bg-white shadow-sm"></div>
                     <div>
@@ -81,12 +100,12 @@
                 </button>
             </div>
             
-            <!-- Lista com Scroll -->
-            <div class="flex-1 overflow-y-auto p-6 space-y-4" id="extrato-lista">
+            <!-- Lista com Scroll (Escondido mas rolável) -->
+            <div class="flex-1 overflow-y-auto p-6 space-y-4 pb-24" id="extrato-lista" style="scrollbar-width: none;">
                 <!-- Preenchido pelo JS -->
             </div>
             
-            <div class="p-6 border-t border-gray-100 bg-gray-50">
+            <div class="absolute bottom-0 w-full p-6 border-t border-gray-100 bg-white">
                 <div class="flex justify-between items-center">
                     <span class="text-sm font-bold text-gray-500 uppercase">Total na Pasta</span>
                     <span class="text-2xl font-black text-gray-900" id="extrato-total">R$ 0,00</span>
