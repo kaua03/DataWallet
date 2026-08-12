@@ -1,10 +1,13 @@
 // ==========================================
-// categorias.js - MOTOR DE ORGANIZAÇÃO E ANÁLISE DE CAIXA
+// categorias.js - MOTOR DE ORGANIZAÇÃO, ANÁLISE E FILTROS DE CAIXA
 // ==========================================
 
 let usuarioLogado = null;
 let categoriasGlobais = [];
 let transacoesGlobais = [];
+
+// Variável Global para saber qual categoria está aberta no Modal
+let categoriaAtivaModal = null; 
 
 document.addEventListener('DOMContentLoaded', async () => {
     usuarioLogado = await verificarSessaoSegura();
@@ -16,21 +19,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function carregarDadosDoBanco() {
     try {
         let [resCat, resTrans] = await Promise.all([
-            // Traz as categorias ordenadas alfabeticamente
             supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id).order('nome', { ascending: true }),
-            // Traz todas as transações para análise de caixa
             supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).order('data_vencimento', { ascending: false }).order('id', { ascending: false })
         ]);
 
-        // Self-Healing: Se a tabela estiver vazia, recria as 7 pastas originais Sênior
         if (resCat.data.length === 0) {
-            console.log("Sistema Self-Healing: Injetando Categorias Oficiais...");
             await supabaseClient.from('categorias').insert([
                 { usuario_id: usuarioLogado.id, nome: 'Alimentação', icone: 'fa-utensils', cor: 'text-orange-500' },
-                { usuario_id: usuarioLogado.id, nome: 'Veículo', icone: 'fa-car', cor: 'text-gray-700' },
+                { usuario_id: usuarioLogado.id, nome: 'Veículo & Transporte', icone: 'fa-car', cor: 'text-gray-700' },
                 { usuario_id: usuarioLogado.id, nome: 'Moradia', icone: 'fa-house', cor: 'text-blue-500' },
-                { usuario_id: usuarioLogado.id, nome: 'Estudo', icone: 'fa-graduation-cap', cor: 'text-purple-500' },
-                { usuario_id: usuarioLogado.id, nome: 'Imprevistos', icone: 'fa-kit-medical', cor: 'text-teal-500' },
+                { usuario_id: usuarioLogado.id, nome: 'Estudo & Carreira', icone: 'fa-graduation-cap', cor: 'text-purple-500' },
+                { usuario_id: usuarioLogado.id, nome: 'Saúde & Imprevistos', icone: 'fa-kit-medical', cor: 'text-teal-500' },
                 { usuario_id: usuarioLogado.id, nome: 'Lazer & Pessoal', icone: 'fa-ticket', cor: 'text-pink-500' },
                 { usuario_id: usuarioLogado.id, nome: 'Renda & Salário', icone: 'fa-money-bill-wave', cor: 'text-green-500' }
             ]);
@@ -52,11 +51,10 @@ function renderizarCategorias() {
     let totalDespesasGerais = 0;
     let totalReceitasGerais = 0;
 
-    // Acumula os valores e prepara a matemática global
     transacoesGlobais.forEach(t => {
         if (!totaisPorCatId[t.categoria_id]) totaisPorCatId[t.categoria_id] = 0;
         
-        totaisPorCatId[t.categoria_id] += t.valor; // Soma tudo daquela categoria
+        totaisPorCatId[t.categoria_id] += t.valor;
 
         if(t.tipo === 'despesa') totalDespesasGerais += t.valor;
         else if (t.tipo === 'receita') totalReceitasGerais += t.valor;
@@ -64,7 +62,6 @@ function renderizarCategorias() {
 
     const saldoAtual = totalReceitasGerais - totalDespesasGerais;
 
-    // Filtra apenas categorias de DESPESA para gerar o Ranking (Renda não é Gasto)
     const gastosParaRanking = {};
     transacoesGlobais.forEach(t => {
         if(t.tipo === 'despesa' && t.categoria_id) {
@@ -72,7 +69,6 @@ function renderizarCategorias() {
         }
     });
     
-    // Do maior para o menor gasto
     const rankingIdsOrdenado = Object.keys(gastosParaRanking).sort((a, b) => gastosParaRanking[b] - gastosParaRanking[a]);
 
     const htmlCards = categoriasGlobais.map(c => {
@@ -85,13 +81,12 @@ function renderizarCategorias() {
         let percGastoTexto = "0% DO TOTAL GASTO";
         let percSaldoTexto = "";
 
-        // Só calcula porcentagem se não for a categoria de Renda
         if (!isRenda) {
             if (totalDespesasGerais > 0 && totalMovimentado > 0) {
-                percGastoTexto = `${((totalMovimentado / totalDespesasGerais) * 100).toFixed(1)}% DO TOTAL GASTO`;
+                percGastoTexto = `${((totalMovimentado / totalDespesasGerais) * 100).toFixed(1)}% DO TOTAL`;
             }
             if (saldoAtual > 0 && totalMovimentado > 0) {
-                percSaldoTexto = `<span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-md ml-2">${((totalMovimentado / saldoAtual) * 100).toFixed(1)}% DO SALDO ATUAL</span>`;
+                percSaldoTexto = `<span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-md ml-2">${((totalMovimentado / saldoAtual) * 100).toFixed(1)}% DO SALDO</span>`;
             }
         }
 
@@ -125,25 +120,77 @@ function renderizarCategorias() {
 }
 
 // ---------------------------------------------
-// O MOTOR DE EXTRATO (Aba Lateral)
+// O MOTOR DE EXTRATO COM FILTROS DE DATA
 // ---------------------------------------------
 function abrirExtrato(idCategoria, nome, cor, icone) {
     document.getElementById('extrato-titulo').innerText = nome;
     document.getElementById('extrato-icone').innerHTML = `<i class="fa-solid ${icone} ${cor}"></i>`;
     
-    // Puxa as transações apenas desta categoria
-    const historico = transacoesGlobais.filter(t => t.categoria_id === idCategoria);
+    // Salva a pasta que o usuário acabou de abrir na memória
+    categoriaAtivaModal = { id: idCategoria, nome: nome };
+    
+    // Reseta o filtro para "Tudo" toda vez que abre uma pasta nova
+    document.getElementById('filtro-extrato-periodo').value = 'tudo';
+    
+    // Aciona a renderização com o filtro base
+    aplicarFiltroExtrato();
+    
+    document.getElementById('modal-extrato').classList.remove('hidden');
+}
+
+function aplicarFiltroExtrato() {
+    if (!categoriaAtivaModal) return;
+
+    const tipoFiltro = document.getElementById('filtro-extrato-periodo').value;
+    const divDatas = document.getElementById('filtro-extrato-datas');
+
+    // Mostra/Esconde as caixas de data personalizada
+    if (tipoFiltro === 'personalizado') {
+        divDatas.classList.remove('hidden');
+    } else {
+        divDatas.classList.add('hidden');
+    }
+
+    // 1. Isola as transações apenas da pasta atual
+    let historico = transacoesGlobais.filter(t => t.categoria_id === categoriaAtivaModal.id);
+
+    const dataHoje = new Date();
+    const mesAtual = dataHoje.getMonth();
+    const anoAtual = dataHoje.getFullYear();
+
+    // 2. Aplica o filtro de tempo na Data de Vencimento
+    historico = historico.filter(t => {
+        if (!t.data_vencimento) return true; 
+        const dTransacao = new Date(t.data_vencimento + 'T12:00:00Z');
+
+        if (tipoFiltro === 'mes_atual') {
+            return dTransacao.getMonth() === mesAtual && dTransacao.getFullYear() === anoAtual;
+        } else if (tipoFiltro === 'mes_passado') {
+            const mesAnt = mesAtual === 0 ? 11 : mesAtual - 1;
+            const anoAnt = mesAtual === 0 ? anoAtual - 1 : anoAtual;
+            return dTransacao.getMonth() === mesAnt && dTransacao.getFullYear() === anoAnt;
+        } else if (tipoFiltro === 'ano_atual') {
+            return dTransacao.getFullYear() === anoAtual;
+        } else if (tipoFiltro === 'personalizado') {
+            const dataInicio = document.getElementById('extrato-data-inicio').value;
+            const dataFim = document.getElementById('extrato-data-fim').value;
+            let valid = true;
+            if (dataInicio) valid = valid && dTransacao >= new Date(dataInicio + 'T12:00:00Z');
+            if (dataFim) valid = valid && dTransacao <= new Date(dataFim + 'T12:00:00Z');
+            return valid;
+        }
+        return true; // Se for 'tudo', passa direto
+    });
+
+    // 3. Renderiza na tela
     let somaPasta = 0;
-    const isReceitaCat = nome.includes('Renda');
+    const isReceitaCat = categoriaAtivaModal.nome.includes('Renda');
 
     const htmlLista = historico.map(t => {
-        // Soma o valor independentemente de ser entrada ou saída para o total da pasta
         somaPasta += t.valor; 
         
         let dataStr = t.data_vencimento ? t.data_vencimento.split('-').reverse().join('/') : '--/--/----';
         let horaStr = '--:--';
-        
-        // Verifica se existe o timestamp real da transação
         if (t.criado_em) {
             const dataObj = new Date(t.criado_em);
             horaStr = dataObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute:'2-digit' });
@@ -153,7 +200,7 @@ function abrirExtrato(idCategoria, nome, cor, icone) {
         const sinal = (t.tipo === 'receita') ? '+' : '-';
 
         return `
-        <div class="bg-white p-4 rounded-2xl border border-gray-100 flex items-center justify-between shadow-sm">
+        <div class="bg-white p-4 rounded-2xl border border-gray-100 flex items-center justify-between shadow-sm hover:shadow-md transition">
             <div>
                 <p class="font-bold text-gray-900 text-sm mb-1">${t.descricao}</p>
                 <div class="flex gap-2 items-center">
@@ -168,15 +215,15 @@ function abrirExtrato(idCategoria, nome, cor, icone) {
     document.getElementById('extrato-lista').innerHTML = htmlLista || `
         <div class="text-center mt-10">
             <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-2xl text-gray-300 mx-auto mb-3"><i class="fa-solid fa-ghost"></i></div>
-            <p class="text-sm font-bold text-gray-400">Nenhum registro encontrado nesta pasta.</p>
+            <p class="text-sm font-bold text-gray-400">Nenhum registro para este período.</p>
         </div>
     `;
 
     document.getElementById('extrato-total').className = `text-2xl font-black ${isReceitaCat && somaPasta > 0 ? 'text-green-500' : 'text-gray-900'}`;
     document.getElementById('extrato-total').innerText = formatarMoeda(somaPasta);
-    document.getElementById('modal-extrato').classList.remove('hidden');
 }
 
 function fecharExtrato() {
     document.getElementById('modal-extrato').classList.add('hidden');
+    categoriaAtivaModal = null;
 }
