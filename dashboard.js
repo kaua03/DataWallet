@@ -347,62 +347,70 @@ function enviarMensagemCoach() {
     }, 1200);
 }
 
-// O CÉREBRO DE INTENÇÕES (Regex Mapping)
-function gerarRespostaIA(pergunta) {
-    let resposta = "";
+// ==========================================
+// A NOVA INTELIGÊNCIA ARTIFICIAL (GEMINI 1.5 FLASH)
+// ==========================================
 
+async function gerarRespostaIA(pergunta) {
+    // 1. Regra de segurança: O Coach precisa de dados para raciocinar
     if (statsGlobais.transacoesNoPeriodo === 0) {
-        return adicionarMensagemNoChat("Sendo bem direto: eu não tenho dados para analisar nesse período. Vá em Movimentações e registre alguma coisa, ou mude o filtro ali em cima.", false);
+        document.getElementById('coach-typing')?.remove();
+        return adicionarMensagemNoChat("Meu motor lógico requer dados para gerar predições. Por favor, ajuste os filtros ou adicione transações.", false);
     }
 
-    // 1. Intenção: PERIGO / RISCO / QUEBRANDO
-    if (/(perigo|risco|alerta|ruim|mal|quebrando|falindo|fudido|preocupar|medo)/.test(pergunta)) {
-        if (statsGlobais.taxaPoupanca < 0) {
-            resposta = `Sendo muito franco: **Sim, você está sangrando caixa.**<br><br>Sua margem atual é de <b class="text-rose-500">${statsGlobais.taxaPoupanca.toFixed(1)}%</b>. Você gastou ${formatarMoeda(Math.abs(statsGlobais.saldo))} a mais do que captou. Precisamos puxar o freio de mão imediatamente, principalmente em <b>${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'seus gastos'}</b>.`;
-        } else if (statsGlobais.taxaPoupanca < 20) {
-            resposta = `Você não está quebrando, mas está na **zona de atenção**.<br><br>Sua margem de segurança é de apenas <b class="text-indigo-400">${statsGlobais.taxaPoupanca.toFixed(1)}%</b>. O ideal para não passar sufoco em imprevistos é reter no mínimo 20%. Tente cortar um pouco do que está indo para <b>${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'Lazer'}</b>.`;
-        } else {
-            resposta = `Pode respirar fundo. Sua carteira está **blindada**.<br><br>Você reteve incríveis <b class="text-emerald-500">${statsGlobais.taxaPoupanca.toFixed(1)}%</b> do que ganhou. Esse é exatamente o comportamento que constrói patrimônio sólido no longo prazo.`;
-        }
-    }
-    // 2. Intenção: SAÚDE / BOM / BEM
-    else if (/(bem|bom|saudável|seguro|tranquilo|positivo|lucro)/.test(pergunta)) {
-        if (statsGlobais.taxaPoupanca >= 20) {
-            resposta = `Você está excelente! Mantendo ${statsGlobais.taxaPoupanca.toFixed(1)}% de margem, você tem fôlego para investir ou montar sua reserva de emergência sem estresse.`;
-        } else if (statsGlobais.taxaPoupanca > 0) {
-            resposta = `Você está bem, operando no azul com ${formatarMoeda(statsGlobais.saldo)} de sobra. Mas não relaxe, essa margem ainda é fina.`;
-        } else {
-            resposta = `Infelizmente não. O seu fluxo está negativo. Você queimou ${formatarMoeda(statsGlobais.despesas)} e captou apenas ${formatarMoeda(statsGlobais.receitas)}.`;
-        }
-    }
-    // 3. Intenção: ONDE GASTEI MAIS / VILÃO
-    else if (/(maior gasto|vilão|sugando|sugou|onde gastei|pior|gasto mais|gastando mais)/.test(pergunta)) {
-        resposta = `O principal ralo do seu dinheiro hoje é a pasta de <b class="text-indigo-400">${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'Nenhuma'}</b>, que consumiu <b>${formatarMoeda(statsGlobais.topCategoria ? statsGlobais.topCategoria.valor : 0)}</b>.<br><br>E o lançamento isolado mais caro foi "${statsGlobais.maiorGasto.descricao}" custando ${formatarMoeda(statsGlobais.maiorGasto.valor)}.`;
-    }
-    // 4. Intenção: FUTURO / BURN RATE / PREVISÃO
-    else if (/(futuro|previsão|previsao|terminar|fim do mês|burn rate|projeção|projecao)/.test(pergunta)) {
-        if (statsGlobais.mediaDiaria === 0) {
-            resposta = "Não há queima de caixa (saídas) suficiente para calcular o seu Burn Rate diário.";
-        } else {
-            const gastoEstimado = statsGlobais.mediaDiaria * 30;
-            resposta = `A matemática não mente: sua velocidade atual de queima é de <b>${formatarMoeda(statsGlobais.mediaDiaria)} por dia</b>.<br><br>Se você não mudar o ritmo, a projeção é que você feche 30 dias gastando <b>${formatarMoeda(gastoEstimado)}</b>. Esse valor cabe na sua receita atual?`;
-        }
-    }
-    // 5. Intenção: RESUMO / STATUS
-    else if (/(resumo|relatório|relatorio|status|como estou|balanço)/.test(pergunta)) {
-        resposta = `Aqui está o seu raio-x do período:<br><br>🟢 Entradas: <b>${formatarMoeda(statsGlobais.receitas)}</b><br>🔴 Saídas: <b>${formatarMoeda(statsGlobais.despesas)}</b><br>⚖️ Saldo: <b class="${statsGlobais.saldo < 0 ? 'text-rose-500' : 'text-emerald-500'}">${formatarMoeda(statsGlobais.saldo)}</b><br><br>Sua margem de segurança atual é de ${statsGlobais.taxaPoupanca.toFixed(1)}%.`;
-    }
-    // 6. Intenção: SAUDAÇÃO
-    else if (/(oi|olá|ola|boa tarde|bom dia|boa noite|fala ai)/.test(pergunta)) {
-        resposta = "Olá! Pode me perguntar qualquer coisa sobre os seus gastos, saúde da carteira ou previsões. Como posso te ajudar hoje?";
-    }
-    // FALLBACK: O Robô tenta ser útil mesmo se não entender a pergunta específica
-    else {
-        resposta = `Eu ainda estou aprendendo a conversar, mas olhando seus números, notei que sua margem é de ${statsGlobais.taxaPoupanca.toFixed(1)}%. <br><br>Você pode me perguntar diretamente: <i>"Estou em perigo?"</i> ou <i>"Onde gastei mais?"</i>`;
-    }
+    // 2. O RAG (Geração Aumentada por Recuperação) - O Contexto Invisível
+    const promptDeSistema = `
+Você é o Consultor IA do DataWallet, um aplicativo financeiro de elite.
+Sua postura é profissional, direta, inteligente e encorajadora (estilo Faria Lima/Wall Street).
+Sempre formate sua resposta em HTML limpo para a tela (use <b>, <i>, e <br> para pular linhas). NÃO use Markdown como ** ou *.
 
-    // Processa os 'bolds' em markdown para HTML antes de imprimir
-    resposta = resposta.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+AQUI ESTÃO OS DADOS REAIS DO USUÁRIO NESTE EXATO MOMENTO:
+- Total Captado (Entradas): R$ ${statsGlobais.receitas}
+- Total Queimado (Saídas): R$ ${statsGlobais.despesas}
+- Saldo Líquido do Período: R$ ${statsGlobais.saldo}
+- Taxa de Retenção (Poupança): ${statsGlobais.taxaPoupanca.toFixed(1)}%
+- Velocidade de Queima (Média Diária): R$ ${statsGlobais.mediaDiaria.toFixed(2)} / dia
+- Centro de custo mais oneroso: ${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'Nenhum'} (R$ ${statsGlobais.topCategoria ? statsGlobais.topCategoria.valor : 0})
+- Maior gasto isolado: ${statsGlobais.maiorGasto.descricao} (R$ ${statsGlobais.maiorGasto.valor})
 
-    adicionarMensagemNoChat(resposta, false);
+REGRA DE OURO: Responda à pergunta do usuário baseando-se EXCLUSIVAMENTE nos dados acima. Se a taxa de poupança for menor que 0, alerte sobre a queima de caixa. Se for maior que 20%, elogie a segurança.
+    `;
+
+    // 3. O Pacote (Payload) que será enviado aos servidores do Google
+    const payload = {
+        contents: [{
+            parts: [
+                { text: promptDeSistema + "\n\nPergunta do usuário: " + pergunta }
+            ]
+        }]
+    };
+
+    try {
+        // 4. A Chamada Fetch (O Motoboy indo até a API)
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        
+        const respostaDaNuvem = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        // 5. Tratamento de Erros da API
+        if (!respostaDaNuvem.ok) {
+            throw new Error("Falha na comunicação com o servidor cerebral.");
+        }
+
+        // 6. Decodificando a resposta do Google
+        const dados = await respostaDaNuvem.json();
+        const textoRespostaIA = dados.candidates[0].content.parts[0].text;
+
+        // 7. Renderizando a inteligência na tela
+        document.getElementById('coach-typing')?.remove();
+        adicionarMensagemNoChat(textoRespostaIA, false);
+
+    } catch (erro) {
+        console.error(erro);
+        document.getElementById('coach-typing')?.remove();
+        adicionarMensagemNoChat("<b>Erro de Conexão:</b> Os servidores da IA estão inacessíveis no momento. Verifique sua chave de API ou conexão de rede.", false);
+    }
 }
