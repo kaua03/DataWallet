@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - MOTOR DE INÍCIO, CRUD E NLP
+// movimentacoes.js - MOTOR DE INÍCIO, CRUD E NLP SEMÂNTICO
 // ==========================================
 
 let usuarioLogado = null;
@@ -9,6 +9,11 @@ let categoriasGlobais = [];
 document.addEventListener('DOMContentLoaded', async () => {
     usuarioLogado = await verificarSessaoSegura();
     if (!usuarioLogado) return; 
+
+    // Adiciona escuta da tecla Enter no input
+    document.getElementById('input-magico').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') processarFrase();
+    });
 
     await carregarDadosDoBanco();
 });
@@ -23,7 +28,6 @@ async function carregarDadosDoBanco() {
         transacoesGlobais = resTrans.data || [];
         categoriasGlobais = resCat.data || [];
 
-        // Preenche o Select do Modal para a hora de editar/criar
         const selectCat = document.getElementById('modal-cat');
         selectCat.innerHTML = categoriasGlobais.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
 
@@ -79,7 +83,6 @@ function renderizarInterface() {
             <div class="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto pl-16 sm:pl-0">
                 <p class="${corTxt} font-black text-lg shrink-0">${sinal} ${formatarMoeda(t.valor)}</p>
                 
-                <!-- BOTÕES DE AÇÃO: Editar e Excluir -->
                 <div class="flex gap-2">
                     <button onclick="abrirModalEdicao(${t.id})" class="w-8 h-8 rounded-full bg-gray-50 border border-gray-200 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition flex items-center justify-center" title="Editar">
                         <i class="fa-solid fa-pen text-xs"></i>
@@ -101,100 +104,102 @@ function renderizarInterface() {
 }
 
 // ---------------------------------------------
-// MICROFONE BLINDADO
+// O CÉREBRO NLP PADRONIZADOR
 // ---------------------------------------------
-function ativarMicrofone() {
-    try {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        
-        if (!SpeechRecognition) {
-            return alert("Seu navegador não suporta microfone. Tente usar o Google Chrome ou Safari atualizado.");
-        }
-        
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'pt-BR';
-        
-        const btnMic = document.getElementById('btn-mic');
-        const iconeAntigo = btnMic.innerHTML;
-        
-        btnMic.innerHTML = '<i class="fa-solid fa-microphone-lines fa-beat text-red-500"></i>';
+// Esse banco de dados de IA cruza palavras com Títulos e Pastas
+const dicionarioDeInteligencia = [
+    { pasta: 'alimentação', regras: [
+        { titulo: 'Delivery', palavras: ['ifood', 'delivery', 'rappi', 'zedelivery'] },
+        { titulo: 'Fast Food', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado'] },
+        { titulo: 'Mercado', palavras: ['mercado', 'supermercado', 'açougue', 'padaria', 'compra do mês'] },
+        { titulo: 'Restaurante', palavras: ['restaurante', 'almoço', 'jantar', 'comida'] }
+    ]},
+    { pasta: 'veículo', regras: [
+        { titulo: 'Combustível', palavras: ['gasolina', 'álcool', 'alcool', 'etanol', 'diesel', 'posto', 'combustível', 'combustivel'] },
+        { titulo: 'Manutenção / Peças', palavras: ['oficina', 'mecânico', 'peça', 'pneu', 'óleo', 'revisão'] },
+        { titulo: 'Serviços Auto', palavras: ['estacionamento', 'pedágio', 'lavagem', 'lava rápido'] },
+        { titulo: 'Transporte', palavras: ['uber', '99', 'ônibus', 'passagem', 'metrô'] }
+    ]},
+    { pasta: 'moradia', regras: [
+        { titulo: 'Aluguel', palavras: ['aluguel'] },
+        { titulo: 'Conta de Luz', palavras: ['luz', 'energia', 'cpfl', 'cemig', 'enel'] },
+        { titulo: 'Conta de Água', palavras: ['água', 'sabesp', 'sanepar', 'copasa'] },
+        { titulo: 'Internet', palavras: ['internet', 'vivo', 'claro', 'tim', 'fibra'] },
+        { titulo: 'Manutenção da Casa', palavras: ['reparo', 'faxina', 'limpeza', 'material de construção'] }
+    ]},
+    { pasta: 'estudo', regras: [
+        { titulo: 'Mensalidade', palavras: ['faculdade', 'escola', 'mensalidade'] },
+        { titulo: 'Cursos', palavras: ['curso', 'certificado', 'prova'] },
+        { titulo: 'Material Didático', palavras: ['livro', 'caderno', 'material'] }
+    ]},
+    { pasta: 'saúde', regras: [
+        { titulo: 'Remédios', palavras: ['farmácia', 'remédio', 'medicamento'] },
+        { titulo: 'Consultas Médicas', palavras: ['médico', 'consulta', 'exame', 'dentista', 'terapia', 'psicólogo'] },
+        { titulo: 'Imprevisto', palavras: ['imprevisto', 'acidente', 'pronto socorro'] }
+    ]},
+    { pasta: 'lazer', regras: [
+        { titulo: 'Jogos', palavras: ['jogo', 'steam', 'xbox', 'playstation', 'game'] },
+        { titulo: 'Passeio', palavras: ['cinema', 'festa', 'shopping', 'bar', 'show', 'viagem', 'ingresso'] },
+        { titulo: 'Compras Pessoais', palavras: ['roupa', 'presente', 'tênis', 'perfume'] }
+    ]},
+    { pasta: 'assinaturas', regras: [
+        { titulo: 'Streaming', palavras: ['netflix', 'spotify', 'amazon', 'prime', 'disney', 'hbo'] },
+        { titulo: 'Serviços Recorrentes', palavras: ['assinatura', 'gympass', 'academia'] }
+    ]}
+];
 
-        recognition.onresult = (event) => {
-            const transcricao = event.results[0][0].transcript;
-            document.getElementById('input-magico').value = transcricao;
-            processarFrase(); 
-        };
-
-        recognition.onerror = (e) => {
-            console.error("Erro no mic:", e);
-            if (e.error === 'not-allowed') alert("Permissão do microfone negada. Autorize no cadeado ao lado da URL.");
-            btnMic.innerHTML = iconeAntigo;
-        };
-
-        recognition.onend = () => {
-            btnMic.innerHTML = iconeAntigo;
-        };
-
-        recognition.start();
-    } catch (err) {
-        alert("Falha ao iniciar o microfone.");
-    }
-}
-
-// ---------------------------------------------
-// O CÉREBRO NLP EXPANDIDO
-// ---------------------------------------------
-function inferirCategoria(texto, isReceita) {
+// O Motor que processa e devolve a Pasta Exata e o Título Perfeito
+function inferirCategoriaETitulo(texto, isReceita) {
     texto = texto.toLowerCase();
 
     if (isReceita) {
-        const catRenda = categoriasGlobais.find(c => c.nome.toLowerCase().includes('renda') || c.nome.toLowerCase().includes('salário'));
-        return catRenda ? catRenda : null;
+        const catRenda = categoriasGlobais.find(c => c.nome.toLowerCase().includes('renda'));
+        return { 
+            categoria: catRenda, 
+            titulo: texto.includes('salário') || texto.includes('salario') ? 'Salário' : 'Recebimento' 
+        };
     }
 
-    const dicionario = {
-        'alimentação': ['ifood', 'mercado', 'comida', 'lanche', 'pizza', 'padaria', 'restaurante', 'hamburguer', 'supermercado', 'açougue', 'coxinha'],
-        'veículo': ['uber', 'gasolina', 'posto', 'carro', 'moto', 'oficina', 'estacionamento', 'passagem', 'ônibus', 'pedágio', 'mecânico', 'combustível', 'combustivel', 'álcool', 'alcool', 'etanol', 'diesel', 'pneu'],
-        'moradia': ['aluguel', 'luz', 'água', 'internet', 'casa', 'condomínio', 'reparo', 'energia', 'iptu', 'faxina', 'limpeza'],
-        'estudo': ['faculdade', 'curso', 'livro', 'escola', 'certificado', 'prova', 'material', 'aula', 'mensalidade'],
-        'saúde': ['farmácia', 'remédio', 'médico', 'hospital', 'consulta', 'dentista', 'imprevisto', 'exame', 'terapia', 'psicólogo'],
-        'lazer': ['jogo', 'cinema', 'festa', 'roupa', 'shopping', 'bar', 'presente', 'viagem', 'ingresso', 'steam', 'xbox', 'playstation', 'sorvete', 'show'],
-        'assinaturas': ['netflix', 'spotify', 'amazon', 'prime', 'assinatura', 'gympass', 'academia']
-    };
-
-    for (const [chaveCat, palavras] of Object.entries(dicionario)) {
-        if (palavras.some(palavra => texto.includes(palavra))) {
-            const catEncontrada = categoriasGlobais.find(c => c.nome.toLowerCase().includes(chaveCat));
-            if (catEncontrada) return catEncontrada;
+    // Varre o cérebro
+    for (const d of dicionarioDeInteligencia) {
+        for (const regra of d.regras) {
+            if (regra.palavras.some(palavra => texto.includes(palavra))) {
+                const catDb = categoriasGlobais.find(c => c.nome.toLowerCase().includes(d.pasta));
+                return { categoria: catDb, titulo: regra.titulo };
+            }
         }
     }
 
+    // Se ele não entender o que a pessoa comprou, ele apenas limpa os verbos inúteis e joga pra "Lazer & Pessoal"
+    let descLimpa = texto.split(' ')[0] || 'Registro';
+    const arrTexto = texto.split(' ');
+    if (['comprei', 'gastei', 'paguei', 'botei'].includes(descLimpa) && arrTexto.length > 1) {
+        descLimpa = arrTexto[1];
+    }
+    descLimpa = descLimpa.charAt(0).toUpperCase() + descLimpa.slice(1);
+
     const catFallback = categoriasGlobais.find(c => c.nome.toLowerCase().includes('lazer'));
-    return catFallback ? catFallback : null;
+    return { categoria: catFallback, titulo: descLimpa };
 }
 
 // ---------------------------------------------
-// LÓGICA DO MODAL (Criar e Editar)
+// CONTROLE DO MODAL DE EDIÇÃO E CADASTRO
 // ---------------------------------------------
+// ESSA FUNÇÃO RESOLVE O SUMIÇO DOS BOTÕES: Reescreve toda a classe CSS a cada clique
 function atualizarCoresTipoModal() {
     const isReceita = document.querySelector('input[name="modal-tipo"][value="receita"]').checked;
     const btnDespesa = document.getElementById('btn-tipo-despesa');
     const btnReceita = document.getElementById('btn-tipo-receita');
 
     if (isReceita) {
-        btnReceita.classList.replace('text-gray-500', 'text-green-600');
-        btnReceita.classList.replace('border-gray-200', 'border-green-600');
-        btnDespesa.classList.replace('text-red-600', 'text-gray-500');
-        btnDespesa.classList.replace('border-red-600', 'border-gray-200');
+        btnReceita.className = "border-2 border-green-500 bg-green-50 text-green-600 rounded-xl p-3 flex justify-center items-center gap-2 font-bold text-sm transition-all";
+        btnDespesa.className = "border-2 border-gray-200 bg-gray-50 text-gray-400 rounded-xl p-3 flex justify-center items-center gap-2 font-bold text-sm transition-all hover:bg-gray-100";
     } else {
-        btnDespesa.classList.replace('text-gray-500', 'text-red-600');
-        btnDespesa.classList.replace('border-gray-200', 'border-red-600');
-        btnReceita.classList.replace('text-green-600', 'text-gray-500');
-        btnReceita.classList.replace('border-green-600', 'border-gray-200');
+        btnDespesa.className = "border-2 border-red-500 bg-red-50 text-red-600 rounded-xl p-3 flex justify-center items-center gap-2 font-bold text-sm transition-all";
+        btnReceita.className = "border-2 border-gray-200 bg-gray-50 text-gray-400 rounded-xl p-3 flex justify-center items-center gap-2 font-bold text-sm transition-all hover:bg-gray-100";
     }
 }
 
-// NOVA TRANSAÇÃO
 function processarFrase() {
     const input = document.getElementById('input-magico').value;
     if(!input) return alert("Digite algo para registrar.");
@@ -203,33 +208,27 @@ function processarFrase() {
     const nums = textoLower.match(/\d+(?:[.,]\d+)?/g);
     const val = nums ? Math.max(...nums.map(n => parseFloat(n.replace(',', '.')))) : 0;
     
-    const palavrasReceita = ['recebi', 'ganhei', 'pix', 'salário', 'salario', 'renda', 'vendi', 'depósito'];
-    const isReceita = palavrasReceita.some(p => textoLower.includes(p));
+    const isReceita = ['recebi', 'ganhei', 'pix', 'salário', 'salario', 'renda', 'vendi', 'depósito'].some(p => textoLower.includes(p));
 
-    const categoriaDetectada = inferirCategoria(textoLower, isReceita);
-
-    let descLimpa = input.split(' ')[0] || 'Registro';
-    if (['comprei', 'gastei', 'paguei', 'recebi', 'botei', 'coloquei'].includes(descLimpa.toLowerCase()) && input.split(' ').length > 1) {
-        descLimpa = input.split(' ')[1];
-    }
-    const tituloOficial = descLimpa.charAt(0).toUpperCase() + descLimpa.slice(1);
+    // A MÁGICA: Extrai a Pasta e o Título Bonito ("Combustível" em vez de "gasolina")
+    const inferencia = inferirCategoriaETitulo(textoLower, isReceita);
 
     document.getElementById('modal-id').value = ''; 
     document.getElementById('modal-titulo').innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-blue-600"></i> ${isReceita ? 'Registrar Entrada' : 'Registrar Saída'}`;
-    document.getElementById('modal-desc').value = tituloOficial;
+    
+    // Injeta o Título Padronizado no Form
+    document.getElementById('modal-desc').value = inferencia.titulo;
     document.getElementById('modal-valor').value = val;
     document.getElementById('modal-data').value = new Date().toISOString().split('T')[0];
     
-    if (categoriaDetectada) document.getElementById('modal-cat').value = categoriaDetectada.id;
+    if (inferencia.categoria) document.getElementById('modal-cat').value = inferencia.categoria.id;
 
     document.querySelector(`input[name="modal-tipo"][value="${isReceita ? 'receita' : 'despesa'}"]`).checked = true;
     atualizarCoresTipoModal();
 
-    // ID CORRETO: modal-transacao
     document.getElementById('modal-transacao').classList.remove('hidden');
 }
 
-// EDIÇÃO DE TRANSAÇÃO
 function abrirModalEdicao(id) {
     const t = transacoesGlobais.find(x => x.id === id);
     if(!t) return;
@@ -244,16 +243,13 @@ function abrirModalEdicao(id) {
     document.querySelector(`input[name="modal-tipo"][value="${t.tipo}"]`).checked = true;
     atualizarCoresTipoModal();
 
-    // ID CORRETO: modal-transacao
     document.getElementById('modal-transacao').classList.remove('hidden');
 }
 
 function fecharModal() { 
-    // ID CORRETO: modal-transacao
     document.getElementById('modal-transacao').classList.add('hidden'); 
 }
 
-// SALVAR (Insert ou Update)
 async function salvarTransacaoFinal() {
     const id = document.getElementById('modal-id').value;
     const desc = document.getElementById('modal-desc').value.trim();
@@ -295,16 +291,33 @@ async function salvarTransacaoFinal() {
     }
 }
 
-// EXCLUIR
 async function excluirTransacao(id) {
     if(!confirm("Tem certeza que deseja excluir este lançamento?")) return;
-
     try {
-        const { error } = await supabaseClient.from('transacoes').delete().eq('id', id).eq('usuario_id', usuarioLogado.id);
-        if (error) throw error;
-        
+        await supabaseClient.from('transacoes').delete().eq('id', id).eq('usuario_id', usuarioLogado.id);
         await carregarDadosDoBanco();
-    } catch(e) {
-        alert("Erro ao excluir: " + e.message);
-    }
+    } catch(e) { alert("Erro ao excluir: " + e.message); }
+}
+
+function ativarMicrofone() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return alert("Seu navegador/celular não suporta microfone nativo.");
+    
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'pt-BR';
+    const btnMic = document.getElementById('btn-mic');
+    const iconeAntigo = btnMic.innerHTML;
+    
+    btnMic.innerHTML = '<i class="fa-solid fa-microphone-lines fa-beat text-red-500"></i>';
+
+    recognition.onresult = (event) => {
+        const transcricao = event.results[0][0].transcript;
+        document.getElementById('input-magico').value = transcricao;
+        processarFrase(); 
+    };
+
+    recognition.onerror = () => { btnMic.innerHTML = iconeAntigo; };
+    recognition.onend = () => { btnMic.innerHTML = iconeAntigo; };
+
+    recognition.start();
 }
