@@ -1,163 +1,415 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Passivos - DataWallet</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js" defer></script>
-    <script src="dividas.js" defer></script>
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        
-        .fade-in { animation: fadeIn 0.4s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .kanban-board::-webkit-scrollbar { display: none; }
-        .kanban-board { scrollbar-width: none; } 
-        
-        .coluna-scroll::-webkit-scrollbar { width: 4px; }
-        .coluna-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        
-        .cursor-grab { cursor: grab; }
-        .cursor-grabbing { cursor: grabbing; }
+// ==========================================
+// dividas.js - MOTOR KANBAN DE PASSIVOS SÊNIOR (4 COLUNAS)
+// ==========================================
 
-        .coluna-minimizada { width: 64px !important; min-width: 64px !important; cursor: pointer; transition: all 0.3s ease; }
-        .coluna-minimizada .esconder-no-min { display: none !important; }
-        .coluna-minimizada .mostrar-no-min { display: flex !important; }
-    </style>
-</head>
-<body class="bg-slate-50 text-slate-800 h-screen overflow-hidden flex relative fade-in">
+let usuarioLogado = null;
+let transacoesGlobais = [];
+let categoriasGlobais = [];
 
-    <!-- MENU LATERAL (PC) -->
-    <aside class="hidden md:flex flex-col w-64 bg-white border-r border-slate-200/60 p-6 h-full shadow-lg z-20 shrink-0">
-        <div class="flex items-center gap-3 mb-10">
-            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-indigo-600/30">
-                <i class="fa-solid fa-wallet text-xl"></i>
-            </div>
-            <h2 class="text-2xl font-black text-slate-900 tracking-tight">DataWallet</h2>
-        </div>
-        
-        <nav class="flex-1 space-y-2">
-            <a href="movimentacoes.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition"><i class="fa-solid fa-money-bill-transfer w-5"></i> Movimentações</a>
-            <a href="dashboard.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition"><i class="fa-solid fa-chart-pie w-5"></i> Dashboard</a>
-            <a href="dividas.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold bg-indigo-50 text-indigo-700 transition"><i class="fa-solid fa-file-invoice-dollar w-5"></i> Dívidas</a>
-            <a href="categorias.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition"><i class="fa-solid fa-tags w-5"></i> Categorias</a>
-            <a href="planos.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition"><i class="fa-solid fa-bullseye w-5"></i> Metas</a>
-        </nav>
-        <button onclick="sairDoSistema()" class="flex items-center gap-3 p-3 rounded-xl font-bold text-rose-500 hover:bg-rose-50 transition mt-auto"><i class="fa-solid fa-right-from-bracket w-5"></i> Sair</button>
-    </aside>
+document.addEventListener('DOMContentLoaded', async () => {
+    usuarioLogado = await verificarSessaoSegura();
+    if (!usuarioLogado) return; 
 
-    <main class="flex-1 h-full flex flex-col relative bg-slate-50 overflow-hidden">
+    document.getElementById('divida-data').value = new Date().toISOString().split('T')[0];
+    await carregarDadosDoBanco();
+    iniciarDragToScroll(); 
+});
+
+// ==========================================
+// MOTOR UX: DRAG TO SCROLL 
+// ==========================================
+function iniciarDragToScroll() {
+    const slider = document.getElementById('container-scroll');
+    if(!slider) return;
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+
+    slider.addEventListener('mousedown', (e) => {
+        isDown = true;
+        slider.classList.add('cursor-grabbing');
+        slider.classList.remove('cursor-grab');
+        startX = e.pageX - slider.offsetLeft;
+        scrollLeft = slider.scrollLeft;
+    });
+    slider.addEventListener('mouseleave', () => {
+        isDown = false;
+        slider.classList.remove('cursor-grabbing');
+        slider.classList.add('cursor-grab');
+    });
+    slider.addEventListener('mouseup', () => {
+        isDown = false;
+        slider.classList.remove('cursor-grabbing');
+        slider.classList.add('cursor-grab');
+    });
+    slider.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - slider.offsetLeft;
+        const walk = (x - startX) * 1.5; 
+        slider.scrollLeft = scrollLeft - walk;
+    });
+}
+
+// ==========================================
+// FORMATAÇÃO E MÁSCARAS
+// ==========================================
+function aplicarMascaraMoeda(input) {
+    let valor = input.value.replace(/\D/g, ''); 
+    if (valor === '') { input.value = ''; return; }
+    valor = (parseInt(valor) / 100).toFixed(2) + '';
+    valor = valor.replace(".", ",");
+    valor = valor.replace(/(\d)(\d{3})(\d{3}),/g, "$1.$2.$3,");
+    valor = valor.replace(/(\d)(\d{3}),/g, "$1.$2,");
+    input.value = valor;
+}
+
+function desmascararMoeda(str) {
+    if (!str) return 0;
+    return parseFloat(str.replace(/\./g, '').replace(',', '.'));
+}
+
+// ==========================================
+// NÚCLEO DE DADOS
+// ==========================================
+async function carregarDadosDoBanco() {
+    try {
+        const [rTrans, rCat] = await Promise.all([
+            supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).eq('tipo', 'despesa').order('data_vencimento', { ascending: true }),
+            supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
+        ]);
+
+        transacoesGlobais = rTrans.data || [];
+        categoriasGlobais = rCat.data || [];
+
+        const selectCat = document.getElementById('divida-categoria');
+        selectCat.innerHTML = '<option value="" disabled selected>Selecione uma pasta...</option>' + 
+            categoriasGlobais.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+
+        processarEAtualizarKanban();
+
+    } catch (e) { console.error("Erro ao puxar dados:", e.message); }
+}
+
+function processarEAtualizarKanban() {
+    const hojeData = new Date();
+    hojeData.setHours(0, 0, 0, 0); 
+    
+    const mesAtual = hojeData.getMonth();
+    const anoAtual = hojeData.getFullYear();
+
+    // Inicia as 4 Colunas Fixas
+    const agrupamentos = {
+        'Atrasadas': [],
+        'Este Mês': [],
+        'Próximos Meses': [],
+        'Histórico de Pagas': []
+    };
+    
+    let totAtrasadas = 0, totMes = 0, totFuturo = 0, totPagas = 0;
+
+    transacoesGlobais.forEach(t => {
+        if (!t.data_vencimento) return; 
         
-        <header class="p-6 md:p-8 pb-2 shrink-0 w-full">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm mb-4">
-                <div>
-                    <h2 class="text-2xl font-black text-slate-900 flex items-center gap-3">
-                        <i class="fa-solid fa-file-invoice-dollar text-indigo-600"></i> Gestão de Passivos
-                    </h2>
-                    <p class="text-xs font-medium text-slate-500 mt-1">Acompanhamento de contas a pagar e parcelamentos</p>
+        const isPago = t.pago === true; 
+
+        if (isPago) {
+            totPagas += t.valor;
+            agrupamentos['Histórico de Pagas'].push(t);
+            return; 
+        }
+
+        const dVenc = new Date(t.data_vencimento + 'T12:00:00Z');
+        dVenc.setHours(0, 0, 0, 0);
+        
+        const mesVenc = dVenc.getMonth();
+        const anoVenc = dVenc.getFullYear();
+
+        if (dVenc < hojeData) {
+            agrupamentos['Atrasadas'].push(t);
+            totAtrasadas += t.valor;
+        } 
+        else if (mesVenc === mesAtual && anoVenc === anoAtual) {
+            agrupamentos['Este Mês'].push(t);
+            totMes += t.valor;
+        } 
+        else {
+            agrupamentos['Próximos Meses'].push(t);
+            totFuturo += t.valor;
+        }
+    });
+
+    document.getElementById('kpi-atrasadas').innerText = formatarMoeda(totAtrasadas);
+    document.getElementById('kpi-mes').innerText = formatarMoeda(totMes);
+    document.getElementById('kpi-futuro').innerText = formatarMoeda(totFuturo);
+    document.getElementById('kpi-pagas').innerText = formatarMoeda(totPagas);
+
+    renderizarColunas(agrupamentos);
+}
+
+// ---------------------------------------------
+// RENDERIZAÇÃO DO HTML
+// ---------------------------------------------
+function renderizarColunas(agrupamentos) {
+    const board = document.getElementById('board-dividas');
+    let html = '';
+
+    const mesesExtenso = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const ordemColunas = ['Atrasadas', 'Este Mês', 'Próximos Meses', 'Histórico de Pagas'];
+
+    ordemColunas.forEach(nomeColuna => {
+        const transacoesDaColuna = agrupamentos[nomeColuna];
+        const somaColuna = transacoesDaColuna.reduce((acc, t) => acc + t.valor, 0);
+        
+        let config = { icon: 'fa-calendar-day', titleColor: 'slate-600', badgeColor: 'bg-slate-200 text-slate-600' };
+        
+        if (nomeColuna === 'Atrasadas') config = { icon: 'fa-circle-exclamation', titleColor: 'rose-600', badgeColor: 'bg-rose-100 text-rose-600' };
+        if (nomeColuna === 'Este Mês') config = { icon: 'fa-calendar-check', titleColor: 'indigo-600', badgeColor: 'bg-indigo-100 text-indigo-600' };
+        if (nomeColuna === 'Próximos Meses') config = { icon: 'fa-forward-fast', titleColor: 'slate-500', badgeColor: 'bg-slate-200 text-slate-600' };
+        if (nomeColuna === 'Histórico de Pagas') config = { icon: 'fa-check-double', titleColor: 'emerald-600', badgeColor: 'bg-emerald-100 text-emerald-600' };
+
+        const idColunaSanitizado = 'col_' + nomeColuna.replace(/\s+/g, '').replace(/\//g, '');
+
+        let cardsHtml = '';
+        if (transacoesDaColuna.length === 0) {
+            cardsHtml = `<div class="text-center py-8 opacity-50"><i class="fa-solid fa-wind text-2xl text-slate-300 mb-2"></i><p class="text-[10px] font-bold text-slate-400 uppercase">Tudo Limpo</p></div>`;
+        } else {
+            let mesAnoCorrente = ''; 
+
+            cardsHtml = transacoesDaColuna.map(d => {
+                const isPago = d.pago === true;
+                const dVencObj = new Date(d.data_vencimento + 'T12:00:00Z');
+                const dataStr = dVencObj.toLocaleDateString('pt-BR');
+                const mesAnoAtualDoCard = `${mesesExtenso[dVencObj.getMonth()]} ${dVencObj.getFullYear()}`;
+                
+                let htmlDivisor = '';
+
+                // O Divisor Mágico atua no Futuro e no Passado
+                if ((nomeColuna === 'Próximos Meses' || nomeColuna === 'Histórico de Pagas') && mesAnoAtualDoCard !== mesAnoCorrente) {
+                    htmlDivisor = `
+                    <div class="flex items-center gap-3 mt-6 mb-3 first:mt-1">
+                        <div class="h-px bg-slate-200/80 flex-1"></div>
+                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${mesAnoAtualDoCard}</span>
+                        <div class="h-px bg-slate-200/80 flex-1"></div>
+                    </div>`;
+                    mesAnoCorrente = mesAnoAtualDoCard;
+                }
+                
+                const btnAcao = isPago 
+                    ? `<button onclick="alterarStatusPagamento(${d.id}, false)" title="Desfazer" class="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center shadow-sm"><i class="fa-solid fa-rotate-left"></i></button>`
+                    : `<button onclick="alterarStatusPagamento(${d.id}, true)" title="Quitar" class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white transition flex items-center justify-center shadow-sm"><i class="fa-solid fa-check"></i></button>`;
+
+                const classeTraco = isPago ? 'line-through text-slate-400' : 'text-slate-800';
+                const corData = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-500' : 'text-slate-400';
+                const corValor = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-600' : 'text-slate-900';
+
+                const cardHtmlCru = `
+                <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-all group">
+                    <div class="flex justify-between items-start gap-3 mb-4">
+                        <h4 class="font-bold text-xs ${classeTraco} leading-tight break-all mt-0.5">${d.descricao}</h4>
+                        <span class="font-black text-sm ${corValor} whitespace-nowrap">${formatarMoeda(d.valor)}</span>
+                    </div>
+                    <div class="flex items-center justify-between mt-auto">
+                        <div class="flex items-center gap-1.5 text-[11px] font-bold ${corData}">
+                            <i class="fa-regular fa-calendar"></i> <span>${dataStr}</span>
+                        </div>
+                        
+                        <div class="flex items-center gap-1">
+                            <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="abrirModalEdicao(${d.id})" title="Editar" class="w-7 h-7 rounded bg-slate-50 text-slate-400 hover:bg-indigo-500 hover:text-white transition flex items-center justify-center"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                                <button onclick="excluirDivida(${d.id})" title="Excluir" class="w-7 h-7 rounded bg-slate-50 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center mr-1"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                            </div>
+                            ${btnAcao}
+                        </div>
+                    </div>
+                </div>`;
+
+                return htmlDivisor + cardHtmlCru;
+            }).join('');
+        }
+
+        html += `
+        <div id="${idColunaSanitizado}" class="w-[340px] shrink-0 bg-slate-100/50 rounded-2xl border border-slate-200/60 flex flex-col max-h-full transition-all duration-300">
+            
+            <div onclick="toggleColuna('${idColunaSanitizado}')" class="p-4 border-b border-slate-200/80 flex justify-between items-center bg-white rounded-t-2xl shrink-0 cursor-pointer hover:bg-slate-50 transition relative">
+                <div class="esconder-no-min flex items-center gap-2">
+                    <i class="fa-solid ${config.icon} text-${config.titleColor}"></i>
+                    <h3 class="font-bold text-${config.titleColor} text-sm">${nomeColuna}</h3>
                 </div>
                 
-                <div class="flex items-center gap-3 w-full md:w-auto">
-                    <!-- BOTÃO "VER PAGAS" REMOVIDO PARA DAR LUGAR AO FLUXO CONTÍNUO -->
-                    <button onclick="abrirModalNovaDivida()" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-5 rounded-xl shadow-md shadow-indigo-600/20 transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-plus"></i> Novo Lançamento
-                    </button>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="bg-white p-4 rounded-xl border border-rose-200/60 shadow-sm relative overflow-hidden">
-                    <div class="absolute -right-4 -top-4 w-12 h-12 bg-rose-50 rounded-full"></div>
-                    <p class="text-[10px] text-rose-500 font-bold uppercase tracking-wider mb-1 relative z-10">Atrasadas</p>
-                    <p class="text-xl md:text-2xl font-black text-slate-900 truncate relative z-10" id="kpi-atrasadas">R$ 0,00</p>
-                </div>
-                <div class="bg-white p-4 rounded-xl border border-indigo-200/60 shadow-sm relative overflow-hidden">
-                    <div class="absolute -right-4 -top-4 w-12 h-12 bg-indigo-50 rounded-full"></div>
-                    <p class="text-[10px] text-indigo-500 font-bold uppercase tracking-wider mb-1 relative z-10">Este Mês</p>
-                    <p class="text-xl md:text-2xl font-black text-slate-900 truncate relative z-10" id="kpi-mes">R$ 0,00</p>
-                </div>
-                <div class="bg-white p-4 rounded-xl border border-slate-200/60 shadow-sm relative overflow-hidden">
-                    <div class="absolute -right-4 -top-4 w-12 h-12 bg-slate-50 rounded-full"></div>
-                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1 relative z-10">Total Futuro</p>
-                    <p class="text-xl md:text-2xl font-black text-slate-400 truncate relative z-10" id="kpi-futuro">R$ 0,00</p>
-                </div>
-                <div class="bg-white p-4 rounded-xl border border-emerald-200/60 shadow-sm relative overflow-hidden">
-                    <div class="absolute -right-4 -top-4 w-12 h-12 bg-emerald-50 rounded-full"></div>
-                    <p class="text-[10px] text-emerald-500 font-bold uppercase tracking-wider mb-1 relative z-10">Total Quitado</p>
-                    <p class="text-xl md:text-2xl font-black text-emerald-600 truncate relative z-10" id="kpi-pagas">R$ 0,00</p>
-                </div>
-            </div>
-        </header>
-
-        <section class="flex-1 overflow-y-hidden overflow-x-auto p-6 md:p-8 pt-2 pb-28 md:pb-8 kanban-board cursor-grab" id="container-scroll">
-            <div id="board-dividas" class="flex gap-6 h-full items-start w-max">
-                <div class="w-full text-center mt-20 text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl"></i> Montando colunas...</div>
-            </div>
-        </section>
-    </main>
-
-    <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t border-slate-200 px-4 py-2 flex justify-between items-center z-40">
-        <a href="movimentacoes.html" class="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition p-2"><i class="fa-solid fa-money-bill-transfer text-lg mb-1"></i><span class="text-[10px] font-bold">Movimentar</span></a>
-        <a href="dashboard.html" class="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition p-2"><i class="fa-solid fa-chart-pie text-lg mb-1"></i><span class="text-[10px] font-bold">Dashboard</span></a>
-        <a href="dividas.html" class="flex flex-col items-center text-indigo-600 transition p-2"><i class="fa-solid fa-file-invoice-dollar text-lg mb-1"></i><span class="text-[10px] font-bold">Dívidas</span></a>
-        <a href="categorias.html" class="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition p-2"><i class="fa-solid fa-tags text-lg mb-1"></i><span class="text-[10px] font-bold">Categorias</span></a>
-        <a href="planos.html" class="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition p-2"><i class="fa-solid fa-bullseye text-lg mb-1"></i><span class="text-[10px] font-bold">Metas</span></a>
-    </nav>
-
-    <!-- MODAL HÍBRIDO -->
-    <div id="modal-divida" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center fade-in p-4">
-        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 relative">
-            <button onclick="fecharModalNovaDivida()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
-            
-            <h3 id="modal-titulo" class="text-xl font-black text-slate-900 mb-1"><i class="fa-solid fa-file-signature text-indigo-500"></i> Lançar Contas</h3>
-            <p id="modal-subtitulo" class="text-xs text-slate-500 mb-6 font-medium">Contas ou parcelamentos lançados aqui entram como "Pendentes".</p>
-            
-            <form id="form-divida" onsubmit="salvarDivida(event)" class="space-y-4">
-                <input type="hidden" id="divida-id">
-
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Descrição / Nome</label>
-                    <input type="text" id="divida-desc" required placeholder="Ex: Financiamento Carro" class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 font-medium">
+                <div class="hidden mostrar-no-min flex-col items-center justify-center w-full gap-3 py-2">
+                    <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm transform rotate-90">${transacoesDaColuna.length}</span>
+                    <h3 class="font-black text-slate-400 text-xs tracking-widest uppercase transform rotate-180" style="writing-mode: vertical-rl;">${nomeColuna}</h3>
                 </div>
                 
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Valor da Parcela</label>
-                        <input type="text" id="divida-valor" inputmode="numeric" oninput="aplicarMascaraMoeda(this)" required placeholder="0,00" class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 font-bold">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Vencimento</label>
-                        <input type="date" id="divida-data" required class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 font-medium cursor-pointer">
-                    </div>
+                <div class="esconder-no-min flex items-center gap-2">
+                    <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm">${transacoesDaColuna.length}</span>
+                    <i class="fa-solid fa-chevron-left text-slate-300 text-xs transition-transform transform -rotate-90"></i>
                 </div>
+            </div>
 
-                <div class="grid grid-cols-3 gap-4">
-                    <div id="wrapper-categoria" class="col-span-2">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Centro de Custo</label>
-                        <select id="divida-categoria" required class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 font-medium cursor-pointer">
-                            <option value="">Carregando pastas...</option>
-                        </select>
-                    </div>
-                    <div id="wrapper-parcelas">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1" title="Quantidade de meses">Parcelas</label>
-                        <input type="number" id="divida-parcelas" min="1" max="360" value="1" required class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 font-bold text-center">
-                    </div>
+            <div class="esconder-no-min p-3 flex-1 overflow-y-auto coluna-scroll">
+                ${cardsHtml}
+                <div class="pt-3 mt-3 border-t border-slate-200 border-dashed text-right px-1">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase">Total:</span>
+                    <span class="text-xs font-black text-slate-700 ml-1">${formatarMoeda(somaColuna)}</span>
                 </div>
+            </div>
+        </div>`;
+    });
 
-                <button type="submit" id="btn-salvar-divida" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3 rounded-xl transition shadow-lg shadow-indigo-500/30 mt-4 flex justify-center items-center gap-2">
-                    <i class="fa-solid fa-check"></i> Registrar Conta
-                </button>
-            </form>
-        </div>
-    </div>
+    board.innerHTML = html;
+}
 
-</body>
-</html>
+// ---------------------------------------------
+// AÇÕES DO KANBAN
+// ---------------------------------------------
+function toggleColuna(id) {
+    const col = document.getElementById(id);
+    col.classList.toggle('coluna-minimizada');
+    const icone = col.querySelector('.fa-chevron-left');
+    if(icone) {
+        if(col.classList.contains('coluna-minimizada')) icone.classList.replace('-rotate-90', 'rotate-180');
+        else icone.classList.replace('rotate-180', '-rotate-90');
+    }
+}
+
+async function alterarStatusPagamento(idTransacao, novoStatusPago) {
+    try {
+        const { error } = await supabaseClient.from('transacoes').update({ pago: novoStatusPago }).eq('id', idTransacao);
+        if (error) throw error;
+
+        const idx = transacoesGlobais.findIndex(t => t.id === idTransacao);
+        if (idx !== -1) transacoesGlobais[idx].pago = novoStatusPago;
+
+        processarEAtualizarKanban();
+    } catch (e) { alert("Erro ao atualizar: " + e.message); }
+}
+
+// ---------------------------------------------
+// CRUD: CRIAR, EDITAR E EXCLUIR
+// ---------------------------------------------
+function abrirModalNovaDivida() { 
+    document.getElementById('form-divida').reset();
+    document.getElementById('divida-id').value = ''; 
+    
+    document.getElementById('modal-titulo').innerHTML = '<i class="fa-solid fa-file-signature text-indigo-500"></i> Lançar Contas';
+    document.getElementById('modal-subtitulo').innerText = 'Contas ou parcelamentos lançados aqui entram como "Pendentes".';
+    
+    document.getElementById('wrapper-parcelas').classList.remove('hidden');
+    document.getElementById('wrapper-categoria').classList.replace('col-span-3', 'col-span-2');
+
+    document.getElementById('divida-data').value = new Date().toISOString().split('T')[0];
+    document.getElementById('modal-divida').classList.remove('hidden'); 
+}
+
+function abrirModalEdicao(idTransacao) {
+    const t = transacoesGlobais.find(x => x.id === idTransacao);
+    if (!t) return;
+
+    document.getElementById('divida-id').value = t.id;
+    document.getElementById('divida-desc').value = t.descricao;
+    
+    let valorStr = t.valor.toFixed(2).replace('.', ',');
+    valorStr = valorStr.replace(/(\d)(\d{3})(\d{3}),/g, "$1.$2.$3,");
+    valorStr = valorStr.replace(/(\d)(\d{3}),/g, "$1.$2,");
+    document.getElementById('divida-valor').value = valorStr;
+    
+    document.getElementById('divida-data').value = t.data_vencimento;
+    document.getElementById('divida-categoria').value = t.categoria_id;
+
+    document.getElementById('modal-titulo').innerHTML = '<i class="fa-solid fa-pen text-indigo-500"></i> Editar Parcela';
+    document.getElementById('modal-subtitulo').innerText = 'Altere as informações deste lançamento específico.';
+
+    document.getElementById('wrapper-parcelas').classList.add('hidden');
+    document.getElementById('wrapper-categoria').classList.replace('col-span-2', 'col-span-3');
+
+    document.getElementById('modal-divida').classList.remove('hidden');
+}
+
+function fecharModalNovaDivida() {
+    document.getElementById('modal-divida').classList.add('hidden');
+}
+
+async function excluirDivida(idTransacao) {
+    if (!confirm("Tem certeza que deseja excluir este lançamento permanentemente?")) return;
+
+    try {
+        const { error } = await supabaseClient.from('transacoes').delete().eq('id', idTransacao);
+        if (error) throw error;
+
+        transacoesGlobais = transacoesGlobais.filter(t => t.id !== idTransacao);
+        processarEAtualizarKanban();
+    } catch (e) { alert("Erro ao excluir: " + e.message); }
+}
+
+async function salvarDivida(event) {
+    event.preventDefault();
+    const btn = document.getElementById('btn-salvar-divida');
+    const conteudoOriginal = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando...';
+    btn.disabled = true;
+
+    const idExistente = document.getElementById('divida-id').value;
+    const descBase = document.getElementById('divida-desc').value;
+    const valorFloat = desmascararMoeda(document.getElementById('divida-valor').value);
+    const dataInicialISO = document.getElementById('divida-data').value;
+    const catId = document.getElementById('divida-categoria').value;
+
+    if (valorFloat <= 0) {
+        alert("O valor não pode ser zero.");
+        btn.innerHTML = conteudoOriginal; btn.disabled = false; return;
+    }
+
+    try {
+        if (idExistente) {
+            const { data, error } = await supabaseClient.from('transacoes').update({
+                descricao: descBase,
+                valor: valorFloat,
+                data_vencimento: dataInicialISO,
+                categoria_id: catId
+            }).eq('id', idExistente).select();
+
+            if (error) throw error;
+            const idx = transacoesGlobais.findIndex(t => t.id == idExistente);
+            if (idx !== -1 && data && data.length > 0) transacoesGlobais[idx] = data[0];
+
+        } else {
+            const qtdParcelas = parseInt(document.getElementById('divida-parcelas').value) || 1;
+            let loteInsercao = [];
+
+            for (let i = 0; i < qtdParcelas; i++) {
+                let dataCalc = new Date(dataInicialISO + 'T12:00:00Z');
+                let diaOriginal = dataCalc.getDate();
+                dataCalc.setMonth(dataCalc.getMonth() + i);
+                if (dataCalc.getDate() !== diaOriginal) dataCalc.setDate(0); 
+
+                let dataFormatada = dataCalc.toISOString().split('T')[0];
+                let descFinal = qtdParcelas > 1 ? `${descBase} (${i + 1}/${qtdParcelas})` : descBase;
+
+                loteInsercao.push({
+                    usuario_id: usuarioLogado.id,
+                    tipo: 'despesa',
+                    descricao: descFinal,
+                    valor: valorFloat, 
+                    data_vencimento: dataFormatada,
+                    categoria_id: catId,
+                    pago: false
+                });
+            }
+
+            const { data, error } = await supabaseClient.from('transacoes').insert(loteInsercao).select();
+            if (error) throw error;
+            if(data) transacoesGlobais.push(...data);
+        }
+        
+        fecharModalNovaDivida();
+        processarEAtualizarKanban();
+
+    } catch (e) {
+        alert("Erro ao salvar: " + e.message);
+    } finally {
+        btn.innerHTML = conteudoOriginal;
+        btn.disabled = false;
+    }
+}
