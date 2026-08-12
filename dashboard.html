@@ -8,10 +8,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- DEPENDÊNCIAS DO MOTOR (Isolado) -->
+    <!-- DEPENDÊNCIAS DO MOTOR (Na Raiz) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/config.js" defer></script>
-    <script src="js/dashboard.js" defer></script>
+    <script src="config.js" defer></script>
+    <script src="dashboard.js" defer></script>
     
     <style>
         .fade-in { animation: fadeIn 0.4s ease-in-out; }
@@ -79,7 +79,7 @@
                 <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center text-3xl shrink-0 border border-white/20 shadow-inner z-10">
                     <i class="fa-solid fa-robot text-indigo-200"></i>
                 </div>
-                <div class="z-10">
+                <div class="z-10 w-full">
                     <h3 class="font-bold text-xl mb-2 text-indigo-100">Seu Coach Financeiro</h3>
                     <p class="text-indigo-50 font-medium text-sm md:text-base leading-relaxed" id="texto-coach">
                         <i class="fa-solid fa-spinner fa-spin"></i> Processando inteligência de dados...
@@ -94,7 +94,7 @@
                         <i class="fa-solid fa-triangle-exclamation text-orange-500"></i> Alertas da Carteira
                     </h3>
                     <div id="lista-alertas" class="space-y-3 flex-1">
-                        <p class="text-xs text-gray-400">Verificando segurança...</p>
+                        <p class="text-xs text-gray-400"><i class="fa-solid fa-spinner fa-spin"></i> Verificando segurança...</p>
                     </div>
                 </div>
 
@@ -119,7 +119,7 @@
                 </div>
                 <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center">
                     <p class="text-xs text-gray-400 font-bold uppercase mb-1">Taxa de Poupança</p>
-                    <p class="text-2xl font-black text-green-500" id="dash-taxa">0%</p>
+                    <p class="text-2xl font-black text-gray-400" id="dash-taxa">0%</p>
                 </div>
             </div>
 
