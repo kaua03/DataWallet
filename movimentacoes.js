@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     usuarioLogado = await verificarSessaoSegura();
     if (!usuarioLogado) return; 
 
-    // Adiciona escuta da tecla Enter no input
     document.getElementById('input-magico').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') processarFrase();
     });
@@ -22,7 +21,7 @@ async function carregarDadosDoBanco() {
     try {
         const [resTrans, resCat] = await Promise.all([
             supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).order('data_vencimento', { ascending: false }).order('id', { ascending: false }),
-            supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
+            supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id).order('nome', { ascending: true })
         ]);
 
         transacoesGlobais = resTrans.data || [];
@@ -76,7 +75,7 @@ function renderizarInterface() {
                 </div>
                 <div class="truncate pr-2">
                     <p class="text-gray-900 font-bold truncate">${t.descricao}</p>
-                    <p class="text-gray-400 text-xs font-bold truncate">${cat.nome.split(' ')[0]} • ${dataFormatada}</p>
+                    <p class="text-gray-400 text-xs font-bold truncate">${cat.nome} • ${dataFormatada}</p>
                 </div>
             </div>
             
@@ -104,43 +103,42 @@ function renderizarInterface() {
 }
 
 // ---------------------------------------------
-// O CÉREBRO NLP PADRONIZADOR
+// O CÉREBRO NLP DE INTELIGÊNCIA ARTIFICIAL
 // ---------------------------------------------
-// Esse banco de dados de IA cruza palavras com Títulos e Pastas
 const dicionarioDeInteligencia = [
     { pasta: 'alimentação', regras: [
         { titulo: 'Delivery', palavras: ['ifood', 'delivery', 'rappi', 'zedelivery'] },
-        { titulo: 'Fast Food', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado'] },
-        { titulo: 'Mercado', palavras: ['mercado', 'supermercado', 'açougue', 'padaria', 'compra do mês'] },
-        { titulo: 'Restaurante', palavras: ['restaurante', 'almoço', 'jantar', 'comida'] }
+        { titulo: 'Fast Food', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado', 'pastel'] },
+        { titulo: 'Mercado', palavras: ['mercado', 'supermercado', 'açougue', 'padaria', 'compra'] },
+        { titulo: 'Restaurante', palavras: ['restaurante', 'almoço', 'jantar', 'comida', 'self service'] }
     ]},
     { pasta: 'veículo', regras: [
         { titulo: 'Combustível', palavras: ['gasolina', 'álcool', 'alcool', 'etanol', 'diesel', 'posto', 'combustível', 'combustivel'] },
-        { titulo: 'Manutenção / Peças', palavras: ['oficina', 'mecânico', 'peça', 'pneu', 'óleo', 'revisão'] },
+        { titulo: 'Peças / Manutenção', palavras: ['oficina', 'mecânico', 'peça', 'pneu', 'óleo', 'revisão'] },
         { titulo: 'Serviços Auto', palavras: ['estacionamento', 'pedágio', 'lavagem', 'lava rápido'] },
-        { titulo: 'Transporte', palavras: ['uber', '99', 'ônibus', 'passagem', 'metrô'] }
+        { titulo: 'Transporte Público/App', palavras: ['uber', '99', 'ônibus', 'passagem', 'metrô'] }
     ]},
     { pasta: 'moradia', regras: [
-        { titulo: 'Aluguel', palavras: ['aluguel'] },
+        { titulo: 'Aluguel', palavras: ['aluguel', 'condomínio'] },
         { titulo: 'Conta de Luz', palavras: ['luz', 'energia', 'cpfl', 'cemig', 'enel'] },
         { titulo: 'Conta de Água', palavras: ['água', 'sabesp', 'sanepar', 'copasa'] },
         { titulo: 'Internet', palavras: ['internet', 'vivo', 'claro', 'tim', 'fibra'] },
-        { titulo: 'Manutenção da Casa', palavras: ['reparo', 'faxina', 'limpeza', 'material de construção'] }
+        { titulo: 'Reparos e Casa', palavras: ['reparo', 'faxina', 'limpeza', 'material de construção'] }
     ]},
     { pasta: 'estudo', regras: [
-        { titulo: 'Mensalidade', palavras: ['faculdade', 'escola', 'mensalidade'] },
-        { titulo: 'Cursos', palavras: ['curso', 'certificado', 'prova'] },
-        { titulo: 'Material Didático', palavras: ['livro', 'caderno', 'material'] }
+        { titulo: 'Mensalidade Escolar', palavras: ['faculdade', 'escola', 'mensalidade'] },
+        { titulo: 'Cursos Extras', palavras: ['curso', 'certificado', 'prova', 'concurso'] },
+        { titulo: 'Material Didático', palavras: ['livro', 'caderno', 'material', 'papelaria'] }
     ]},
     { pasta: 'saúde', regras: [
         { titulo: 'Remédios', palavras: ['farmácia', 'remédio', 'medicamento'] },
         { titulo: 'Consultas Médicas', palavras: ['médico', 'consulta', 'exame', 'dentista', 'terapia', 'psicólogo'] },
-        { titulo: 'Imprevisto', palavras: ['imprevisto', 'acidente', 'pronto socorro'] }
+        { titulo: 'Imprevisto', palavras: ['imprevisto', 'acidente', 'pronto socorro', 'hospital'] }
     ]},
     { pasta: 'lazer', regras: [
         { titulo: 'Jogos', palavras: ['jogo', 'steam', 'xbox', 'playstation', 'game'] },
         { titulo: 'Passeio', palavras: ['cinema', 'festa', 'shopping', 'bar', 'show', 'viagem', 'ingresso'] },
-        { titulo: 'Compras Pessoais', palavras: ['roupa', 'presente', 'tênis', 'perfume'] }
+        { titulo: 'Compras Pessoais', palavras: ['roupa', 'presente', 'tênis', 'perfume', 'fone', 'celular'] }
     ]},
     { pasta: 'assinaturas', regras: [
         { titulo: 'Streaming', palavras: ['netflix', 'spotify', 'amazon', 'prime', 'disney', 'hbo'] },
@@ -148,34 +146,42 @@ const dicionarioDeInteligencia = [
     ]}
 ];
 
-// O Motor que processa e devolve a Pasta Exata e o Título Perfeito
 function inferirCategoriaETitulo(texto, isReceita) {
     texto = texto.toLowerCase();
 
     if (isReceita) {
-        const catRenda = categoriasGlobais.find(c => c.nome.toLowerCase().includes('renda'));
+        const catRenda = categoriasGlobais.find(c => c.nome.toLowerCase().includes('renda') || c.nome.toLowerCase().includes('salário'));
         return { 
             categoria: catRenda, 
             titulo: texto.includes('salário') || texto.includes('salario') ? 'Salário' : 'Recebimento' 
         };
     }
 
-    // Varre o cérebro
+    // Procura no Dicionário
     for (const d of dicionarioDeInteligencia) {
         for (const regra of d.regras) {
             if (regra.palavras.some(palavra => texto.includes(palavra))) {
-                const catDb = categoriasGlobais.find(c => c.nome.toLowerCase().includes(d.pasta));
+                // Acha a categoria baseada na nossa lista atual de categorias do banco
+                let busca = d.pasta;
+                // Ajustes para as palavras exatas das categorias que criamos no login.js
+                if (busca === 'veículo') busca = 'veículo';
+                if (busca === 'saúde') busca = 'imprevistos'; 
+
+                const catDb = categoriasGlobais.find(c => c.nome.toLowerCase().includes(busca));
                 return { categoria: catDb, titulo: regra.titulo };
             }
         }
     }
 
-    // Se ele não entender o que a pessoa comprou, ele apenas limpa os verbos inúteis e joga pra "Lazer & Pessoal"
-    let descLimpa = texto.split(' ')[0] || 'Registro';
-    const arrTexto = texto.split(' ');
-    if (['comprei', 'gastei', 'paguei', 'botei'].includes(descLimpa) && arrTexto.length > 1) {
-        descLimpa = arrTexto[1];
+    // FILTRO DE STOP WORDS (Se não achou no dicionário, pega o substantivo principal)
+    let palavras = texto.split(' ');
+    const palavrasInuteis = ['comprei', 'gastei', 'paguei', 'botei', 'coloquei', 'um', 'uma', 'uns', 'umas', 'de', 'da', 'do', 'no', 'na', 'para', 'com', 'novo', 'nova'];
+    
+    while (palavras.length > 0 && palavrasInuteis.includes(palavras[0])) {
+        palavras.shift(); // Remove a palavra inútil do começo
     }
+
+    let descLimpa = palavras.length > 0 ? palavras[0] : 'Registro';
     descLimpa = descLimpa.charAt(0).toUpperCase() + descLimpa.slice(1);
 
     const catFallback = categoriasGlobais.find(c => c.nome.toLowerCase().includes('lazer'));
@@ -185,7 +191,6 @@ function inferirCategoriaETitulo(texto, isReceita) {
 // ---------------------------------------------
 // CONTROLE DO MODAL DE EDIÇÃO E CADASTRO
 // ---------------------------------------------
-// ESSA FUNÇÃO RESOLVE O SUMIÇO DOS BOTÕES: Reescreve toda a classe CSS a cada clique
 function atualizarCoresTipoModal() {
     const isReceita = document.querySelector('input[name="modal-tipo"][value="receita"]').checked;
     const btnDespesa = document.getElementById('btn-tipo-despesa');
@@ -193,10 +198,10 @@ function atualizarCoresTipoModal() {
 
     if (isReceita) {
         btnReceita.className = "border-2 border-green-500 bg-green-50 text-green-600 rounded-xl p-3 flex justify-center items-center gap-2 font-bold text-sm transition-all";
-        btnDespesa.className = "border-2 border-gray-200 bg-gray-50 text-gray-400 rounded-xl p-3 flex justify-center items-center gap-2 font-bold text-sm transition-all hover:bg-gray-100";
+        btnDespesa.className = "border-2 border-gray-200 bg-gray-50 text-gray-400 rounded-xl p-3 flex justify-center items-center gap-2 font-bold text-sm transition-all hover:bg-gray-100 cursor-pointer";
     } else {
         btnDespesa.className = "border-2 border-red-500 bg-red-50 text-red-600 rounded-xl p-3 flex justify-center items-center gap-2 font-bold text-sm transition-all";
-        btnReceita.className = "border-2 border-gray-200 bg-gray-50 text-gray-400 rounded-xl p-3 flex justify-center items-center gap-2 font-bold text-sm transition-all hover:bg-gray-100";
+        btnReceita.className = "border-2 border-gray-200 bg-gray-50 text-gray-400 rounded-xl p-3 flex justify-center items-center gap-2 font-bold text-sm transition-all hover:bg-gray-100 cursor-pointer";
     }
 }
 
@@ -208,15 +213,14 @@ function processarFrase() {
     const nums = textoLower.match(/\d+(?:[.,]\d+)?/g);
     const val = nums ? Math.max(...nums.map(n => parseFloat(n.replace(',', '.')))) : 0;
     
-    const isReceita = ['recebi', 'ganhei', 'pix', 'salário', 'salario', 'renda', 'vendi', 'depósito'].some(p => textoLower.includes(p));
+    const palavrasReceita = ['recebi', 'ganhei', 'pix', 'salário', 'salario', 'renda', 'vendi', 'depósito'];
+    const isReceita = palavrasReceita.some(p => textoLower.includes(p));
 
-    // A MÁGICA: Extrai a Pasta e o Título Bonito ("Combustível" em vez de "gasolina")
     const inferencia = inferirCategoriaETitulo(textoLower, isReceita);
 
     document.getElementById('modal-id').value = ''; 
     document.getElementById('modal-titulo').innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-blue-600"></i> ${isReceita ? 'Registrar Entrada' : 'Registrar Saída'}`;
     
-    // Injeta o Título Padronizado no Form
     document.getElementById('modal-desc').value = inferencia.titulo;
     document.getElementById('modal-valor').value = val;
     document.getElementById('modal-data').value = new Date().toISOString().split('T')[0];
@@ -301,7 +305,7 @@ async function excluirTransacao(id) {
 
 function ativarMicrofone() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return alert("Seu navegador/celular não suporta microfone nativo.");
+    if (!SpeechRecognition) return alert("Seu navegador não suporta microfone nativo. Use Chrome ou Safari atualizados.");
     
     const recognition = new SpeechRecognition();
     recognition.lang = 'pt-BR';
@@ -316,7 +320,12 @@ function ativarMicrofone() {
         processarFrase(); 
     };
 
-    recognition.onerror = () => { btnMic.innerHTML = iconeAntigo; };
+    recognition.onerror = (e) => { 
+        console.error("Erro Mic:", e);
+        if (e.error === 'not-allowed') alert("Permissão de microfone negada. Clique no cadeado na barra de endereço para liberar.");
+        btnMic.innerHTML = iconeAntigo; 
+    };
+    
     recognition.onend = () => { btnMic.innerHTML = iconeAntigo; };
 
     recognition.start();
