@@ -11,16 +11,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     usuarioLogado = await verificarSessaoSegura();
     if (!usuarioLogado) return; 
 
-    // Preenche data padrão no modal de cadastro
     document.getElementById('divida-data').value = new Date().toISOString().split('T')[0];
-
     await carregarDadosDoBanco();
 });
+
+// ==========================================
+// FORMATAÇÃO E MÁSCARAS
+// ==========================================
+
+// Mascara o input em tempo real (R$ 1.500,00)
+function aplicarMascaraMoeda(input) {
+    let valor = input.value.replace(/\D/g, ''); // Remove tudo que não é número
+    if (valor === '') {
+        input.value = '';
+        return;
+    }
+    valor = (parseInt(valor) / 100).toFixed(2) + '';
+    valor = valor.replace(".", ",");
+    valor = valor.replace(/(\d)(\d{3})(\d{3}),/g, "$1.$2.$3,");
+    valor = valor.replace(/(\d)(\d{3}),/g, "$1.$2,");
+    input.value = valor;
+}
+
+// Transforma a máscara de volta para Matemática de Banco de Dados (1500.00)
+function desmascararMoeda(str) {
+    if (!str) return 0;
+    return parseFloat(str.replace(/\./g, '').replace(',', '.'));
+}
+
+// ==========================================
+// NÚCLEO DE DADOS
+// ==========================================
 
 async function carregarDadosDoBanco() {
     try {
         const [rTrans, rCat] = await Promise.all([
-            // Puxa tudo que é despesa (para filtrar pago/pendente no JS)
             supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).eq('tipo', 'despesa').order('data_vencimento', { ascending: true }),
             supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
         ]);
@@ -28,21 +53,15 @@ async function carregarDadosDoBanco() {
         transacoesGlobais = rTrans.data || [];
         categoriasGlobais = rCat.data || [];
 
-        // Preenche o Select do Modal de Lançamento
         const selectCat = document.getElementById('divida-categoria');
         selectCat.innerHTML = '<option value="" disabled selected>Selecione uma pasta...</option>' + 
             categoriasGlobais.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
 
         processarEAtualizarKanban();
 
-    } catch (e) {
-        console.error("Erro ao puxar dados:", e.message);
-    }
+    } catch (e) { console.error("Erro ao puxar dados:", e.message); }
 }
 
-// ---------------------------------------------
-// O CÉREBRO DE AGRUPAMENTO (Kanban Dinâmico)
-// ---------------------------------------------
 function processarEAtualizarKanban() {
     const hojeData = new Date();
     hojeData.setHours(0, 0, 0, 0); 
@@ -53,7 +72,6 @@ function processarEAtualizarKanban() {
     const agrupamentos = {};
     let totAtrasadas = 0, totMes = 0, totFuturo = 0, totPagas = 0;
 
-    // Inicializa as chaves base para garantir a ordem
     if(!mostrandoPagas) {
         agrupamentos['Atrasadas'] = [];
         agrupamentos['Este Mês'] = [];
@@ -64,26 +82,22 @@ function processarEAtualizarKanban() {
     transacoesGlobais.forEach(t => {
         if (!t.data_vencimento) return; 
         
-        // Se a coluna 'pago' não existir, assume false
         const isPago = t.pago === true; 
 
         if (isPago) {
             totPagas += t.valor;
             if (mostrandoPagas) {
-                // Se a visão de pagas estiver ativa, agrupa pelo mês da data
                 const dVenc = new Date(t.data_vencimento + 'T12:00:00Z');
                 const label = `${mesesAbv[dVenc.getMonth()]} / ${dVenc.getFullYear()}`;
                 if (!agrupamentos[label]) agrupamentos[label] = [];
                 agrupamentos[label].push(t);
             }
-            return; // Se for pago e não for visão de pagas, ignora o resto do loop
+            return; 
         }
 
-        // --- LÓGICA PARA PENDENTES ---
         if (!mostrandoPagas) {
             const dVenc = new Date(t.data_vencimento + 'T12:00:00Z');
             dVenc.setHours(0, 0, 0, 0);
-
             const mesVenc = dVenc.getMonth();
             const anoVenc = dVenc.getFullYear();
 
@@ -96,7 +110,6 @@ function processarEAtualizarKanban() {
                 totMes += t.valor;
             } 
             else {
-                // Cria as colunas dinâmicas para o futuro (Ex: Ago / 2026)
                 const label = `${mesesAbv[mesVenc]} / ${anoVenc}`;
                 if (!agrupamentos[label]) agrupamentos[label] = [];
                 agrupamentos[label].push(t);
@@ -105,7 +118,6 @@ function processarEAtualizarKanban() {
         }
     });
 
-    // Atualiza KPIs
     document.getElementById('kpi-atrasadas').innerText = formatarMoeda(totAtrasadas);
     document.getElementById('kpi-mes').innerText = formatarMoeda(totMes);
     document.getElementById('kpi-futuro').innerText = formatarMoeda(totFuturo);
@@ -115,13 +127,12 @@ function processarEAtualizarKanban() {
 }
 
 // ---------------------------------------------
-// RENDERIZAÇÃO DO HTML
+// RENDERIZAÇÃO DO HTML (Cards Clean)
 // ---------------------------------------------
 function renderizarColunas(agrupamentos) {
     const board = document.getElementById('board-dividas');
     let html = '';
 
-    // Remove colunas que nasceram vazias dinamicamente (Mantém atrasadas e mês vazias fixas)
     const chavesParaRenderizar = Object.keys(agrupamentos).filter(k => 
         k === 'Atrasadas' || k === 'Este Mês' || agrupamentos[k].length > 0
     );
@@ -135,19 +146,17 @@ function renderizarColunas(agrupamentos) {
         const transacoesDaColuna = agrupamentos[nomeColuna];
         const somaColuna = transacoesDaColuna.reduce((acc, t) => acc + t.valor, 0);
         
-        // Estética da Coluna
-        let config = { icon: 'fa-calendar-day', color: 'slate', titleColor: 'slate-600', badgeColor: 'bg-slate-200 text-slate-600' };
+        let config = { icon: 'fa-calendar-day', titleColor: 'slate-600', badgeColor: 'bg-slate-200 text-slate-600' };
         
         if (mostrandoPagas) {
-            config = { icon: 'fa-check-circle', color: 'emerald', titleColor: 'emerald-600', badgeColor: 'bg-emerald-100 text-emerald-600' };
+            config = { icon: 'fa-check-circle', titleColor: 'emerald-600', badgeColor: 'bg-emerald-100 text-emerald-600' };
         } else {
-            if (nomeColuna === 'Atrasadas') config = { icon: 'fa-circle-exclamation', color: 'rose', titleColor: 'rose-600', badgeColor: 'bg-rose-100 text-rose-600' };
-            if (nomeColuna === 'Este Mês') config = { icon: 'fa-calendar-check', color: 'indigo', titleColor: 'indigo-600', badgeColor: 'bg-indigo-100 text-indigo-600' };
+            if (nomeColuna === 'Atrasadas') config = { icon: 'fa-circle-exclamation', titleColor: 'rose-600', badgeColor: 'bg-rose-100 text-rose-600' };
+            if (nomeColuna === 'Este Mês') config = { icon: 'fa-calendar-check', titleColor: 'indigo-600', badgeColor: 'bg-indigo-100 text-indigo-600' };
         }
 
         const idColunaSanitizado = 'col_' + nomeColuna.replace(/\s+/g, '').replace(/\//g, '');
 
-        // Construção dos Cards Internos
         let cardsHtml = '';
         if (transacoesDaColuna.length === 0) {
             cardsHtml = `<div class="text-center py-8 opacity-50"><i class="fa-solid fa-wind text-2xl text-slate-300 mb-2"></i><p class="text-[10px] font-bold text-slate-400 uppercase">Tudo Limpo</p></div>`;
@@ -156,22 +165,24 @@ function renderizarColunas(agrupamentos) {
                 const dataStr = d.data_vencimento.split('-').reverse().join('/');
                 const isPago = d.pago === true;
                 
-                // Botão dinâmico: Se pagou, botão é vermelho pra desfazer. Se não pagou, é verde pra pagar.
+                // Botão de check inspirado na sua referência (Soft Green)
                 const btnAcao = isPago 
-                    ? `<button onclick="alterarStatusPagamento(${d.id}, false)" title="Desfazer Pagamento" class="w-7 h-7 rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center shadow-sm"><i class="fa-solid fa-rotate-left"></i></button>`
-                    : `<button onclick="alterarStatusPagamento(${d.id}, true)" title="Marcar como Pago" class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white transition flex items-center justify-center shadow-sm"><i class="fa-solid fa-check"></i></button>`;
+                    ? `<button onclick="alterarStatusPagamento(${d.id}, false)" title="Desfazer" class="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center shadow-sm"><i class="fa-solid fa-rotate-left"></i></button>`
+                    : `<button onclick="alterarStatusPagamento(${d.id}, true)" title="Quitar" class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white transition flex items-center justify-center shadow-sm"><i class="fa-solid fa-check"></i></button>`;
 
+                // FIM DAS BORDAS COLORIDAS. Design Clean e minimalista.
                 const classeTraco = isPago ? 'line-through text-slate-400' : 'text-slate-800';
-                const corBorda = isPago ? 'border-l-emerald-400' : `border-l-${config.color}-400`;
+                const corData = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-500' : 'text-slate-400';
+                const corValor = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-600' : 'text-slate-900';
 
                 return `
-                <div class="bg-white rounded-xl p-4 border border-slate-200/60 shadow-sm border-l-4 ${corBorda} hover:-translate-y-0.5 hover:shadow-md transition-all group">
-                    <div class="flex justify-between items-start gap-3 mb-3">
-                        <h4 class="font-bold text-xs ${classeTraco} leading-tight break-all">${d.descricao}</h4>
-                        <span class="font-black text-sm text-slate-900 whitespace-nowrap">${formatarMoeda(d.valor)}</span>
+                <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-all group">
+                    <div class="flex justify-between items-start gap-3 mb-4">
+                        <h4 class="font-bold text-xs ${classeTraco} leading-tight break-all mt-0.5">${d.descricao}</h4>
+                        <span class="font-black text-sm ${corValor} whitespace-nowrap">${formatarMoeda(d.valor)}</span>
                     </div>
                     <div class="flex items-center justify-between mt-auto">
-                        <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase">
+                        <div class="flex items-center gap-1.5 text-[11px] font-bold ${corData}">
                             <i class="fa-regular fa-calendar"></i> <span>${dataStr}</span>
                         </div>
                         ${btnAcao}
@@ -180,27 +191,19 @@ function renderizarColunas(agrupamentos) {
             }).join('');
         }
 
-        // Construção da Coluna
         html += `
         <div id="${idColunaSanitizado}" class="w-[320px] shrink-0 bg-slate-100/50 rounded-2xl border border-slate-200/60 flex flex-col max-h-full transition-all duration-300">
-            
-            <!-- HEADER DA COLUNA (Clicável para minimizar) -->
             <div onclick="toggleColuna('${idColunaSanitizado}')" class="p-4 border-b border-slate-200/80 flex justify-between items-center bg-white rounded-t-2xl shrink-0 cursor-pointer hover:bg-slate-50 transition">
                 <div class="esconder-no-min flex items-center gap-2">
                     <i class="fa-solid ${config.icon} text-${config.titleColor}"></i>
                     <h3 class="font-bold text-${config.titleColor} text-sm">${nomeColuna}</h3>
                 </div>
-                
-                <!-- Titulo Vertical (Aparece só quando minimizado) -->
                 <h3 class="hidden mostrar-no-min font-black text-slate-400 text-sm tracking-widest uppercase my-4">${nomeColuna}</h3>
-                
                 <div class="esconder-no-min flex items-center gap-2">
                     <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm">${transacoesDaColuna.length}</span>
                     <i class="fa-solid fa-chevron-left text-slate-300 text-xs transition-transform transform -rotate-90"></i>
                 </div>
             </div>
-            
-            <!-- CONTEÚDO (Cards) -->
             <div class="esconder-no-min p-3 flex-1 overflow-y-auto coluna-scroll space-y-3">
                 ${cardsHtml}
                 <div class="pt-2 border-t border-slate-200 border-dashed text-right px-1">
@@ -214,20 +217,12 @@ function renderizarColunas(agrupamentos) {
     board.innerHTML = html;
 }
 
-// ---------------------------------------------
-// AÇÕES DO KANBAN
-// ---------------------------------------------
 function toggleColuna(id) {
     const col = document.getElementById(id);
     col.classList.toggle('coluna-minimizada');
-    
-    // Anima a setinha
     const icone = col.querySelector('.fa-chevron-left');
-    if(col.classList.contains('coluna-minimizada')) {
-        icone.classList.replace('-rotate-90', 'rotate-180');
-    } else {
-        icone.classList.replace('rotate-180', '-rotate-90');
-    }
+    if(col.classList.contains('coluna-minimizada')) icone.classList.replace('-rotate-90', 'rotate-180');
+    else icone.classList.replace('rotate-180', '-rotate-90');
 }
 
 function alternarVisaoPagas() {
@@ -243,76 +238,93 @@ function alternarVisaoPagas() {
         btn.classList.replace('text-emerald-600', 'text-slate-600');
         btn.innerHTML = '<i class="fa-solid fa-check-double"></i> Ver Pagas';
     }
-    
     processarEAtualizarKanban();
 }
 
 async function alterarStatusPagamento(idTransacao, novoStatusPago) {
     try {
-        const { error } = await supabaseClient
-            .from('transacoes')
-            .update({ pago: novoStatusPago })
-            .eq('id', idTransacao);
-
+        const { error } = await supabaseClient.from('transacoes').update({ pago: novoStatusPago }).eq('id', idTransacao);
         if (error) throw error;
 
-        // Atualiza a memória local sem precisar puxar tudo do banco de novo
         const idx = transacoesGlobais.findIndex(t => t.id === idTransacao);
         if (idx !== -1) transacoesGlobais[idx].pago = novoStatusPago;
 
         processarEAtualizarKanban();
-
-    } catch (e) {
-        alert("Erro ao atualizar o status: " + e.message);
-    }
+    } catch (e) { alert("Erro ao atualizar: " + e.message); }
 }
 
-// ---------------------------------------------
-// CADASTRO DIRETO DE DÍVIDAS (MODAL)
-// ---------------------------------------------
-function abrirModalNovaDivida() {
-    document.getElementById('modal-divida').classList.remove('hidden');
-}
-
+function abrirModalNovaDivida() { document.getElementById('modal-divida').classList.remove('hidden'); }
 function fecharModalNovaDivida() {
     document.getElementById('modal-divida').classList.add('hidden');
     document.getElementById('form-divida').reset();
     document.getElementById('divida-data').value = new Date().toISOString().split('T')[0];
 }
 
+// ==========================================
+// BULK INSERT (Criação de Múltiplas Parcelas)
+// ==========================================
 async function salvarNovaDivida(event) {
     event.preventDefault();
     const btn = document.getElementById('btn-salvar-divida');
     const conteudoOriginal = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Registrando...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando Lote...';
     btn.disabled = true;
 
-    const desc = document.getElementById('divida-desc').value;
-    const valor = parseFloat(document.getElementById('divida-valor').value);
-    const dataVenc = document.getElementById('divida-data').value;
+    const descBase = document.getElementById('divida-desc').value;
+    // Puxa o valor da máscara e converte para float de banco de dados
+    const valorFloat = desmascararMoeda(document.getElementById('divida-valor').value);
+    const dataInicialISO = document.getElementById('divida-data').value;
     const catId = document.getElementById('divida-categoria').value;
+    const qtdParcelas = parseInt(document.getElementById('divida-parcelas').value) || 1;
+
+    if (valorFloat <= 0) {
+        alert("O valor não pode ser zero.");
+        btn.innerHTML = conteudoOriginal; btn.disabled = false;
+        return;
+    }
 
     try {
-        const { data, error } = await supabaseClient.from('transacoes').insert([{
-            usuario_id: usuarioLogado.id,
-            tipo: 'despesa',
-            descricao: desc,
-            valor: valor,
-            data_vencimento: dataVenc,
-            categoria_id: catId,
-            pago: false // Nasce pendente (Dívida)
-        }]).select();
+        let loteInsercao = [];
+
+        // Loop matemático para gerar os meses
+        for (let i = 0; i < qtdParcelas; i++) {
+            // Lógica de avanço de mês respeitando fuso e fim de mês (Ex: 31 Jan -> 28 Fev)
+            let dataCalc = new Date(dataInicialISO + 'T12:00:00Z');
+            let diaOriginal = dataCalc.getDate();
+            
+            dataCalc.setMonth(dataCalc.getMonth() + i);
+            
+            // Se o dia mudou (ex: tentou criar 31 de Fev e virou Março), recua pro último dia do mês correto
+            if (dataCalc.getDate() !== diaOriginal) {
+                dataCalc.setDate(0); 
+            }
+
+            let dataFormatada = dataCalc.toISOString().split('T')[0];
+            let descFinal = qtdParcelas > 1 ? `${descBase} (${i + 1}/${qtdParcelas})` : descBase;
+
+            loteInsercao.push({
+                usuario_id: usuarioLogado.id,
+                tipo: 'despesa',
+                descricao: descFinal,
+                valor: valorFloat, // Registra o valor PER PARCELA
+                data_vencimento: dataFormatada,
+                categoria_id: catId,
+                pago: false
+            });
+        }
+
+        // Insere o array inteiro no Supabase de uma só vez (Bulk Insert)
+        const { data, error } = await supabaseClient.from('transacoes').insert(loteInsercao).select();
 
         if (error) throw error;
 
-        // Joga pro array global e re-renderiza a tela em tempo real
-        if(data && data.length > 0) transacoesGlobais.push(data[0]);
+        if(data) transacoesGlobais.push(...data);
         
         fecharModalNovaDivida();
         processarEAtualizarKanban();
 
     } catch (e) {
-        alert("Erro ao salvar dívida: " + e.message);
+        alert("Erro no Lote: " + e.message);
     } finally {
         btn.innerHTML = conteudoOriginal;
         btn.disabled = false;
