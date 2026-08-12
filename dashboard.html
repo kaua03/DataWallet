@@ -29,8 +29,6 @@
         }
 
         ::-webkit-scrollbar { width: 6px; display: none; }
-        
-        /* Sombreamento Premium 3D para os gráficos */
         .grafico-wrapper { filter: drop-shadow(0 15px 20px rgba(0,0,0,0.04)); }
         
         input[type="month"]::-webkit-calendar-picker-indicator,
@@ -64,7 +62,7 @@
     <main class="flex-1 h-full overflow-y-auto relative pb-28 md:pb-8 p-4 md:p-8">
         <section class="max-w-6xl mx-auto space-y-6">
             
-            <!-- HEADER E FILTROS SÊNIOR -->
+            <!-- HEADER E FILTROS -->
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm">
                 <h2 class="text-2xl font-black text-slate-900 flex items-center gap-3 px-2">
                     <i class="fa-solid fa-chart-line text-indigo-600"></i> Executive Analytics
@@ -97,7 +95,7 @@
                 </div>
             </div>
 
-            <!-- CARDS DE KPIs CORPORATIVOS -->
+            <!-- CARDS DE KPIs -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm relative overflow-hidden group">
                     <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">Saldo Líquido</p>
@@ -124,15 +122,17 @@
 
             <!-- LINHA 1 DE GRÁFICOS: Combo Chart Master -->
             <div class="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm">
-                <div class="flex justify-between items-center mb-6">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
                     <div>
                         <h3 class="text-slate-800 font-bold text-lg">Evolução do Caixa</h3>
-                        <p class="text-xs text-slate-400 font-medium">Comparativo de captação, queima e saldo acumulado</p>
+                        <p class="text-xs text-slate-400 font-medium">Comparativo de captação, queima, saldo acumulado e picos</p>
                     </div>
-                    <div class="hidden sm:flex gap-4 text-[10px] font-bold uppercase text-slate-500">
+                    <!-- LEGENDA ATUALIZADA -->
+                    <div class="flex flex-wrap gap-4 text-[10px] font-bold uppercase text-slate-500">
                         <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Entradas</span>
                         <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span> Saídas</span>
-                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-indigo-500"></span> Saldo Acumulado</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-indigo-500"></span> Saldo</span>
+                        <span class="flex items-center gap-1"><i class="fa-solid fa-chart-line text-rose-500"></i> Picos de Gastos</span>
                     </div>
                 </div>
                 <div class="relative h-[320px] w-full grafico-wrapper">
@@ -143,7 +143,7 @@
             <!-- LINHA 2 DE GRÁFICOS: Distribuição e Listagem Analítica -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                <!-- Gráfico de Pizza Sênior (Extremamente fina) -->
+                <!-- Gráfico de Pizza -->
                 <div class="lg:col-span-1 bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col">
                     <div>
                         <h3 class="text-slate-800 font-bold text-lg">Dispersão de Custos</h3>
@@ -158,7 +158,7 @@
                     </div>
                 </div>
 
-                <!-- Lista de Despesas por Categoria (Barras Finas Corporativas) -->
+                <!-- Lista de Despesas por Categoria -->
                 <div class="lg:col-span-1 bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm">
                     <h3 class="text-slate-800 font-bold text-lg">Centros de Custo</h3>
                     <p class="text-xs text-slate-400 font-medium mb-6">Detalhamento percentual e financeiro</p>
@@ -167,7 +167,7 @@
                     </div>
                 </div>
 
-                <!-- Top 5 Lançamentos Individuais (Barras Horizontais Profissionais) -->
+                <!-- Top 5 Lançamentos Individuais -->
                 <div class="lg:col-span-1 bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col">
                     <h3 class="text-slate-800 font-bold text-lg">Top 5 Lançamentos</h3>
                     <p class="text-xs text-slate-400 font-medium mb-6">As maiores saídas isoladas do período</p>
@@ -180,7 +180,7 @@
         </section>
     </main>
 
-    <!-- MENU INFERIOR (Celular) PADRONIZADO -->
+    <!-- MENU INFERIOR (Celular) -->
     <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t border-slate-200 px-4 py-2 flex justify-between items-center z-40">
         <a href="movimentacoes.html" class="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition p-2"><i class="fa-solid fa-money-bill-transfer text-lg mb-1"></i><span class="text-[10px] font-bold">Movimentar</span></a>
         <a href="dashboard.html" class="flex flex-col items-center text-indigo-600 transition p-2"><i class="fa-solid fa-chart-pie text-lg mb-1"></i><span class="text-[10px] font-bold">Dashboard</span></a>
@@ -194,9 +194,8 @@
         <i class="fa-solid fa-robot text-indigo-400"></i>
     </button>
 
-    <!-- JANELA DO CHAT DO COACH (Sobreposta - Dark Mode Sênior) -->
+    <!-- JANELA DO CHAT DO COACH -->
     <div id="janela-coach" class="hidden fixed bottom-44 md:bottom-32 right-4 md:right-10 w-[calc(100%-2rem)] md:w-[420px] h-[600px] max-h-[75vh] bg-slate-900 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.5)] z-50 flex flex-col overflow-hidden border border-slate-700 slide-up-chat">
-        
         <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-600 opacity-10 blur-3xl rounded-full pointer-events-none"></div>
         
         <div class="p-5 border-b border-slate-800 flex items-center justify-between z-10 bg-slate-900/90 backdrop-blur-md shrink-0">
