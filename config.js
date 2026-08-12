@@ -1,9 +1,28 @@
 // ==========================================
-// CONFIGURAÇÃO GLOBAL DO BANCO DE DADOS
+// js/config.js - O COFRE CENTRAL DA APLICAÇÃO
 // ==========================================
+
 const supabaseUrl = 'https://aoeyeleaxbwvjmzxxdib.supabase.co'; 
 const supabaseKey = 'sb_publishable_Q6JiNxMGUdqObAMxj3EYSA_s_cYpFUk'; 
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-// Utilitário global para moedas
+// Ferramenta global de moeda para não repetir código
 const formatarMoeda = (v) => `R$ ${v.toFixed(2).replace('.', ',')}`;
+
+// Escudo Protetor Global: Verifica se o usuário tem permissão para estar na tela
+async function verificarSessaoSegura() {
+    const { data: { session }, error } = await supabaseClient.auth.getSession();
+    
+    if (error || !session) {
+        // Sem crachá? Chuta para a rua (login)
+        window.location.replace('login.html');
+        return null;
+    }
+    return session.user;
+}
+
+// Função global para o botão de Sair
+async function sairDoSistema() {
+    await supabaseClient.auth.signOut();
+    window.location.replace('login.html');
+}
