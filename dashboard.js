@@ -382,11 +382,10 @@ REGRA ESTRITA: Responda à pergunta do usuário usando APENAS a intenção dele 
     };
 
     try {
-        // 1. O Escudo: .trim() arranca espaços e quebras de linha invisíveis da chave
         const chaveLimpa = GEMINI_API_KEY.trim();
         
-        // 2. Mudamos para o Endpoint "latest" igual ao do seu cURL original
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${chaveLimpa}`;
+        // Link apontando para a versão mais estável do modelo:
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${chaveLimpa}`;
         
         const respostaDaNuvem = await fetch(url, {
             method: 'POST',
@@ -396,12 +395,9 @@ REGRA ESTRITA: Responda à pergunta do usuário usando APENAS a intenção dele 
             body: JSON.stringify(payload)
         });
 
-        // 3. A Autópsia do Erro
         if (!respostaDaNuvem.ok) {
             const erroDetalhe = await respostaDaNuvem.json();
-            console.error("ERRO COMPLETO DO GOOGLE:", erroDetalhe); // Para o F12
-            
-            // Extrai a frase exata que o Google mandou do coração do erro
+            console.error("ERRO COMPLETO DO GOOGLE:", erroDetalhe);
             const msgErro = erroDetalhe.error?.message || "O servidor não explicou o motivo.";
             throw new Error(msgErro);
         }
@@ -417,8 +413,6 @@ REGRA ESTRITA: Responda à pergunta do usuário usando APENAS a intenção dele 
     } catch (erro) {
         console.error("Falha no Catch:", erro);
         document.getElementById('coach-typing')?.remove();
-        
-        // Escreve na tela o motivo pelo qual o Google rejeitou
-        adicionarMensagemNoChat(`<b class="text-rose-500">Acesso Negado (401):</b><br>O Google rejeitou a sua chave. O servidor disse o seguinte:<br><i class="text-slate-400">"${erro.message}"</i><br><br><b>Ação necessária:</b> Vá no Google AI Studio, exclua a chave antiga, gere uma chave nova e cole no config.js.`, false);
+        adicionarMensagemNoChat(`<b class="text-rose-500">Acesso Negado (401):</b><br>O Google rejeitou a sua chave. Motivo:<br><i class="text-slate-400">"${erro.message}"</i><br><br><b>Ação necessária:</b> Se você acabou de criar a chave, aguarde de 5 a 10 minutos para ela propagar nos servidores globais do Google e tente novamente.`, false);
     }
 }
