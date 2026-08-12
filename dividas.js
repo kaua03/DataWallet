@@ -1,5 +1,5 @@
 // ==========================================
-// dividas.js - MOTOR KANBAN DE CONTAS A PAGAR SÊNIOR
+// dividas.js - MOTOR KANBAN DE PASSIVOS SÊNIOR
 // ==========================================
 
 let usuarioLogado = null;
@@ -13,19 +13,53 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('divida-data').value = new Date().toISOString().split('T')[0];
     await carregarDadosDoBanco();
+    iniciarDragToScroll(); // Inicia o motor de arrastar a tela
 });
+
+// ==========================================
+// MOTOR UX: DRAG TO SCROLL (Arrastar para os lados)
+// ==========================================
+function iniciarDragToScroll() {
+    const slider = document.getElementById('container-scroll');
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+
+    slider.addEventListener('mousedown', (e) => {
+        isDown = true;
+        slider.classList.add('cursor-grabbing');
+        slider.classList.remove('cursor-grab');
+        startX = e.pageX - slider.offsetLeft;
+        scrollLeft = slider.scrollLeft;
+    });
+
+    slider.addEventListener('mouseleave', () => {
+        isDown = false;
+        slider.classList.remove('cursor-grabbing');
+        slider.classList.add('cursor-grab');
+    });
+
+    slider.addEventListener('mouseup', () => {
+        isDown = false;
+        slider.classList.remove('cursor-grabbing');
+        slider.classList.add('cursor-grab');
+    });
+
+    slider.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - slider.offsetLeft;
+        const walk = (x - startX) * 1.5; // Velocidade do arraste
+        slider.scrollLeft = scrollLeft - walk;
+    });
+}
 
 // ==========================================
 // FORMATAÇÃO E MÁSCARAS
 // ==========================================
-
-// Mascara o input em tempo real (R$ 1.500,00)
 function aplicarMascaraMoeda(input) {
-    let valor = input.value.replace(/\D/g, ''); // Remove tudo que não é número
-    if (valor === '') {
-        input.value = '';
-        return;
-    }
+    let valor = input.value.replace(/\D/g, ''); 
+    if (valor === '') { input.value = ''; return; }
     valor = (parseInt(valor) / 100).toFixed(2) + '';
     valor = valor.replace(".", ",");
     valor = valor.replace(/(\d)(\d{3})(\d{3}),/g, "$1.$2.$3,");
@@ -33,7 +67,6 @@ function aplicarMascaraMoeda(input) {
     input.value = valor;
 }
 
-// Transforma a máscara de volta para Matemática de Banco de Dados (1500.00)
 function desmascararMoeda(str) {
     if (!str) return 0;
     return parseFloat(str.replace(/\./g, '').replace(',', '.'));
@@ -42,7 +75,6 @@ function desmascararMoeda(str) {
 // ==========================================
 // NÚCLEO DE DADOS
 // ==========================================
-
 async function carregarDadosDoBanco() {
     try {
         const [rTrans, rCat] = await Promise.all([
@@ -127,7 +159,7 @@ function processarEAtualizarKanban() {
 }
 
 // ---------------------------------------------
-// RENDERIZAÇÃO DO HTML (Cards Clean)
+// RENDERIZAÇÃO DO HTML
 // ---------------------------------------------
 function renderizarColunas(agrupamentos) {
     const board = document.getElementById('board-dividas');
@@ -165,16 +197,16 @@ function renderizarColunas(agrupamentos) {
                 const dataStr = d.data_vencimento.split('-').reverse().join('/');
                 const isPago = d.pago === true;
                 
-                // Botão de check inspirado na sua referência (Soft Green)
+                // Botão de check principal
                 const btnAcao = isPago 
                     ? `<button onclick="alterarStatusPagamento(${d.id}, false)" title="Desfazer" class="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center shadow-sm"><i class="fa-solid fa-rotate-left"></i></button>`
                     : `<button onclick="alterarStatusPagamento(${d.id}, true)" title="Quitar" class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white transition flex items-center justify-center shadow-sm"><i class="fa-solid fa-check"></i></button>`;
 
-                // FIM DAS BORDAS COLORIDAS. Design Clean e minimalista.
                 const classeTraco = isPago ? 'line-through text-slate-400' : 'text-slate-800';
                 const corData = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-500' : 'text-slate-400';
                 const corValor = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-600' : 'text-slate-900';
 
+                // Injeta os botões de Edição e Exclusão ocultos (aparecem no hover)
                 return `
                 <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-all group">
                     <div class="flex justify-between items-start gap-3 mb-4">
@@ -185,7 +217,15 @@ function renderizarColunas(agrupamentos) {
                         <div class="flex items-center gap-1.5 text-[11px] font-bold ${corData}">
                             <i class="fa-regular fa-calendar"></i> <span>${dataStr}</span>
                         </div>
-                        ${btnAcao}
+                        
+                        <div class="flex items-center gap-1">
+                            <!-- Botões CRUD que aparecem ao passar o mouse -->
+                            <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="abrirModalEdicao(${d.id})" title="Editar" class="w-7 h-7 rounded bg-slate-50 text-slate-400 hover:bg-indigo-500 hover:text-white transition flex items-center justify-center"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                                <button onclick="excluirDivida(${d.id})" title="Excluir" class="w-7 h-7 rounded bg-slate-50 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center mr-1"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                            </div>
+                            ${btnAcao}
+                        </div>
                     </div>
                 </div>`;
             }).join('');
@@ -193,17 +233,26 @@ function renderizarColunas(agrupamentos) {
 
         html += `
         <div id="${idColunaSanitizado}" class="w-[320px] shrink-0 bg-slate-100/50 rounded-2xl border border-slate-200/60 flex flex-col max-h-full transition-all duration-300">
-            <div onclick="toggleColuna('${idColunaSanitizado}')" class="p-4 border-b border-slate-200/80 flex justify-between items-center bg-white rounded-t-2xl shrink-0 cursor-pointer hover:bg-slate-50 transition">
+            
+            <div onclick="toggleColuna('${idColunaSanitizado}')" class="p-4 border-b border-slate-200/80 flex justify-between items-center bg-white rounded-t-2xl shrink-0 cursor-pointer hover:bg-slate-50 transition relative">
+                
                 <div class="esconder-no-min flex items-center gap-2">
                     <i class="fa-solid ${config.icon} text-${config.titleColor}"></i>
                     <h3 class="font-bold text-${config.titleColor} text-sm">${nomeColuna}</h3>
                 </div>
-                <h3 class="hidden mostrar-no-min font-black text-slate-400 text-sm tracking-widest uppercase my-4">${nomeColuna}</h3>
+                
+                <!-- VISÃO MINIMIZADA (Com Contador Inteligente) -->
+                <div class="hidden mostrar-no-min flex-col items-center justify-center w-full gap-3 py-2">
+                    <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm transform rotate-90">${transacoesDaColuna.length}</span>
+                    <h3 class="font-black text-slate-400 text-xs tracking-widest uppercase transform rotate-180" style="writing-mode: vertical-rl;">${nomeColuna}</h3>
+                </div>
+                
                 <div class="esconder-no-min flex items-center gap-2">
                     <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm">${transacoesDaColuna.length}</span>
                     <i class="fa-solid fa-chevron-left text-slate-300 text-xs transition-transform transform -rotate-90"></i>
                 </div>
             </div>
+
             <div class="esconder-no-min p-3 flex-1 overflow-y-auto coluna-scroll space-y-3">
                 ${cardsHtml}
                 <div class="pt-2 border-t border-slate-200 border-dashed text-right px-1">
@@ -217,12 +266,17 @@ function renderizarColunas(agrupamentos) {
     board.innerHTML = html;
 }
 
+// ---------------------------------------------
+// AÇÕES DO KANBAN
+// ---------------------------------------------
 function toggleColuna(id) {
     const col = document.getElementById(id);
     col.classList.toggle('coluna-minimizada');
     const icone = col.querySelector('.fa-chevron-left');
-    if(col.classList.contains('coluna-minimizada')) icone.classList.replace('-rotate-90', 'rotate-180');
-    else icone.classList.replace('rotate-180', '-rotate-90');
+    if(icone) {
+        if(col.classList.contains('coluna-minimizada')) icone.classList.replace('-rotate-90', 'rotate-180');
+        else icone.classList.replace('rotate-180', '-rotate-90');
+    }
 }
 
 function alternarVisaoPagas() {
@@ -232,7 +286,7 @@ function alternarVisaoPagas() {
     if (mostrandoPagas) {
         btn.classList.replace('bg-slate-100', 'bg-emerald-100');
         btn.classList.replace('text-slate-600', 'text-emerald-600');
-        btn.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> Ver Pendentes';
+        btn.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> Voltar p/ Pendentes';
     } else {
         btn.classList.replace('bg-emerald-100', 'bg-slate-100');
         btn.classList.replace('text-emerald-600', 'text-slate-600');
@@ -253,78 +307,139 @@ async function alterarStatusPagamento(idTransacao, novoStatusPago) {
     } catch (e) { alert("Erro ao atualizar: " + e.message); }
 }
 
-function abrirModalNovaDivida() { document.getElementById('modal-divida').classList.remove('hidden'); }
-function fecharModalNovaDivida() {
-    document.getElementById('modal-divida').classList.add('hidden');
+// ---------------------------------------------
+// CRUD: CRIAR, EDITAR E EXCLUIR
+// ---------------------------------------------
+
+function abrirModalNovaDivida() { 
     document.getElementById('form-divida').reset();
+    document.getElementById('divida-id').value = ''; // Limpa o ID
+    
+    document.getElementById('modal-titulo').innerHTML = '<i class="fa-solid fa-file-signature text-indigo-500"></i> Lançar Contas';
+    document.getElementById('modal-subtitulo').innerText = 'Contas ou parcelamentos lançados aqui entram como "Pendentes".';
+    
+    // Mostra o campo de parcelas e ajusta o layout
+    document.getElementById('wrapper-parcelas').classList.remove('hidden');
+    document.getElementById('wrapper-categoria').classList.replace('col-span-3', 'col-span-2');
+
     document.getElementById('divida-data').value = new Date().toISOString().split('T')[0];
+    document.getElementById('modal-divida').classList.remove('hidden'); 
 }
 
-// ==========================================
-// BULK INSERT (Criação de Múltiplas Parcelas)
-// ==========================================
-async function salvarNovaDivida(event) {
+function abrirModalEdicao(idTransacao) {
+    const t = transacoesGlobais.find(x => x.id === idTransacao);
+    if (!t) return;
+
+    document.getElementById('divida-id').value = t.id;
+    document.getElementById('divida-desc').value = t.descricao;
+    
+    // Formata de volta pra texto pro usuário
+    let valorStr = t.valor.toFixed(2).replace('.', ',');
+    valorStr = valorStr.replace(/(\d)(\d{3})(\d{3}),/g, "$1.$2.$3,");
+    valorStr = valorStr.replace(/(\d)(\d{3}),/g, "$1.$2,");
+    document.getElementById('divida-valor').value = valorStr;
+    
+    document.getElementById('divida-data').value = t.data_vencimento;
+    document.getElementById('divida-categoria').value = t.categoria_id;
+
+    document.getElementById('modal-titulo').innerHTML = '<i class="fa-solid fa-pen text-indigo-500"></i> Editar Parcela';
+    document.getElementById('modal-subtitulo').innerText = 'Altere as informações deste lançamento específico.';
+
+    // Esconde o campo de parcelas (pois você não gera lote editando um já existente)
+    document.getElementById('wrapper-parcelas').classList.add('hidden');
+    document.getElementById('wrapper-categoria').classList.replace('col-span-2', 'col-span-3');
+
+    document.getElementById('modal-divida').classList.remove('hidden');
+}
+
+function fecharModalNovaDivida() {
+    document.getElementById('modal-divida').classList.add('hidden');
+}
+
+async function excluirDivida(idTransacao) {
+    if (!confirm("Tem certeza que deseja excluir este lançamento do seu banco de dados?")) return;
+
+    try {
+        const { error } = await supabaseClient.from('transacoes').delete().eq('id', idTransacao);
+        if (error) throw error;
+
+        // Limpa da memória global
+        transacoesGlobais = transacoesGlobais.filter(t => t.id !== idTransacao);
+        processarEAtualizarKanban();
+    } catch (e) { alert("Erro ao excluir: " + e.message); }
+}
+
+async function salvarDivida(event) {
     event.preventDefault();
     const btn = document.getElementById('btn-salvar-divida');
     const conteudoOriginal = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando Lote...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando...';
     btn.disabled = true;
 
+    const idExistente = document.getElementById('divida-id').value;
     const descBase = document.getElementById('divida-desc').value;
-    // Puxa o valor da máscara e converte para float de banco de dados
     const valorFloat = desmascararMoeda(document.getElementById('divida-valor').value);
     const dataInicialISO = document.getElementById('divida-data').value;
     const catId = document.getElementById('divida-categoria').value;
-    const qtdParcelas = parseInt(document.getElementById('divida-parcelas').value) || 1;
 
     if (valorFloat <= 0) {
         alert("O valor não pode ser zero.");
-        btn.innerHTML = conteudoOriginal; btn.disabled = false;
-        return;
+        btn.innerHTML = conteudoOriginal; btn.disabled = false; return;
     }
 
     try {
-        let loteInsercao = [];
+        if (idExistente) {
+            // ROTA DE EDIÇÃO (UPDATE)
+            const { data, error } = await supabaseClient.from('transacoes').update({
+                descricao: descBase,
+                valor: valorFloat,
+                data_vencimento: dataInicialISO,
+                categoria_id: catId
+            }).eq('id', idExistente).select();
 
-        // Loop matemático para gerar os meses
-        for (let i = 0; i < qtdParcelas; i++) {
-            // Lógica de avanço de mês respeitando fuso e fim de mês (Ex: 31 Jan -> 28 Fev)
-            let dataCalc = new Date(dataInicialISO + 'T12:00:00Z');
-            let diaOriginal = dataCalc.getDate();
-            
-            dataCalc.setMonth(dataCalc.getMonth() + i);
-            
-            // Se o dia mudou (ex: tentou criar 31 de Fev e virou Março), recua pro último dia do mês correto
-            if (dataCalc.getDate() !== diaOriginal) {
-                dataCalc.setDate(0); 
+            if (error) throw error;
+
+            // Atualiza memória
+            const idx = transacoesGlobais.findIndex(t => t.id == idExistente);
+            if (idx !== -1 && data && data.length > 0) {
+                transacoesGlobais[idx] = data[0];
             }
 
-            let dataFormatada = dataCalc.toISOString().split('T')[0];
-            let descFinal = qtdParcelas > 1 ? `${descBase} (${i + 1}/${qtdParcelas})` : descBase;
+        } else {
+            // ROTA DE CRIAÇÃO (BULK INSERT)
+            const qtdParcelas = parseInt(document.getElementById('divida-parcelas').value) || 1;
+            let loteInsercao = [];
 
-            loteInsercao.push({
-                usuario_id: usuarioLogado.id,
-                tipo: 'despesa',
-                descricao: descFinal,
-                valor: valorFloat, // Registra o valor PER PARCELA
-                data_vencimento: dataFormatada,
-                categoria_id: catId,
-                pago: false
-            });
+            for (let i = 0; i < qtdParcelas; i++) {
+                let dataCalc = new Date(dataInicialISO + 'T12:00:00Z');
+                let diaOriginal = dataCalc.getDate();
+                dataCalc.setMonth(dataCalc.getMonth() + i);
+                if (dataCalc.getDate() !== diaOriginal) dataCalc.setDate(0); 
+
+                let dataFormatada = dataCalc.toISOString().split('T')[0];
+                let descFinal = qtdParcelas > 1 ? `${descBase} (${i + 1}/${qtdParcelas})` : descBase;
+
+                loteInsercao.push({
+                    usuario_id: usuarioLogado.id,
+                    tipo: 'despesa',
+                    descricao: descFinal,
+                    valor: valorFloat, 
+                    data_vencimento: dataFormatada,
+                    categoria_id: catId,
+                    pago: false
+                });
+            }
+
+            const { data, error } = await supabaseClient.from('transacoes').insert(loteInsercao).select();
+            if (error) throw error;
+            if(data) transacoesGlobais.push(...data);
         }
-
-        // Insere o array inteiro no Supabase de uma só vez (Bulk Insert)
-        const { data, error } = await supabaseClient.from('transacoes').insert(loteInsercao).select();
-
-        if (error) throw error;
-
-        if(data) transacoesGlobais.push(...data);
         
         fecharModalNovaDivida();
         processarEAtualizarKanban();
 
     } catch (e) {
-        alert("Erro no Lote: " + e.message);
+        alert("Erro ao salvar: " + e.message);
     } finally {
         btn.innerHTML = conteudoOriginal;
         btn.disabled = false;
