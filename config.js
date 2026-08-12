@@ -2,6 +2,8 @@
 // js/config.js - O COFRE CENTRAL DA APLICAÇÃO
 // ==========================================
 
+const GEMINI_API_KEY = "COLE_AQUI_A_SUA_CHAVE_AIzaSy...";
+
 const supabaseUrl = 'https://aoeyeleaxbwvjmzxxdib.supabase.co'; 
 const supabaseKey = 'sb_publishable_Q6JiNxMGUdqObAMxj3EYSA_s_cYpFUk'; 
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
