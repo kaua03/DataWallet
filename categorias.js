@@ -1,5 +1,5 @@
 // ==========================================
-// categorias.js - MOTOR DE ORGANIZAÇÃO E ANÁLISE DE CAIXA
+// categorias.js - MOTOR DE ANÁLISE DE CAIXA
 // ==========================================
 
 let usuarioLogado = null;
@@ -31,11 +31,11 @@ async function carregarDadosDoBanco() {
 }
 
 function renderizarCategorias() {
-    // 1. Cálculos Globais da Carteira
     const gastosPorCatId = {};
     let totalDespesas = 0;
     let totalReceitas = 0;
 
+    // Varre todas as transações da vida do usuário
     transacoesGlobais.forEach(t => {
         if(t.tipo === 'despesa') {
             totalDespesas += t.valor;
@@ -49,36 +49,35 @@ function renderizarCategorias() {
 
     const saldoAtual = totalReceitas - totalDespesas;
 
-    // 2. Ordena o Ranking de Gastos
+    // Ordena do maior gasto para o menor
     const rankingIdsOrdenado = Object.keys(gastosPorCatId).sort((a, b) => gastosPorCatId[b] - gastosPorCatId[a]);
 
-    // 3. Constrói os Cards Matemáticos
     const htmlCards = categoriasGlobais.map(c => {
         const totalGasto = gastosPorCatId[c.id] || 0;
         const posicaoIndex = rankingIdsOrdenado.indexOf(String(c.id));
-        const badgeRanking = posicaoIndex !== -1 ? `${posicaoIndex + 1}° em gastos` : 'Sem gastos';
+        const badgeRanking = posicaoIndex !== -1 ? `${posicaoIndex + 1}º em gastos` : 'Sem gastos';
         
-        // MATEMÁTICA DAS PORCENTAGENS
-        let percGastoTexto = "0% de despesas";
+        let percGastoTexto = "0% DO TOTAL GASTO";
         let percSaldoTexto = "";
 
         // % Em relação a todas as despesas
         if (totalDespesas > 0 && totalGasto > 0) {
             const percDespesa = ((totalGasto / totalDespesas) * 100).toFixed(1);
-            percGastoTexto = `${percDespesa}% do Total Gasto`;
+            percGastoTexto = `${percDespesa}% DO TOTAL GASTO`;
         }
 
-        // % Em relação ao Saldo Atual (O que o usuário pediu)
+        // % Em relação ao Saldo Atual (Só aparece se o usuário tiver saldo positivo)
         if (saldoAtual > 0 && totalGasto > 0) {
             const percSaldo = ((totalGasto / saldoAtual) * 100).toFixed(1);
-            percSaldoTexto = `<span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-md ml-2">${percSaldo}% do Saldo Atual</span>`;
+            percSaldoTexto = `<span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-md ml-2">${percSaldo}% DO SALDO ATUAL</span>`;
         }
 
-        // Layout Condicional: Se for Renda/Salário, esconde a matemática de "gasto"
         const isRenda = c.nome.includes('Renda');
+        
+        // Se for a pasta de Salário, a interface muda
         const conteudoValores = isRenda 
-            ? `<p class="text-xs text-green-500 font-bold uppercase mt-2">Pasta de Captação</p>`
-            : `<p class="text-[10px] text-gray-500 font-bold uppercase mt-2 flex items-center">${percGastoTexto} ${percSaldoTexto}</p>`;
+            ? `<p class="text-[10px] text-green-500 font-bold uppercase mt-2 tracking-wide">Pasta de Captação</p>`
+            : `<div class="text-[10px] text-gray-500 font-bold uppercase mt-2 flex items-center tracking-wide">${percGastoTexto} ${percSaldoTexto}</div>`;
 
         return `
         <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition flex flex-col justify-between group relative overflow-hidden">
