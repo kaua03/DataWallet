@@ -19,15 +19,21 @@
         .fade-in { animation: fadeIn 0.4s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        .kanban-board::-webkit-scrollbar { height: 8px; }
-        .kanban-board::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        /* Oculta as barras de rolagem nativas para dar lugar ao Drag to Scroll */
+        .kanban-board::-webkit-scrollbar { display: none; }
+        .kanban-board { scrollbar-width: none; } 
         
         .coluna-scroll::-webkit-scrollbar { width: 4px; }
         .coluna-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         
-        .coluna-minimizada { width: 60px !important; min-width: 60px !important; cursor: pointer; }
+        /* Cursor de "Mãozinha" para puxar a tela */
+        .cursor-grab { cursor: grab; }
+        .cursor-grabbing { cursor: grabbing; }
+
+        /* Comportamento das Colunas Minimizadas */
+        .coluna-minimizada { width: 64px !important; min-width: 64px !important; cursor: pointer; transition: all 0.3s ease; }
         .coluna-minimizada .esconder-no-min { display: none !important; }
-        .coluna-minimizada .mostrar-no-min { display: flex !important; writing-mode: vertical-rl; transform: rotate(180deg); }
+        .coluna-minimizada .mostrar-no-min { display: flex !important; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 h-screen overflow-hidden flex relative fade-in">
@@ -96,7 +102,8 @@
             </div>
         </header>
 
-        <section class="flex-1 overflow-y-hidden overflow-x-auto p-6 md:p-8 pt-2 pb-28 md:pb-8 kanban-board">
+        <!-- KANBAN BOARD (Adicionado cursor-grab para o motor JS) -->
+        <section class="flex-1 overflow-y-hidden overflow-x-auto p-6 md:p-8 pt-2 pb-28 md:pb-8 kanban-board cursor-grab" id="container-scroll">
             <div id="board-dividas" class="flex gap-6 h-full items-start w-max">
                 <div class="w-full text-center mt-20 text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl"></i> Montando colunas...</div>
             </div>
@@ -111,14 +118,18 @@
         <a href="planos.html" class="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition p-2"><i class="fa-solid fa-bullseye text-lg mb-1"></i><span class="text-[10px] font-bold">Metas</span></a>
     </nav>
 
-    <!-- MODAL NOVA DÍVIDA / PARCELAMENTO -->
+    <!-- MODAL HÍBRIDO: NOVA DÍVIDA OU EDITAR -->
     <div id="modal-divida" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center fade-in p-4">
         <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 relative">
             <button onclick="fecharModalNovaDivida()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
-            <h3 class="text-xl font-black text-slate-900 mb-1"><i class="fa-solid fa-file-signature text-indigo-500"></i> Lançar Contas</h3>
-            <p class="text-xs text-slate-500 mb-6 font-medium">Contas ou parcelamentos lançados aqui entram como "Pendentes".</p>
             
-            <form id="form-divida" onsubmit="salvarNovaDivida(event)" class="space-y-4">
+            <h3 id="modal-titulo" class="text-xl font-black text-slate-900 mb-1"><i class="fa-solid fa-file-signature text-indigo-500"></i> Lançar Contas</h3>
+            <p id="modal-subtitulo" class="text-xs text-slate-500 mb-6 font-medium">Contas ou parcelamentos lançados aqui entram como "Pendentes".</p>
+            
+            <form id="form-divida" onsubmit="salvarDivida(event)" class="space-y-4">
+                <!-- Esconde o ID da transação se for Edição -->
+                <input type="hidden" id="divida-id">
+
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Descrição / Nome</label>
                     <input type="text" id="divida-desc" required placeholder="Ex: Financiamento Carro" class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 font-medium">
@@ -126,25 +137,23 @@
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <!-- MÁSCARA DE MOEDA INSERIDA AQUI -->
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Valor da Parcela</label>
                         <input type="text" id="divida-valor" inputmode="numeric" oninput="aplicarMascaraMoeda(this)" required placeholder="0,00" class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 font-bold">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Vencimento (1ª)</label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Vencimento</label>
                         <input type="date" id="divida-data" required class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 font-medium cursor-pointer">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-3 gap-4">
-                    <div class="col-span-2">
+                    <div id="wrapper-categoria" class="col-span-2">
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Centro de Custo</label>
                         <select id="divida-categoria" required class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 font-medium cursor-pointer">
                             <option value="">Carregando pastas...</option>
                         </select>
                     </div>
-                    <div>
-                        <!-- CAMPO DE PARCELAS INSERIDO AQUI -->
+                    <div id="wrapper-parcelas">
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1" title="Quantidade de meses">Parcelas</label>
                         <input type="number" id="divida-parcelas" min="1" max="360" value="1" required class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 font-bold text-center">
                     </div>
