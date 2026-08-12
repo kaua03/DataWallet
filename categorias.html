@@ -62,7 +62,7 @@
         <a href="planos.html" class="flex flex-col items-center text-gray-400 hover:text-blue-600 transition p-2"><i class="fa-solid fa-bullseye text-lg mb-1"></i><span class="text-[10px] font-bold">Metas</span></a>
     </nav>
 
-    <!-- MODAL DE EXTRATO COM FILTRO DE DATAS -->
+    <!-- MODAL DE EXTRATO COM FILTRO DE DATAS AVANÇADO -->
     <div id="modal-extrato" class="hidden fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex justify-end fade-in">
         <div class="bg-white w-full md:w-[450px] h-full shadow-2xl relative slide-right flex flex-col">
             
@@ -83,13 +83,18 @@
                     <span class="text-xs font-bold text-gray-500 uppercase"><i class="fa-solid fa-filter"></i> Filtrar por Período</span>
                     <select id="filtro-extrato-periodo" onchange="aplicarFiltroExtrato()" class="bg-white border border-gray-200 text-gray-700 text-sm rounded-lg outline-none px-3 py-1.5 font-bold shadow-sm cursor-pointer">
                         <option value="tudo">Todo o Histórico</option>
-                        <option value="mes_atual">Este Mês</option>
-                        <option value="mes_passado">Mês Passado</option>
+                        <option value="por_mes">Mês Específico</option>
                         <option value="ano_atual">Este Ano</option>
                         <option value="personalizado">Personalizado...</option>
                     </select>
                 </div>
-                <!-- Datas Específicas (Escondidas por padrão) -->
+                
+                <!-- Input: Mês Específico (Escondido por padrão) -->
+                <div id="filtro-extrato-mes" class="hidden flex items-center gap-2 mt-1">
+                    <input type="month" id="input-mes-especifico" onchange="aplicarFiltroExtrato()" class="w-full bg-white border border-gray-200 text-gray-700 text-sm rounded-lg px-3 py-2 outline-none font-bold shadow-inner cursor-pointer">
+                </div>
+
+                <!-- Inputs: Datas Específicas (Escondidas por padrão) -->
                 <div id="filtro-extrato-datas" class="hidden flex items-center gap-2 mt-1">
                     <input type="date" id="extrato-data-inicio" onchange="aplicarFiltroExtrato()" class="flex-1 bg-white border border-gray-200 text-gray-700 text-xs rounded-lg px-2 py-2 outline-none font-bold">
                     <span class="text-gray-400 text-xs font-bold">até</span>
