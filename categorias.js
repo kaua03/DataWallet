@@ -6,7 +6,6 @@ let usuarioLogado = null;
 let categoriasGlobais = [];
 let transacoesGlobais = [];
 
-// Variável Global para saber qual categoria está aberta no Modal
 let categoriaAtivaModal = null; 
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -126,15 +125,17 @@ function abrirExtrato(idCategoria, nome, cor, icone) {
     document.getElementById('extrato-titulo').innerText = nome;
     document.getElementById('extrato-icone').innerHTML = `<i class="fa-solid ${icone} ${cor}"></i>`;
     
-    // Salva a pasta que o usuário acabou de abrir na memória
     categoriaAtivaModal = { id: idCategoria, nome: nome };
     
-    // Reseta o filtro para "Tudo" toda vez que abre uma pasta nova
-    document.getElementById('filtro-extrato-periodo').value = 'tudo';
+    // Reseta o filtro para "Por Mês" e preenche o Mês Atual automaticamente
+    document.getElementById('filtro-extrato-periodo').value = 'por_mes';
     
-    // Aciona a renderização com o filtro base
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    document.getElementById('input-mes-especifico').value = `${ano}-${mes}`;
+    
     aplicarFiltroExtrato();
-    
     document.getElementById('modal-extrato').classList.remove('hidden');
 }
 
@@ -143,34 +144,40 @@ function aplicarFiltroExtrato() {
 
     const tipoFiltro = document.getElementById('filtro-extrato-periodo').value;
     const divDatas = document.getElementById('filtro-extrato-datas');
+    const divMes = document.getElementById('filtro-extrato-mes');
 
-    // Mostra/Esconde as caixas de data personalizada
+    // Esconde tudo primeiro
+    divDatas.classList.add('hidden');
+    divMes.classList.add('hidden');
+
+    // Mostra o input correto de acordo com a seleção
     if (tipoFiltro === 'personalizado') {
         divDatas.classList.remove('hidden');
-    } else {
-        divDatas.classList.add('hidden');
+    } else if (tipoFiltro === 'por_mes') {
+        divMes.classList.remove('hidden');
     }
 
-    // 1. Isola as transações apenas da pasta atual
     let historico = transacoesGlobais.filter(t => t.categoria_id === categoriaAtivaModal.id);
 
     const dataHoje = new Date();
-    const mesAtual = dataHoje.getMonth();
     const anoAtual = dataHoje.getFullYear();
 
-    // 2. Aplica o filtro de tempo na Data de Vencimento
+    // Filtra matematicamente
     historico = historico.filter(t => {
         if (!t.data_vencimento) return true; 
         const dTransacao = new Date(t.data_vencimento + 'T12:00:00Z');
 
-        if (tipoFiltro === 'mes_atual') {
-            return dTransacao.getMonth() === mesAtual && dTransacao.getFullYear() === anoAtual;
-        } else if (tipoFiltro === 'mes_passado') {
-            const mesAnt = mesAtual === 0 ? 11 : mesAtual - 1;
-            const anoAnt = mesAtual === 0 ? anoAtual - 1 : anoAtual;
-            return dTransacao.getMonth() === mesAnt && dTransacao.getFullYear() === anoAnt;
+        if (tipoFiltro === 'por_mes') {
+            const valorMes = document.getElementById('input-mes-especifico').value;
+            if (!valorMes) return true; // Se o usuário limpar o input, mostra tudo
+            
+            // O input type="month" devolve "AAAA-MM"
+            const [anoFiltro, mesFiltro] = valorMes.split('-');
+            return dTransacao.getMonth() === (parseInt(mesFiltro) - 1) && dTransacao.getFullYear() === parseInt(anoFiltro);
+            
         } else if (tipoFiltro === 'ano_atual') {
             return dTransacao.getFullYear() === anoAtual;
+            
         } else if (tipoFiltro === 'personalizado') {
             const dataInicio = document.getElementById('extrato-data-inicio').value;
             const dataFim = document.getElementById('extrato-data-fim').value;
@@ -179,10 +186,9 @@ function aplicarFiltroExtrato() {
             if (dataFim) valid = valid && dTransacao <= new Date(dataFim + 'T12:00:00Z');
             return valid;
         }
-        return true; // Se for 'tudo', passa direto
+        return true; 
     });
 
-    // 3. Renderiza na tela
     let somaPasta = 0;
     const isReceitaCat = categoriaAtivaModal.nome.includes('Renda');
 
@@ -191,6 +197,8 @@ function aplicarFiltroExtrato() {
         
         let dataStr = t.data_vencimento ? t.data_vencimento.split('-').reverse().join('/') : '--/--/----';
         let horaStr = '--:--';
+        
+        // Puxando o horário atômico de Auditoria (Timestamp real de criação)
         if (t.criado_em) {
             const dataObj = new Date(t.criado_em);
             horaStr = dataObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute:'2-digit' });
