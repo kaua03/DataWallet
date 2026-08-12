@@ -101,40 +101,44 @@ function renderizarInterface() {
 }
 
 // ---------------------------------------------
-// MICROFONE (API Nativa do Navegador)
+// MICROFONE BLINDADO
 // ---------------------------------------------
 function ativarMicrofone() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
-    if (!SpeechRecognition) {
-        return alert("Seu navegador ou celular não suporta gravação de voz nativa.");
+    try {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        if (!SpeechRecognition) {
+            return alert("Seu navegador não suporta microfone. Tente usar o Google Chrome ou Safari atualizado.");
+        }
+        
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'pt-BR';
+        
+        const btnMic = document.getElementById('btn-mic');
+        const iconeAntigo = btnMic.innerHTML;
+        
+        btnMic.innerHTML = '<i class="fa-solid fa-microphone-lines fa-beat text-red-500"></i>';
+
+        recognition.onresult = (event) => {
+            const transcricao = event.results[0][0].transcript;
+            document.getElementById('input-magico').value = transcricao;
+            processarFrase(); 
+        };
+
+        recognition.onerror = (e) => {
+            console.error("Erro no mic:", e);
+            if (e.error === 'not-allowed') alert("Permissão do microfone negada. Autorize no cadeado ao lado da URL.");
+            btnMic.innerHTML = iconeAntigo;
+        };
+
+        recognition.onend = () => {
+            btnMic.innerHTML = iconeAntigo;
+        };
+
+        recognition.start();
+    } catch (err) {
+        alert("Falha ao iniciar o microfone.");
     }
-    
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'pt-BR';
-    
-    const btnMic = document.getElementById('btn-mic');
-    const iconeAntigo = btnMic.innerHTML;
-    
-    // Animação visual de gravando
-    btnMic.innerHTML = '<i class="fa-solid fa-microphone-lines fa-beat text-red-500"></i>';
-
-    recognition.onresult = (event) => {
-        const transcricao = event.results[0][0].transcript;
-        document.getElementById('input-magico').value = transcricao;
-        processarFrase(); // Já joga direto pro processador
-    };
-
-    recognition.onerror = (e) => {
-        console.error(e);
-        btnMic.innerHTML = iconeAntigo;
-    };
-
-    recognition.onend = () => {
-        btnMic.innerHTML = iconeAntigo;
-    };
-
-    recognition.start();
 }
 
 // ---------------------------------------------
@@ -148,7 +152,6 @@ function inferirCategoria(texto, isReceita) {
         return catRenda ? catRenda : null;
     }
 
-    // Dicionário Ampliado para pegar as falhas relatadas
     const dicionario = {
         'alimentação': ['ifood', 'mercado', 'comida', 'lanche', 'pizza', 'padaria', 'restaurante', 'hamburguer', 'supermercado', 'açougue', 'coxinha'],
         'veículo': ['uber', 'gasolina', 'posto', 'carro', 'moto', 'oficina', 'estacionamento', 'passagem', 'ônibus', 'pedágio', 'mecânico', 'combustível', 'combustivel', 'álcool', 'alcool', 'etanol', 'diesel', 'pneu'],
@@ -156,7 +159,7 @@ function inferirCategoria(texto, isReceita) {
         'estudo': ['faculdade', 'curso', 'livro', 'escola', 'certificado', 'prova', 'material', 'aula', 'mensalidade'],
         'saúde': ['farmácia', 'remédio', 'médico', 'hospital', 'consulta', 'dentista', 'imprevisto', 'exame', 'terapia', 'psicólogo'],
         'lazer': ['jogo', 'cinema', 'festa', 'roupa', 'shopping', 'bar', 'presente', 'viagem', 'ingresso', 'steam', 'xbox', 'playstation', 'sorvete', 'show'],
-        'assinaturas': ['netflix', 'spotify', 'amazon', 'prime', 'assinatura', 'mensalidade', 'gympass', 'academia', 'internet']
+        'assinaturas': ['netflix', 'spotify', 'amazon', 'prime', 'assinatura', 'gympass', 'academia']
     };
 
     for (const [chaveCat, palavras] of Object.entries(dicionario)) {
@@ -191,7 +194,7 @@ function atualizarCoresTipoModal() {
     }
 }
 
-// 1. Abertura do Modal para NOVA transação via NLP
+// NOVA TRANSAÇÃO
 function processarFrase() {
     const input = document.getElementById('input-magico').value;
     if(!input) return alert("Digite algo para registrar.");
@@ -211,28 +214,28 @@ function processarFrase() {
     }
     const tituloOficial = descLimpa.charAt(0).toUpperCase() + descLimpa.slice(1);
 
-    // Preenche o formulário do modal
-    document.getElementById('modal-id').value = ''; // ID vazio significa "Novo Registro"
+    document.getElementById('modal-id').value = ''; 
+    document.getElementById('modal-titulo').innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-blue-600"></i> ${isReceita ? 'Registrar Entrada' : 'Registrar Saída'}`;
     document.getElementById('modal-desc').value = tituloOficial;
     document.getElementById('modal-valor').value = val;
     document.getElementById('modal-data').value = new Date().toISOString().split('T')[0];
     
-    if (categoriaDetectada) {
-        document.getElementById('modal-cat').value = categoriaDetectada.id;
-    }
+    if (categoriaDetectada) document.getElementById('modal-cat').value = categoriaDetectada.id;
 
     document.querySelector(`input[name="modal-tipo"][value="${isReceita ? 'receita' : 'despesa'}"]`).checked = true;
     atualizarCoresTipoModal();
 
-    document.getElementById('modal-confirmacao').classList.remove('hidden');
+    // ID CORRETO: modal-transacao
+    document.getElementById('modal-transacao').classList.remove('hidden');
 }
 
-// 2. Abertura do Modal para EDITAR transação existente
+// EDIÇÃO DE TRANSAÇÃO
 function abrirModalEdicao(id) {
     const t = transacoesGlobais.find(x => x.id === id);
     if(!t) return;
 
     document.getElementById('modal-id').value = t.id;
+    document.getElementById('modal-titulo').innerHTML = `<i class="fa-solid fa-pen-to-square text-blue-600"></i> Editar Lançamento`;
     document.getElementById('modal-desc').value = t.descricao;
     document.getElementById('modal-valor').value = t.valor;
     document.getElementById('modal-data').value = t.data_vencimento;
@@ -241,14 +244,16 @@ function abrirModalEdicao(id) {
     document.querySelector(`input[name="modal-tipo"][value="${t.tipo}"]`).checked = true;
     atualizarCoresTipoModal();
 
-    document.getElementById('modal-confirmacao').classList.remove('hidden');
+    // ID CORRETO: modal-transacao
+    document.getElementById('modal-transacao').classList.remove('hidden');
 }
 
 function fecharModal() { 
-    document.getElementById('modal-confirmacao').classList.add('hidden'); 
+    // ID CORRETO: modal-transacao
+    document.getElementById('modal-transacao').classList.add('hidden'); 
 }
 
-// 3. Salvar (Detecta se é Inserção ou Update pelo ID escondido)
+// SALVAR (Insert ou Update)
 async function salvarTransacaoFinal() {
     const id = document.getElementById('modal-id').value;
     const desc = document.getElementById('modal-desc').value.trim();
@@ -273,11 +278,9 @@ async function salvarTransacaoFinal() {
 
     try {
         if (id) {
-            // Edição (Update)
             const { error } = await supabaseClient.from('transacoes').update(payload).eq('id', id).eq('usuario_id', usuarioLogado.id);
             if (error) throw error;
         } else {
-            // Criação (Insert)
             const { error } = await supabaseClient.from('transacoes').insert([payload]);
             if (error) throw error;
         }
@@ -292,9 +295,7 @@ async function salvarTransacaoFinal() {
     }
 }
 
-// ---------------------------------------------
-// EXCLUSÃO
-// ---------------------------------------------
+// EXCLUIR
 async function excluirTransacao(id) {
     if(!confirm("Tem certeza que deseja excluir este lançamento?")) return;
 
