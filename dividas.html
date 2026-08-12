@@ -19,18 +19,15 @@
         .fade-in { animation: fadeIn 0.4s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Oculta as barras de rolagem nativas para dar lugar ao Drag to Scroll */
         .kanban-board::-webkit-scrollbar { display: none; }
         .kanban-board { scrollbar-width: none; } 
         
         .coluna-scroll::-webkit-scrollbar { width: 4px; }
         .coluna-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         
-        /* Cursor de "Mãozinha" para puxar a tela */
         .cursor-grab { cursor: grab; }
         .cursor-grabbing { cursor: grabbing; }
 
-        /* Comportamento das Colunas Minimizadas */
         .coluna-minimizada { width: 64px !important; min-width: 64px !important; cursor: pointer; transition: all 0.3s ease; }
         .coluna-minimizada .esconder-no-min { display: none !important; }
         .coluna-minimizada .mostrar-no-min { display: flex !important; }
@@ -69,10 +66,8 @@
                 </div>
                 
                 <div class="flex items-center gap-3 w-full md:w-auto">
-                    <button onclick="alternarVisaoPagas()" id="btn-visao-pagas" class="flex-1 md:flex-none bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 border border-slate-200">
-                        <i class="fa-solid fa-check-double"></i> Ver Pagas
-                    </button>
-                    <button onclick="abrirModalNovaDivida()" class="flex-1 md:flex-none bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-5 rounded-xl shadow-md shadow-indigo-600/20 transition flex items-center justify-center gap-2">
+                    <!-- BOTÃO "VER PAGAS" REMOVIDO PARA DAR LUGAR AO FLUXO CONTÍNUO -->
+                    <button onclick="abrirModalNovaDivida()" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-5 rounded-xl shadow-md shadow-indigo-600/20 transition flex items-center justify-center gap-2">
                         <i class="fa-solid fa-plus"></i> Novo Lançamento
                     </button>
                 </div>
@@ -102,7 +97,6 @@
             </div>
         </header>
 
-        <!-- KANBAN BOARD (Adicionado cursor-grab para o motor JS) -->
         <section class="flex-1 overflow-y-hidden overflow-x-auto p-6 md:p-8 pt-2 pb-28 md:pb-8 kanban-board cursor-grab" id="container-scroll">
             <div id="board-dividas" class="flex gap-6 h-full items-start w-max">
                 <div class="w-full text-center mt-20 text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl"></i> Montando colunas...</div>
@@ -118,7 +112,7 @@
         <a href="planos.html" class="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition p-2"><i class="fa-solid fa-bullseye text-lg mb-1"></i><span class="text-[10px] font-bold">Metas</span></a>
     </nav>
 
-    <!-- MODAL HÍBRIDO: NOVA DÍVIDA OU EDITAR -->
+    <!-- MODAL HÍBRIDO -->
     <div id="modal-divida" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center fade-in p-4">
         <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 relative">
             <button onclick="fecharModalNovaDivida()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
@@ -127,7 +121,6 @@
             <p id="modal-subtitulo" class="text-xs text-slate-500 mb-6 font-medium">Contas ou parcelamentos lançados aqui entram como "Pendentes".</p>
             
             <form id="form-divida" onsubmit="salvarDivida(event)" class="space-y-4">
-                <!-- Esconde o ID da transação se for Edição -->
                 <input type="hidden" id="divida-id">
 
                 <div>
