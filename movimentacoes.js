@@ -20,9 +20,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    const hoje = new Date();
-    document.getElementById('input-mes').value = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
-    document.getElementById('transacao-data').value = hoje.toISOString().split('T')[0];
+    const Essa Semana = new Date();
+    document.getElementById('input-mes').value = `${Essa Semana.getFullYear()}-${String(Essa Semana.getMonth() + 1).padStart(2, '0')}`;
+    document.getElementById('transacao-data').value = Essa Semana.toISOString().split('T')[0];
 
     mudarTipoFiltroHistorico();
     await carregarDadosDoBanco();
@@ -104,7 +104,7 @@ function atualizarTopCards() {
 }
 
 // ==========================================
-// HISTÓRICO COM PESQUISA E FILTROS (Com Lógica do Hoje)
+// HISTÓRICO COM PESQUISA E FILTROS (Com Lógica do Essa Semana)
 // ==========================================
 function mudarTipoFiltroHistorico() {
     const tipo = document.getElementById('filtro-periodo').value;
@@ -129,13 +129,13 @@ function aplicarFiltrosHistorico() {
             const d = new Date(t.data_vencimento + 'T12:00:00Z');
             d.setHours(0,0,0,0);
             
-            if (tipoFiltro === 'hoje') {
-                // A REGRA DE OURO: "Hoje" engloba a semana inteira (Domingo a Sábado)
-                const dataHoje = new Date();
-                dataHoje.setHours(0,0,0,0);
+            if (tipoFiltro === 'Essa Semana') {
+                // A REGRA DE OURO: "Essa Semana" engloba a semana inteira (Domingo a Sábado)
+                const dataEssa Semana = new Date();
+                dataEssa Semana.setHours(0,0,0,0);
                 
-                const inicioSemana = new Date(dataHoje);
-                inicioSemana.setDate(dataHoje.getDate() - dataHoje.getDay()); // Volta pro Domingo
+                const inicioSemana = new Date(dataEssa Semana);
+                inicioSemana.setDate(dataEssa Semana.getDate() - dataEssa Semana.getDay()); // Volta pro Domingo
                 
                 const fimSemana = new Date(inicioSemana);
                 fimSemana.setDate(inicioSemana.getDate() + 6); // Avança pro Sábado
