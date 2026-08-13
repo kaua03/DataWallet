@@ -193,7 +193,7 @@ function renderizarMiniKPIs() {
             <i class="fa-solid fa-arrow-up"></i> ${qtdSaidas} Saídas • ${formatarMoeda(somaSaidas)}
         </span>
         <span class="${corBalanco} text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5" title="Seu resultado final neste filtro">
-            Balanço: ${sinalBalanco} ${formatarMoeda(Math.abs(balanco))}
+            Fluxo: ${sinalBalanco} ${formatarMoeda(Math.abs(balanco))}
         </span>
     `;
 }
