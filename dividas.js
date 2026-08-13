@@ -1,10 +1,11 @@
 // ==========================================
-// dividas.js - MOTOR KANBAN DE PASSIVOS SÊNIOR
+// dividas.js - MOTOR KANBAN ESTABILIZADO
 // ==========================================
 
 let usuarioLogado = null;
 let transacoesGlobais = [];
 let categoriasGlobais = [];
+let mostrandoPagas = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
     usuarioLogado = await verificarSessaoSegura();
@@ -18,32 +19,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 function iniciarDragToScroll() {
     const slider = document.getElementById('container-scroll');
     if(!slider) return;
-    let isDown = false;
-    let startX;
-    let scrollLeft;
+    let isDown = false; let startX; let scrollLeft;
 
     slider.addEventListener('mousedown', (e) => {
-        isDown = true;
-        slider.classList.add('cursor-grabbing');
-        slider.classList.remove('cursor-grab');
-        startX = e.pageX - slider.offsetLeft;
-        scrollLeft = slider.scrollLeft;
+        isDown = true; slider.classList.add('cursor-grabbing'); slider.classList.remove('cursor-grab');
+        startX = e.pageX - slider.offsetLeft; scrollLeft = slider.scrollLeft;
     });
     slider.addEventListener('mouseleave', () => {
-        isDown = false;
-        slider.classList.remove('cursor-grabbing');
-        slider.classList.add('cursor-grab');
+        isDown = false; slider.classList.remove('cursor-grabbing'); slider.classList.add('cursor-grab');
     });
     slider.addEventListener('mouseup', () => {
-        isDown = false;
-        slider.classList.remove('cursor-grabbing');
-        slider.classList.add('cursor-grab');
+        isDown = false; slider.classList.remove('cursor-grabbing'); slider.classList.add('cursor-grab');
     });
     slider.addEventListener('mousemove', (e) => {
-        if (!isDown) return;
-        e.preventDefault();
-        const x = e.pageX - slider.offsetLeft;
-        const walk = (x - startX) * 1.5; 
+        if (!isDown) return; e.preventDefault();
+        const x = e.pageX - slider.offsetLeft; const walk = (x - startX) * 1.5; 
         slider.scrollLeft = scrollLeft - walk;
     });
 }
@@ -85,17 +75,9 @@ async function carregarDadosDoBanco() {
 function processarEAtualizarKanban() {
     const hojeData = new Date();
     hojeData.setHours(0, 0, 0, 0); 
-    
-    const mesAtual = hojeData.getMonth();
-    const anoAtual = hojeData.getFullYear();
+    const mesAtual = hojeData.getMonth(); const anoAtual = hojeData.getFullYear();
 
-    const agrupamentos = {
-        'Atrasadas': [],
-        'Este Mês': [],
-        'Próximos Meses': [],
-        'Histórico de Pagas': []
-    };
-    
+    const agrupamentos = { 'Atrasadas': [], 'Este Mês': [], 'Próximos Meses': [], 'Histórico de Pagas': [] };
     let totAtrasadas = 0, totMes = 0, totFuturo = 0, totPagas = 0;
 
     transacoesGlobais.forEach(t => {
@@ -112,21 +94,11 @@ function processarEAtualizarKanban() {
         const dVenc = new Date(t.data_vencimento + 'T12:00:00Z');
         dVenc.setHours(0, 0, 0, 0);
         
-        const mesVenc = dVenc.getMonth();
-        const anoVenc = dVenc.getFullYear();
+        const mesVenc = dVenc.getMonth(); const anoVenc = dVenc.getFullYear();
 
-        if (dVenc < hojeData) {
-            agrupamentos['Atrasadas'].push(t);
-            totAtrasadas += t.valor;
-        } 
-        else if (mesVenc === mesAtual && anoVenc === anoAtual) {
-            agrupamentos['Este Mês'].push(t);
-            totMes += t.valor;
-        } 
-        else {
-            agrupamentos['Próximos Meses'].push(t);
-            totFuturo += t.valor;
-        }
+        if (dVenc < hojeData) { agrupamentos['Atrasadas'].push(t); totAtrasadas += t.valor; } 
+        else if (mesVenc === mesAtual && anoVenc === anoAtual) { agrupamentos['Este Mês'].push(t); totMes += t.valor; } 
+        else { agrupamentos['Próximos Meses'].push(t); totFuturo += t.valor; }
     });
 
     document.getElementById('kpi-atrasadas').innerText = formatarMoeda(totAtrasadas);
@@ -146,10 +118,8 @@ function renderizarColunas(agrupamentos) {
 
     ordemColunas.forEach(nomeColuna => {
         const transacoesDaColuna = agrupamentos[nomeColuna];
-        const somaColuna = transacoesDaColuna.reduce((acc, t) => acc + t.valor, 0);
         
         let config = { icon: 'fa-calendar-day', titleColor: 'slate-600', badgeColor: 'bg-slate-200 text-slate-600' };
-        
         if (nomeColuna === 'Atrasadas') config = { icon: 'fa-circle-exclamation', titleColor: 'rose-600', badgeColor: 'bg-rose-100 text-rose-600' };
         if (nomeColuna === 'Este Mês') config = { icon: 'fa-calendar-check', titleColor: 'indigo-600', badgeColor: 'bg-indigo-100 text-indigo-600' };
         if (nomeColuna === 'Próximos Meses') config = { icon: 'fa-forward-fast', titleColor: 'slate-500', badgeColor: 'bg-slate-200 text-slate-600' };
@@ -162,7 +132,6 @@ function renderizarColunas(agrupamentos) {
             cardsHtml = `<div class="text-center py-8 opacity-50"><i class="fa-solid fa-wind text-2xl text-slate-300 mb-2"></i><p class="text-[10px] font-bold text-slate-400 uppercase">Tudo Limpo</p></div>`;
         } else {
             let mesAnoCorrente = ''; 
-
             cardsHtml = transacoesDaColuna.map(d => {
                 const isPago = d.pago === true;
                 const dVencObj = new Date(d.data_vencimento + 'T12:00:00Z');
@@ -170,7 +139,6 @@ function renderizarColunas(agrupamentos) {
                 const mesAnoAtualDoCard = `${mesesExtenso[dVencObj.getMonth()]} ${dVencObj.getFullYear()}`;
                 
                 let htmlDivisor = '';
-
                 if ((nomeColuna === 'Próximos Meses' || nomeColuna === 'Histórico de Pagas') && mesAnoAtualDoCard !== mesAnoCorrente) {
                     htmlDivisor = `
                     <div class="flex items-center gap-3 mt-6 mb-3 first:mt-1">
@@ -182,28 +150,29 @@ function renderizarColunas(agrupamentos) {
                 }
                 
                 const btnAcao = isPago 
-                    ? `<button onclick="alterarStatusPagamento(${d.id}, false)" title="Desfazer" class="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center shadow-sm"><i class="fa-solid fa-rotate-left"></i></button>`
-                    : `<button onclick="alterarStatusPagamento(${d.id}, true)" title="Quitar" class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white transition flex items-center justify-center shadow-sm"><i class="fa-solid fa-check"></i></button>`;
+                    ? `<button onclick="alterarStatusPagamento(${d.id}, false)" title="Desfazer" class="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center shadow-sm shrink-0"><i class="fa-solid fa-rotate-left"></i></button>`
+                    : `<button onclick="alterarStatusPagamento(${d.id}, true)" title="Quitar" class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white transition flex items-center justify-center shadow-sm shrink-0"><i class="fa-solid fa-check"></i></button>`;
 
                 const classeTraco = isPago ? 'line-through text-slate-400' : 'text-slate-800';
                 const corData = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-500' : 'text-slate-400';
                 const corValor = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-600' : 'text-slate-900';
 
+                // CORREÇÃO DE UI MOBILE: "break-words whitespace-normal" aplicados para não quebrar a tela no celular
                 const cardHtmlCru = `
-                <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-all group">
-                    <div class="flex justify-between items-start gap-3 mb-4">
-                        <h4 class="font-bold text-xs ${classeTraco} leading-tight break-all mt-0.5">${d.descricao}</h4>
-                        <span class="font-black text-sm ${corValor} whitespace-nowrap">${formatarMoeda(d.valor)}</span>
+                <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-all group flex flex-col gap-3">
+                    <div class="flex justify-between items-start gap-3 w-full">
+                        <h4 class="font-bold text-xs ${classeTraco} leading-tight break-words whitespace-normal mt-0.5 flex-1">${d.descricao}</h4>
+                        <span class="font-black text-sm ${corValor} whitespace-nowrap shrink-0">${formatarMoeda(d.valor)}</span>
                     </div>
-                    <div class="flex items-center justify-between mt-auto">
+                    <div class="flex items-center justify-between w-full">
                         <div class="flex items-center gap-1.5 text-[11px] font-bold ${corData}">
                             <i class="fa-regular fa-calendar"></i> <span>${dataStr}</span>
                         </div>
                         
                         <div class="flex items-center gap-1">
                             <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick="abrirModalEdicao(${d.id})" title="Editar" class="w-7 h-7 rounded bg-slate-50 text-slate-400 hover:bg-indigo-500 hover:text-white transition flex items-center justify-center"><i class="fa-solid fa-pen text-[10px]"></i></button>
-                                <button onclick="excluirDivida(${d.id})" title="Excluir" class="w-7 h-7 rounded bg-slate-50 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center mr-1"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                                <button onclick="abrirModalEdicao(${d.id})" title="Editar" class="w-7 h-7 rounded bg-slate-50 text-slate-400 hover:bg-indigo-500 hover:text-white transition flex items-center justify-center shrink-0"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                                <button onclick="excluirDivida(${d.id})" title="Excluir" class="w-7 h-7 rounded bg-slate-50 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center mr-1 shrink-0"><i class="fa-solid fa-trash text-[10px]"></i></button>
                             </div>
                             ${btnAcao}
                         </div>
@@ -214,16 +183,15 @@ function renderizarColunas(agrupamentos) {
             }).join('');
         }
 
+        // CORREÇÃO: "Total da Coluna" Removido do final do cartão
         html += `
         <div id="${idColunaSanitizado}" class="w-[340px] shrink-0 bg-slate-100/50 rounded-2xl border border-slate-200/60 flex flex-col max-h-full transition-all duration-300 relative">
-            
             <div onclick="toggleColuna('${idColunaSanitizado}')" class="p-4 border-b border-slate-200/80 flex justify-between items-center bg-white rounded-t-2xl shrink-0 cursor-pointer hover:bg-slate-50 transition relative z-10">
                 <div class="esconder-no-min flex items-center gap-2">
                     <i class="fa-solid ${config.icon} text-${config.titleColor}"></i>
                     <h3 class="font-bold text-${config.titleColor} text-sm">${nomeColuna}</h3>
                 </div>
                 
-                <!-- NÚMERO CORRIGIDO: Retirado o 'transform rotate-90' -->
                 <div class="hidden mostrar-no-min flex-col items-center justify-start w-full gap-3 pt-2">
                     <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm">${transacoesDaColuna.length}</span>
                     <h3 class="font-black text-slate-400 text-xs tracking-widest uppercase transform rotate-180" style="writing-mode: vertical-rl;">${nomeColuna}</h3>
@@ -235,13 +203,8 @@ function renderizarColunas(agrupamentos) {
                 </div>
             </div>
 
-            <div class="esconder-no-min p-3 flex-1 overflow-y-auto coluna-scroll">
+            <div class="esconder-no-min p-3 flex-1 overflow-y-auto coluna-scroll pb-6">
                 ${cardsHtml}
-            </div>
-
-            <div class="esconder-no-min p-3 bg-white/50 border-t border-slate-200/80 text-right px-4 rounded-b-2xl shrink-0 backdrop-blur-sm z-10">
-                <span class="text-[10px] font-bold text-slate-400 uppercase">Total da Coluna:</span>
-                <span class="text-sm font-black text-slate-700 ml-1">${formatarMoeda(somaColuna)}</span>
             </div>
         </div>`;
     });
@@ -340,6 +303,9 @@ async function salvarDivida(event) {
             if (error) throw error;
             const idx = transacoesGlobais.findIndex(t => t.id == idExistente);
             if (idx !== -1 && data && data.length > 0) transacoesGlobais[idx] = data[0];
+            
+            // CORREÇÃO DO BUG DE EDIÇÃO: Força a reordenação do array para o card voar para a coluna certa
+            transacoesGlobais.sort((a,b) => new Date(a.data_vencimento) - new Date(b.data_vencimento));
 
         } else {
             const qtdParcelas = parseInt(document.getElementById('divida-parcelas').value) || 1;
@@ -361,7 +327,11 @@ async function salvarDivida(event) {
 
             const { data, error } = await supabaseClient.from('transacoes').insert(loteInsercao).select();
             if (error) throw error;
-            if(data) transacoesGlobais.push(...data);
+            if(data) {
+                transacoesGlobais.push(...data);
+                // Ordena também na criação para manter a integridade visual imediata
+                transacoesGlobais.sort((a,b) => new Date(a.data_vencimento) - new Date(b.data_vencimento));
+            }
         }
         
         fecharModalNovaDivida();
