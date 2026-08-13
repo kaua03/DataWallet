@@ -7,7 +7,6 @@ let transacoesGlobais = [];
 let transacoesFiltradas = [];
 let categoriasGlobais = [];
 
-// A CHAVE DO MODELO SANFONA (Toggle Expand/Collapse)
 let isHistoricoExpandido = false; 
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -23,7 +22,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const hoje = new Date();
     document.getElementById('input-mes').value = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
-    document.getElementById('input-ano').value = hoje.getFullYear();
     document.getElementById('transacao-data').value = hoje.toISOString().split('T')[0];
 
     mudarTipoFiltroHistorico();
@@ -31,7 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// UTILITÁRIOS (MÁSCARAS E BUSCA)
+// UTILITÁRIOS
 // ==========================================
 function removerAcentos(texto) {
     if (!texto) return '';
@@ -63,7 +61,6 @@ async function carregarDadosDoBanco() {
             supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id).order('nome', { ascending: true })
         ]);
 
-        // FILTRO DE REALIDADE: Bloqueia Dívidas futuras
         transacoesGlobais = (resTrans.data || []).filter(t => {
             if (t.tipo === 'despesa' && t.pago === false) return false; 
             return true; 
@@ -107,16 +104,14 @@ function atualizarTopCards() {
 }
 
 // ==========================================
-// CÉREBRO 2: HISTÓRICO COM PESQUISA E FILTROS
+// HISTÓRICO COM PESQUISA E FILTROS (Com Lógica do Hoje)
 // ==========================================
 function mudarTipoFiltroHistorico() {
     const tipo = document.getElementById('filtro-periodo').value;
     document.getElementById('box-mes').classList.add('hidden');
-    document.getElementById('box-ano').classList.add('hidden');
     document.getElementById('box-personalizado').classList.add('hidden');
 
     if (tipo === 'por_mes') document.getElementById('box-mes').classList.remove('hidden');
-    else if (tipo === 'por_ano') document.getElementById('box-ano').classList.remove('hidden');
     else if (tipo === 'personalizado') document.getElementById('box-personalizado').classList.remove('hidden');
 
     aplicarFiltrosHistorico();
@@ -132,16 +127,28 @@ function aplicarFiltrosHistorico() {
         let dataOk = true;
         if (t.data_vencimento) {
             const d = new Date(t.data_vencimento + 'T12:00:00Z');
+            d.setHours(0,0,0,0);
             
-            if (tipoFiltro === 'por_mes') {
+            if (tipoFiltro === 'hoje') {
+                // A REGRA DE OURO: "Hoje" engloba a semana inteira (Domingo a Sábado)
+                const dataHoje = new Date();
+                dataHoje.setHours(0,0,0,0);
+                
+                const inicioSemana = new Date(dataHoje);
+                inicioSemana.setDate(dataHoje.getDate() - dataHoje.getDay()); // Volta pro Domingo
+                
+                const fimSemana = new Date(inicioSemana);
+                fimSemana.setDate(inicioSemana.getDate() + 6); // Avança pro Sábado
+                fimSemana.setHours(23, 59, 59, 999);
+                
+                dataOk = (d >= inicioSemana && d <= fimSemana);
+
+            } else if (tipoFiltro === 'por_mes') {
                 const val = document.getElementById('input-mes').value;
                 if(val) {
                     const [anoF, mesF] = val.split('-');
                     dataOk = (d.getMonth() === (parseInt(mesF) - 1) && d.getFullYear() === parseInt(anoF));
                 }
-            } else if (tipoFiltro === 'por_ano') {
-                const val = document.getElementById('input-ano').value;
-                if(val) dataOk = (d.getFullYear() === parseInt(val));
             } else if (tipoFiltro === 'personalizado') {
                 const dIni = document.getElementById('input-data-inicio').value;
                 const dFim = document.getElementById('input-data-fim').value;
@@ -155,7 +162,6 @@ function aplicarFiltrosHistorico() {
             const catNome = removerAcentos(categoriasGlobais.find(c => c.id === t.categoria_id)?.nome || '');
             const desc = removerAcentos(t.descricao);
             const valorStr = t.valor.toString();
-            
             buscaOk = desc.includes(termoBusca) || catNome.includes(termoBusca) || valorStr.includes(termoBusca);
         }
 
@@ -175,7 +181,6 @@ function renderizarMiniKPIs() {
     });
 
     const balanco = somaEntradas - somaSaidas;
-    // Adicionado bordas consistentes
     const corBalanco = balanco >= 0 ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-rose-100 text-rose-700 border-rose-200';
     const sinalBalanco = balanco >= 0 ? '+' : '-';
 
@@ -193,7 +198,7 @@ function renderizarMiniKPIs() {
 }
 
 // ---------------------------------------------
-// O MOTOR DE SANFONA (EXPANDIR/MINIMIZAR)
+// O MOTOR DE SANFONA
 // ---------------------------------------------
 function toggleExpandirHistorico() {
     isHistoricoExpandido = !isHistoricoExpandido;
@@ -220,7 +225,6 @@ function renderizarListaHistorico() {
         const corTxt = isReceita ? 'text-emerald-500' : 'text-rose-500';
         const corValor = isReceita ? 'text-emerald-600' : 'text-rose-600';
         const sinal = isReceita ? '+' : '-';
-        // SETAS CORRIGIDAS AQUI TAMBÉM (Trend-up e Trend-down)
         const iconeSinal = isReceita ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
         
         let dataStr = t.data_vencimento ? t.data_vencimento.split('-').reverse().join('/') : '--/--/----';
