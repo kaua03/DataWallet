@@ -24,7 +24,6 @@
 </head>
 <body class="bg-slate-50 text-slate-800 h-screen overflow-hidden flex relative fade-in">
 
-    <!-- MENU LATERAL (PC) -->
     <aside class="hidden md:flex flex-col w-64 bg-white border-r border-slate-200/60 p-6 h-full shadow-lg z-20 shrink-0">
         <div class="flex items-center gap-3 mb-10">
             <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-indigo-600/30">
@@ -46,7 +45,6 @@
     <main class="flex-1 h-full overflow-y-auto relative pb-28 md:pb-8 p-4 md:p-8">
         <section class="max-w-4xl mx-auto space-y-6">
             
-            <!-- BANNER PRINCIPAL (SALDO DISPONÍVEL) -->
             <div class="bg-[#1e2336] rounded-[2rem] p-6 md:p-8 flex flex-col md:flex-row justify-between items-center gap-6 shadow-xl shadow-slate-900/10 relative overflow-hidden">
                 <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-transparent pointer-events-none"></div>
                 
@@ -57,7 +55,6 @@
                     <h1 class="text-4xl md:text-5xl font-black text-white tracking-tight" id="saldo-disponivel">R$ 0,00</h1>
                 </div>
 
-                <!-- INPUT DE REGISTRO RÁPIDO -->
                 <div class="relative z-10 w-full md:w-auto flex-1 max-w-md">
                     <div class="flex items-center bg-white/10 rounded-2xl p-2 border border-white/10 focus-within:border-indigo-400 transition-colors backdrop-blur-sm">
                         <i class="fa-solid fa-microphone text-indigo-300 ml-3 mr-2"></i>
@@ -69,14 +66,13 @@
                 </div>
             </div>
 
-            <!-- CARDS DE ENTRADAS E SAÍDAS DO MÊS -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="bg-white p-6 rounded-3xl border border-slate-200/60 shadow-sm flex items-center gap-5">
                     <div class="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-500 text-xl shadow-inner shrink-0">
                         <i class="fa-solid fa-arrow-trend-up"></i>
                     </div>
                     <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Entradas (Mês)</p>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Entradas (Mês Atual)</p>
                         <p class="text-2xl font-black text-slate-900" id="entradas-mes">R$ 0,00</p>
                     </div>
                 </div>
@@ -85,19 +81,72 @@
                         <i class="fa-solid fa-arrow-trend-down"></i>
                     </div>
                     <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Saídas Pagas (Mês)</p>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Saídas Pagas (Mês Atual)</p>
                         <p class="text-2xl font-black text-slate-900" id="saidas-mes">R$ 0,00</p>
                     </div>
                 </div>
             </div>
 
-            <!-- HISTÓRICO DE TRANSAÇÕES -->
-            <div>
-                <h3 class="text-lg font-black text-slate-900 mb-4 px-2">Histórico de Transações</h3>
+            <!-- MÓDULO DE HISTÓRICO COM BUSCA E FILTROS -->
+            <div class="bg-white rounded-3xl border border-slate-200/60 shadow-sm p-5 md:p-6 mt-6">
+                
+                <!-- HEADER DO HISTÓRICO + MINI KPIs -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <div class="flex flex-col md:flex-row md:items-center gap-3 w-full">
+                        <h3 class="text-lg font-black text-slate-900 shrink-0">Histórico de Transações</h3>
+                        
+                        <!-- PÍLULAS DE MINI KPIs (Atualizam dinamicamente com o filtro) -->
+                        <div class="flex flex-wrap items-center gap-1.5" id="mini-kpis-historico">
+                            <!-- Injetado via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BARRA DE PESQUISA E FILTROS -->
+                <div class="flex flex-col lg:flex-row items-center gap-3 mb-6 bg-slate-50 p-2 rounded-2xl border border-slate-200/60">
+                    
+                    <div class="flex-1 flex items-center w-full bg-white rounded-xl px-3 py-2 shadow-sm border border-slate-200 focus-within:border-indigo-500 transition-colors">
+                        <i class="fa-solid fa-magnifying-glass text-slate-400 mr-2"></i>
+                        <input type="text" id="busca-historico" oninput="aplicarFiltrosHistorico()" placeholder="Buscar nome, valor ou pasta..." class="bg-transparent outline-none w-full text-sm font-medium text-slate-700">
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                        <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-xl shadow-sm border border-slate-200">
+                            <i class="fa-solid fa-filter text-slate-400 text-xs"></i>
+                            <select id="filtro-periodo" onchange="mudarTipoFiltroHistorico()" class="bg-transparent outline-none text-sm font-bold text-slate-700 cursor-pointer">
+                                <option value="por_mes">Este Mês</option>
+                                <option value="tudo">Todo o Histórico</option>
+                                <option value="por_ano">Por Ano</option>
+                                <option value="personalizado">Personalizado</option>
+                            </select>
+                        </div>
+
+                        <div id="box-mes" class="hidden flex items-center bg-white px-3 py-1.5 rounded-xl shadow-sm border border-slate-200">
+                            <input type="month" id="input-mes" onchange="aplicarFiltrosHistorico()" class="bg-transparent outline-none text-sm font-bold text-slate-700 cursor-pointer">
+                        </div>
+                        
+                        <div id="box-ano" class="hidden flex items-center bg-white px-3 py-1.5 rounded-xl shadow-sm border border-slate-200">
+                            <input type="number" id="input-ano" onchange="aplicarFiltrosHistorico()" min="2000" max="2100" class="bg-transparent outline-none text-sm font-bold text-slate-700 w-20" placeholder="2026">
+                        </div>
+
+                        <div id="box-personalizado" class="hidden flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl shadow-sm border border-slate-200">
+                            <input type="date" id="input-data-inicio" onchange="aplicarFiltrosHistorico()" class="bg-transparent outline-none text-xs font-bold text-slate-700 cursor-pointer">
+                            <span class="text-slate-400 text-xs">até</span>
+                            <input type="date" id="input-data-fim" onchange="aplicarFiltrosHistorico()" class="bg-transparent outline-none text-xs font-bold text-slate-700 cursor-pointer">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LISTA DE TRANSAÇÕES MINIMIZADA -->
                 <div id="lista-transacoes" class="space-y-3">
-                    <!-- Gerado via JS -->
                     <div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-slate-300 text-2xl"></i></div>
                 </div>
+                
+                <!-- BOTÃO VER MAIS -->
+                <button id="btn-ver-mais" onclick="carregarMaisTransacoes()" class="hidden w-full mt-4 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 border-dashed rounded-xl text-sm font-bold text-slate-500 transition-colors flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-chevron-down"></i> Mostrar Mais Antigas
+                </button>
+
             </div>
             
         </section>
@@ -111,7 +160,7 @@
         <a href="planos.html" class="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition p-2"><i class="fa-solid fa-bullseye text-lg mb-1"></i><span class="text-[10px] font-bold">Metas</span></a>
     </nav>
 
-    <!-- MODAL DE LANÇAMENTO (Para completar as informações do Quick Add) -->
+    <!-- MODAL DE LANÇAMENTO -->
     <div id="modal-transacao" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center fade-in p-4">
         <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 relative">
             <button onclick="fecharModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
@@ -121,7 +170,6 @@
             <form id="form-transacao" onsubmit="salvarTransacao(event)" class="space-y-4">
                 <input type="hidden" id="transacao-id">
 
-                <!-- TIPO DE TRANSAÇÃO (Radio Buttons Estilizados) -->
                 <div class="flex p-1 bg-slate-100 rounded-xl">
                     <label class="flex-1 text-center relative cursor-pointer">
                         <input type="radio" name="tipo" value="receita" class="peer sr-only" checked>
@@ -160,7 +208,6 @@
                     </select>
                 </div>
 
-                <!-- CAMPO OCULTO (Toda despesa lançada diretamente em "Movimentações" é considerada PAGA, para diferenciar de "Dívidas") -->
                 <input type="hidden" id="transacao-paga" value="true">
 
                 <button type="submit" id="btn-salvar-transacao" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3 rounded-xl transition shadow-lg shadow-indigo-500/30 mt-4 flex justify-center items-center gap-2">
