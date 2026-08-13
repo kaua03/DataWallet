@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         inputRapido.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') processarFrase();
         });
-    }
+    } 
 
     const Essa Semana = new Date();
     document.getElementById('input-mes').value = `${Essa Semana.getFullYear()}-${String(Essa Semana.getMonth() + 1).padStart(2, '0')}`;
