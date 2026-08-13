@@ -1,16 +1,18 @@
 // ==========================================
-// movimentacoes.js - MOTOR DE INÍCIO, CRUD E NLP SEMÂNTICO (UNIFICADO)
+// movimentacoes.js - MOTOR DE FLUXO DE CAIXA E BUSCA INTELIGENTE
 // ==========================================
 
 let usuarioLogado = null;
 let transacoesGlobais = [];
+let transacoesFiltradas = [];
 let categoriasGlobais = [];
+
+let limiteExibicao = 5; // O limitador (Lazy Loading)
 
 document.addEventListener('DOMContentLoaded', async () => {
     usuarioLogado = await verificarSessaoSegura();
     if (!usuarioLogado) return; 
 
-    // Ouve o Enter no novo campo de input rápido
     const inputRapido = document.getElementById('input-rapido');
     if (inputRapido) {
         inputRapido.addEventListener('keypress', function (e) {
@@ -18,12 +20,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    document.getElementById('transacao-data').value = new Date().toISOString().split('T')[0];
+    // Preenche as datas dos filtros para o mês/ano atual
+    const hoje = new Date();
+    document.getElementById('input-mes').value = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+    document.getElementById('input-ano').value = hoje.getFullYear();
+    document.getElementById('transacao-data').value = hoje.toISOString().split('T')[0];
+
+    mudarTipoFiltroHistorico(); // Prepara os inputs do filtro
     await carregarDadosDoBanco();
 });
 
 // ==========================================
-// FORMATAÇÃO E MÁSCARAS
+// MÁSCARAS
 // ==========================================
 function aplicarMascaraMoeda(input) {
     let valor = input.value.replace(/\D/g, ''); 
@@ -50,7 +58,7 @@ async function carregarDadosDoBanco() {
             supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id).order('nome', { ascending: true })
         ]);
 
-        // TRAVA DE SEGURANÇA: Bloqueia Dívidas futuras de vazarem para o saldo real
+        // O FILTRO DE REALIDADE: Bloqueia Dívidas futuras de vazarem para cá
         transacoesGlobais = (resTrans.data || []).filter(t => {
             if (t.tipo === 'despesa' && t.pago === false) return false; 
             return true; 
@@ -62,13 +70,18 @@ async function carregarDadosDoBanco() {
         selectCat.innerHTML = '<option value="" disabled selected>Selecione a Pasta...</option>' + 
             categoriasGlobais.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
 
-        renderizarInterface();
+        atualizarTopCards();
+        aplicarFiltrosHistorico(); // Roda a lógica do histórico separadamente
+
     } catch (e) {
         console.error("Erro ao puxar dados:", e.message);
     }
 }
 
-function renderizarInterface() {
+// ==========================================
+// CÉREBRO 1: CARDS GLOBAIS (Não sofrem impacto da pesquisa)
+// ==========================================
+function atualizarTopCards() {
     let saldo = 0, entradas = 0, saidas = 0;
     const mesAtual = new Date().getMonth();
     const anoAtual = new Date().getFullYear();
@@ -86,12 +99,113 @@ function renderizarInterface() {
         }
     });
 
-    // Atualiza os KPIs do novo layout
     document.getElementById('saldo-disponivel').innerText = formatarMoeda(saldo);
     document.getElementById('entradas-mes').innerText = formatarMoeda(entradas);
     document.getElementById('saidas-mes').innerText = formatarMoeda(saidas);
+}
 
-    const htmlLista = transacoesGlobais.map(t => {
+// ==========================================
+// CÉREBRO 2: HISTÓRICO COM PESQUISA E FILTROS
+// ==========================================
+function mudarTipoFiltroHistorico() {
+    const tipo = document.getElementById('filtro-periodo').value;
+    document.getElementById('box-mes').classList.add('hidden');
+    document.getElementById('box-ano').classList.add('hidden');
+    document.getElementById('box-personalizado').classList.add('hidden');
+
+    if (tipo === 'por_mes') document.getElementById('box-mes').classList.remove('hidden');
+    else if (tipo === 'por_ano') document.getElementById('box-ano').classList.remove('hidden');
+    else if (tipo === 'personalizado') document.getElementById('box-personalizado').classList.remove('hidden');
+
+    aplicarFiltrosHistorico();
+}
+
+function aplicarFiltrosHistorico() {
+    // 1. Reseta o limitador sempre que o usuário pesquisar algo novo
+    limiteExibicao = 5; 
+
+    const termoBusca = document.getElementById('busca-historico').value.toLowerCase();
+    const tipoFiltro = document.getElementById('filtro-periodo').value;
+
+    transacoesFiltradas = transacoesGlobais.filter(t => {
+        // FILTRO DE DATA
+        let dataOk = true;
+        if (t.data_vencimento) {
+            const d = new Date(t.data_vencimento + 'T12:00:00Z');
+            
+            if (tipoFiltro === 'por_mes') {
+                const val = document.getElementById('input-mes').value;
+                if(val) {
+                    const [anoF, mesF] = val.split('-');
+                    dataOk = (d.getMonth() === (parseInt(mesF) - 1) && d.getFullYear() === parseInt(anoF));
+                }
+            } else if (tipoFiltro === 'por_ano') {
+                const val = document.getElementById('input-ano').value;
+                if(val) dataOk = (d.getFullYear() === parseInt(val));
+            } else if (tipoFiltro === 'personalizado') {
+                const dIni = document.getElementById('input-data-inicio').value;
+                const dFim = document.getElementById('input-data-fim').value;
+                if (dIni) dataOk = dataOk && (d >= new Date(dIni + 'T12:00:00Z'));
+                if (dFim) dataOk = dataOk && (d <= new Date(dFim + 'T12:00:00Z'));
+            }
+        }
+
+        // FILTRO DE PESQUISA (Texto, Categoria ou Valor)
+        let buscaOk = true;
+        if (termoBusca) {
+            const catNome = categoriasGlobais.find(c => c.id === t.categoria_id)?.nome.toLowerCase() || '';
+            const desc = t.descricao.toLowerCase();
+            const valorStr = t.valor.toString();
+            
+            buscaOk = desc.includes(termoBusca) || catNome.includes(termoBusca) || valorStr.includes(termoBusca);
+        }
+
+        return dataOk && buscaOk;
+    });
+
+    renderizarMiniKPIs();
+    renderizarListaHistorico();
+}
+
+function renderizarMiniKPIs() {
+    let qtdEntradas = 0, qtdSaidas = 0, somaEntradas = 0, somaSaidas = 0;
+
+    transacoesFiltradas.forEach(t => {
+        if(t.tipo === 'receita') { qtdEntradas++; somaEntradas += t.valor; }
+        else { qtdSaidas++; somaSaidas += t.valor; }
+    });
+
+    const balanco = somaEntradas - somaSaidas;
+    const corBalanco = balanco >= 0 ? 'bg-indigo-100 text-indigo-700' : 'bg-rose-100 text-rose-700';
+    const sinalBalanco = balanco >= 0 ? '+' : '-';
+
+    document.getElementById('mini-kpis-historico').innerHTML = `
+        <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2.5 py-1 rounded-md font-black shadow-sm flex items-center gap-1 border border-emerald-200">
+            <i class="fa-solid fa-arrow-down"></i> ${qtdEntradas} Entradas
+        </span>
+        <span class="bg-rose-100 text-rose-700 text-[10px] px-2.5 py-1 rounded-md font-black shadow-sm flex items-center gap-1 border border-rose-200">
+            <i class="fa-solid fa-arrow-up"></i> ${qtdSaidas} Saídas
+        </span>
+        <span class="${corBalanco} text-[10px] px-2.5 py-1 rounded-md font-black shadow-sm flex items-center gap-1">
+            Balanço: ${sinalBalanco} ${formatarMoeda(Math.abs(balanco))}
+        </span>
+    `;
+}
+
+function renderizarListaHistorico() {
+    const container = document.getElementById('lista-transacoes');
+    const btnVerMais = document.getElementById('btn-ver-mais');
+    
+    if (transacoesFiltradas.length === 0) {
+        container.innerHTML = `<div class="bg-slate-50 rounded-2xl p-8 text-center border border-slate-200 border-dashed"><i class="fa-solid fa-magnifying-glass text-2xl text-slate-300 mb-2"></i><p class="text-xs font-bold text-slate-400">Nenhum registro encontrado nesta visão.</p></div>`;
+        btnVerMais.classList.add('hidden');
+        return;
+    }
+
+    // Pega apenas a quantidade que o limite permite (Lazy Loading)
+    const transacoesExibidas = transacoesFiltradas.slice(0, limiteExibicao);
+
+    const htmlLista = transacoesExibidas.map(t => {
         const cat = categoriasGlobais.find(c => c.id === t.categoria_id) || { nome: 'Outros', icone: 'fa-tag', cor: 'text-gray-500' };
         
         const isReceita = t.tipo === 'receita';
@@ -99,7 +213,7 @@ function renderizarInterface() {
         const corTxt = isReceita ? 'text-emerald-500' : 'text-rose-500';
         const corValor = isReceita ? 'text-emerald-600' : 'text-rose-600';
         const sinal = isReceita ? '+' : '-';
-        const iconeSinal = isReceita ? 'fa-arrow-up' : 'fa-arrow-down';
+        const iconeSinal = isReceita ? 'fa-arrow-down' : 'fa-arrow-up';
         
         let dataStr = t.data_vencimento ? t.data_vencimento.split('-').reverse().join('/') : '--/--/----';
         let horaStr = '--:--';
@@ -121,7 +235,7 @@ function renderizarInterface() {
                 <div class="min-w-0">
                     <h4 class="font-bold text-sm text-slate-900 truncate">${t.descricao}</h4>
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate mt-0.5">
-                        ${cat.nome} • <i class="fa-regular fa-calendar ml-1"></i> ${dataStr} <i class="fa-regular fa-clock ml-1"></i> ${horaStr}
+                        ${cat.nome} • <i class="fa-regular fa-calendar ml-1"></i> ${dataStr}
                     </p>
                 </div>
             </div>
@@ -137,16 +251,23 @@ function renderizarInterface() {
         </div>`;
     }).join('');
 
-    document.getElementById('lista-transacoes').innerHTML = htmlLista || `
-        <div class="bg-white rounded-3xl p-10 text-center border border-slate-200/60 shadow-sm">
-            <i class="fa-solid fa-receipt text-4xl text-slate-300 mb-3"></i>
-            <p class="text-sm font-bold text-slate-400">Nenhuma transação efetivada.</p>
-        </div>
-    `;
+    container.innerHTML = htmlLista;
+
+    // Controla o botão "Mostrar Mais"
+    if (transacoesFiltradas.length > limiteExibicao) {
+        btnVerMais.classList.remove('hidden');
+    } else {
+        btnVerMais.classList.add('hidden');
+    }
+}
+
+function carregarMaisTransacoes() {
+    limiteExibicao += 5; // Aumenta o limite
+    renderizarListaHistorico(); // Repinta a tela
 }
 
 // ---------------------------------------------
-// O CÉREBRO NLP DE INTELIGÊNCIA ARTIFICIAL
+// O CÉREBRO NLP (MANTIDO INTACTO)
 // ---------------------------------------------
 const dicionarioDeInteligencia = [
     { pasta: 'alimentação', regras: [
@@ -221,14 +342,11 @@ function inferirCategoriaETitulo(texto, isReceita) {
 // ---------------------------------------------
 // CONTROLE DO MODAL DE EDIÇÃO E CADASTRO
 // ---------------------------------------------
-
-// Expõe a função para o HTML chamar no botão "Registrar"
 window.abrirModalComTextoRapido = function() { processarFrase(); };
 
 function processarFrase() {
     const input = document.getElementById('input-rapido').value;
     
-    // Se o usuário clicar sem digitar nada, abre o modal vazio padrão
     if(!input) {
         document.getElementById('form-transacao').reset();
         document.getElementById('transacao-id').value = '';
@@ -252,20 +370,15 @@ function processarFrase() {
     
     document.getElementById('transacao-desc').value = inferencia.titulo;
     
-    // Aplica a máscara no número gerado pela IA
     if(val > 0) {
         let valorStr = val.toFixed(2).replace('.', ',');
         valorStr = valorStr.replace(/(\d)(\d{3})(\d{3}),/g, "$1.$2.$3,");
         valorStr = valorStr.replace(/(\d)(\d{3}),/g, "$1.$2,");
         document.getElementById('transacao-valor').value = valorStr;
-    } else {
-        document.getElementById('transacao-valor').value = '';
-    }
+    } else { document.getElementById('transacao-valor').value = ''; }
 
     document.getElementById('transacao-data').value = new Date().toISOString().split('T')[0];
-    
     if (inferencia.categoria) document.getElementById('transacao-categoria').value = inferencia.categoria.id;
-
     document.querySelector(`input[name="tipo"][value="${isReceita ? 'receita' : 'despesa'}"]`).checked = true;
 
     document.getElementById('modal-transacao').classList.remove('hidden');
@@ -286,7 +399,6 @@ function abrirModalEdicao(id) {
 
     document.getElementById('transacao-data').value = t.data_vencimento;
     document.getElementById('transacao-categoria').value = t.categoria_id;
-
     document.querySelector(`input[name="tipo"][value="${t.tipo}"]`).checked = true;
 
     document.getElementById('modal-transacao').classList.remove('hidden');
@@ -306,13 +418,8 @@ async function salvarTransacao(event) {
     if(!desc || isNaN(val) || val <= 0 || !dataV) return alert("Preencha Descrição, Valor e Data corretamente.");
 
     const payload = {
-        usuario_id: usuarioLogado.id,
-        descricao: desc,
-        valor: val,
-        data_vencimento: dataV,
-        categoria_id: catId,
-        tipo: tipo,
-        pago: true // TRAVA: TUDO LANÇADO AQUI ESTÁ EFETIVADO (CAIXA REAL)
+        usuario_id: usuarioLogado.id, descricao: desc, valor: val, data_vencimento: dataV, categoria_id: catId, tipo: tipo,
+        pago: true
     };
 
     const btn = document.getElementById('btn-salvar-transacao');
@@ -347,7 +454,7 @@ async function excluirTransacao(id) {
 
 function ativarMicrofone() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return alert("Seu navegador não suporta microfone nativo. Use Chrome ou Safari atualizados.");
+    if (!SpeechRecognition) return alert("Navegador não suporta microfone nativo.");
     
     const recognition = new SpeechRecognition();
     recognition.lang = 'pt-BR';
@@ -361,10 +468,7 @@ function ativarMicrofone() {
         processarFrase(); 
     };
 
-    recognition.onerror = (e) => { 
-        if (e.error === 'not-allowed') alert("Permissão negada pelo navegador.");
-        btnMic.innerHTML = iconeAntigo; 
-    };
+    recognition.onerror = () => { btnMic.innerHTML = iconeAntigo; };
     recognition.onend = () => { btnMic.innerHTML = iconeAntigo; };
     recognition.start();
 }
