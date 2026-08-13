@@ -87,14 +87,12 @@
                 </div>
             </div>
 
-            <!-- MÓDULO DE HISTÓRICO -->
             <div class="bg-white rounded-3xl border border-slate-200/60 shadow-sm p-5 md:p-6 mt-6">
                 
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                     <div class="flex flex-col md:flex-row md:items-center gap-3 w-full">
                         <h3 class="text-lg font-black text-slate-900 shrink-0">Histórico de Transações</h3>
                         <div class="flex flex-wrap items-center gap-1.5" id="mini-kpis-historico">
-                            <!-- Pílulas Injetadas via JS -->
                         </div>
                     </div>
                 </div>
@@ -109,9 +107,9 @@
                         <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-xl shadow-sm border border-slate-200">
                             <i class="fa-solid fa-filter text-slate-400 text-xs"></i>
                             
-                            <!-- ORDEM EXATA REQUISITADA -->
+                            <!-- CORRIGIDO PARA ESSA SEMANA -->
                             <select id="filtro-periodo" onchange="mudarTipoFiltroHistorico()" class="bg-transparent outline-none text-sm font-bold text-slate-700 cursor-pointer">
-                                <option value="Essa Semana">Essa Semana</option>
+                                <option value="essa_semana">Essa Semana</option>
                                 <option value="por_mes">Este Mês</option>
                                 <option value="personalizado">Personalizado</option>
                                 <option value="tudo">Todo o Histórico</option>
@@ -135,7 +133,6 @@
                 </div>
                 
                 <button id="btn-toggle-historico" onclick="toggleExpandirHistorico()" class="hidden w-full mt-4 py-3 bg-slate-50 hover:bg-indigo-50 border border-slate-200 border-dashed rounded-xl text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2 mx-auto">
-                    <!-- Conteúdo Injetado via JS -->
                 </button>
 
             </div>
