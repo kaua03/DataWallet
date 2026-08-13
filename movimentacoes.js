@@ -25,7 +25,15 @@ async function carregarDadosDoBanco() {
             supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id).order('nome', { ascending: true })
         ]);
 
-        transacoesGlobais = resTrans.data || [];
+        // TRAVA DE SEGURANÇA 1: O FILTRO DE REALIDADE
+        // Bloqueia as dívidas futuras de entrarem na conta do Saldo Disponível
+        transacoesGlobais = (resTrans.data || []).filter(t => {
+            if (t.tipo === 'despesa' && t.pago === false) {
+                return false; // É uma dívida futura pendente? Vaza daqui!
+            }
+            return true; // É receita ou despesa paga? Pode entrar!
+        });
+
         categoriasGlobais = resCat.data || [];
 
         const selectCat = document.getElementById('modal-cat');
@@ -77,7 +85,7 @@ function renderizarInterface() {
 
         return `
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between hover:shadow-md transition group gap-3 sm:gap-0">
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-4 min-w-0">
                 <div class="w-12 h-12 ${corBg} rounded-full flex items-center justify-center ${corTxt} text-xl shrink-0">
                     <i class="fa-solid ${cat.icone}"></i>
                 </div>
@@ -89,7 +97,7 @@ function renderizarInterface() {
                 </div>
             </div>
             
-            <div class="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto pl-16 sm:pl-0">
+            <div class="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto pl-16 sm:pl-0 shrink-0">
                 <p class="${corTxt} font-black text-lg shrink-0">${sinal} ${formatarMoeda(t.valor)}</p>
                 
                 <div class="flex gap-2">
@@ -167,7 +175,6 @@ function inferirCategoriaETitulo(texto, isReceita) {
         };
     }
 
-    // Varre o Dicionário de Correlação
     for (const d of dicionarioDeInteligencia) {
         for (const regra of d.regras) {
             if (regra.palavras.some(palavra => texto.includes(palavra))) {
@@ -181,7 +188,6 @@ function inferirCategoriaETitulo(texto, isReceita) {
         }
     }
 
-    // FILTRO STOP WORDS (Data Science)
     let palavras = texto.split(' ');
     const palavrasInuteis = ['comprei', 'gastei', 'paguei', 'botei', 'coloquei', 'um', 'uma', 'uns', 'umas', 'de', 'da', 'do', 'no', 'na', 'para', 'com', 'novo', 'nova'];
     
@@ -270,13 +276,15 @@ async function salvarTransacaoFinal() {
 
     if(!desc || isNaN(val) || val <= 0 || !dataV) return alert("Preencha Descrição, Valor e Data corretamente.");
 
+    // TRAVA DE SEGURANÇA 2: O REGISTRO DO CAIXA REAL
     const payload = {
         usuario_id: usuarioLogado.id,
         descricao: desc,
         valor: val,
         data_vencimento: dataV,
         categoria_id: catId,
-        tipo: tipo
+        tipo: tipo,
+        pago: true // <-- TUDO LANÇADO AQUI ESTÁ EFETIVADO (PAGO/RECEBIDO)
     };
 
     const btn = document.getElementById('btn-salvar-modal');
