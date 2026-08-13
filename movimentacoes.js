@@ -7,7 +7,8 @@ let transacoesGlobais = [];
 let transacoesFiltradas = [];
 let categoriasGlobais = [];
 
-let limiteExibicao = 5; // O limitador (Lazy Loading)
+// A CHAVE DO MODELO SANFONA (Toggle Expand/Collapse)
+let isHistoricoExpandido = false; 
 
 document.addEventListener('DOMContentLoaded', async () => {
     usuarioLogado = await verificarSessaoSegura();
@@ -20,19 +21,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Preenche as datas dos filtros para o mês/ano atual
     const hoje = new Date();
     document.getElementById('input-mes').value = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
     document.getElementById('input-ano').value = hoje.getFullYear();
     document.getElementById('transacao-data').value = hoje.toISOString().split('T')[0];
 
-    mudarTipoFiltroHistorico(); // Prepara os inputs do filtro
+    mudarTipoFiltroHistorico();
     await carregarDadosDoBanco();
 });
 
 // ==========================================
-// MÁSCARAS
+// UTILITÁRIOS (MÁSCARAS E BUSCA)
 // ==========================================
+
+// O SUPERPODER DA PESQUISA: Arranca os acentos para comparar "veículo" com "veiculo"
+function removerAcentos(texto) {
+    if (!texto) return '';
+    return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
 function aplicarMascaraMoeda(input) {
     let valor = input.value.replace(/\D/g, ''); 
     if (valor === '') { input.value = ''; return; }
@@ -58,7 +65,7 @@ async function carregarDadosDoBanco() {
             supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id).order('nome', { ascending: true })
         ]);
 
-        // O FILTRO DE REALIDADE: Bloqueia Dívidas futuras de vazarem para cá
+        // FILTRO DE REALIDADE: Bloqueia Dívidas futuras
         transacoesGlobais = (resTrans.data || []).filter(t => {
             if (t.tipo === 'despesa' && t.pago === false) return false; 
             return true; 
@@ -71,16 +78,13 @@ async function carregarDadosDoBanco() {
             categoriasGlobais.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
 
         atualizarTopCards();
-        aplicarFiltrosHistorico(); // Roda a lógica do histórico separadamente
+        aplicarFiltrosHistorico(); 
 
     } catch (e) {
         console.error("Erro ao puxar dados:", e.message);
     }
 }
 
-// ==========================================
-// CÉREBRO 1: CARDS GLOBAIS (Não sofrem impacto da pesquisa)
-// ==========================================
 function atualizarTopCards() {
     let saldo = 0, entradas = 0, saidas = 0;
     const mesAtual = new Date().getMonth();
@@ -121,10 +125,11 @@ function mudarTipoFiltroHistorico() {
 }
 
 function aplicarFiltrosHistorico() {
-    // 1. Reseta o limitador sempre que o usuário pesquisar algo novo
-    limiteExibicao = 5; 
+    // Quando o usuário filtra/pesquisa algo novo, recolhemos a lista para ficar limpo
+    isHistoricoExpandido = false; 
 
-    const termoBusca = document.getElementById('busca-historico').value.toLowerCase();
+    // Limpa os acentos e deixa tudo minúsculo para busca infalível
+    const termoBusca = removerAcentos(document.getElementById('busca-historico').value);
     const tipoFiltro = document.getElementById('filtro-periodo').value;
 
     transacoesFiltradas = transacoesGlobais.filter(t => {
@@ -150,11 +155,11 @@ function aplicarFiltrosHistorico() {
             }
         }
 
-        // FILTRO DE PESQUISA (Texto, Categoria ou Valor)
+        // FILTRO DE PESQUISA INTELIGENTE (Ignora Acentos)
         let buscaOk = true;
         if (termoBusca) {
-            const catNome = categoriasGlobais.find(c => c.id === t.categoria_id)?.nome.toLowerCase() || '';
-            const desc = t.descricao.toLowerCase();
+            const catNome = removerAcentos(categoriasGlobais.find(c => c.id === t.categoria_id)?.nome || '');
+            const desc = removerAcentos(t.descricao);
             const valorStr = t.valor.toString();
             
             buscaOk = desc.includes(termoBusca) || catNome.includes(termoBusca) || valorStr.includes(termoBusca);
@@ -179,31 +184,40 @@ function renderizarMiniKPIs() {
     const corBalanco = balanco >= 0 ? 'bg-indigo-100 text-indigo-700' : 'bg-rose-100 text-rose-700';
     const sinalBalanco = balanco >= 0 ? '+' : '-';
 
+    // Tooltips (title) adicionados para dar contexto extra ao usuário se ele deixar o mouse parado
     document.getElementById('mini-kpis-historico').innerHTML = `
-        <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2.5 py-1 rounded-md font-black shadow-sm flex items-center gap-1 border border-emerald-200">
-            <i class="fa-solid fa-arrow-down"></i> ${qtdEntradas} Entradas
+        <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-emerald-200" title="Total financeiro de entradas neste filtro">
+            <i class="fa-solid fa-arrow-down"></i> ${qtdEntradas} Entradas • ${formatarMoeda(somaEntradas)}
         </span>
-        <span class="bg-rose-100 text-rose-700 text-[10px] px-2.5 py-1 rounded-md font-black shadow-sm flex items-center gap-1 border border-rose-200">
-            <i class="fa-solid fa-arrow-up"></i> ${qtdSaidas} Saídas
+        <span class="bg-rose-100 text-rose-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-rose-200" title="Total financeiro de saídas neste filtro">
+            <i class="fa-solid fa-arrow-up"></i> ${qtdSaidas} Saídas • ${formatarMoeda(somaSaidas)}
         </span>
-        <span class="${corBalanco} text-[10px] px-2.5 py-1 rounded-md font-black shadow-sm flex items-center gap-1">
+        <span class="${corBalanco} text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5" title="Seu resultado final neste filtro">
             Balanço: ${sinalBalanco} ${formatarMoeda(Math.abs(balanco))}
         </span>
     `;
 }
 
+// ---------------------------------------------
+// O MOTOR DE SANFONA (EXPANDIR/MINIMIZAR)
+// ---------------------------------------------
+function toggleExpandirHistorico() {
+    isHistoricoExpandido = !isHistoricoExpandido;
+    renderizarListaHistorico();
+}
+
 function renderizarListaHistorico() {
     const container = document.getElementById('lista-transacoes');
-    const btnVerMais = document.getElementById('btn-ver-mais');
+    const btnToggle = document.getElementById('btn-toggle-historico');
     
     if (transacoesFiltradas.length === 0) {
         container.innerHTML = `<div class="bg-slate-50 rounded-2xl p-8 text-center border border-slate-200 border-dashed"><i class="fa-solid fa-magnifying-glass text-2xl text-slate-300 mb-2"></i><p class="text-xs font-bold text-slate-400">Nenhum registro encontrado nesta visão.</p></div>`;
-        btnVerMais.classList.add('hidden');
+        btnToggle.classList.add('hidden');
         return;
     }
 
-    // Pega apenas a quantidade que o limite permite (Lazy Loading)
-    const transacoesExibidas = transacoesFiltradas.slice(0, limiteExibicao);
+    // LÓGICA LAZY LOADING: Se expandido, mostra tudo. Se não, mostra só as 5 primeiras.
+    const transacoesExibidas = isHistoricoExpandido ? transacoesFiltradas : transacoesFiltradas.slice(0, 5);
 
     const htmlLista = transacoesExibidas.map(t => {
         const cat = categoriasGlobais.find(c => c.id === t.categoria_id) || { nome: 'Outros', icone: 'fa-tag', cor: 'text-gray-500' };
@@ -253,21 +267,22 @@ function renderizarListaHistorico() {
 
     container.innerHTML = htmlLista;
 
-    // Controla o botão "Mostrar Mais"
-    if (transacoesFiltradas.length > limiteExibicao) {
-        btnVerMais.classList.remove('hidden');
+    // Controla o Botão de Expandir/Minimizar
+    if (transacoesFiltradas.length > 5) {
+        btnToggle.classList.remove('hidden');
+        if (isHistoricoExpandido) {
+            btnToggle.innerHTML = '<i class="fa-solid fa-chevron-up"></i> Minimizar Lista';
+        } else {
+            const restante = transacoesFiltradas.length - 5;
+            btnToggle.innerHTML = `<i class="fa-solid fa-chevron-down"></i> Mostrar mais ${restante} transações`;
+        }
     } else {
-        btnVerMais.classList.add('hidden');
+        btnToggle.classList.add('hidden');
     }
 }
 
-function carregarMaisTransacoes() {
-    limiteExibicao += 5; // Aumenta o limite
-    renderizarListaHistorico(); // Repinta a tela
-}
-
 // ---------------------------------------------
-// O CÉREBRO NLP (MANTIDO INTACTO)
+// O CÉREBRO NLP E CRUD
 // ---------------------------------------------
 const dicionarioDeInteligencia = [
     { pasta: 'alimentação', regras: [
@@ -339,9 +354,6 @@ function inferirCategoriaETitulo(texto, isReceita) {
     return { categoria: catFallback, titulo: descLimpa };
 }
 
-// ---------------------------------------------
-// CONTROLE DO MODAL DE EDIÇÃO E CADASTRO
-// ---------------------------------------------
 window.abrirModalComTextoRapido = function() { processarFrase(); };
 
 function processarFrase() {
@@ -418,8 +430,7 @@ async function salvarTransacao(event) {
     if(!desc || isNaN(val) || val <= 0 || !dataV) return alert("Preencha Descrição, Valor e Data corretamente.");
 
     const payload = {
-        usuario_id: usuarioLogado.id, descricao: desc, valor: val, data_vencimento: dataV, categoria_id: catId, tipo: tipo,
-        pago: true
+        usuario_id: usuarioLogado.id, descricao: desc, valor: val, data_vencimento: dataV, categoria_id: catId, tipo: tipo, pago: true
     };
 
     const btn = document.getElementById('btn-salvar-transacao');
