@@ -33,8 +33,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ==========================================
 // UTILITÁRIOS (MÁSCARAS E BUSCA)
 // ==========================================
-
-// O SUPERPODER DA PESQUISA: Arranca os acentos para comparar "veículo" com "veiculo"
 function removerAcentos(texto) {
     if (!texto) return '';
     return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -125,15 +123,12 @@ function mudarTipoFiltroHistorico() {
 }
 
 function aplicarFiltrosHistorico() {
-    // Quando o usuário filtra/pesquisa algo novo, recolhemos a lista para ficar limpo
     isHistoricoExpandido = false; 
 
-    // Limpa os acentos e deixa tudo minúsculo para busca infalível
     const termoBusca = removerAcentos(document.getElementById('busca-historico').value);
     const tipoFiltro = document.getElementById('filtro-periodo').value;
 
     transacoesFiltradas = transacoesGlobais.filter(t => {
-        // FILTRO DE DATA
         let dataOk = true;
         if (t.data_vencimento) {
             const d = new Date(t.data_vencimento + 'T12:00:00Z');
@@ -155,7 +150,6 @@ function aplicarFiltrosHistorico() {
             }
         }
 
-        // FILTRO DE PESQUISA INTELIGENTE (Ignora Acentos)
         let buscaOk = true;
         if (termoBusca) {
             const catNome = removerAcentos(categoriasGlobais.find(c => c.id === t.categoria_id)?.nome || '');
@@ -181,18 +175,18 @@ function renderizarMiniKPIs() {
     });
 
     const balanco = somaEntradas - somaSaidas;
-    const corBalanco = balanco >= 0 ? 'bg-indigo-100 text-indigo-700' : 'bg-rose-100 text-rose-700';
+    // Adicionado bordas consistentes
+    const corBalanco = balanco >= 0 ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-rose-100 text-rose-700 border-rose-200';
     const sinalBalanco = balanco >= 0 ? '+' : '-';
 
-    // Tooltips (title) adicionados para dar contexto extra ao usuário se ele deixar o mouse parado
     document.getElementById('mini-kpis-historico').innerHTML = `
         <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-emerald-200" title="Total financeiro de entradas neste filtro">
-            <i class="fa-solid fa-arrow-down"></i> ${qtdEntradas} Entradas • ${formatarMoeda(somaEntradas)}
+            <i class="fa-solid fa-arrow-trend-up"></i> ${qtdEntradas} Entradas • ${formatarMoeda(somaEntradas)}
         </span>
         <span class="bg-rose-100 text-rose-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-rose-200" title="Total financeiro de saídas neste filtro">
-            <i class="fa-solid fa-arrow-up"></i> ${qtdSaidas} Saídas • ${formatarMoeda(somaSaidas)}
+            <i class="fa-solid fa-arrow-trend-down"></i> ${qtdSaidas} Saídas • ${formatarMoeda(somaSaidas)}
         </span>
-        <span class="${corBalanco} text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5" title="Seu resultado final neste filtro">
+        <span class="${corBalanco} text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border" title="Seu fluxo de caixa final neste filtro">
             Fluxo: ${sinalBalanco} ${formatarMoeda(Math.abs(balanco))}
         </span>
     `;
@@ -216,7 +210,6 @@ function renderizarListaHistorico() {
         return;
     }
 
-    // LÓGICA LAZY LOADING: Se expandido, mostra tudo. Se não, mostra só as 5 primeiras.
     const transacoesExibidas = isHistoricoExpandido ? transacoesFiltradas : transacoesFiltradas.slice(0, 5);
 
     const htmlLista = transacoesExibidas.map(t => {
@@ -227,7 +220,8 @@ function renderizarListaHistorico() {
         const corTxt = isReceita ? 'text-emerald-500' : 'text-rose-500';
         const corValor = isReceita ? 'text-emerald-600' : 'text-rose-600';
         const sinal = isReceita ? '+' : '-';
-        const iconeSinal = isReceita ? 'fa-arrow-down' : 'fa-arrow-up';
+        // SETAS CORRIGIDAS AQUI TAMBÉM (Trend-up e Trend-down)
+        const iconeSinal = isReceita ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
         
         let dataStr = t.data_vencimento ? t.data_vencimento.split('-').reverse().join('/') : '--/--/----';
         let horaStr = '--:--';
@@ -267,7 +261,6 @@ function renderizarListaHistorico() {
 
     container.innerHTML = htmlLista;
 
-    // Controla o Botão de Expandir/Minimizar
     if (transacoesFiltradas.length > 5) {
         btnToggle.classList.remove('hidden');
         if (isHistoricoExpandido) {
