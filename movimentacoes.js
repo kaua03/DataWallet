@@ -663,32 +663,27 @@ window.salvarTransacao = async function(event) {
         window.fecharModal();
         document.getElementById('input-rapido').value = '';
         
-        // A MÁGICA CONDICIONAL DE CELEBRAÇÃO 
+        // A MÁGICA DA CELEBRAÇÃO 
         const isReceita = tipo === 'receita';
         const urlAnimacao = isReceita 
-            ? "https://lottie.host/85450f21-2b79-46bd-8e77-a0d7fc86ceaf/63OdW0EjZh.json" // O ✅ de Sucesso
-            : "https://lottie.host/78d29cd2-20ba-42fa-89bb-5471e7c8353c/EglrVN8uNB.lottie"; // As moedas da Despesa
+            ? "https://lottie.host/85450f21-2b79-46bd-8e77-a0d7fc86ceaf/63OdW0EjZh.json" 
+            : "https://lottie.host/78d29cd2-20ba-42fa-89bb-5471e7c8353c/EglrVN8uNB.lottie";
 
-        // O SEGREDO DA CENTRALIZAÇÃO NATIVA: 
-        // Ocultamos a caixa branca do SweetAlert e usamos o próprio motor de centro dele.
-        Swal.fire({
-            html: `
-                <div style="width: 280px; height: 280px; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
-                    <dotlottie-wc
-                      src="${urlAnimacao}"
-                      style="width: 100%; height: 100%;"
-                      autoplay>
-                    </dotlottie-wc>
-                </div>
-            `,
-            showConfirmButton: false,
-            timer: 2600, 
-            background: 'transparent', 
-            backdrop: 'rgba(15, 23, 42, 0.85)', 
-            customClass: {
-                popup: 'bg-transparent border-none shadow-none m-0 p-0' 
-            }
-        });
+        // O HACK DO DOM PURO (ADEUS SWEETALERT BUGADO NO CELULAR)
+        // Criamos uma div que se sobrepõe a tela inteira (fixed inset-0), travada no Z-Index máximo
+        const overlayLottie = document.createElement('div');
+        overlayLottie.className = 'fixed inset-0 z-[999999] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm transition-opacity duration-300 opacity-0';
+        overlayLottie.innerHTML = `<dotlottie-wc src="${urlAnimacao}" style="width: 280px; height: 280px;" autoplay></dotlottie-wc>`;
+        document.body.appendChild(overlayLottie);
+        
+        // Dispara o Fade-In
+        requestAnimationFrame(() => overlayLottie.classList.remove('opacity-0'));
+
+        // Remove a div após a animação rodar (2.6 Segundos)
+        setTimeout(() => {
+            overlayLottie.classList.add('opacity-0');
+            setTimeout(() => overlayLottie.remove(), 300); // 300ms do fade-out
+        }, 2600);
 
     } catch(e) { 
         Swal.fire({
