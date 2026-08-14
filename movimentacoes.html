@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,15 +7,14 @@
     
     <meta name="view-transition" content="same-origin">
     
-    <!-- Configuração ESTRITA do Tailwind para aceitar o Dark Mode APENAS pelo botão -->
-    <script>
-        tailwind = {
-            config: {
-                darkMode: 'class',
-            }
-        }
-    </script>
+    <!-- A ORDEM CORRETA: Biblioteca primeiro, Configuração depois -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        };
+    </script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -23,9 +22,7 @@
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- O MOTOR DE LAYOUT VEM ANTES DA PÁGINA -->
     <script src="layout.js" defer></script>
-    
     <script src="config.js" defer></script>
     <script src="movimentacoes.js" defer></script>
     
@@ -41,7 +38,6 @@
         
         ::-webkit-scrollbar { width: 6px; display: none; }
         
-        /* O hover da barra lateral fica aqui pois pertence ao HTML mestre */
         #sidebar {
             width: 5rem;
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, background-color 0.3s;
@@ -59,7 +55,6 @@
     </style>
 </head>
 
-<!-- O HACK DO 100dvh APLICADO AQUI -->
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 h-[100dvh] overflow-hidden flex relative fade-in transition-colors duration-300">
 
     <!-- O LAYOUT.JS INJETA A SIDEBAR E O MENU AQUI -->
@@ -98,7 +93,7 @@
                         <i class="fa-solid fa-arrow-trend-up"></i>
                     </div>
                     <div>
-                        <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Recebidas (Mês Atual)</p>
+                        <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Entradas (Mês Atual)</p>
                         <p class="text-2xl font-black text-slate-900 dark:text-white" id="entradas-mes">R$ 0,00</p>
                     </div>
                 </div>
@@ -107,7 +102,7 @@
                         <i class="fa-solid fa-arrow-trend-down"></i>
                     </div>
                     <div>
-                        <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Pagas (Mês Atual)</p>
+                        <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Saídas Pagas (Mês Atual)</p>
                         <p class="text-2xl font-black text-slate-900 dark:text-white" id="saidas-mes">R$ 0,00</p>
                     </div>
                 </div>
@@ -217,7 +212,7 @@
         </div>
     </div>
 
-    <!-- MODAL DO MICROFONE (Mantido 100% Nativo) -->
+    <!-- MODAL DO MICROFONE -->
     <div id="modal-microfone" class="hidden fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[60] flex flex-col items-center justify-center fade-in transition-all">
         <button onclick="window.cancelarMicrofone()" class="absolute top-8 right-8 w-12 h-12 rounded-full bg-white/10 text-white hover:bg-rose-500 transition flex items-center justify-center">
             <i class="fa-solid fa-xmark text-2xl"></i>
