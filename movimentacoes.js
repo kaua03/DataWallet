@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - MOTOR COM SIDEBAR INTELIGENTE
+// movimentacoes.js - SIDEBAR HOVER & FAB ANIMADO NO MOBILE
 // ==========================================
 
 let usuarioLogado = null;
@@ -13,12 +13,6 @@ let reconhecimentoDeVoz = null;
 document.addEventListener('DOMContentLoaded', async () => {
     usuarioLogado = await verificarSessaoSegura();
     if (!usuarioLogado) return; 
-
-    // INICIALIZA A SIDEBAR COM A MEMÓRIA DO USUÁRIO
-    if (localStorage.getItem('DataWallet_SidebarCollapsed') === 'true') {
-        document.getElementById('sidebar').classList.add('sidebar-collapsed');
-        document.getElementById('sidebar-toggle-icon').classList.replace('fa-chevron-left', 'fa-chevron-right');
-    }
 
     const inputRapido = document.getElementById('input-rapido');
     if (inputRapido) {
@@ -35,19 +29,43 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// CONTROLE DE SIDEBAR RETRÁTIL (NOVO)
+// ANIMAÇÃO DO FAB MOBILE (Botão Flutuante)
 // ==========================================
-window.toggleSidebar = function() {
-    const sidebar = document.getElementById('sidebar');
-    const icon = document.getElementById('sidebar-toggle-icon');
-    const isCollapsed = sidebar.classList.toggle('sidebar-collapsed');
-    
-    if (isCollapsed) {
-        icon.classList.replace('fa-chevron-left', 'fa-chevron-right');
-        localStorage.setItem('DataWallet_SidebarCollapsed', 'true');
+let menuMobileAberto = false;
+
+window.toggleMobileMenu = function() {
+    const items = document.getElementById('fab-items');
+    const icon = document.getElementById('fab-icon');
+    const btn = document.getElementById('fab-menu');
+
+    menuMobileAberto = !menuMobileAberto;
+
+    if (menuMobileAberto) {
+        // Corre os ícones para fora e revela
+        items.classList.remove('opacity-0', 'translate-x-12', 'pointer-events-none');
+        items.classList.add('opacity-100', 'translate-x-0');
+        
+        // Gira para um lado
+        btn.style.transform = 'rotate(180deg)';
+        setTimeout(() => {
+            icon.classList.replace('fa-bars', 'fa-xmark');
+        }, 150);
+        
+        btn.classList.replace('bg-indigo-600', 'bg-slate-800');
+        btn.classList.replace('shadow-[0_4px_20px_rgba(79,70,229,0.5)]', 'shadow-[0_4px_20px_rgba(30,41,59,0.5)]');
     } else {
-        icon.classList.replace('fa-chevron-right', 'fa-chevron-left');
-        localStorage.setItem('DataWallet_SidebarCollapsed', 'false');
+        // Encolhe os ícones de volta
+        items.classList.add('opacity-0', 'translate-x-12', 'pointer-events-none');
+        items.classList.remove('opacity-100', 'translate-x-0');
+        
+        // Gira para o OUTRO lado e fecha
+        btn.style.transform = 'rotate(0deg)';
+        setTimeout(() => {
+            icon.classList.replace('fa-xmark', 'fa-bars');
+        }, 150);
+        
+        btn.classList.replace('bg-slate-800', 'bg-indigo-600');
+        btn.classList.replace('shadow-[0_4px_20px_rgba(30,41,59,0.5)]', 'shadow-[0_4px_20px_rgba(79,70,229,0.5)]');
     }
 };
 
@@ -68,7 +86,6 @@ function aplicarMascaraMoeda(input) {
     valor = valor.replace(/(\d)(\d{3}),/g, "$1.$2,");
     input.value = valor;
 }
-
 window.aplicarMascaraMoeda = aplicarMascaraMoeda;
 
 function desmascararMoeda(str) {
@@ -564,7 +581,7 @@ window.cancelarMicrofone = function() {
 };
 
 // ==========================================
-// FUNÇÕES DE CRUD
+// FUNÇÕES DE CRUD (Lottie Sênior Flutuante)
 // ==========================================
 window.abrirModalEdicao = function(id) {
     const t = transacoesGlobais.find(x => x.id === id);
@@ -627,7 +644,7 @@ window.salvarTransacao = async function(event) {
         window.fecharModal();
         document.getElementById('input-rapido').value = '';
         
-        // EFEITO LOTTIE STICKER FLUTUANTE
+        // A MÁGICA: Efeito Lottie Sticker Imersivo Flutuante sem fundo
         Swal.fire({
             html: `
                 <div class="flex justify-center items-center">
@@ -641,10 +658,10 @@ window.salvarTransacao = async function(event) {
             `,
             showConfirmButton: false,
             timer: 3500, 
-            background: 'transparent', 
-            backdrop: 'rgba(15, 23, 42, 0.7)', 
+            background: 'transparent', // Fundo invisível
+            backdrop: 'rgba(15, 23, 42, 0.7)', // Película escura
             customClass: {
-                popup: 'shadow-none bg-transparent border-none' 
+                popup: 'shadow-none bg-transparent border-none' // Remove qualquer sombra do modal
             }
         });
 
