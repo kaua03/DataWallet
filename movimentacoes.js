@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - MOTOR DE FLUXO DE CAIXA E BUSCA INTELIGENTE
+// movimentacoes.js - MOTOR DE CAIXA COM NLP E ÁUDIO REATIVO
 // ==========================================
 
 let usuarioLogado = null;
@@ -9,7 +9,6 @@ let categoriasGlobais = [];
 
 let isHistoricoExpandido = false; 
 
-// Variáveis para o motor de áudio reativo
 let reconhecimentoDeVoz = null; 
 let audioContext = null;
 let micStream = null;
@@ -30,7 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('input-mes').value = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
     document.getElementById('transacao-data').value = hoje.toISOString().split('T')[0];
 
-    mudarTipoFiltroHistorico();
+    // CARREGA OS DADOS PRIMEIRO, depois aplica os filtros! (Correção do Bug da Tela Zerada)
     await carregarDadosDoBanco();
 });
 
@@ -79,7 +78,7 @@ async function carregarDadosDoBanco() {
             categoriasGlobais.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
 
         atualizarTopCards();
-        aplicarFiltrosHistorico(); 
+        mudarTipoFiltroHistorico(); // Só chama os filtros depois que a array estiver cheia
 
     } catch (e) {
         console.error("Erro ao puxar dados:", e.message);
@@ -155,7 +154,6 @@ function aplicarFiltrosHistorico() {
             } else if (tipoFiltro === 'personalizado') {
                 const dIni = document.getElementById('input-data-inicio').value;
                 const dFim = document.getElementById('input-data-fim').value;
-                
                 if (dIni) dataOk = dataOk && (dStr >= dIni);
                 if (dFim) dataOk = dataOk && (dStr <= dFim);
             }
@@ -255,7 +253,7 @@ function renderizarListaHistorico() {
             <div class="flex flex-row sm:flex-col md:flex-row items-center sm:items-end md:items-center justify-between sm:justify-center gap-3 w-full sm:w-auto shrink-0 border-t sm:border-t-0 border-slate-100 pt-3 sm:pt-0">
                 <span class="font-black text-base md:text-lg ${corValor} whitespace-nowrap">${sinal} ${formatarMoeda(t.valor)}</span>
                 
-                <div class="flex items-center gap-1.5 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                <div class="flex items-center gap-1.5 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onclick="abrirModalEdicao(${t.id})" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:bg-indigo-500 hover:text-white transition flex items-center justify-center border border-slate-200"><i class="fa-solid fa-pen text-xs"></i></button>
                     <button onclick="excluirTransacao(${t.id})" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center border border-slate-200"><i class="fa-solid fa-trash text-xs"></i></button>
                 </div>
@@ -279,8 +277,49 @@ function renderizarListaHistorico() {
 }
 
 // ---------------------------------------------
-// O MOTOR NLP PIPELINE (EXTRAÇÃO SEQUENCIAL)
+// O NOVO CÉREBRO NLP (Extração de Data Isolada)
 // ---------------------------------------------
+const dicionarioDeInteligencia = [
+    { pasta: 'alimentação', regras: [
+        { titulo: 'Delivery', palavras: ['ifood', 'delivery', 'rappi', 'zedelivery'] },
+        { titulo: 'Fast Food', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado', 'pastel', 'méqui'] },
+        { titulo: 'Mercado', palavras: ['mercado', 'supermercado', 'açougue', 'padaria', 'compra'] },
+        { titulo: 'Restaurante', palavras: ['restaurante', 'almoço', 'jantar', 'comida', 'self service'] }
+    ]},
+    { pasta: 'veículo', regras: [
+        { titulo: 'Combustível', palavras: ['gasolina', 'álcool', 'alcool', 'etanol', 'diesel', 'posto', 'combustível', 'combustivel', 'abasteci'] },
+        { titulo: 'Peças / Manutenção', palavras: ['oficina', 'mecânico', 'peça', 'pneu', 'óleo', 'revisão', 'carro', 'moto'] },
+        { titulo: 'Serviços Auto', palavras: ['estacionamento', 'pedágio', 'lavagem', 'lava rápido'] },
+        { titulo: 'Transporte', palavras: ['uber', '99', 'ônibus', 'passagem', 'metrô', 'táxi', 'taxi'] }
+    ]},
+    { pasta: 'moradia', regras: [
+        { titulo: 'Aluguel', palavras: ['aluguel', 'condomínio'] },
+        { titulo: 'Conta de Luz', palavras: ['luz', 'energia', 'cpfl', 'cemig', 'enel'] },
+        { titulo: 'Conta de Água', palavras: ['água', 'sabesp', 'sanepar', 'copasa'] },
+        { titulo: 'Internet', palavras: ['internet', 'vivo', 'claro', 'tim', 'fibra'] },
+        { titulo: 'Reparos e Casa', palavras: ['reparo', 'faxina', 'limpeza', 'material de construção'] }
+    ]},
+    { pasta: 'estudo', regras: [
+        { titulo: 'Mensalidade', palavras: ['faculdade', 'escola', 'mensalidade'] },
+        { titulo: 'Cursos Extras', palavras: ['curso', 'certificado', 'prova', 'concurso'] },
+        { titulo: 'Material Didático', palavras: ['livro', 'caderno', 'material', 'papelaria'] }
+    ]},
+    { pasta: 'saúde', regras: [
+        { titulo: 'Remédios', palavras: ['farmácia', 'remédio', 'medicamento'] },
+        { titulo: 'Consultas Médicas', palavras: ['médico', 'consulta', 'exame', 'dentista', 'terapia', 'psicólogo'] },
+        { titulo: 'Imprevisto', palavras: ['imprevisto', 'acidente', 'pronto socorro', 'hospital'] }
+    ]},
+    { pasta: 'lazer', regras: [
+        { titulo: 'Jogos', palavras: ['jogo', 'steam', 'xbox', 'playstation', 'game'] },
+        { titulo: 'Passeio', palavras: ['cinema', 'festa', 'shopping', 'bar', 'show', 'viagem', 'ingresso'] },
+        { titulo: 'Compras Pessoais', palavras: ['roupa', 'presente', 'tênis', 'perfume', 'fone', 'celular', 'compras'] }
+    ]},
+    { pasta: 'assinaturas', regras: [
+        { titulo: 'Streaming', palavras: ['netflix', 'spotify', 'amazon', 'prime', 'disney', 'hbo'] },
+        { titulo: 'Serviços Recorrentes', palavras: ['assinatura', 'gympass', 'academia'] }
+    ]}
+];
+
 function processarFraseNLP(fraseBruta) {
     if(!fraseBruta || fraseBruta.trim() === '') {
         document.getElementById('form-transacao').reset();
@@ -293,12 +332,15 @@ function processarFraseNLP(fraseBruta) {
 
     let texto = removerAcentos(fraseBruta.toLowerCase());
     
-    // 1. O TIMELINE: Extrai as entidades cronológicas primeiro
+    // 1. ISOLAMENTO CRONOLÓGICO: Acha a data e apaga ela da string
     let dataCalculada = new Date();
     dataCalculada.setHours(0,0,0,0);
     
-    const regexMesPassado = /dia (\d{1,2}) do mes passado/i;
-    const regexDia = /dia (\d{1,2})/i;
+    let isMesPassado = false;
+    if (texto.includes('mes passado')) {
+        isMesPassado = true;
+        texto = texto.replace('do mes passado', '').replace('no mes passado', '').replace('mes passado', '');
+    }
 
     if (texto.includes('anteontem')) {
         dataCalculada.setDate(dataCalculada.getDate() - 2);
@@ -306,30 +348,31 @@ function processarFraseNLP(fraseBruta) {
     } else if (texto.includes('ontem')) {
         dataCalculada.setDate(dataCalculada.getDate() - 1);
         texto = texto.replace('ontem', '');
-    } else if (regexMesPassado.test(texto)) {
-        const match = texto.match(regexMesPassado);
-        dataCalculada.setMonth(dataCalculada.getMonth() - 1);
-        dataCalculada.setDate(parseInt(match[1]));
-        texto = texto.replace(match[0], '');
-    } else if (regexDia.test(texto)) {
-        const match = texto.match(regexDia);
-        const dia = parseInt(match[1]);
-        dataCalculada.setDate(dia);
-        if (dia > new Date().getDate()) {
-            dataCalculada.setMonth(dataCalculada.getMonth() - 1);
-        }
-        texto = texto.replace(match[0], '');
     }
 
-    // 2. A MÁSCARA MATEMÁTICA: Puxa o dinheiro na frase limpa de dias
+    const matchDia = texto.match(/(?:no )?dia\s*(\d{1,2})/i);
+    if (matchDia) {
+        const diaNum = parseInt(matchDia[1]);
+        dataCalculada.setDate(diaNum);
+        
+        if (isMesPassado) {
+            dataCalculada.setMonth(dataCalculada.getMonth() - 1);
+        } else if (diaNum > new Date().getDate()) {
+            // Se hoje é 10 e ele falou "dia 25", foi no mês passado
+            dataCalculada.setMonth(dataCalculada.getMonth() - 1);
+        }
+        texto = texto.replace(matchDia[0], ''); // Remove o dia para limpar o dinheiro
+    } else if (isMesPassado) {
+        dataCalculada.setMonth(dataCalculada.getMonth() - 1);
+    }
+
+    // 2. EXTRAÇÃO FINANCEIRA SEGURA
     const nums = texto.match(/\d+(?:[.,]\d+)?/g);
     const valorExtraido = nums ? Math.max(...nums.map(n => parseFloat(n.replace(',', '.')))) : 0;
     
-    if(nums) {
-        nums.forEach(n => texto = texto.replace(n, ''));
-    }
+    if(nums) nums.forEach(n => texto = texto.replace(n, '')); // Limpa os números do texto final
 
-    // 3. A IDENTIFICAÇÃO SEMÂNTICA (Categorização)
+    // 3. ANÁLISE SEMÂNTICA
     const palavrasReceita = ['recebi', 'ganhei', 'pix', 'salario', 'renda', 'vendi', 'deposito'];
     const isReceita = palavrasReceita.some(p => removerAcentos(fraseBruta.toLowerCase()).includes(p));
 
@@ -353,9 +396,11 @@ function processarFraseNLP(fraseBruta) {
         }
     }
 
+    // Gerador de Título Fallback (Remove as "Stop Words")
     if (!tituloFinal) {
         let palavras = texto.split(' ');
-        const stopWords = ['eu', 'gastei', 'paguei', 'botei', 'coloquei', 'um', 'uma', 'uns', 'umas', 'de', 'da', 'do', 'no', 'na', 'para', 'com', 'novo', 'nova', 'reais', 'real', 'hoje', 'meu', 'minha', 'fui', 'carro', 'moto'];
+        const stopWords = ['eu', 'gastei', 'paguei', 'botei', 'coloquei', 'um', 'uma', 'uns', 'umas', 'de', 'da', 'do', 'no', 'na', 'para', 'com', 'novo', 'nova', 'reais', 'real', 'hoje', 'meu', 'minha', 'fui'];
+        
         palavras = palavras.filter(p => p.trim() !== '' && !stopWords.includes(p.trim()));
         
         if (palavras.length > 0) {
@@ -363,14 +408,12 @@ function processarFraseNLP(fraseBruta) {
         } else {
             tituloFinal = 'Registro Rápido';
         }
-        
         if (!catDetectada) catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('lazer'));
     }
 
-    // 4. INJEÇÃO DOS DADOS NO FORMULÁRIO DO MODAL
+    // 4. PREENCHIMENTO DO MODAL
     document.getElementById('transacao-id').value = ''; 
     document.getElementById('modal-titulo').innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-indigo-600"></i> ${isReceita ? 'Registrar Entrada' : 'Registrar Saída'}`;
-    
     document.getElementById('transacao-desc').value = tituloFinal;
     
     if(valorExtraido > 0) {
@@ -378,14 +421,12 @@ function processarFraseNLP(fraseBruta) {
         valorStr = valorStr.replace(/(\d)(\d{3})(\d{3}),/g, "$1.$2.$3,");
         valorStr = valorStr.replace(/(\d)(\d{3}),/g, "$1.$2,");
         document.getElementById('transacao-valor').value = valorStr;
-    } else { 
-        document.getElementById('transacao-valor').value = ''; 
-    }
+    } else { document.getElementById('transacao-valor').value = ''; }
 
     document.getElementById('transacao-data').value = dataCalculada.toISOString().split('T')[0];
     if (catDetectada) document.getElementById('transacao-categoria').value = catDetectada.id;
-    
     document.querySelector(`input[name="tipo"][value="${isReceita ? 'receita' : 'despesa'}"]`).checked = true;
+
     document.getElementById('modal-transacao').classList.remove('hidden');
 }
 
@@ -395,79 +436,19 @@ window.abrirModalComTextoRapido = function() {
 };
 
 // ---------------------------------------------
-// O NOVO MICROFONE COM AUDIOCONTEXT ATIVO
+// MICROFONE REATIVO COM BYPASS DE HARDWARE LOCK
 // ---------------------------------------------
 async function ativarMicrofone() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return alert("Seu navegador não suporta microfone nativo. Use o Google Chrome.");
-    
-    reconhecimentoDeVoz = new SpeechRecognition();
-    reconhecimentoDeVoz.lang = 'pt-BR';
-    reconhecimentoDeVoz.interimResults = true; // Captura em tempo real ativada
-    reconhecimentoDeVoz.continuous = false; // Garante parada ao fechar frase
-    
     const modalMic = document.getElementById('modal-microfone');
     const textoInterim = document.getElementById('texto-interim');
     
     modalMic.classList.remove('hidden');
-    textoInterim.innerText = "Fale agora...";
+    textoInterim.innerText = "Preparando...";
 
-    // Aciona a escuta de frequências de áudio da placa de som
-    iniciarOndasSonorasVisuais();
-
-    // A CORREÇÃO DE OURO DA TRANSCRIÇÃO EM TEMPO REAL:
-    reconhecimentoDeVoz.onresult = (event) => {
-        let textoTemporario = '';
-        let textoFinal = '';
-
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-                textoFinal += event.results[i][0].transcript;
-            } else {
-                textoTemporario += event.results[i][0].transcript;
-            }
-        }
-        
-        // Escreve dinamicamente na tela preta enquanto o usuário fala
-        let transcricaoAoVivo = textoFinal || textoTemporario;
-        if (transcricaoAoVivo.length > 0) {
-            transcricaoAoVivo = transcricaoAoVivo.replace(/\br\$\b|\breais\b/gi, "R$");
-            transcricaoAoVivo = transcricaoAoVivo.charAt(0).toUpperCase() + transcricaoAoVivo.slice(1);
-            textoInterim.innerText = transcricaoAoVivo;
-        }
-
-        // Se o motor consolidou a frase final, encerra o fluxo e entrega os dados para a NLP
-        if (textoFinal && textoFinal.trim() !== '') {
-            document.getElementById('input-rapido').value = textoFinal;
-            
-            // Pausa sutil de 700ms para o usuário ler sua própria frase montada antes do fechamento
-            setTimeout(() => {
-                cancelarMicrofone();
-                processarFraseNLP(textoFinal); 
-            }, 700);
-        }
-    };
-
-    reconhecimentoDeVoz.onerror = (e) => { 
-        console.error("Erro da API de voz:", e.error);
-        cancelarMicrofone();
-    };
-    
-    reconhecimentoDeVoz.onend = () => { 
-        // Se parou por inatividade sem capturar nada, limpa e fecha
-        setTimeout(() => {
-            if(!modalMic.classList.contains('hidden') && (textoInterim.innerText === "Fale agora..." || textoInterim.innerText === '')) {
-                cancelarMicrofone();
-            }
-        }, 1000);
-    };
-    
-    reconhecimentoDeVoz.start();
-}
-
-async function iniciarOndasSonorasVisuais() {
     try {
+        // SOLUÇÃO SÊNIOR: Pede o stream antes para abrir a Placa de Som, e deixa a IA pegar carona
         micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const analyser = audioContext.createAnalyser();
         const microphone = audioContext.createMediaStreamSource(micStream);
@@ -497,8 +478,64 @@ async function iniciarOndasSonorasVisuais() {
             animationId = requestAnimationFrame(desenharLoop);
         }
         desenharLoop();
+
+        // Inicia a Inteligência Artificial
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) throw new Error("Sem suporte NLP");
+
+        reconhecimentoDeVoz = new SpeechRecognition();
+        reconhecimentoDeVoz.lang = 'pt-BR';
+        reconhecimentoDeVoz.interimResults = true; 
+        
+        reconhecimentoDeVoz.onstart = () => {
+            textoInterim.innerText = "Fale agora...";
+        };
+
+        reconhecimentoDeVoz.onresult = (event) => {
+            let textoTemporario = '';
+            let textoFinal = '';
+
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    textoFinal += event.results[i][0].transcript;
+                } else {
+                    textoTemporario += event.results[i][0].transcript;
+                }
+            }
+            
+            // Transcrição ao vivo na tela
+            let textoExibido = textoFinal || textoTemporario;
+            if(textoExibido.length > 0) {
+                textoExibido = textoExibido.replace(/\br\$\b|\breais\b/gi, "R$");
+                textoExibido = textoExibido.charAt(0).toUpperCase() + textoExibido.slice(1);
+                textoInterim.innerText = textoExibido;
+            }
+
+            if (textoFinal && textoFinal.trim() !== '') {
+                document.getElementById('input-rapido').value = textoFinal;
+                setTimeout(() => {
+                    cancelarMicrofone();
+                    processarFraseNLP(textoFinal); 
+                }, 600);
+            }
+        };
+
+        reconhecimentoDeVoz.onerror = (e) => { 
+            console.error("Mic Error:", e.error);
+            cancelarMicrofone(); 
+        };
+        
+        reconhecimentoDeVoz.onend = () => { 
+            setTimeout(() => {
+                if(!modalMic.classList.contains('hidden')) cancelarMicrofone();
+            }, 500);
+        };
+        
+        reconhecimentoDeVoz.start();
+
     } catch (e) {
-        console.warn("Feedback tátil de som indisponível.");
+        alert("Microfone bloqueado ou sem permissão. " + e.message);
+        cancelarMicrofone();
     }
 }
 
@@ -509,9 +546,8 @@ function cancelarMicrofone() {
         reconhecimentoDeVoz.onend = null;
         reconhecimentoDeVoz.abort();
     }
-    
     if(animationId) cancelAnimationFrame(animationId);
-    if(audioContext) audioContext.close().catch(() => {});
+    if(audioContext) audioContext.close().catch(()=>{});
     if(micStream) micStream.getTracks().forEach(track => track.stop());
     
     audioContext = null;
