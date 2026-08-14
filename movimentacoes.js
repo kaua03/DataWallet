@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - MOTOR COM SWEETALERT E EVENTOS BLINDADOS
+// movimentacoes.js - MOTOR DE FLUXO DE CAIXA E NLP AVANÇADO
 // ==========================================
 
 let usuarioLogado = null;
@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const inputRapido = document.getElementById('input-rapido');
     if (inputRapido) {
         inputRapido.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') window.abrirModalComTextoRapido();
+            if (e.key === 'Enter') processarFraseNLP(this.value);
         });
     }
 
@@ -46,7 +46,6 @@ function aplicarMascaraMoeda(input) {
     input.value = valor;
 }
 
-// A máscara precisa ser global para o HTML reconhecer
 window.aplicarMascaraMoeda = aplicarMascaraMoeda;
 
 function desmascararMoeda(str) {
@@ -197,7 +196,6 @@ function renderizarMiniKPIs() {
     `;
 }
 
-// CORREÇÃO DO BUG DE EXPANDIR: Agora a função está amarrada globalmente na window
 window.toggleExpandirHistorico = function() {
     isHistoricoExpandido = !isHistoricoExpandido;
     renderizarListaHistorico();
@@ -543,7 +541,7 @@ window.cancelarMicrofone = function() {
 };
 
 // ==========================================
-// FUNÇÕES DE CRUD COM ANIMAÇÕES SÊNIOR
+// FUNÇÕES DE CRUD (Com Lottie UI Sênior)
 // ==========================================
 window.abrirModalEdicao = function(id) {
     const t = transacoesGlobais.find(x => x.id === id);
@@ -606,13 +604,27 @@ window.salvarTransacao = async function(event) {
         window.fecharModal();
         document.getElementById('input-rapido').value = '';
         
-        // A MÁGICA: A Animação Fluida do ✅ (SweetAlert2)
+        // A MÁGICA: Injeção do seu Lottie diretamente no modal de sucesso do SweetAlert
         Swal.fire({
-            icon: 'success',
-            title: 'Sucesso!',
-            text: 'Lançamento registrado na sua carteira.',
+            html: `
+                <div class="flex flex-col items-center justify-center overflow-hidden">
+                    <dotlottie-wc
+                      src="https://lottie.host/85450f21-2b79-46bd-8e77-a0d7fc86ceaf/63OdW0EjZh.json"
+                      style="width: 250px; height: 250px"
+                      autoplay
+                      loop>
+                    </dotlottie-wc>
+                    <h2 class="text-2xl font-black text-slate-800 mt-2">Sucesso!</h2>
+                    <p class="text-sm font-bold text-slate-500 mt-1">Lançamento registrado na sua carteira.</p>
+                </div>
+            `,
             showConfirmButton: false,
-            timer: 1800
+            timer: 2500, // Deixei 2.5s para dar tempo de assistir a animação
+            width: 'auto',
+            padding: '2rem',
+            customClass: {
+                popup: 'rounded-3xl shadow-2xl'
+            }
         });
 
     } catch(e) { 
@@ -629,7 +641,6 @@ window.salvarTransacao = async function(event) {
 };
 
 window.excluirTransacao = async function(id) {
-    // Alerta Sênior de Confirmação em vez da tela padrão cinza do navegador
     const confirmacao = await Swal.fire({
         title: 'Excluir Transação?',
         text: "Essa ação apagará este registro do seu fluxo de caixa.",
