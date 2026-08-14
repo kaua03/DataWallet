@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - MOTOR COM ANIMAÇÕES DE ROLETA E ANTI-FLICKER
+// movimentacoes.js - LISTAGEM DARK MODE READY E ROLETA
 // ==========================================
 
 let usuarioLogado = null;
@@ -11,20 +11,8 @@ let isHistoricoExpandido = false;
 let reconhecimentoDeVoz = null; 
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // A Transição SPA e Menus agora moram no layout.js! Que elegância.
     
-    // A MÁGICA DE NAVEGAÇÃO SPA (Evita Flickering Branco Bilateral)
-    document.querySelectorAll('a').forEach(link => {
-        if(link.hostname === window.location.hostname && link.target !== '_blank') {
-            link.addEventListener('click', e => {
-                e.preventDefault();
-                const href = link.getAttribute('href');
-                document.body.style.opacity = 0;
-                document.body.style.transition = 'opacity 0.2s ease-in-out';
-                setTimeout(() => window.location.href = href, 200);
-            });
-        }
-    });
-
     usuarioLogado = await verificarSessaoSegura();
     if (!usuarioLogado) return; 
 
@@ -66,7 +54,6 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
         if (progress < 1) {
             requestAnimationFrame(step);
         } else {
-            // Garante que o frame final trave no número exato
             if (formato === 'moeda') {
                 let parts = Math.abs(valorFinal).toFixed(2).split('.');
                 parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -79,42 +66,6 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
     requestAnimationFrame(step);
 };
 
-// ==========================================
-// ANIMAÇÃO DO FAB MOBILE (Botão Flutuante)
-// ==========================================
-let menuMobileAberto = false;
-
-window.toggleMobileMenu = function() {
-    const items = document.getElementById('fab-items');
-    const icon = document.getElementById('fab-icon');
-    const btn = document.getElementById('fab-menu');
-
-    menuMobileAberto = !menuMobileAberto;
-
-    if (menuMobileAberto) {
-        items.classList.remove('opacity-0', 'translate-x-12', 'pointer-events-none');
-        items.classList.add('opacity-100', 'translate-x-0');
-        
-        btn.style.transform = 'rotate(180deg)';
-        setTimeout(() => {
-            icon.classList.replace('fa-bars', 'fa-xmark');
-        }, 150);
-        
-        btn.classList.replace('bg-indigo-600', 'bg-slate-800');
-        btn.classList.replace('shadow-[0_4px_20px_rgba(79,70,229,0.5)]', 'shadow-[0_4px_20px_rgba(30,41,59,0.5)]');
-    } else {
-        items.classList.add('opacity-0', 'translate-x-12', 'pointer-events-none');
-        items.classList.remove('opacity-100', 'translate-x-0');
-        
-        btn.style.transform = 'rotate(0deg)';
-        setTimeout(() => {
-            icon.classList.replace('fa-xmark', 'fa-bars');
-        }, 150);
-        
-        btn.classList.replace('bg-slate-800', 'bg-indigo-600');
-        btn.classList.replace('shadow-[0_4px_20px_rgba(30,41,59,0.5)]', 'shadow-[0_4px_20px_rgba(79,70,229,0.5)]');
-    }
-};
 
 // ==========================================
 // UTILITÁRIOS
@@ -141,7 +92,7 @@ function desmascararMoeda(str) {
 }
 
 // ==========================================
-// NÚCLEO DE DADOS E ROLETA
+// NÚCLEO DE DADOS
 // ==========================================
 async function carregarDadosDoBanco() {
     try {
@@ -187,7 +138,6 @@ function atualizarTopCards() {
         }
     });
 
-    // Injeção da Roleta para os cards do Topo!
     window.animarContador('saldo-disponivel', saldo, 'moeda', 1000);
     window.animarContador('entradas-mes', entradas, 'moeda', 1000);
     window.animarContador('saidas-mes', saidas, 'moeda', 1000);
@@ -268,15 +218,15 @@ function renderizarMiniKPIs() {
     });
 
     const balanco = somaEntradas - somaSaidas;
-    const corBalanco = balanco >= 0 ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-rose-100 text-rose-700 border-rose-200';
+    // Adaptado para Dark Mode
+    const corBalanco = balanco >= 0 ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30' : 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/30';
     const sinalBalanco = balanco >= 0 ? '+' : '-';
 
-    // Monta a estrutura com ID's para podermos rodar a Roleta por cima deles
     document.getElementById('mini-kpis-historico').innerHTML = `
-        <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-emerald-200" title="Total financeiro de entradas">
+        <span class="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-emerald-200 dark:border-emerald-500/30" title="Total financeiro de entradas">
             <i class="fa-solid fa-arrow-trend-up"></i> <span id="kpi-mini-qtd-ent">0</span> Entradas • <span id="kpi-mini-val-ent">R$ 0,00</span>
         </span>
-        <span class="bg-rose-100 text-rose-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-rose-200" title="Total financeiro de saídas">
+        <span class="bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-rose-200 dark:border-rose-500/30" title="Total financeiro de saídas">
             <i class="fa-solid fa-arrow-trend-down"></i> <span id="kpi-mini-qtd-sai">0</span> Saídas • <span id="kpi-mini-val-sai">R$ 0,00</span>
         </span>
         <span class="${corBalanco} text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border" title="Seu fluxo de caixa final">
@@ -284,7 +234,6 @@ function renderizarMiniKPIs() {
         </span>
     `;
 
-    // Dispara a Roleta também para a quantidade (formato inteiro) e valores (moeda)
     window.animarContador('kpi-mini-qtd-ent', qtdEntradas, 'inteiro', 800);
     window.animarContador('kpi-mini-val-ent', somaEntradas, 'moeda', 800);
     window.animarContador('kpi-mini-qtd-sai', qtdSaidas, 'inteiro', 800);
@@ -302,7 +251,7 @@ function renderizarListaHistorico() {
     const btnToggle = document.getElementById('btn-toggle-historico');
     
     if (transacoesFiltradas.length === 0) {
-        container.innerHTML = `<div class="bg-slate-50 rounded-2xl p-8 text-center border border-slate-200 border-dashed"><i class="fa-solid fa-magnifying-glass text-2xl text-slate-300 mb-2"></i><p class="text-xs font-bold text-slate-400 mt-2">Nenhum registro encontrado nesta visão.</p></div>`;
+        container.innerHTML = `<div class="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-8 text-center border border-slate-200 dark:border-slate-700 border-dashed"><i class="fa-solid fa-magnifying-glass text-2xl text-slate-300 dark:text-slate-600 mb-2"></i><p class="text-xs font-bold text-slate-400 mt-2">Nenhum registro encontrado nesta visão.</p></div>`;
         btnToggle.classList.add('hidden');
         return;
     }
@@ -312,34 +261,36 @@ function renderizarListaHistorico() {
     const htmlLista = transacoesExibidas.map(t => {
         const cat = categoriasGlobais.find(c => c.id === t.categoria_id) || { nome: 'Outros', icone: 'fa-tag', cor: 'text-gray-500' };
         const isReceita = t.tipo === 'receita';
-        const corBg = isReceita ? 'bg-emerald-50' : 'bg-rose-50';
+        
+        // Classes Dark Mode Adaptadas
+        const corBg = isReceita ? 'bg-emerald-50 dark:bg-emerald-500/10' : 'bg-rose-50 dark:bg-rose-500/10';
         const corTxt = isReceita ? 'text-emerald-500' : 'text-rose-500';
-        const corValor = isReceita ? 'text-emerald-600' : 'text-rose-600';
+        const corValor = isReceita ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
         const sinal = isReceita ? '+' : '-';
         const iconeSinal = isReceita ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
         let dataStr = t.data_vencimento ? t.data_vencimento.split('-').reverse().join('/') : '--/--/----';
 
         return `
-        <div class="bg-white p-4 rounded-3xl border border-slate-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
             <div class="flex items-center gap-4 min-w-0 w-full sm:w-auto">
                 <div class="w-12 h-12 rounded-2xl ${corBg} flex items-center justify-center ${corTxt} text-xl shadow-inner shrink-0 relative">
                     <i class="fa-solid ${cat.icone}"></i>
-                    <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full ${corBg} border border-white flex items-center justify-center">
+                    <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full ${corBg} border border-white dark:border-slate-900 flex items-center justify-center">
                         <i class="fa-solid ${iconeSinal} text-[8px] ${corTxt}"></i>
                     </div>
                 </div>
                 <div class="min-w-0 flex-1">
-                    <h4 class="font-bold text-sm text-slate-900 break-words whitespace-normal leading-tight">${t.descricao}</h4>
+                    <h4 class="font-bold text-sm text-slate-900 dark:text-white break-words whitespace-normal leading-tight">${t.descricao}</h4>
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">
                         ${cat.nome} • <i class="fa-regular fa-calendar ml-0.5"></i> ${dataStr}
                     </p>
                 </div>
             </div>
-            <div class="flex flex-row sm:flex-col md:flex-row items-center sm:items-end md:items-center justify-between sm:justify-center gap-3 w-full sm:w-auto shrink-0 border-t sm:border-t-0 border-slate-100 pt-3 sm:pt-0">
+            <div class="flex flex-row sm:flex-col md:flex-row items-center sm:items-end md:items-center justify-between sm:justify-center gap-3 w-full sm:w-auto shrink-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800 pt-3 sm:pt-0">
                 <span class="font-black text-base md:text-lg ${corValor} whitespace-nowrap">${sinal} ${formatarMoeda(t.valor)}</span>
                 <div class="flex items-center gap-1.5 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onclick="window.abrirModalEdicao(${t.id})" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:bg-indigo-500 hover:text-white transition flex items-center justify-center border border-slate-200"><i class="fa-solid fa-pen text-xs"></i></button>
-                    <button onclick="window.excluirTransacao(${t.id})" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center border border-slate-200"><i class="fa-solid fa-trash text-xs"></i></button>
+                    <button onclick="window.abrirModalEdicao(${t.id})" title="Editar" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-indigo-500 hover:text-white transition flex items-center justify-center border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-pen text-xs"></i></button>
+                    <button onclick="window.excluirTransacao(${t.id})" title="Excluir" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-trash text-xs"></i></button>
                 </div>
             </div>
         </div>`;
@@ -700,7 +651,6 @@ window.salvarTransacao = async function(event) {
         window.fecharModal();
         document.getElementById('input-rapido').value = '';
         
-        // EFEITO LOTTIE STICKER FLUTUANTE
         Swal.fire({
             html: `
                 <div class="flex justify-center items-center">
