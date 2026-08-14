@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - SIDEBAR HOVER & TRANSIÇÃO SIMÉTRICA ANTI-FLICKER
+// movimentacoes.js - MOTOR COM ANIMAÇÕES DE ROLETA E ANTI-FLICKER
 // ==========================================
 
 let usuarioLogado = null;
@@ -11,7 +11,8 @@ let isHistoricoExpandido = false;
 let reconhecimentoDeVoz = null; 
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // TRANSIÇÃO SPA BILATERAL (Elimina o piscar branco entre telas)
+    
+    // A MÁGICA DE NAVEGAÇÃO SPA (Evita Flickering Branco Bilateral)
     document.querySelectorAll('a').forEach(link => {
         if(link.hostname === window.location.hostname && link.target !== '_blank') {
             link.addEventListener('click', e => {
@@ -40,6 +41,43 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await carregarDadosDoBanco();
 });
+
+// ==========================================
+// MOTOR DE ANIMAÇÃO DE CONTAGEM (O EFEITO ROLETA SÊNIOR)
+// ==========================================
+window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 1000) {
+    const elemento = document.getElementById(id);
+    if (!elemento) return;
+    
+    const startTimestamp = performance.now();
+    const step = (currentTimestamp) => {
+        const progress = Math.min((currentTimestamp - startTimestamp) / duracao, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 4); 
+        const valorAtual = easeProgress * valorFinal;
+        
+        if (formato === 'moeda') {
+            let parts = Math.abs(valorAtual).toFixed(2).split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            elemento.innerText = (valorAtual < 0 ? "- R$ " : "R$ ") + parts.join(',');
+        } else if (formato === 'inteiro') {
+            elemento.innerText = Math.round(valorAtual);
+        }
+        
+        if (progress < 1) {
+            requestAnimationFrame(step);
+        } else {
+            // Garante que o frame final trave no número exato
+            if (formato === 'moeda') {
+                let parts = Math.abs(valorFinal).toFixed(2).split('.');
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                elemento.innerText = (valorFinal < 0 ? "- R$ " : "R$ ") + parts.join(',');
+            } else if (formato === 'inteiro') {
+                elemento.innerText = valorFinal;
+            }
+        }
+    };
+    requestAnimationFrame(step);
+};
 
 // ==========================================
 // ANIMAÇÃO DO FAB MOBILE (Botão Flutuante)
@@ -103,7 +141,7 @@ function desmascararMoeda(str) {
 }
 
 // ==========================================
-// NÚCLEO DE DADOS
+// NÚCLEO DE DADOS E ROLETA
 // ==========================================
 async function carregarDadosDoBanco() {
     try {
@@ -149,9 +187,10 @@ function atualizarTopCards() {
         }
     });
 
-    document.getElementById('saldo-disponivel').innerText = formatarMoeda(saldo);
-    document.getElementById('entradas-mes').innerText = formatarMoeda(entradas);
-    document.getElementById('saidas-mes').innerText = formatarMoeda(saidas);
+    // Injeção da Roleta para os cards do Topo!
+    window.animarContador('saldo-disponivel', saldo, 'moeda', 1000);
+    window.animarContador('entradas-mes', entradas, 'moeda', 1000);
+    window.animarContador('saidas-mes', saidas, 'moeda', 1000);
 }
 
 // ==========================================
@@ -232,17 +271,25 @@ function renderizarMiniKPIs() {
     const corBalanco = balanco >= 0 ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-rose-100 text-rose-700 border-rose-200';
     const sinalBalanco = balanco >= 0 ? '+' : '-';
 
+    // Monta a estrutura com ID's para podermos rodar a Roleta por cima deles
     document.getElementById('mini-kpis-historico').innerHTML = `
         <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-emerald-200" title="Total financeiro de entradas">
-            <i class="fa-solid fa-arrow-trend-up"></i> ${qtdEntradas} Entradas • ${formatarMoeda(somaEntradas)}
+            <i class="fa-solid fa-arrow-trend-up"></i> <span id="kpi-mini-qtd-ent">0</span> Entradas • <span id="kpi-mini-val-ent">R$ 0,00</span>
         </span>
         <span class="bg-rose-100 text-rose-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-rose-200" title="Total financeiro de saídas">
-            <i class="fa-solid fa-arrow-trend-down"></i> ${qtdSaidas} Saídas • ${formatarMoeda(somaSaidas)}
+            <i class="fa-solid fa-arrow-trend-down"></i> <span id="kpi-mini-qtd-sai">0</span> Saídas • <span id="kpi-mini-val-sai">R$ 0,00</span>
         </span>
         <span class="${corBalanco} text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border" title="Seu fluxo de caixa final">
-            Fluxo: ${sinalBalanco} ${formatarMoeda(Math.abs(balanco))}
+            Fluxo: ${sinalBalanco} <span id="kpi-mini-val-bal">R$ 0,00</span>
         </span>
     `;
+
+    // Dispara a Roleta também para a quantidade (formato inteiro) e valores (moeda)
+    window.animarContador('kpi-mini-qtd-ent', qtdEntradas, 'inteiro', 800);
+    window.animarContador('kpi-mini-val-ent', somaEntradas, 'moeda', 800);
+    window.animarContador('kpi-mini-qtd-sai', qtdSaidas, 'inteiro', 800);
+    window.animarContador('kpi-mini-val-sai', somaSaidas, 'moeda', 800);
+    window.animarContador('kpi-mini-val-bal', Math.abs(balanco), 'moeda', 800);
 }
 
 window.toggleExpandirHistorico = function() {
@@ -653,7 +700,7 @@ window.salvarTransacao = async function(event) {
         window.fecharModal();
         document.getElementById('input-rapido').value = '';
         
-        // LOTTIE SÊNIOR
+        // EFEITO LOTTIE STICKER FLUTUANTE
         Swal.fire({
             html: `
                 <div class="flex justify-center items-center">
