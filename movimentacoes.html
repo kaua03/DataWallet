@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +7,6 @@
     
     <meta name="view-transition" content="same-origin">
     
-    <!-- A ORDEM CORRETA: Biblioteca primeiro, Configuração depois -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -56,8 +55,6 @@
 </head>
 
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 h-[100dvh] overflow-hidden flex relative fade-in transition-colors duration-300">
-
-    <!-- O LAYOUT.JS INJETA A SIDEBAR E O MENU AQUI -->
 
     <main class="flex-1 h-full overflow-y-auto relative pb-28 md:pb-8 p-4 md:p-8">
         <section class="max-w-4xl mx-auto space-y-6">
@@ -155,17 +152,22 @@
         </section>
     </main>
 
-    <!-- MODAL DE LANÇAMENTO -->
-    <div id="modal-transacao" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center fade-in p-4">
-        <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl p-6 relative border dark:border-slate-800">
-            <button onclick="window.fecharModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+    <!-- MODAL DE LANÇAMENTO (Com Fechamento por Clique Fora e Botão Gigante) -->
+    <div id="modal-transacao" onclick="if(event.target === this) window.fecharModal()" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center fade-in p-4 cursor-pointer">
+        <!-- O container do modal (cursor-default para não fechar quando clica dentro) -->
+        <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl p-6 relative border dark:border-slate-800 cursor-default">
             
-            <h3 id="modal-titulo" class="text-xl font-black text-slate-900 dark:text-white mb-6"><i class="fa-solid fa-money-bill-transfer text-indigo-500"></i> Lançar Valor Real</h3>
+            <!-- HITBOX AUMENTADA: w-12 h-12 para facilitar o toque no mobile, z-50 para passar por cima de tudo -->
+            <button onclick="window.fecharModal()" class="absolute top-3 right-3 md:top-4 md:right-4 w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center z-50 active:scale-95">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            
+            <h3 id="modal-titulo" class="text-xl font-black text-slate-900 dark:text-white mb-6 pr-10"><i class="fa-solid fa-money-bill-transfer text-indigo-500"></i> Lançar Valor</h3>
             
             <form id="form-transacao" onsubmit="window.salvarTransacao(event)" class="space-y-4">
                 <input type="hidden" id="transacao-id">
 
-                <div class="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+                <div class="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl relative z-10">
                     <label class="flex-1 text-center relative cursor-pointer">
                         <input type="radio" name="tipo" value="receita" class="peer sr-only" checked>
                         <div class="py-2 text-sm font-bold text-slate-500 dark:text-slate-400 peer-checked:bg-white dark:peer-checked:bg-slate-700 peer-checked:text-emerald-600 dark:peer-checked:text-emerald-400 peer-checked:shadow-sm rounded-lg transition-all">
@@ -180,12 +182,12 @@
                     </label>
                 </div>
 
-                <div>
+                <div class="relative z-10">
                     <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Descrição</label>
                     <input type="text" id="transacao-desc" required placeholder="Ex: Salário, Mercado..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 dark:focus:border-indigo-500 font-medium">
                 </div>
                 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-2 gap-4 relative z-10">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Valor (R$)</label>
                         <input type="text" id="transacao-valor" inputmode="numeric" oninput="aplicarMascaraMoeda(this)" required placeholder="0,00" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 font-bold">
@@ -196,7 +198,7 @@
                     </div>
                 </div>
 
-                <div>
+                <div class="relative z-10">
                     <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Centro de Custo</label>
                     <select id="transacao-categoria" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 font-medium cursor-pointer">
                         <option value="">Carregando pastas...</option>
@@ -205,7 +207,7 @@
 
                 <input type="hidden" id="transacao-paga" value="true">
 
-                <button type="submit" id="btn-salvar-transacao" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3 rounded-xl transition shadow-lg shadow-indigo-500/30 mt-4 flex justify-center items-center gap-2">
+                <button type="submit" id="btn-salvar-transacao" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3 rounded-xl transition shadow-lg shadow-indigo-500/30 mt-4 flex justify-center items-center gap-2 relative z-10">
                     <i class="fa-solid fa-check"></i> Efetivar Transação
                 </button>
             </form>
