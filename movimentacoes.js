@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - MOTOR COM ANIMAÇÕES INTELIGENTES E CENTRALIZAÇÃO NATIVA
+// movimentacoes.js - MOTOR COM ANIMAÇÕES CENTRALIZADAS E NLP SÊNIOR
 // ==========================================
 
 let usuarioLogado = null;
@@ -240,7 +240,7 @@ function renderizarMiniKPIs() {
             <i class="fa-solid fa-arrow-trend-down"></i> <span id="kpi-mini-qtd-sai">0</span> • <span id="kpi-mini-val-sai">R$ 0,00</span>
         </span>
         <span class="${corBalanco} text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border" title="Seu fluxo de caixa final">
-            Fluxo: <span id="kpi-mini-val-bal">R$ 0,00</span>
+            Fluxo: ${sinalBalanco} <span id="kpi-mini-val-bal">R$ 0,00</span>
         </span>
     `;
 
@@ -450,16 +450,19 @@ function processarFraseNLP(fraseBruta) {
         }
     }
 
+    // A MÁGICA DA DESCRIÇÃO INDEFINIDA SÊNIOR
     if (!tituloFinal) {
         let palavras = texto.split(' ');
-        const stopWords = ['eu', 'gastei', 'paguei', 'pague', 'botei', 'coloquei', 'um', 'uma', 'uns', 'umas', 'de', 'da', 'do', 'no', 'na', 'para', 'com', 'novo', 'nova', 'meu', 'minha', 'fui', 'o', 'a', 'os', 'as', 'em', 'por', 'pra'];
+        const stopWords = ['eu', 'gastei', 'paguei', 'pague', 'botei', 'coloquei', 'um', 'uma', 'uns', 'umas', 'de', 'da', 'do', 'no', 'na', 'para', 'com', 'novo', 'nova', 'meu', 'minha', 'fui', 'o', 'a', 'os', 'as', 'em', 'por', 'pra', 'reais', 'real', 'r$'];
         palavras = palavras.filter(p => p.trim() !== '' && !stopWords.includes(p.trim()) && isNaN(p));
         
         if (palavras.length > 0) {
             tituloFinal = palavras[0].charAt(0).toUpperCase() + palavras[0].slice(1); 
         } else {
-            tituloFinal = 'Registro Rápido';
+            // Se o usuário digitou apenas "Gastei 50" e o filtro engoliu tudo:
+            tituloFinal = isReceita ? 'Recebimento Indefinido' : 'Gasto Indefinido';
         }
+        
         if (!catDetectada) {
             catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('lazer') || removerAcentos(c.nome.toLowerCase()).includes('outros'));
         }
@@ -666,23 +669,24 @@ window.salvarTransacao = async function(event) {
             ? "https://lottie.host/85450f21-2b79-46bd-8e77-a0d7fc86ceaf/63OdW0EjZh.json" // O ✅ de Sucesso
             : "https://lottie.host/78d29cd2-20ba-42fa-89bb-5471e7c8353c/EglrVN8uNB.lottie"; // As moedas da Despesa
 
-        // O SEGREDO DA CENTRALIZAÇÃO (Deixando o SweetAlert gerenciar o Flexbox)
+        // O SEGREDO DA CENTRALIZAÇÃO NATIVA: 
+        // Ocultamos a caixa branca do SweetAlert e usamos o próprio motor de centro dele.
         Swal.fire({
             html: `
-                <div style="display: flex; align-items: center; justify-content: center;">
+                <div style="width: 280px; height: 280px; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
                     <dotlottie-wc
                       src="${urlAnimacao}"
-                      style="width: 280px; height: 280px;"
+                      style="width: 100%; height: 100%;"
                       autoplay>
                     </dotlottie-wc>
                 </div>
             `,
             showConfirmButton: false,
-            timer: 3000, 
+            timer: 2600, 
             background: 'transparent', 
             backdrop: 'rgba(15, 23, 42, 0.85)', 
             customClass: {
-                popup: 'shadow-none bg-transparent border-none' 
+                popup: 'bg-transparent border-none shadow-none m-0 p-0' 
             }
         });
 
