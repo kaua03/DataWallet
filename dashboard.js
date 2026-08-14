@@ -1,5 +1,5 @@
 // ==========================================
-// dashboard.js - MOTOR DE BUSINESS INTELLIGENCE E IA (GEMINI API)
+// dashboard.js - MOTOR DE BI COM FAB MENU E IA
 // ==========================================
 
 let usuarioLogado = null;
@@ -42,6 +42,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     await carregarDadosDoBanco();
 });
 
+// ==========================================
+// ANIMAÇÃO DO FAB MOBILE (Botão Flutuante)
+// ==========================================
+let menuMobileAberto = false;
+
+window.toggleMobileMenu = function() {
+    const items = document.getElementById('fab-items');
+    const icon = document.getElementById('fab-icon');
+    const btn = document.getElementById('fab-menu');
+
+    menuMobileAberto = !menuMobileAberto;
+
+    if (menuMobileAberto) {
+        items.classList.remove('opacity-0', 'translate-x-12', 'pointer-events-none');
+        items.classList.add('opacity-100', 'translate-x-0');
+        
+        btn.style.transform = 'rotate(180deg)';
+        setTimeout(() => {
+            icon.classList.replace('fa-bars', 'fa-xmark');
+        }, 150);
+        
+        btn.classList.replace('bg-indigo-600', 'bg-slate-800');
+        btn.classList.replace('shadow-[0_4px_20px_rgba(79,70,229,0.5)]', 'shadow-[0_4px_20px_rgba(30,41,59,0.5)]');
+    } else {
+        items.classList.add('opacity-0', 'translate-x-12', 'pointer-events-none');
+        items.classList.remove('opacity-100', 'translate-x-0');
+        
+        btn.style.transform = 'rotate(0deg)';
+        setTimeout(() => {
+            icon.classList.replace('fa-xmark', 'fa-bars');
+        }, 150);
+        
+        btn.classList.replace('bg-slate-800', 'bg-indigo-600');
+        btn.classList.replace('shadow-[0_4px_20px_rgba(30,41,59,0.5)]', 'shadow-[0_4px_20px_rgba(79,70,229,0.5)]');
+    }
+};
+
+// ==========================================
+// DADOS E FILTROS DO BI
+// ==========================================
 async function carregarDadosDoBanco() {
     try {
         const [rTrans, rCat] = await Promise.all([
@@ -166,6 +206,9 @@ function processarEAtualizarTudo() {
     renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, topGastos.slice(0,5), totalDespesas);
 }
 
+// ==========================================
+// RENDERIZAÇÃO DE GRÁFICOS E LISTAS
+// ==========================================
 function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
     const html = ordenadas.map(cat => {
         const valor = gastos[cat];
@@ -345,7 +388,6 @@ function enviarMensagemCoach() {
     chatBox.appendChild(typingDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
 
-    // Envia para o motor da IA
     gerarRespostaIA(texto);
 }
 
@@ -384,7 +426,6 @@ REGRA ESTRITA: Responda à pergunta do usuário usando APENAS a intenção dele 
     try {
         const chaveLimpa = GEMINI_API_KEY.trim();
         
-        // Link apontando para a versão mais estável do modelo:
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${chaveLimpa}`;
         
         const respostaDaNuvem = await fetch(url, {
