@@ -234,13 +234,13 @@ function renderizarMiniKPIs() {
 
     document.getElementById('mini-kpis-historico').innerHTML = `
         <span class="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-emerald-200 dark:border-emerald-500/30" title="Total financeiro de entradas">
-            <i class="fa-solid fa-arrow-trend-up"></i> <span id="kpi-mini-qtd-ent">0</span> Entradas • <span id="kpi-mini-val-ent">R$ 0,00</span>
+            <i class="fa-solid fa-arrow-trend-up"></i> <span id="kpi-mini-qtd-ent">0</span> • <span id="kpi-mini-val-ent">R$ 0,00</span>
         </span>
         <span class="bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-rose-200 dark:border-rose-500/30" title="Total financeiro de saídas">
-            <i class="fa-solid fa-arrow-trend-down"></i> <span id="kpi-mini-qtd-sai">0</span> Saídas • <span id="kpi-mini-val-sai">R$ 0,00</span>
+            <i class="fa-solid fa-arrow-trend-down"></i> <span id="kpi-mini-qtd-sai">0</span> • <span id="kpi-mini-val-sai">R$ 0,00</span>
         </span>
         <span class="${corBalanco} text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border" title="Seu fluxo de caixa final">
-            Fluxo: ${sinalBalanco} <span id="kpi-mini-val-bal">R$ 0,00</span>
+            Fluxo: <span id="kpi-mini-val-bal">R$ 0,00</span>
         </span>
     `;
 
