@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Movimentações - DataWallet</title>
     
+    <meta name="view-transition" content="same-origin">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- BIBLIOTECAS SÊNIOR (Alertas e Animações Lottie) -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.4/dist/dotlottie-wc.js" type="module"></script>
     
@@ -20,8 +21,9 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
-        .fade-in { animation: fadeIn 0.4s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Fade in limpo e simétrico */
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
         ::-webkit-scrollbar { width: 6px; display: none; }
 
@@ -37,11 +39,11 @@
 
         /* O HACK DO BOTÃO PERFEITO */
         .sidebar-link {
-            width: 3rem; /* Trava o botão em exatos 48px quando minimizado */
+            width: 3rem; 
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s;
         }
         #sidebar:hover .sidebar-link {
-            width: 100%; /* Estica para preencher a barra quando aberta */
+            width: 100%; 
         }
         
         .sidebar-text {
@@ -61,10 +63,8 @@
 </head>
 <body class="bg-slate-50 text-slate-800 h-screen overflow-hidden flex relative fade-in">
 
-    <!-- ESPAÇADOR FALSO PARA O DESKTOP -->
     <div class="hidden md:block w-20 shrink-0"></div>
 
-    <!-- SIDEBAR REAL DO DESKTOP (Flutua por cima via Hover) -->
     <aside id="sidebar" class="hidden md:flex flex-col bg-white border-r border-slate-200/60 py-6 px-4 h-full z-40 fixed left-0 top-0 overflow-hidden">
         
         <div class="flex items-center justify-start mb-10 h-12 px-1">
@@ -117,7 +117,6 @@
         </div>
     </aside>
 
-    <!-- O MIOLO DO SISTEMA -->
     <main class="flex-1 h-full overflow-y-auto relative pb-28 md:pb-8 p-4 md:p-8">
         <section class="max-w-4xl mx-auto space-y-6">
             
@@ -214,7 +213,6 @@
         </section>
     </main>
 
-    <!-- NAVEGAÇÃO MOBILE (FAB ANIMADO E FLUTUANTE) -->
     <div class="md:hidden fixed bottom-6 right-6 z-40 flex items-center gap-3 flex-row-reverse">
         <button onclick="window.toggleMobileMenu()" id="fab-menu" class="w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_4px_20px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-500 z-50">
             <i class="fa-solid fa-bars transition-all duration-300" id="fab-icon"></i>
@@ -242,7 +240,6 @@
         </div>
     </div>
 
-    <!-- MODAL DE LANÇAMENTO -->
     <div id="modal-transacao" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center fade-in p-4">
         <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 relative">
             <button onclick="window.fecharModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
@@ -299,7 +296,6 @@
         </div>
     </div>
 
-    <!-- MODAL DO MICROFONE -->
     <div id="modal-microfone" class="hidden fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[60] flex flex-col items-center justify-center fade-in transition-all">
         <button onclick="window.cancelarMicrofone()" class="absolute top-8 right-8 w-12 h-12 rounded-full bg-white/10 text-white hover:bg-rose-500 transition flex items-center justify-center">
             <i class="fa-solid fa-xmark text-2xl"></i>
