@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - NLP INTELIGENTE E ANIMAÇÃO CENTRALIZADA
+// movimentacoes.js - NLP INTELIGENTE, ANIMAÇÃO E MULTI-SELECT
 // ==========================================
 
 let usuarioLogado = null;
@@ -9,6 +9,11 @@ let categoriasGlobais = [];
 
 let isHistoricoExpandido = false; 
 let reconhecimentoDeVoz = null; 
+
+// VARIÁVEIS DE SELEÇÃO MULTIPLA (Long Press)
+let timerPressao;
+let modoSelecao = false;
+let selecionados = new Set();
 
 document.addEventListener('DOMContentLoaded', async () => {
     
@@ -43,6 +48,97 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await carregarDadosDoBanco();
 });
+
+// ==========================================
+// MOTOR DE SELEÇÃO MULTIPLA (O WIGGLE DO IPHONE)
+// ==========================================
+window.iniciarPressao = function(id) {
+    if (modoSelecao) return; // Se já ativou, o clique normal que manda
+    timerPressao = setTimeout(() => {
+        ativarModoSelecao(id);
+    }, 500); // Segurou 0.5s = Ativa!
+};
+
+window.cancelarPressao = function() {
+    clearTimeout(timerPressao);
+};
+
+window.clicarCard = function(event, id) {
+    // Só funciona o clique de seleção se o modo estiver ligado
+    if (modoSelecao) {
+        event.preventDefault();
+        const card = document.getElementById(`card-transacao-${id}`);
+        if (selecionados.has(id)) {
+            selecionados.delete(id);
+            card.classList.remove('wiggle-ativo');
+        } else {
+            selecionados.add(id);
+            card.classList.add('wiggle-ativo');
+        }
+        atualizarBarraSelecao();
+    }
+};
+
+function ativarModoSelecao(idInicial) {
+    modoSelecao = true;
+    if (navigator.vibrate) navigator.vibrate(50); // Feedback tátil vibratório
+    
+    selecionados.add(idInicial);
+    const card = document.getElementById(`card-transacao-${idInicial}`);
+    if(card) card.classList.add('wiggle-ativo');
+    
+    const barra = document.getElementById('barra-selecao');
+    if(barra) barra.classList.replace('hidden', 'flex');
+    atualizarBarraSelecao();
+}
+
+window.sairModoSelecao = function() {
+    modoSelecao = false;
+    selecionados.clear();
+    document.querySelectorAll('.wiggle-ativo').forEach(card => card.classList.remove('wiggle-ativo'));
+    const barra = document.getElementById('barra-selecao');
+    if(barra) barra.classList.replace('flex', 'hidden');
+};
+
+function atualizarBarraSelecao() {
+    const qtd = selecionados.size;
+    const contador = document.getElementById('contador-selecao');
+    if(contador) contador.innerText = qtd;
+    if (qtd === 0) sairModoSelecao();
+}
+
+window.excluirSelecionados = async function() {
+    if (selecionados.size === 0) return;
+
+    const confirmacao = await Swal.fire({
+        title: 'Excluir Registros?',
+        text: `Você está prestes a excluir ${selecionados.size} registros. Isso não pode ser desfeito.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'Sim, excluir todos',
+        cancelButtonText: 'Cancelar'
+    });
+
+    if (!confirmacao.isConfirmed) return;
+
+    try {
+        const idsArray = Array.from(selecionados);
+        const { error } = await supabaseClient.from('transacoes').delete().in('id', idsArray).eq('usuario_id', usuarioLogado.id);
+        if (error) throw error;
+        
+        transacoesGlobais = transacoesGlobais.filter(t => !selecionados.has(t.id));
+        sairModoSelecao();
+        window.aplicarFiltrosHistorico();
+        atualizarTopCards();
+        
+        Swal.fire({ icon: 'success', title: 'Excluídos!', showConfirmButton: false, timer: 1500 });
+
+    } catch(e) { 
+        Swal.fire({ icon: 'error', title: 'Erro ao excluir', text: e.message });
+    }
+};
 
 // ==========================================
 // MOTOR DE ANIMAÇÃO DE CONTAGEM
@@ -280,9 +376,14 @@ function renderizarListaHistorico() {
         const iconeSinal = isReceita ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
         let dataStr = t.data_vencimento ? t.data_vencimento.split('-').reverse().join('/') : '--/--/----';
 
+        // Eventos de clique adicionados para o Wiggle (Long Press)
         return `
-        <div class="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
-            <div class="flex items-center gap-4 min-w-0 w-full sm:w-auto">
+        <div id="card-transacao-${t.id}" 
+             onmousedown="window.iniciarPressao(${t.id})" onmouseup="window.cancelarPressao()" onmouseleave="window.cancelarPressao()"
+             ontouchstart="window.iniciarPressao(${t.id})" ontouchend="window.cancelarPressao()" ontouchmove="window.cancelarPressao()"
+             onclick="window.clicarCard(event, ${t.id})"
+             class="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group cursor-pointer select-none">
+            <div class="flex items-center gap-4 min-w-0 w-full sm:w-auto pointer-events-none">
                 <div class="w-12 h-12 rounded-2xl ${corBg} flex items-center justify-center ${corTxt} text-xl shadow-inner shrink-0 relative">
                     <i class="fa-solid ${cat.icone}"></i>
                     <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full ${corBg} border border-white dark:border-slate-900 flex items-center justify-center">
@@ -297,10 +398,10 @@ function renderizarListaHistorico() {
                 </div>
             </div>
             <div class="flex flex-row sm:flex-col md:flex-row items-center sm:items-end md:items-center justify-between sm:justify-center gap-3 w-full sm:w-auto shrink-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800 pt-3 sm:pt-0">
-                <span class="font-black text-base md:text-lg ${corValor} whitespace-nowrap">${sinal} ${formatarMoeda(t.valor)}</span>
+                <span class="font-black text-base md:text-lg ${corValor} whitespace-nowrap pointer-events-none">${sinal} ${formatarMoeda(t.valor)}</span>
                 <div class="flex items-center gap-1.5 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onclick="window.abrirModalEdicao(${t.id})" title="Editar" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-indigo-500 hover:text-white transition flex items-center justify-center border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-pen text-xs"></i></button>
-                    <button onclick="window.excluirTransacao(${t.id})" title="Excluir" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-trash text-xs"></i></button>
+                    <button onclick="event.stopPropagation(); window.abrirModalEdicao(${t.id})" title="Editar" class="w-10 h-10 md:w-8 md:h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-indigo-500 hover:text-white transition flex items-center justify-center border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-pen text-sm md:text-xs"></i></button>
+                    <button onclick="event.stopPropagation(); window.excluirTransacao(${t.id})" title="Excluir" class="w-10 h-10 md:w-8 md:h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-trash text-sm md:text-xs"></i></button>
                 </div>
             </div>
         </div>`;
@@ -423,12 +524,14 @@ function processarFraseNLP(fraseBruta) {
         dataCalculada.setMonth(dataCalculada.getMonth() - 1);
     }
 
-    // A MÁGICA DA MULTIPLICAÇÃO ("20 mil" -> 20000)
-    texto = texto.replace(/\br\$\b|\breais\b|\breal\b|\$/gi, ''); 
-    texto = texto.replace(/(\d+(?:[.,]\d+)?)\s*mil\b/gi, (match, numeroCru) => {
+    // A MÁGICA DA MULTIPLICAÇÃO DE MILHARES SÊNIOR
+    // Ex: "20k" vira "20 mil", depois "20 mil" vira "20000"
+    texto = texto.replace(/\b(\d+(?:[.,]\d+)?)\s*k\b/gi, '$1 mil'); 
+    texto = texto.replace(/\b(\d+(?:[.,]\d+)?)\s*mil\b/gi, (match, numeroCru) => {
         return (parseFloat(numeroCru.replace(',', '.')) * 1000).toString();
     });
 
+    texto = texto.replace(/\br\$\b|\breais\b|\breal\b|\$/gi, ''); 
     const nums = texto.match(/\d+(?:[.,]\d+)?/g);
     const valorExtraido = nums ? Math.max(...nums.map(n => parseFloat(n.replace(',', '.')))) : 0;
     if(nums) nums.forEach(n => texto = texto.replace(n, '')); 
@@ -456,7 +559,6 @@ function processarFraseNLP(fraseBruta) {
         }
     }
 
-    // O HACK DO GASTO INDEFINIDO
     if (!tituloFinal) {
         let palavras = texto.split(' ');
         const stopWords = ['eu', 'gastei', 'paguei', 'pague', 'botei', 'coloquei', 'um', 'uma', 'uns', 'umas', 'de', 'da', 'do', 'no', 'na', 'para', 'com', 'novo', 'nova', 'meu', 'minha', 'fui', 'o', 'a', 'os', 'as', 'em', 'por', 'pra', 'mil'];
@@ -605,7 +707,7 @@ window.cancelarMicrofone = function() {
 };
 
 // ==========================================
-// FUNÇÕES DE CRUD
+// FUNÇÕES DE CRUD E INJEÇÃO DE DOM SÊNIOR
 // ==========================================
 window.abrirModalEdicao = function(id) {
     const t = transacoesGlobais.find(x => x.id === id);
@@ -673,19 +775,14 @@ window.salvarTransacao = async function(event) {
             ? "https://lottie.host/85450f21-2b79-46bd-8e77-a0d7fc86ceaf/63OdW0EjZh.json" 
             : "https://lottie.host/78d29cd2-20ba-42fa-89bb-5471e7c8353c/EglrVN8uNB.lottie";
 
-        // A MÁGICA DA INJEÇÃO DE DOM PURO (Tiro fatal na armadilha do celular)
+        // A MÁGICA DA INJEÇÃO DE DOM PURO (Quebrando a prisão do CSS)
         const overlayLottie = document.createElement('div');
-        // Usando style inline cravado no vidro (100dvh garante cobertura total da tela)
         overlayLottie.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 999999; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); transition: opacity 0.3s ease; opacity: 0;';
         overlayLottie.innerHTML = `<dotlottie-wc src="${urlAnimacao}" style="width: 280px; height: 280px;" autoplay></dotlottie-wc>`;
         
-        // Append no documentElement foge do body e de qualquer bug
         document.documentElement.appendChild(overlayLottie);
-        
-        // Fade in suave
         requestAnimationFrame(() => overlayLottie.style.opacity = '1');
 
-        // Remove a camada da tela após a festa
         setTimeout(() => {
             overlayLottie.style.opacity = '0';
             setTimeout(() => overlayLottie.remove(), 300);
@@ -705,6 +802,7 @@ window.salvarTransacao = async function(event) {
 };
 
 window.excluirTransacao = async function(id) {
+    if(modoSelecao) return; // Se for modo seleção, o botão de lixeira individual é ignorado
     const confirmacao = await Swal.fire({
         title: 'Excluir Transação?',
         text: "Essa ação apagará este registro do seu fluxo de caixa.",
