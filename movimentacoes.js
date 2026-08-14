@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - MOTOR DE FLUXO DE CAIXA E NLP AVANÇADO
+// movimentacoes.js - MOTOR DE FLUXO DE CAIXA COM LOTTIE FLUTUANTE
 // ==========================================
 
 let usuarioLogado = null;
@@ -541,7 +541,7 @@ window.cancelarMicrofone = function() {
 };
 
 // ==========================================
-// FUNÇÕES DE CRUD (Com Lottie UI Sênior)
+// FUNÇÕES DE CRUD (COM LOTTIE INVISÍVEL SÊNIOR)
 // ==========================================
 window.abrirModalEdicao = function(id) {
     const t = transacoesGlobais.find(x => x.id === id);
@@ -604,26 +604,24 @@ window.salvarTransacao = async function(event) {
         window.fecharModal();
         document.getElementById('input-rapido').value = '';
         
-        // A MÁGICA: Injeção do seu Lottie diretamente no modal de sucesso do SweetAlert
+        // A MÁGICA PURA: Efeito Lottie Sticker Flutuante
         Swal.fire({
             html: `
-                <div class="flex flex-col items-center justify-center overflow-hidden">
+                <div class="flex justify-center items-center">
                     <dotlottie-wc
                       src="https://lottie.host/85450f21-2b79-46bd-8e77-a0d7fc86ceaf/63OdW0EjZh.json"
-                      style="width: 250px; height: 250px"
+                      style="width: 300px; height: 300px;"
                       autoplay
                       loop>
                     </dotlottie-wc>
-                    <h2 class="text-2xl font-black text-slate-800 mt-2">Sucesso!</h2>
-                    <p class="text-sm font-bold text-slate-500 mt-1">Lançamento registrado na sua carteira.</p>
                 </div>
             `,
             showConfirmButton: false,
-            timer: 2500, // Deixei 2.5s para dar tempo de assistir a animação
-            width: 'auto',
-            padding: '2rem',
+            timer: 3500, // Durando mais na tela a seu pedido
+            background: 'transparent', // Arranca o fundo branco
+            backdrop: 'rgba(15, 23, 42, 0.7)', // Tela do fundo escura com desfoque nativo
             customClass: {
-                popup: 'rounded-3xl shadow-2xl'
+                popup: 'shadow-none bg-transparent border-none' // Destrói qualquer sombra residual
             }
         });
 
