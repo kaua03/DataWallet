@@ -1,5 +1,5 @@
 // ==========================================
-// layout.js - O MOTOR DE COMPONENTIZAÇÃO E DARK MODE SÊNIOR
+// layout.js - MOTOR DE COMPONENTIZAÇÃO E DARK MODE SÊNIOR
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
     verificarDarkMode();
 });
 
-// A magia da estrela animada
 function injetarEstilosGlobais() {
     const style = document.createElement('style');
     style.innerHTML = `
@@ -58,7 +57,7 @@ function inicializarLayout() {
             </div>
             <nav class="flex-1 space-y-2 w-full">${navLinksHtml}</nav>
             <div class="mt-auto w-full space-y-2">
-                <button id="btn-dark-desktop" onclick="toggleDarkMode()" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold transition-colors w-full">
+                <button id="btn-dark-desktop" onclick="window.toggleDarkMode()" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold transition-colors w-full">
                     <div class="relative w-6 flex items-center justify-center shrink-0 overflow-visible">
                         <i id="icone-dark-mode" class="fa-solid fa-moon text-lg transition-colors duration-300"></i>
                         <i id="star-desktop" class="fa-solid fa-star absolute text-[10px] text-white opacity-0 pointer-events-none z-50"></i>
@@ -95,7 +94,7 @@ function inicializarLayout() {
                 <button onclick="sairDoSistema()" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-rose-500 border border-rose-100 dark:border-rose-900/50 shadow-lg flex items-center justify-center transition-transform hover:scale-110">
                     <i class="fa-solid fa-right-from-bracket"></i>
                 </button>
-                <button id="btn-dark-mobile" onclick="toggleDarkMode()" class="w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110 border relative overflow-visible">
+                <button id="btn-dark-mobile" onclick="window.toggleDarkMode()" class="w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110 border relative overflow-visible">
                     <i id="icone-dark-mode-mobile" class="fa-solid fa-moon transition-colors duration-300"></i>
                     <i id="star-mobile" class="fa-solid fa-star absolute text-[12px] text-white opacity-0 pointer-events-none z-50"></i>
                 </button>
@@ -112,13 +111,8 @@ function inicializarLayout() {
 
     document.body.insertAdjacentHTML('afterbegin', sidebarHtml);
     document.body.insertAdjacentHTML('beforeend', mobileMenuHtml);
-
-    if (localStorage.getItem('DataWallet_SidebarCollapsed') === 'true') {
-        document.getElementById('sidebar').classList.add('sidebar-collapsed');
-    }
 }
 
-// LÓGICA DO MENU MOBILE
 let menuMobileAberto = false;
 window.toggleMobileMenu = function() {
     const items = document.getElementById('fab-items');
@@ -143,22 +137,12 @@ window.toggleMobileMenu = function() {
     }
 };
 
-// ==========================================
-// LÓGICA DO DARK MODE (BLINDADA E SIMÉTRICA)
-// ==========================================
 window.toggleDarkMode = function() {
     const htmlElement = document.documentElement;
-    
-    // Força a troca absoluta
-    if (htmlElement.classList.contains('dark')) {
-        htmlElement.classList.remove('dark');
-        localStorage.setItem('DataWallet_Tema', 'claro');
-        atualizarIconesDark(false);
-    } else {
-        htmlElement.classList.add('dark');
-        localStorage.setItem('DataWallet_Tema', 'escuro');
-        atualizarIconesDark(true);
-    }
+    // Forçamos a classe na raiz do documento HTML
+    const isDark = htmlElement.classList.toggle('dark');
+    localStorage.setItem('DataWallet_Tema', isDark ? 'escuro' : 'claro');
+    atualizarIconesDark(isDark);
 };
 
 function verificarDarkMode() {
@@ -171,9 +155,7 @@ function verificarDarkMode() {
         isDark = true;
     } else {
         htmlElement.classList.remove('dark');
-        isDark = false;
     }
-    
     atualizarIconesDark(isDark);
 }
 
@@ -181,10 +163,8 @@ function atualizarIconesDark(isDark) {
     const btnPc = document.getElementById('btn-dark-desktop');
     const txtPc = document.getElementById('txt-dark-desktop');
     const iconePc = document.getElementById('icone-dark-mode');
-    
     const btnMobile = document.getElementById('btn-dark-mobile');
     const iconeMobile = document.getElementById('icone-dark-mode-mobile');
-    
     const starPc = document.getElementById('star-desktop');
     const starMobile = document.getElementById('star-mobile');
     
@@ -194,19 +174,16 @@ function atualizarIconesDark(isDark) {
     if (isDark) {
         if (iconePc) iconePc.className = 'fa-solid fa-sun text-lg text-amber-400 transition-colors duration-300';
         if (iconeMobile) iconeMobile.className = 'fa-solid fa-sun text-xl text-amber-400 transition-colors duration-300';
-        
         if (btnPc) btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors w-full';
         if (txtPc) txtPc.innerText = 'Tema Claro';
         if (btnMobile) btnMobile.className = 'w-12 h-12 rounded-full bg-slate-800 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible';
     } else {
         if (iconePc) iconePc.className = 'fa-solid fa-moon text-lg text-white transition-colors duration-300';
         if (iconeMobile) iconeMobile.className = 'fa-solid fa-moon text-xl text-white transition-colors duration-300';
-        
         if (btnPc) btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-slate-800 text-white hover:bg-slate-700 transition-colors w-full';
         if (txtPc) txtPc.innerText = 'Tema Escuro';
-        if (btnMobile) btnMobile.className = 'w-12 h-12 rounded-full bg-slate-800 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible';
+        if (btnMobile) btnMobile.className = 'w-12 h-12 rounded-full bg-slate-800 text-white shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible';
         
-        // Força a reinicialização da animação da estrela
         void document.body.offsetWidth;
         if(starPc) starPc.classList.add('animate-star');
         if(starMobile) starMobile.classList.add('animate-star');
