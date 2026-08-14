@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,9 +7,13 @@
     
     <meta name="view-transition" content="same-origin">
     
-    <!-- Configuração do Tailwind para aceitar o Dark Mode via classe -->
+    <!-- Configuração ESTRITA do Tailwind para aceitar o Dark Mode APENAS pelo botão -->
     <script>
-        tailwind = { config: { darkMode: 'class' } }
+        tailwind = {
+            config: {
+                darkMode: 'class',
+            }
+        }
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -19,7 +23,7 @@
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- AQUI ESTÁ O NOVO MOTOR DE LAYOUT -->
+    <!-- O MOTOR DE LAYOUT VEM ANTES DA PÁGINA -->
     <script src="layout.js" defer></script>
     
     <script src="config.js" defer></script>
@@ -37,7 +41,7 @@
         
         ::-webkit-scrollbar { width: 6px; display: none; }
         
-        /* Sidebar Styles migrados para o layout.js, ficam aqui as regras core */
+        /* O hover da barra lateral fica aqui pois pertence ao HTML mestre */
         #sidebar {
             width: 5rem;
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, background-color 0.3s;
@@ -55,10 +59,10 @@
     </style>
 </head>
 
-<!-- O FUNDO AGORA TEM AS CLASSES DARK -->
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 h-screen overflow-hidden flex relative fade-in transition-colors duration-300">
+<!-- O HACK DO 100dvh APLICADO AQUI -->
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 h-[100dvh] overflow-hidden flex relative fade-in transition-colors duration-300">
 
-    <!-- O LAYOUT.JS VAI INJETAR A SIDEBAR E O MENU MOBILE AQUI AUTOMATICAMENTE -->
+    <!-- O LAYOUT.JS INJETA A SIDEBAR E O MENU AQUI -->
 
     <main class="flex-1 h-full overflow-y-auto relative pb-28 md:pb-8 p-4 md:p-8">
         <section class="max-w-4xl mx-auto space-y-6">
