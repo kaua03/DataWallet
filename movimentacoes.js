@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - MOTOR DE FLUXO DE CAIXA COM LOTTIE FLUTUANTE
+// movimentacoes.js - MOTOR COM SIDEBAR INTELIGENTE
 // ==========================================
 
 let usuarioLogado = null;
@@ -14,6 +14,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     usuarioLogado = await verificarSessaoSegura();
     if (!usuarioLogado) return; 
 
+    // INICIALIZA A SIDEBAR COM A MEMÓRIA DO USUÁRIO
+    if (localStorage.getItem('DataWallet_SidebarCollapsed') === 'true') {
+        document.getElementById('sidebar').classList.add('sidebar-collapsed');
+        document.getElementById('sidebar-toggle-icon').classList.replace('fa-chevron-left', 'fa-chevron-right');
+    }
+
     const inputRapido = document.getElementById('input-rapido');
     if (inputRapido) {
         inputRapido.addEventListener('keypress', function (e) {
@@ -27,6 +33,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await carregarDadosDoBanco();
 });
+
+// ==========================================
+// CONTROLE DE SIDEBAR RETRÁTIL (NOVO)
+// ==========================================
+window.toggleSidebar = function() {
+    const sidebar = document.getElementById('sidebar');
+    const icon = document.getElementById('sidebar-toggle-icon');
+    const isCollapsed = sidebar.classList.toggle('sidebar-collapsed');
+    
+    if (isCollapsed) {
+        icon.classList.replace('fa-chevron-left', 'fa-chevron-right');
+        localStorage.setItem('DataWallet_SidebarCollapsed', 'true');
+    } else {
+        icon.classList.replace('fa-chevron-right', 'fa-chevron-left');
+        localStorage.setItem('DataWallet_SidebarCollapsed', 'false');
+    }
+};
 
 // ==========================================
 // UTILITÁRIOS
@@ -436,7 +459,7 @@ window.abrirModalComTextoRapido = function() {
 };
 
 // ---------------------------------------------
-// MICROFONE REATIVO POR EVENTOS E SWEETALERT
+// MICROFONE REATIVO POR EVENTOS
 // ---------------------------------------------
 window.ativarMicrofone = function() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -541,7 +564,7 @@ window.cancelarMicrofone = function() {
 };
 
 // ==========================================
-// FUNÇÕES DE CRUD (COM LOTTIE INVISÍVEL SÊNIOR)
+// FUNÇÕES DE CRUD
 // ==========================================
 window.abrirModalEdicao = function(id) {
     const t = transacoesGlobais.find(x => x.id === id);
@@ -604,7 +627,7 @@ window.salvarTransacao = async function(event) {
         window.fecharModal();
         document.getElementById('input-rapido').value = '';
         
-        // A MÁGICA PURA: Efeito Lottie Sticker Flutuante
+        // EFEITO LOTTIE STICKER FLUTUANTE
         Swal.fire({
             html: `
                 <div class="flex justify-center items-center">
@@ -617,11 +640,11 @@ window.salvarTransacao = async function(event) {
                 </div>
             `,
             showConfirmButton: false,
-            timer: 3500, // Durando mais na tela a seu pedido
-            background: 'transparent', // Arranca o fundo branco
-            backdrop: 'rgba(15, 23, 42, 0.7)', // Tela do fundo escura com desfoque nativo
+            timer: 3500, 
+            background: 'transparent', 
+            backdrop: 'rgba(15, 23, 42, 0.7)', 
             customClass: {
-                popup: 'shadow-none bg-transparent border-none' // Destrói qualquer sombra residual
+                popup: 'shadow-none bg-transparent border-none' 
             }
         });
 
