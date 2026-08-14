@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - LISTAGEM DARK MODE READY E ROLETA
+// movimentacoes.js - MOTOR COM ANIMAÇÕES INTELIGENTES E CENTRALIZADAS
 // ==========================================
 
 let usuarioLogado = null;
@@ -11,8 +11,20 @@ let isHistoricoExpandido = false;
 let reconhecimentoDeVoz = null; 
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // A Transição SPA e Menus agora moram no layout.js! Que elegância.
     
+    // A MÁGICA DE NAVEGAÇÃO SPA
+    document.querySelectorAll('a').forEach(link => {
+        if(link.hostname === window.location.hostname && link.target !== '_blank') {
+            link.addEventListener('click', e => {
+                e.preventDefault();
+                const href = link.getAttribute('href');
+                document.body.style.opacity = 0;
+                document.body.style.transition = 'opacity 0.2s ease-in-out';
+                setTimeout(() => window.location.href = href, 200);
+            });
+        }
+    });
+
     usuarioLogado = await verificarSessaoSegura();
     if (!usuarioLogado) return; 
 
@@ -65,7 +77,6 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
     };
     requestAnimationFrame(step);
 };
-
 
 // ==========================================
 // UTILITÁRIOS
@@ -218,7 +229,6 @@ function renderizarMiniKPIs() {
     });
 
     const balanco = somaEntradas - somaSaidas;
-    // Adaptado para Dark Mode
     const corBalanco = balanco >= 0 ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30' : 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/30';
     const sinalBalanco = balanco >= 0 ? '+' : '-';
 
@@ -262,7 +272,6 @@ function renderizarListaHistorico() {
         const cat = categoriasGlobais.find(c => c.id === t.categoria_id) || { nome: 'Outros', icone: 'fa-tag', cor: 'text-gray-500' };
         const isReceita = t.tipo === 'receita';
         
-        // Classes Dark Mode Adaptadas
         const corBg = isReceita ? 'bg-emerald-50 dark:bg-emerald-500/10' : 'bg-rose-50 dark:bg-rose-500/10';
         const corTxt = isReceita ? 'text-emerald-500' : 'text-rose-500';
         const corValor = isReceita ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
@@ -651,23 +660,29 @@ window.salvarTransacao = async function(event) {
         window.fecharModal();
         document.getElementById('input-rapido').value = '';
         
+        // A MÁGICA CONDICIONAL DE CELEBRAÇÃO 
+        const isReceita = tipo === 'receita';
+        const urlAnimacao = isReceita 
+            ? "https://lottie.host/85450f21-2b79-46bd-8e77-a0d7fc86ceaf/63OdW0EjZh.json" // O ✅ de Sucesso
+            : "https://lottie.host/78d29cd2-20ba-42fa-89bb-5471e7c8353c/EglrVN8uNB.lottie"; // As moedas da Despesa
+
+        // O HACK PARA CENTRALIZAR O LOTTIE NO MOBILE ('fixed inset-0')
         Swal.fire({
             html: `
-                <div class="flex justify-center items-center">
+                <div class="fixed inset-0 flex items-center justify-center pointer-events-none z-[9999]">
                     <dotlottie-wc
-                      src="https://lottie.host/85450f21-2b79-46bd-8e77-a0d7fc86ceaf/63OdW0EjZh.json"
-                      style="width: 300px; height: 300px;"
-                      autoplay
-                      loop>
+                      src="${urlAnimacao}"
+                      style="width: 280px; height: 280px;"
+                      autoplay>
                     </dotlottie-wc>
                 </div>
             `,
             showConfirmButton: false,
-            timer: 3500, 
+            timer: 3000, 
             background: 'transparent', 
-            backdrop: 'rgba(15, 23, 42, 0.7)', 
+            backdrop: 'rgba(15, 23, 42, 0.85)', 
             customClass: {
-                popup: 'shadow-none bg-transparent border-none' 
+                popup: 'shadow-none bg-transparent border-none m-0 p-0' 
             }
         });
 
