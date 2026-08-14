@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - SIDEBAR HOVER & FAB ANIMADO NO MOBILE
+// movimentacoes.js - SIDEBAR HOVER & TRANSIÇÃO SIMÉTRICA ANTI-FLICKER
 // ==========================================
 
 let usuarioLogado = null;
@@ -11,6 +11,19 @@ let isHistoricoExpandido = false;
 let reconhecimentoDeVoz = null; 
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // TRANSIÇÃO SPA BILATERAL (Elimina o piscar branco entre telas)
+    document.querySelectorAll('a').forEach(link => {
+        if(link.hostname === window.location.hostname && link.target !== '_blank') {
+            link.addEventListener('click', e => {
+                e.preventDefault();
+                const href = link.getAttribute('href');
+                document.body.style.opacity = 0;
+                document.body.style.transition = 'opacity 0.2s ease-in-out';
+                setTimeout(() => window.location.href = href, 200);
+            });
+        }
+    });
+
     usuarioLogado = await verificarSessaoSegura();
     if (!usuarioLogado) return; 
 
