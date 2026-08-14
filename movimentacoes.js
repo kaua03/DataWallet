@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - MOTOR DE FLUXO DE CAIXA E NLP AVANÇADO
+// movimentacoes.js - MOTOR COM SWEETALERT E EVENTOS BLINDADOS
 // ==========================================
 
 let usuarioLogado = null;
@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const inputRapido = document.getElementById('input-rapido');
     if (inputRapido) {
         inputRapido.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') processarFraseNLP(this.value);
+            if (e.key === 'Enter') window.abrirModalComTextoRapido();
         });
     }
 
@@ -46,6 +46,9 @@ function aplicarMascaraMoeda(input) {
     input.value = valor;
 }
 
+// A máscara precisa ser global para o HTML reconhecer
+window.aplicarMascaraMoeda = aplicarMascaraMoeda;
+
 function desmascararMoeda(str) {
     if (!str) return 0;
     return parseFloat(str.replace(/\./g, '').replace(',', '.'));
@@ -73,7 +76,7 @@ async function carregarDadosDoBanco() {
             categoriasGlobais.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
 
         atualizarTopCards();
-        mudarTipoFiltroHistorico(); 
+        window.mudarTipoFiltroHistorico(); 
 
     } catch (e) {
         console.error("Erro ao puxar dados:", e.message);
@@ -106,7 +109,7 @@ function atualizarTopCards() {
 // ==========================================
 // HISTÓRICO COM PESQUISA E FILTROS 
 // ==========================================
-function mudarTipoFiltroHistorico() {
+window.mudarTipoFiltroHistorico = function() {
     const tipo = document.getElementById('filtro-periodo').value;
     document.getElementById('box-mes').classList.add('hidden');
     document.getElementById('box-personalizado').classList.add('hidden');
@@ -114,10 +117,10 @@ function mudarTipoFiltroHistorico() {
     if (tipo === 'por_mes') document.getElementById('box-mes').classList.remove('hidden');
     else if (tipo === 'personalizado') document.getElementById('box-personalizado').classList.remove('hidden');
 
-    aplicarFiltrosHistorico();
-}
+    window.aplicarFiltrosHistorico();
+};
 
-function aplicarFiltrosHistorico() {
+window.aplicarFiltrosHistorico = function() {
     isHistoricoExpandido = false; 
 
     const termoBusca = removerAcentos(document.getElementById('busca-historico').value);
@@ -167,7 +170,7 @@ function aplicarFiltrosHistorico() {
 
     renderizarMiniKPIs();
     renderizarListaHistorico();
-}
+};
 
 function renderizarMiniKPIs() {
     let qtdEntradas = 0, qtdSaidas = 0, somaEntradas = 0, somaSaidas = 0;
@@ -182,17 +185,23 @@ function renderizarMiniKPIs() {
     const sinalBalanco = balanco >= 0 ? '+' : '-';
 
     document.getElementById('mini-kpis-historico').innerHTML = `
-        <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-emerald-200">
+        <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-emerald-200" title="Total financeiro de entradas">
             <i class="fa-solid fa-arrow-trend-up"></i> ${qtdEntradas} Entradas • ${formatarMoeda(somaEntradas)}
         </span>
-        <span class="bg-rose-100 text-rose-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-rose-200">
+        <span class="bg-rose-100 text-rose-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-rose-200" title="Total financeiro de saídas">
             <i class="fa-solid fa-arrow-trend-down"></i> ${qtdSaidas} Saídas • ${formatarMoeda(somaSaidas)}
         </span>
-        <span class="${corBalanco} text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border">
+        <span class="${corBalanco} text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border" title="Seu fluxo de caixa final">
             Fluxo: ${sinalBalanco} ${formatarMoeda(Math.abs(balanco))}
         </span>
     `;
 }
+
+// CORREÇÃO DO BUG DE EXPANDIR: Agora a função está amarrada globalmente na window
+window.toggleExpandirHistorico = function() {
+    isHistoricoExpandido = !isHistoricoExpandido;
+    renderizarListaHistorico();
+};
 
 function renderizarListaHistorico() {
     const container = document.getElementById('lista-transacoes');
@@ -235,8 +244,8 @@ function renderizarListaHistorico() {
             <div class="flex flex-row sm:flex-col md:flex-row items-center sm:items-end md:items-center justify-between sm:justify-center gap-3 w-full sm:w-auto shrink-0 border-t sm:border-t-0 border-slate-100 pt-3 sm:pt-0">
                 <span class="font-black text-base md:text-lg ${corValor} whitespace-nowrap">${sinal} ${formatarMoeda(t.valor)}</span>
                 <div class="flex items-center gap-1.5 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onclick="abrirModalEdicao(${t.id})" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:bg-indigo-500 hover:text-white transition flex items-center justify-center border border-slate-200"><i class="fa-solid fa-pen text-xs"></i></button>
-                    <button onclick="excluirTransacao(${t.id})" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center border border-slate-200"><i class="fa-solid fa-trash text-xs"></i></button>
+                    <button onclick="window.abrirModalEdicao(${t.id})" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:bg-indigo-500 hover:text-white transition flex items-center justify-center border border-slate-200"><i class="fa-solid fa-pen text-xs"></i></button>
+                    <button onclick="window.excluirTransacao(${t.id})" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center border border-slate-200"><i class="fa-solid fa-trash text-xs"></i></button>
                 </div>
             </div>
         </div>`;
@@ -258,7 +267,7 @@ function renderizarListaHistorico() {
 }
 
 // ==========================================
-// CÉREBRO NLP PIPELINE (NOVA ORDEM DE EXTRAÇÃO)
+// CÉREBRO NLP PIPELINE
 // ==========================================
 const dicionarioDeInteligencia = [
     { pasta: 'alimentação', regras: [
@@ -293,7 +302,7 @@ const dicionarioDeInteligencia = [
     { pasta: 'lazer', regras: [
         { titulo: 'Jogos', palavras: ['jogo', 'steam', 'xbox', 'playstation', 'game'] },
         { titulo: 'Passeio', palavras: ['cinema', 'festa', 'shopping', 'bar', 'show', 'viagem', 'ingresso'] },
-        { titulo: 'Compras Pessoais', palavras: ['roupa', 'presente', 'tênis', 'perfume', 'fone', 'celular'] }
+        { titulo: 'Compras Pessoais', palavras: ['roupa', 'presente', 'tênis', 'perfume', 'fone', 'celular', 'compras'] }
     ]},
     { pasta: 'assinaturas', regras: [
         { titulo: 'Streaming', palavras: ['netflix', 'spotify', 'amazon', 'prime', 'disney', 'hbo'] },
@@ -312,12 +321,9 @@ function processarFraseNLP(fraseBruta) {
     }
 
     let texto = removerAcentos(fraseBruta.toLowerCase());
-    
-    // Configura o relógio para o meio-dia (evita fuso horário jogar a data pro dia anterior)
     let dataCalculada = new Date();
     dataCalculada.setHours(12,0,0,0);
     
-    // --- 1. A EXTIRPAÇÃO DAS DATAS ---
     let isMesPassado = false;
     if (texto.includes('mes passado')) {
         isMesPassado = true;
@@ -334,51 +340,39 @@ function processarFraseNLP(fraseBruta) {
         texto = texto.replace('hoje', '');
     }
 
-    // Procura formatos "15/07" ou "15/07/2026"
     const matchDataBarra = texto.match(/(?:dia\s*)?(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/i);
-    // Procura formatos "dia 15"
     const matchDia = texto.match(/(?:no )?dia\s*(\d{1,2})/i);
 
     if (matchDataBarra) {
-        dataCalculada.setDate(1); // Blinda bugs de meses que não tem dia 31
+        dataCalculada.setDate(1); 
         dataCalculada.setMonth(parseInt(matchDataBarra[2]) - 1);
         dataCalculada.setDate(parseInt(matchDataBarra[1]));
-        
         if (matchDataBarra[3]) {
             let ano = parseInt(matchDataBarra[3]);
             if (ano < 100) ano += 2000;
             dataCalculada.setFullYear(ano);
         } else if (dataCalculada > new Date()) {
-            // Se falou 15/07 e hoje é fevereiro, entende automaticamente que foi no ano passado
             dataCalculada.setFullYear(dataCalculada.getFullYear() - 1);
         }
-        texto = texto.replace(matchDataBarra[0], ''); // Arranca a data da frase
-
+        texto = texto.replace(matchDataBarra[0], ''); 
     } else if (matchDia) {
         let diaNum = parseInt(matchDia[1]);
         const mesAtual = new Date().getMonth();
         dataCalculada.setDate(1); 
-        
         if (isMesPassado || diaNum > new Date().getDate()) {
             dataCalculada.setMonth(mesAtual - 1);
         }
         dataCalculada.setDate(diaNum);
-        texto = texto.replace(matchDia[0], ''); // Arranca a data da frase
-
+        texto = texto.replace(matchDia[0], ''); 
     } else if (isMesPassado) {
         dataCalculada.setMonth(dataCalculada.getMonth() - 1);
     }
 
-    // --- 2. A EXTIRPAÇÃO DO SÍMBOLO MONETÁRIO ---
-    // Remove "r$", "reais" e "real" para eles nunca virarem título de despesa
     texto = texto.replace(/\br\$\b|\breais\b|\breal\b|\$/gi, '');
-
-    // --- 3. A EXTIRPAÇÃO DOS NÚMEROS (VALOR FINANCEIRO) ---
     const nums = texto.match(/\d+(?:[.,]\d+)?/g);
     const valorExtraido = nums ? Math.max(...nums.map(n => parseFloat(n.replace(',', '.')))) : 0;
     if(nums) nums.forEach(n => texto = texto.replace(n, '')); 
 
-    // --- 4. A ANÁLISE SEMÂNTICA FINAL ---
     const palavrasReceita = ['recebi', 'ganhei', 'pix', 'salario', 'renda', 'vendi', 'deposito'];
     const isReceita = palavrasReceita.some(p => texto.includes(p) || removerAcentos(fraseBruta.toLowerCase()).includes(p));
 
@@ -391,10 +385,7 @@ function processarFraseNLP(fraseBruta) {
     } else {
         for (const d of dicionarioDeInteligencia) {
             for (const regra of d.regras) {
-                // Compara a frase limpa com a regra do dicionario
                 if (regra.palavras.some(p => texto.includes(removerAcentos(p)))) {
-                    
-                    // CORREÇÃO MESTRA: O Bug da Categoria Alimentação foi resolvido aqui
                     let busca = removerAcentos(d.pasta === 'saúde' ? 'imprevistos' : d.pasta);
                     catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes(busca));
                     tituloFinal = regra.titulo;
@@ -405,28 +396,21 @@ function processarFraseNLP(fraseBruta) {
         }
     }
 
-    // O Gerador de Fallback (Se não achar nenhuma regra, ele constrói um título bonito com o que sobrou)
     if (!tituloFinal) {
         let palavras = texto.split(' ');
-        // Adicionei ainda mais Stop Words
         const stopWords = ['eu', 'gastei', 'paguei', 'pague', 'botei', 'coloquei', 'um', 'uma', 'uns', 'umas', 'de', 'da', 'do', 'no', 'na', 'para', 'com', 'novo', 'nova', 'meu', 'minha', 'fui', 'o', 'a', 'os', 'as', 'em', 'por', 'pra'];
-        
-        // Remove lixos e sobras numéricas
         palavras = palavras.filter(p => p.trim() !== '' && !stopWords.includes(p.trim()) && isNaN(p));
         
         if (palavras.length > 0) {
-            tituloFinal = palavras[0].charAt(0).toUpperCase() + palavras[0].slice(1); // Pega a primeira palavra e capitaliza
+            tituloFinal = palavras[0].charAt(0).toUpperCase() + palavras[0].slice(1); 
         } else {
             tituloFinal = 'Registro Rápido';
         }
-        
-        // Categoria Padrão Fallback
         if (!catDetectada) {
             catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('lazer') || removerAcentos(c.nome.toLowerCase()).includes('outros'));
         }
     }
 
-    // --- 5. PREENCHIMENTO DO TELA ---
     document.getElementById('transacao-id').value = ''; 
     document.getElementById('modal-titulo').innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-indigo-600"></i> ${isReceita ? 'Registrar Entrada' : 'Registrar Saída'}`;
     document.getElementById('transacao-desc').value = tituloFinal;
@@ -440,7 +424,6 @@ function processarFraseNLP(fraseBruta) {
 
     document.getElementById('transacao-data').value = dataCalculada.toISOString().split('T')[0];
     
-    // Injeta a Categoria
     if (catDetectada) {
         document.getElementById('transacao-categoria').value = catDetectada.id;
     }
@@ -455,11 +438,18 @@ window.abrirModalComTextoRapido = function() {
 };
 
 // ---------------------------------------------
-// MICROFONE REATIVO POR EVENTOS (100% SEGURO)
+// MICROFONE REATIVO POR EVENTOS E SWEETALERT
 // ---------------------------------------------
-function abrirModalMicrofoneNativo() {
+window.ativarMicrofone = function() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return alert("Seu navegador não suporta microfone nativo. Use o Google Chrome.");
+    if (!SpeechRecognition) {
+        return Swal.fire({
+            icon: 'error',
+            title: 'Ops!',
+            text: 'Seu navegador não suporta microfone nativo. Use o Google Chrome.',
+            confirmButtonColor: '#4f46e5'
+        });
+    }
     
     reconhecimentoDeVoz = new SpeechRecognition();
     reconhecimentoDeVoz.lang = 'pt-BR';
@@ -512,31 +502,36 @@ function abrirModalMicrofoneNativo() {
         if (textoFinal && textoFinal.trim() !== '') {
             document.getElementById('input-rapido').value = textoFinal;
             setTimeout(() => {
-                cancelarMicrofone();
+                window.cancelarMicrofone();
                 processarFraseNLP(textoFinal); 
             }, 750);
         }
     };
 
     reconhecimentoDeVoz.onerror = (e) => { 
-        console.error("Erro da API de Voz:", e.error);
-        cancelarMicrofone(); 
+        window.cancelarMicrofone(); 
+        if (e.error === 'not-allowed') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Microfone Bloqueado',
+                text: 'Libere a permissão de microfone no cadeado do navegador.',
+                confirmButtonColor: '#4f46e5'
+            });
+        }
     };
     
     reconhecimentoDeVoz.onend = () => { 
         setTimeout(() => {
             if(!modalMic.classList.contains('hidden') && (textoInterim.innerText === "Fale agora..." || textoInterim.innerText === '')) {
-                cancelarMicrofone();
+                window.cancelarMicrofone();
             }
         }, 1200);
     };
 
     reconhecimentoDeVoz.start();
-}
+};
 
-window.ativarMicrofone = function() { abrirModalMicrofoneNativo(); };
-
-function cancelarMicrofone() {
+window.cancelarMicrofone = function() {
     if(reconhecimentoDeVoz) {
         reconhecimentoDeVoz.onresult = null;
         reconhecimentoDeVoz.onerror = null;
@@ -545,12 +540,12 @@ function cancelarMicrofone() {
     }
     reconhecimentoDeVoz = null;
     document.getElementById('modal-microfone').classList.add('hidden');
-}
+};
 
-// ---------------------------------------------
-// FUNÇÕES DE CRUD
-// ---------------------------------------------
-function abrirModalEdicao(id) {
+// ==========================================
+// FUNÇÕES DE CRUD COM ANIMAÇÕES SÊNIOR
+// ==========================================
+window.abrirModalEdicao = function(id) {
     const t = transacoesGlobais.find(x => x.id === id);
     if(!t) return;
 
@@ -568,11 +563,13 @@ function abrirModalEdicao(id) {
     document.querySelector(`input[name="tipo"][value="${t.tipo}"]`).checked = true;
 
     document.getElementById('modal-transacao').classList.remove('hidden');
-}
+};
 
-function fecharModal() { document.getElementById('modal-transacao').classList.add('hidden'); }
+window.fecharModal = function() { 
+    document.getElementById('modal-transacao').classList.add('hidden'); 
+};
 
-async function salvarTransacao(event) {
+window.salvarTransacao = async function(event) {
     event.preventDefault();
     const id = document.getElementById('transacao-id').value;
     const desc = document.getElementById('transacao-desc').value.trim();
@@ -581,7 +578,14 @@ async function salvarTransacao(event) {
     const catId = parseInt(document.getElementById('transacao-categoria').value);
     const tipo = document.querySelector('input[name="tipo"]:checked').value;
 
-    if(!desc || isNaN(val) || val <= 0 || !dataV) return alert("Preencha Descrição, Valor e Data corretamente.");
+    if(!desc || isNaN(val) || val <= 0 || !dataV) {
+        return Swal.fire({
+            icon: 'warning',
+            title: 'Dados Incompletos',
+            text: 'Preencha a descrição, valor e a data corretamente.',
+            confirmButtonColor: '#4f46e5'
+        });
+    }
 
     const payload = {
         usuario_id: usuarioLogado.id, descricao: desc, valor: val, data_vencimento: dataV, categoria_id: catId, tipo: tipo, pago: true
@@ -589,7 +593,7 @@ async function salvarTransacao(event) {
 
     const btn = document.getElementById('btn-salvar-transacao');
     const conteudoOriginal = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando...';
     btn.disabled = true;
 
     try {
@@ -599,20 +603,63 @@ async function salvarTransacao(event) {
             await supabaseClient.from('transacoes').insert([payload]);
         }
         await carregarDadosDoBanco();
-        fecharModal();
+        window.fecharModal();
         document.getElementById('input-rapido').value = '';
+        
+        // A MÁGICA: A Animação Fluida do ✅ (SweetAlert2)
+        Swal.fire({
+            icon: 'success',
+            title: 'Sucesso!',
+            text: 'Lançamento registrado na sua carteira.',
+            showConfirmButton: false,
+            timer: 1800
+        });
+
     } catch(e) { 
-        alert("Erro ao gravar: " + e.message); 
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro de Conexão',
+            text: e.message,
+            confirmButtonColor: '#4f46e5'
+        });
     } finally { 
         btn.innerHTML = conteudoOriginal; 
         btn.disabled = false;
     }
-}
+};
 
-async function excluirTransacao(id) {
-    if(!confirm("Tem certeza que deseja excluir este lançamento?")) return;
+window.excluirTransacao = async function(id) {
+    // Alerta Sênior de Confirmação em vez da tela padrão cinza do navegador
+    const confirmacao = await Swal.fire({
+        title: 'Excluir Transação?',
+        text: "Essa ação apagará este registro do seu fluxo de caixa.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'Sim, excluir',
+        cancelButtonText: 'Cancelar'
+    });
+
+    if(!confirmacao.isConfirmed) return;
+
     try {
         await supabaseClient.from('transacoes').delete().eq('id', id).eq('usuario_id', usuarioLogado.id);
         await carregarDadosDoBanco();
-    } catch(e) { alert("Erro ao excluir: " + e.message); }
-}
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Excluído!',
+            showConfirmButton: false,
+            timer: 1500
+        });
+
+    } catch(e) { 
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro ao excluir',
+            text: e.message,
+            confirmButtonColor: '#4f46e5'
+        });
+    }
+};
