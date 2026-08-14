@@ -1,5 +1,5 @@
 // ==========================================
-// layout.js - MOTOR DE COMPONENTIZAÇÃO, DARK MODE E HACK LOTTIE SÊNIOR
+// layout.js - O MOTOR DE COMPONENTIZAÇÃO E DARK MODE SÊNIOR
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     verificarDarkMode();
 });
 
-// A magia da estrela animada injetada via JS
+// A magia da estrela animada
 function injetarEstilosGlobais() {
     const style = document.createElement('style');
     style.innerHTML = `
@@ -58,8 +58,7 @@ function inicializarLayout() {
             </div>
             <nav class="flex-1 space-y-2 w-full">${navLinksHtml}</nav>
             <div class="mt-auto w-full space-y-2">
-                <!-- Botão PC com FontAwesome e Estrela Oculta -->
-                <button id="btn-dark-desktop" onclick="toggleDarkMode(true)" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold transition-colors w-full">
+                <button id="btn-dark-desktop" onclick="toggleDarkMode()" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold transition-colors w-full">
                     <div class="relative w-6 flex items-center justify-center shrink-0 overflow-visible">
                         <i id="icone-dark-mode" class="fa-solid fa-moon text-lg transition-colors duration-300"></i>
                         <i id="star-desktop" class="fa-solid fa-star absolute text-[10px] text-white opacity-0 pointer-events-none z-50"></i>
@@ -68,7 +67,7 @@ function inicializarLayout() {
                 </button>
                 <button onclick="sairDoSistema()" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors overflow-hidden w-full">
                     <div class="w-6 flex items-center justify-center shrink-0"><i class="fa-solid fa-right-from-bracket text-lg"></i></div>
-                    <span class="sidebar-text ml-3">Sair do Sistema</span>
+                    <span class="sidebar-text ml-3">Sair</span>
                 </button>
             </div>
         </aside>
@@ -96,13 +95,10 @@ function inicializarLayout() {
                 <button onclick="sairDoSistema()" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-rose-500 border border-rose-100 dark:border-rose-900/50 shadow-lg flex items-center justify-center transition-transform hover:scale-110">
                     <i class="fa-solid fa-right-from-bracket"></i>
                 </button>
-                
-                <!-- Botão Mobile com FontAwesome e Estrela Oculta -->
-                <button id="btn-dark-mobile" onclick="toggleDarkMode(true)" class="w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110 border relative overflow-visible">
+                <button id="btn-dark-mobile" onclick="toggleDarkMode()" class="w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110 border relative overflow-visible">
                     <i id="icone-dark-mode-mobile" class="fa-solid fa-moon transition-colors duration-300"></i>
                     <i id="star-mobile" class="fa-solid fa-star absolute text-[12px] text-white opacity-0 pointer-events-none z-50"></i>
                 </button>
-
                 ${btnIARotacionado}
                 <div class="w-8 h-px bg-slate-200 dark:bg-slate-700 my-1"></div>
                 ${mobileLinksHtml}
@@ -148,16 +144,21 @@ window.toggleMobileMenu = function() {
 };
 
 // ==========================================
-// LÓGICA DO DARK MODE E HACK LOTTIE SÊNIOR
+// LÓGICA DO DARK MODE (BLINDADA E SIMÉTRICA)
 // ==========================================
-window.toggleDarkMode = function(foiClicado = false) {
+window.toggleDarkMode = function() {
     const htmlElement = document.documentElement;
-    const isDark = htmlElement.classList.toggle('dark');
     
-    localStorage.setItem('DataWallet_Tema', isDark ? 'escuro' : 'claro');
-    atualizarBotoesDark(isDark);
-
-    if (foiClicado) dispararLottieSelo(isDark);
+    // Força a troca absoluta
+    if (htmlElement.classList.contains('dark')) {
+        htmlElement.classList.remove('dark');
+        localStorage.setItem('DataWallet_Tema', 'claro');
+        atualizarIconesDark(false);
+    } else {
+        htmlElement.classList.add('dark');
+        localStorage.setItem('DataWallet_Tema', 'escuro');
+        atualizarIconesDark(true);
+    }
 };
 
 function verificarDarkMode() {
@@ -170,13 +171,13 @@ function verificarDarkMode() {
         isDark = true;
     } else {
         htmlElement.classList.remove('dark');
-        localStorage.setItem('DataWallet_Tema', 'claro');
+        isDark = false;
     }
     
-    atualizarBotoesDark(isDark);
+    atualizarIconesDark(isDark);
 }
 
-function atualizarBotoesDark(isDark) {
+function atualizarIconesDark(isDark) {
     const btnPc = document.getElementById('btn-dark-desktop');
     const txtPc = document.getElementById('txt-dark-desktop');
     const iconePc = document.getElementById('icone-dark-mode');
@@ -187,12 +188,10 @@ function atualizarBotoesDark(isDark) {
     const starPc = document.getElementById('star-desktop');
     const starMobile = document.getElementById('star-mobile');
     
-    // Remove a animação da estrela para resetar a física
     if(starPc) starPc.classList.remove('animate-star');
     if(starMobile) starMobile.classList.remove('animate-star');
     
     if (isDark) {
-        // MODO ESCURO (Ícone de Sol, botão mais claro)
         if (iconePc) iconePc.className = 'fa-solid fa-sun text-lg text-amber-400 transition-colors duration-300';
         if (iconeMobile) iconeMobile.className = 'fa-solid fa-sun text-xl text-amber-400 transition-colors duration-300';
         
@@ -200,83 +199,16 @@ function atualizarBotoesDark(isDark) {
         if (txtPc) txtPc.innerText = 'Tema Claro';
         if (btnMobile) btnMobile.className = 'w-12 h-12 rounded-full bg-slate-800 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible';
     } else {
-        // MODO CLARO (Ícone de Lua Branca, Fundo Escuro no PC)
         if (iconePc) iconePc.className = 'fa-solid fa-moon text-lg text-white transition-colors duration-300';
         if (iconeMobile) iconeMobile.className = 'fa-solid fa-moon text-xl text-white transition-colors duration-300';
         
         if (btnPc) btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-slate-800 text-white hover:bg-slate-700 transition-colors w-full';
         if (txtPc) txtPc.innerText = 'Tema Escuro';
-        if (btnMobile) btnMobile.className = 'w-12 h-12 rounded-full bg-slate-800 text-white shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible';
+        if (btnMobile) btnMobile.className = 'w-12 h-12 rounded-full bg-slate-800 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible';
         
-        // Força um "reflow" do navegador para relançar a animação da estrela
+        // Força a reinicialização da animação da estrela
         void document.body.offsetWidth;
         if(starPc) starPc.classList.add('animate-star');
         if(starMobile) starMobile.classList.add('animate-star');
-    }
-}
-
-// A MÁGICA DA MANIPULAÇÃO DO TEMPO NO LOTTIE
-function dispararLottieSelo(isDark) {
-    const lottieSrc = "https://lottie.host/8cfa9d1e-7352-41d6-be66-76f97b2694cd/L3xtoaY7nx.lottie";
-
-    if (isDark) {
-        // HACK PARA ESCURO: Toca o Lottie debaixo de uma cortina negra. 
-        // Com 1.4s (quando o Sol passa), a cortina é puxada revelando a Lua.
-        Swal.fire({
-            html: `
-                <div class="flex justify-center items-center h-[180px] relative w-[180px] mx-auto overflow-hidden rounded-full">
-                    <div id="lottie-mask" class="absolute inset-0 bg-[#0f172a] z-10 transition-opacity duration-300"></div>
-                    <dotlottie-wc id="lottie-tema" src="${lottieSrc}" style="width: 260px; height: 260px;" autoplay></dotlottie-wc>
-                </div>
-            `,
-            showConfirmButton: false,
-            timer: 2800, // Tempo para terminar na Lua e fechar sozinho
-            background: 'transparent',
-            backdrop: 'rgba(15, 23, 42, 0.95)',
-            customClass: { popup: 'shadow-none bg-transparent border-none' },
-            didOpen: () => {
-                const lottieEl = document.getElementById('lottie-tema');
-                let started = false;
-                const puxarCortina = () => {
-                    if(started) return; 
-                    started = true;
-                    setTimeout(() => {
-                        const mask = document.getElementById('lottie-mask');
-                        if(mask) mask.style.opacity = '0';
-                    }, 1400); // 1.4 segundos no escuro
-                };
-                lottieEl.addEventListener('ready', puxarCortina);
-                lottieEl.addEventListener('play', puxarCortina);
-                setTimeout(puxarCortina, 500); // Plano B de segurança
-            }
-        });
-    } else {
-        // HACK PARA CLARO: Toca o Lottie normalmente (Lua para Sol). 
-        // Com 1.5s (quando o Sol sorri), o script DESTRÓI o painel antes de voltar para a Lua.
-        Swal.fire({
-            html: `
-                <div class="flex justify-center items-center h-[180px] relative w-[180px] mx-auto overflow-hidden rounded-full">
-                    <dotlottie-wc id="lottie-tema" src="${lottieSrc}" style="width: 260px; height: 260px;" autoplay></dotlottie-wc>
-                </div>
-            `,
-            showConfirmButton: false,
-            background: 'transparent',
-            backdrop: 'rgba(255, 255, 255, 0.95)',
-            customClass: { popup: 'shadow-none bg-transparent border-none' },
-            didOpen: () => {
-                const lottieEl = document.getElementById('lottie-tema');
-                let started = false;
-                const cortarSol = () => {
-                    if(started) return; 
-                    started = true;
-                    setTimeout(() => {
-                        Swal.close(); // Assassina o pop-up
-                    }, 1500); // 1.5 Segundos exatos de exibição
-                };
-                lottieEl.addEventListener('ready', cortarSol);
-                lottieEl.addEventListener('play', cortarSol);
-                setTimeout(cortarSol, 500); // Plano B de segurança
-            }
-        });
     }
 }
