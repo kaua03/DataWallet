@@ -1,5 +1,5 @@
 // ==========================================
-// dividas.js - KANBAN SÊNIOR COM DRAG & DROP E ANIMAÇÕES
+// dividas.js - KANBAN SÊNIOR COM DRAG & DROP E TOASTS DISCRETOS
 // ==========================================
 
 let usuarioLogado = null;
@@ -315,12 +315,12 @@ function renderizarColunas(agrupamentos) {
                         else if (colunaOrigem === 'lista-cards-col_HistóricodePagas') {
                             await window.alterarStatusPagamento(idTransacao, false, true);
                         } 
-                        // Se tentou pular entre Atrasado/MêsAtual/Próximos sem pagar, avisa que a coluna é cravada na data.
+                        // Se tentou pular entre Atrasado/MêsAtual sem pagar, avisa que a coluna é cravada na data.
                         else {
                             Swal.fire({
                                 icon: 'info',
                                 title: 'Regra de Sistema',
-                                text: 'Para mover entre pendentes, clique no lápis e edite a Data de Vencimento.',
+                                text: 'Para mover entre colunas pendentes, clique no lápis e edite a Data de Vencimento.',
                                 confirmButtonColor: '#4f46e5'
                             });
                             processarEAtualizarKanban(); // Devolve o card pro lugar original magicamente
@@ -398,7 +398,7 @@ window.fecharModalNovaDivida = function() { document.getElementById('modal-divid
 window.excluirDivida = async function(idTransacao) {
     const confirmacao = await Swal.fire({
         title: 'Excluir Transação?',
-        text: "Essa ação apagará este registro permanentemente.",
+        text: "Essa ação apagará este registo permanentemente.",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
@@ -475,15 +475,17 @@ window.salvarDivida = async function(event) {
         window.fecharModalNovaDivida();
         processarEAtualizarKanban();
 
-        // O STICKER DE SUCESSO LOTTIE!
-        Swal.fire({
-            html: `
-                <div class="flex justify-center items-center">
-                    <dotlottie-wc src="https://lottie.host/85450f21-2b79-46bd-8e77-a0d7fc86ceaf/63OdW0EjZh.json" style="width: 300px; height: 300px;" autoplay loop></dotlottie-wc>
-                </div>
-            `,
-            showConfirmButton: false, timer: 3000, background: 'transparent', backdrop: 'rgba(15, 23, 42, 0.7)',
-            customClass: { popup: 'shadow-none bg-transparent border-none' }
+        // TOAST DISCRETO EM VEZ DO LOTTIE CELEBRATIVO
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true
+        });
+        Toast.fire({
+            icon: 'success',
+            title: 'Registo guardado!'
         });
 
     } catch (e) {
