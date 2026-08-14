@@ -23,26 +23,57 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
         ::-webkit-scrollbar { width: 6px; display: none; }
+
+        /* A MÁGICA DA SIDEBAR INTELIGENTE */
+        #sidebar { transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease; }
+        .sidebar-collapsed { width: 5.5rem !important; padding-left: 1rem !important; padding-right: 1rem !important; }
+        .sidebar-collapsed .sidebar-text { opacity: 0; display: none; }
+        .sidebar-collapsed a, .sidebar-collapsed button, .sidebar-collapsed .logo-box { justify-content: center; }
+        .sidebar-collapsed .logo-box { margin-bottom: 2rem; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 h-screen overflow-hidden flex relative fade-in">
 
-    <aside class="hidden md:flex flex-col w-64 bg-white border-r border-slate-200/60 p-6 h-full shadow-lg z-20 shrink-0">
-        <div class="flex items-center gap-3 mb-10">
-            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-indigo-600/30">
+    <aside id="sidebar" class="hidden md:flex flex-col w-64 bg-white border-r border-slate-200/60 p-6 h-full shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-30 shrink-0 relative transition-all duration-300">
+        
+        <button onclick="window.toggleSidebar()" class="absolute -right-3.5 top-9 bg-white border border-slate-200 shadow-sm text-slate-400 hover:text-indigo-600 rounded-full w-7 h-7 flex items-center justify-center transition-transform hover:scale-110 z-40">
+            <i id="sidebar-toggle-icon" class="fa-solid fa-chevron-left text-[10px]"></i>
+        </button>
+
+        <div class="logo-box flex items-center gap-3 mb-10 transition-all duration-300 overflow-hidden">
+            <div class="w-10 h-10 shrink-0 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-indigo-600/30">
                 <i class="fa-solid fa-wallet text-xl"></i>
             </div>
-            <h2 class="text-2xl font-black text-slate-900 tracking-tight">DataWallet</h2>
+            <h2 class="sidebar-text text-2xl font-black text-slate-900 tracking-tight whitespace-nowrap">DataWallet</h2>
         </div>
         
-        <nav class="flex-1 space-y-2">
-            <a href="movimentacoes.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold bg-indigo-50 text-indigo-700 transition"><i class="fa-solid fa-money-bill-transfer w-5"></i> Movimentações</a>
-            <a href="dashboard.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition"><i class="fa-solid fa-chart-pie w-5"></i> Dashboard</a>
-            <a href="dividas.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition"><i class="fa-solid fa-file-invoice-dollar w-5"></i> Dívidas</a>
-            <a href="categorias.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition"><i class="fa-solid fa-tags w-5"></i> Categorias</a>
-            <a href="planos.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition"><i class="fa-solid fa-bullseye w-5"></i> Metas</a>
+        <nav class="flex-1 space-y-2 overflow-hidden">
+            <a href="movimentacoes.html" title="Movimentações" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold bg-indigo-50 text-indigo-700 transition-all duration-200">
+                <i class="fa-solid fa-money-bill-transfer w-5 text-center shrink-0"></i> 
+                <span class="sidebar-text whitespace-nowrap">Movimentações</span>
+            </a>
+            <a href="dashboard.html" title="Dashboard" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-all duration-200">
+                <i class="fa-solid fa-chart-pie w-5 text-center shrink-0"></i> 
+                <span class="sidebar-text whitespace-nowrap">Dashboard</span>
+            </a>
+            <a href="dividas.html" title="Dívidas" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-all duration-200">
+                <i class="fa-solid fa-file-invoice-dollar w-5 text-center shrink-0"></i> 
+                <span class="sidebar-text whitespace-nowrap">Dívidas</span>
+            </a>
+            <a href="categorias.html" title="Categorias" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-all duration-200">
+                <i class="fa-solid fa-tags w-5 text-center shrink-0"></i> 
+                <span class="sidebar-text whitespace-nowrap">Categorias</span>
+            </a>
+            <a href="planos.html" title="Metas" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-all duration-200">
+                <i class="fa-solid fa-bullseye w-5 text-center shrink-0"></i> 
+                <span class="sidebar-text whitespace-nowrap">Metas</span>
+            </a>
         </nav>
-        <button onclick="sairDoSistema()" class="flex items-center gap-3 p-3 rounded-xl font-bold text-rose-500 hover:bg-rose-50 transition mt-auto"><i class="fa-solid fa-right-from-bracket w-5"></i> Sair</button>
+
+        <button onclick="sairDoSistema()" title="Sair do Sistema" class="flex items-center gap-3 p-3 rounded-xl font-bold text-rose-500 hover:bg-rose-50 transition mt-auto w-full overflow-hidden">
+            <i class="fa-solid fa-right-from-bracket w-5 text-center shrink-0"></i> 
+            <span class="sidebar-text whitespace-nowrap">Sair</span>
+        </button>
     </aside>
 
     <main class="flex-1 h-full overflow-y-auto relative pb-28 md:pb-8 p-4 md:p-8">
