@@ -170,7 +170,8 @@ function aplicarFiltrosHistorico() {
 }
 
 function renderizarMiniKPIs() {
-    let qtdEntradas = 0, qtd Saidas = 0, somaEntradas = 0, somaSaidas = 0;
+    // ERRO CORRIGIDO AQUI: A variável estava com espaço "qtd Saidas"
+    let qtdEntradas = 0, qtdSaidas = 0, somaEntradas = 0, somaSaidas = 0;
 
     transacoesFiltradas.forEach(t => {
         if(t.tipo === 'receita') { qtdEntradas++; somaEntradas += t.valor; }
@@ -182,13 +183,13 @@ function renderizarMiniKPIs() {
     const sinalBalanco = balanco >= 0 ? '+' : '-';
 
     document.getElementById('mini-kpis-historico').innerHTML = `
-        <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-emerald-200">
+        <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-emerald-200" title="Total financeiro de entradas">
             <i class="fa-solid fa-arrow-trend-up"></i> ${qtdEntradas} Entradas • ${formatarMoeda(somaEntradas)}
         </span>
-        <span class="bg-rose-100 text-rose-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-rose-200">
+        <span class="bg-rose-100 text-rose-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-rose-200" title="Total financeiro de saídas">
             <i class="fa-solid fa-arrow-trend-down"></i> ${qtdSaidas} Saídas • ${formatarMoeda(somaSaidas)}
         </span>
-        <span class="${corBalanco} text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border">
+        <span class="${corBalanco} text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border" title="Seu fluxo de caixa final">
             Fluxo: ${sinalBalanco} ${formatarMoeda(Math.abs(balanco))}
         </span>
     `;
@@ -315,7 +316,6 @@ function processarFraseNLP(fraseBruta) {
     let dataCalculada = new Date();
     dataCalculada.setHours(0,0,0,0);
     
-    // 1. EXTRAÇÃO CRONOLÓGICA SEQUENCIAL (Devora as datas primeiro)
     let isMesPassado = false;
     if (texto.includes('mes passado')) {
         isMesPassado = true;
@@ -344,12 +344,10 @@ function processarFraseNLP(fraseBruta) {
         dataCalculada.setMonth(dataCalculada.getMonth() - 1);
     }
 
-    // 2. EXTRAÇÃO VALOR FINANCEIRO (Na string limpa de dias)
     const nums = texto.match(/\d+(?:[.,]\d+)?/g);
     const valorExtraido = nums ? Math.max(...nums.map(n => parseFloat(n.replace(',', '.')))) : 0;
-    if(nums) nums.forEach(n => texto = texto.replace(n, ''));
+    if(nums) nums.forEach(n => texto = texto.replace(n, '')); 
 
-    // 3. CATEGORIZAÇÃO SEMÂNTICA
     const palavrasReceita = ['recebi', 'ganhei', 'pix', 'salario', 'renda', 'vendi', 'deposito'];
     const isReceita = palavrasReceita.some(p => removerAcentos(fraseBruta.toLowerCase()).includes(p));
 
@@ -386,7 +384,6 @@ function processarFraseNLP(fraseBruta) {
         if (!catDetectada) catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('lazer'));
     }
 
-    // 4. PREENCHIMENTO DO FORMULÁRIO DO MODAL
     document.getElementById('transacao-id').value = ''; 
     document.getElementById('modal-titulo').innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-indigo-600"></i> ${isReceita ? 'Registrar Entrada' : 'Registrar Saída'}`;
     document.getElementById('transacao-desc').value = tituloFinal;
@@ -419,7 +416,7 @@ function abrirModalMicrofoneNativo() {
     
     reconhecimentoDeVoz = new SpeechRecognition();
     reconhecimentoDeVoz.lang = 'pt-BR';
-    reconhecimentoDeVoz.interimResults = true; // Transcrição ao vivo ligada
+    reconhecimentoDeVoz.interimResults = true; 
     reconhecimentoDeVoz.continuous = false; 
 
     const modalMic = document.getElementById('modal-microfone');
@@ -430,7 +427,6 @@ function abrirModalMicrofoneNativo() {
     modalMic.classList.remove('hidden');
     textoInterim.innerText = "Fale agora...";
 
-    // Efeito de pulso de espera padrão (Leve respiração)
     if(wave1 && wave2) {
         wave1.style.transform = 'scale(1.1)';
         wave2.style.transform = 'scale(1.05)';
@@ -448,13 +444,12 @@ function abrirModalMicrofoneNativo() {
             }
         }
         
-        // A MÁGICA: Reatividade puramente baseada nas palavras que entram (Event-Driven Ripple)
+        // A MÁGICA VISUAL: Sincroniza a onda com a chegada das palavras
         if(wave1 && wave2) {
             let fatorVolumeFake = 1.1 + (textoTemporario.length % 5) * 0.15; 
             wave1.style.transform = `scale(${fatorVolumeFake * 1.3})`;
             wave2.style.transform = `scale(${fatorVolumeFake * 1.1})`;
             
-            // Retorna ao tamanho estável em 150ms
             setTimeout(() => {
                 wave1.style.transform = 'scale(1.1)';
                 wave2.style.transform = 'scale(1.05)';
@@ -493,7 +488,6 @@ function abrirModalMicrofoneNativo() {
     reconhecimentoDeVoz.start();
 }
 
-// Atalho do HTML redireciona direto para a função limpa
 window.ativarMicrofone = function() { abrirModalMicrofoneNativo(); };
 
 function cancelarMicrofone() {
