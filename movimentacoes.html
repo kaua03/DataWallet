@@ -34,6 +34,15 @@
             width: 16rem; /* 256px para o modo expandido */
             box-shadow: 15px 0 30px rgba(0,0,0,0.05);
         }
+
+        /* O HACK DO BOTÃO PERFEITO */
+        .sidebar-link {
+            width: 3rem; /* Trava o botão em exatos 48px quando minimizado */
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s;
+        }
+        #sidebar:hover .sidebar-link {
+            width: 100%; /* Estica para preencher a barra quando aberta */
+        }
         
         .sidebar-text {
             opacity: 0;
@@ -46,19 +55,18 @@
             visibility: visible;
             opacity: 1;
             transform: translateX(0);
-            transition-delay: 0.15s; /* Atraso sutil para o texto aparecer só quando a barra abrir */
+            transition-delay: 0.15s; 
         }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 h-screen overflow-hidden flex relative fade-in">
 
-    <!-- ESPAÇADOR FALSO PARA O DESKTOP (Garante que o miolo não dance quando a barra abrir por cima) -->
+    <!-- ESPAÇADOR FALSO PARA O DESKTOP -->
     <div class="hidden md:block w-20 shrink-0"></div>
 
     <!-- SIDEBAR REAL DO DESKTOP (Flutua por cima via Hover) -->
     <aside id="sidebar" class="hidden md:flex flex-col bg-white border-r border-slate-200/60 py-6 px-4 h-full z-40 fixed left-0 top-0 overflow-hidden">
         
-        <!-- px-1 centraliza a logo de 40px no espaço interno de 48px -->
         <div class="flex items-center justify-start mb-10 h-12 px-1">
             <div class="w-10 h-10 shrink-0 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-indigo-600/30">
                 <i class="fa-solid fa-wallet text-xl"></i>
@@ -67,32 +75,31 @@
         </div>
         
         <nav class="flex-1 space-y-2 w-full">
-            <!-- overflow-hidden garante que a marcação azul morra exatamente nas bordas do botão, criando a bolha perfeita -->
-            <a href="movimentacoes.html" class="flex items-center w-full h-12 px-3 rounded-xl font-bold bg-indigo-50 text-indigo-700 transition-colors overflow-hidden">
+            <a href="movimentacoes.html" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-50 text-indigo-700 overflow-hidden">
                 <div class="w-6 flex items-center justify-center shrink-0">
                     <i class="fa-solid fa-money-bill-transfer text-lg"></i>
                 </div>
                 <span class="sidebar-text ml-3">Movimentações</span>
             </a>
-            <a href="dashboard.html" class="flex items-center w-full h-12 px-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-colors overflow-hidden">
+            <a href="dashboard.html" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-colors overflow-hidden">
                 <div class="w-6 flex items-center justify-center shrink-0">
                     <i class="fa-solid fa-chart-pie text-lg"></i>
                 </div>
                 <span class="sidebar-text ml-3">Dashboard</span>
             </a>
-            <a href="dividas.html" class="flex items-center w-full h-12 px-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-colors overflow-hidden">
+            <a href="dividas.html" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-colors overflow-hidden">
                 <div class="w-6 flex items-center justify-center shrink-0">
                     <i class="fa-solid fa-file-invoice-dollar text-lg"></i>
                 </div>
                 <span class="sidebar-text ml-3">Dívidas</span>
             </a>
-            <a href="categorias.html" class="flex items-center w-full h-12 px-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-colors overflow-hidden">
+            <a href="categorias.html" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-colors overflow-hidden">
                 <div class="w-6 flex items-center justify-center shrink-0">
                     <i class="fa-solid fa-tags text-lg"></i>
                 </div>
                 <span class="sidebar-text ml-3">Categorias</span>
             </a>
-            <a href="planos.html" class="flex items-center w-full h-12 px-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-colors overflow-hidden">
+            <a href="planos.html" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-colors overflow-hidden">
                 <div class="w-6 flex items-center justify-center shrink-0">
                     <i class="fa-solid fa-bullseye text-lg"></i>
                 </div>
@@ -101,7 +108,7 @@
         </nav>
 
         <div class="mt-auto w-full">
-            <button onclick="sairDoSistema()" class="flex items-center w-full h-12 px-3 rounded-xl font-bold text-rose-500 hover:bg-rose-50 transition-colors overflow-hidden">
+            <button onclick="sairDoSistema()" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold text-rose-500 hover:bg-rose-50 transition-colors overflow-hidden">
                 <div class="w-6 flex items-center justify-center shrink-0">
                     <i class="fa-solid fa-right-from-bracket text-lg"></i>
                 </div>
