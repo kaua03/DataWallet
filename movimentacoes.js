@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - MOTOR DE FLUXO DE CAIXA E BUSCA INTELIGENTE
+// movimentacoes.js - MOTOR SÊNIOR COM NLP SEQUENCIAL
 // ==========================================
 
 let usuarioLogado = null;
@@ -8,7 +8,12 @@ let transacoesFiltradas = [];
 let categoriasGlobais = [];
 
 let isHistoricoExpandido = false; 
-let reconhecimentoDeVoz = null; // Variável global para controlar e cancelar o mic
+
+// Variáveis para o motor de áudio reativo
+let reconhecimentoDeVoz = null; 
+let audioContext = null;
+let micStream = null;
+let animationId = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     usuarioLogado = await verificarSessaoSegura();
@@ -17,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const inputRapido = document.getElementById('input-rapido');
     if (inputRapido) {
         inputRapido.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') processarFrase();
+            if (e.key === 'Enter') processarFraseNLP(this.value);
         });
     }
 
@@ -146,9 +151,7 @@ function aplicarFiltrosHistorico() {
 
             } else if (tipoFiltro === 'por_mes') {
                 const val = document.getElementById('input-mes').value; 
-                if(val) {
-                    dataOk = dStr.startsWith(val);
-                }
+                if(val) dataOk = dStr.startsWith(val);
             } else if (tipoFiltro === 'personalizado') {
                 const dIni = document.getElementById('input-data-inicio').value;
                 const dFim = document.getElementById('input-data-fim').value;
@@ -186,13 +189,13 @@ function renderizarMiniKPIs() {
     const sinalBalanco = balanco >= 0 ? '+' : '-';
 
     document.getElementById('mini-kpis-historico').innerHTML = `
-        <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-emerald-200" title="Total financeiro de entradas neste filtro">
+        <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-emerald-200" title="Total financeiro de entradas">
             <i class="fa-solid fa-arrow-trend-up"></i> ${qtdEntradas} Entradas • ${formatarMoeda(somaEntradas)}
         </span>
-        <span class="bg-rose-100 text-rose-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-rose-200" title="Total financeiro de saídas neste filtro">
+        <span class="bg-rose-100 text-rose-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-rose-200" title="Total financeiro de saídas">
             <i class="fa-solid fa-arrow-trend-down"></i> ${qtdSaidas} Saídas • ${formatarMoeda(somaSaidas)}
         </span>
-        <span class="${corBalanco} text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border" title="Seu fluxo de caixa final neste filtro">
+        <span class="${corBalanco} text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border" title="Seu fluxo de caixa final">
             Fluxo: ${sinalBalanco} ${formatarMoeda(Math.abs(balanco))}
         </span>
     `;
@@ -232,7 +235,6 @@ function renderizarListaHistorico() {
 
         return `
         <div class="bg-white p-4 rounded-3xl border border-slate-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
-            
             <div class="flex items-center gap-4 min-w-0 w-full sm:w-auto">
                 <div class="w-12 h-12 rounded-2xl ${corBg} flex items-center justify-center ${corTxt} text-xl shadow-inner shrink-0 relative">
                     <i class="fa-solid ${cat.icone}"></i>
@@ -276,17 +278,17 @@ function renderizarListaHistorico() {
 }
 
 // ---------------------------------------------
-// O CÉREBRO NLP E CRUD
+// O NOVO CÉREBRO NLP (EXTRAÇÃO SEQUENCIAL)
 // ---------------------------------------------
 const dicionarioDeInteligencia = [
     { pasta: 'alimentação', regras: [
         { titulo: 'Delivery', palavras: ['ifood', 'delivery', 'rappi', 'zedelivery'] },
-        { titulo: 'Fast Food', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado', 'pastel'] },
+        { titulo: 'Fast Food', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado', 'pastel', 'méqui'] },
         { titulo: 'Mercado', palavras: ['mercado', 'supermercado', 'açougue', 'padaria', 'compra'] },
         { titulo: 'Restaurante', palavras: ['restaurante', 'almoço', 'jantar', 'comida', 'self service'] }
     ]},
     { pasta: 'veículo', regras: [
-        { titulo: 'Combustível', palavras: ['gasolina', 'álcool', 'alcool', 'etanol', 'diesel', 'posto', 'combustível', 'combustivel'] },
+        { titulo: 'Combustível', palavras: ['gasolina', 'álcool', 'alcool', 'etanol', 'diesel', 'posto', 'combustível', 'combustivel', 'abasteci'] },
         { titulo: 'Peças / Manutenção', palavras: ['oficina', 'mecânico', 'peça', 'pneu', 'óleo', 'revisão'] },
         { titulo: 'Serviços Auto', palavras: ['estacionamento', 'pedágio', 'lavagem', 'lava rápido'] },
         { titulo: 'Transporte', palavras: ['uber', '99', 'ônibus', 'passagem', 'metrô'] }
@@ -319,41 +321,9 @@ const dicionarioDeInteligencia = [
     ]}
 ];
 
-function inferirCategoriaETitulo(texto, isReceita) {
-    texto = texto.toLowerCase();
-
-    if (isReceita) {
-        const catRenda = categoriasGlobais.find(c => c.nome.toLowerCase().includes('renda') || c.nome.toLowerCase().includes('salário'));
-        return { categoria: catRenda, titulo: texto.includes('salário') || texto.includes('salario') ? 'Salário' : 'Recebimento' };
-    }
-
-    for (const d of dicionarioDeInteligencia) {
-        for (const regra of d.regras) {
-            if (regra.palavras.some(palavra => texto.includes(palavra))) {
-                let busca = d.pasta === 'saúde' ? 'imprevistos' : d.pasta;
-                const catDb = categoriasGlobais.find(c => c.nome.toLowerCase().includes(busca));
-                return { categoria: catDb, titulo: regra.titulo };
-            }
-        }
-    }
-
-    let palavras = texto.split(' ');
-    const palavrasInuteis = ['comprei', 'gastei', 'paguei', 'botei', 'coloquei', 'um', 'uma', 'uns', 'umas', 'de', 'da', 'do', 'no', 'na', 'para', 'com', 'novo', 'nova'];
-    while (palavras.length > 0 && palavrasInuteis.includes(palavras[0])) palavras.shift(); 
-
-    let descLimpa = palavras.length > 0 ? palavras[0] : 'Registro';
-    descLimpa = descLimpa.charAt(0).toUpperCase() + descLimpa.slice(1);
-
-    const catFallback = categoriasGlobais.find(c => c.nome.toLowerCase().includes('lazer'));
-    return { categoria: catFallback, titulo: descLimpa };
-}
-
-window.abrirModalComTextoRapido = function() { processarFrase(); };
-
-function processarFrase() {
-    const input = document.getElementById('input-rapido').value;
-    
-    if(!input) {
+// O CÉREBRO PRINCIPAL QUE RESOLVE O CONFLITO DE ENTIDADES
+function processarFraseNLP(fraseBruta) {
+    if(!fraseBruta) {
         document.getElementById('form-transacao').reset();
         document.getElementById('transacao-id').value = '';
         document.getElementById('transacao-data').value = new Date().toISOString().split('T')[0];
@@ -361,35 +331,242 @@ function processarFrase() {
         document.getElementById('modal-transacao').classList.remove('hidden');
         return;
     }
-    
-    const textoLower = input.toLowerCase();
-    const nums = textoLower.match(/\d+(?:[.,]\d+)?/g);
-    const val = nums ? Math.max(...nums.map(n => parseFloat(n.replace(',', '.')))) : 0;
-    
-    const palavrasReceita = ['recebi', 'ganhei', 'pix', 'salário', 'salario', 'renda', 'vendi', 'depósito'];
-    const isReceita = palavrasReceita.some(p => textoLower.includes(p));
 
-    const inferencia = inferirCategoriaETitulo(textoLower, isReceita);
+    let texto = removerAcentos(fraseBruta.toLowerCase());
+    
+    // 1. O RELÓGIO (Extrai a Data e APAGA da frase)
+    let dataCalculada = new Date();
+    dataCalculada.setHours(0,0,0,0);
+    
+    const regexMesPassado = /dia (\d{1,2}) do mes passado/i;
+    const regexDia = /dia (\d{1,2})/i;
 
+    if (texto.includes('anteontem')) {
+        dataCalculada.setDate(dataCalculada.getDate() - 2);
+        texto = texto.replace('anteontem', '');
+    } else if (texto.includes('ontem')) {
+        dataCalculada.setDate(dataCalculada.getDate() - 1);
+        texto = texto.replace('ontem', '');
+    } else if (regexMesPassado.test(texto)) {
+        const match = texto.match(regexMesPassado);
+        dataCalculada.setMonth(dataCalculada.getMonth() - 1);
+        dataCalculada.setDate(parseInt(match[1]));
+        texto = texto.replace(match[0], '');
+    } else if (regexDia.test(texto)) {
+        const match = texto.match(regexDia);
+        const dia = parseInt(match[1]);
+        dataCalculada.setDate(dia);
+        
+        // Se o dia falado for maior que o dia de hoje, assume inteligentemente que foi no mês passado
+        if (dia > new Date().getDate()) {
+            dataCalculada.setMonth(dataCalculada.getMonth() - 1);
+        }
+        texto = texto.replace(match[0], '');
+    }
+
+    // 2. A CARTEIRA (Caça o valor no que restou da frase)
+    const nums = texto.match(/\d+(?:[.,]\d+)?/g);
+    const valorExtraido = nums ? Math.max(...nums.map(n => parseFloat(n.replace(',', '.')))) : 0;
+    
+    // Se achou valor, apaga ele do texto também para limpar a descrição final
+    if(nums) {
+        nums.forEach(n => texto = texto.replace(n, ''));
+    }
+
+    // 3. A INTENÇÃO E A PASTA (Descobre do que se trata)
+    const palavrasReceita = ['recebi', 'ganhei', 'pix', 'salario', 'renda', 'vendi', 'deposito'];
+    const isReceita = palavrasReceita.some(p => removerAcentos(fraseBruta.toLowerCase()).includes(p));
+
+    let catDetectada = null;
+    let tituloFinal = '';
+
+    if (isReceita) {
+        catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('renda') || removerAcentos(c.nome.toLowerCase()).includes('salario'));
+        tituloFinal = removerAcentos(fraseBruta.toLowerCase()).includes('salario') ? 'Salário' : 'Recebimento';
+    } else {
+        for (const d of dicionarioDeInteligencia) {
+            for (const regra of d.regras) {
+                if (regra.palavras.some(p => texto.includes(p))) {
+                    let busca = d.pasta === 'saúde' ? 'imprevistos' : d.pasta;
+                    catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes(busca));
+                    tituloFinal = regra.titulo;
+                    break;
+                }
+            }
+            if (catDetectada) break;
+        }
+    }
+
+    // Se ainda não tiver título, cria um usando a palavra mais relevante que sobrou
+    if (!tituloFinal) {
+        let palavras = texto.split(' ');
+        const stopWords = ['eu', 'gastei', 'paguei', 'botei', 'coloquei', 'um', 'uma', 'uns', 'umas', 'de', 'da', 'do', 'no', 'na', 'para', 'com', 'novo', 'nova', 'reais', 'real', 'hoje', 'meu', 'minha', 'fui', 'carro', 'moto'];
+        
+        palavras = palavras.filter(p => p.trim() !== '' && !stopWords.includes(p.trim()));
+        
+        if (palavras.length > 0) {
+            tituloFinal = palavras[0].charAt(0).toUpperCase() + palavras[0].slice(1);
+        } else {
+            tituloFinal = 'Registro Rápido';
+        }
+        
+        if (!catDetectada) catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('lazer'));
+    }
+
+    // 4. PREENCHE A TELA COM OS DADOS TRATADOS
     document.getElementById('transacao-id').value = ''; 
     document.getElementById('modal-titulo').innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-indigo-600"></i> ${isReceita ? 'Registrar Entrada' : 'Registrar Saída'}`;
     
-    document.getElementById('transacao-desc').value = inferencia.titulo;
+    document.getElementById('transacao-desc').value = tituloFinal;
     
-    if(val > 0) {
-        let valorStr = val.toFixed(2).replace('.', ',');
+    if(valorExtraido > 0) {
+        let valorStr = valorExtraido.toFixed(2).replace('.', ',');
         valorStr = valorStr.replace(/(\d)(\d{3})(\d{3}),/g, "$1.$2.$3,");
         valorStr = valorStr.replace(/(\d)(\d{3}),/g, "$1.$2,");
         document.getElementById('transacao-valor').value = valorStr;
-    } else { document.getElementById('transacao-valor').value = ''; }
+    } else { 
+        document.getElementById('transacao-valor').value = ''; 
+    }
 
-    document.getElementById('transacao-data').value = new Date().toISOString().split('T')[0];
-    if (inferencia.categoria) document.getElementById('transacao-categoria').value = inferencia.categoria.id;
+    document.getElementById('transacao-data').value = dataCalculada.toISOString().split('T')[0];
+    
+    if (catDetectada) {
+        document.getElementById('transacao-categoria').value = catDetectada.id;
+    }
+    
     document.querySelector(`input[name="tipo"][value="${isReceita ? 'receita' : 'despesa'}"]`).checked = true;
-
     document.getElementById('modal-transacao').classList.remove('hidden');
 }
 
+window.abrirModalComTextoRapido = function() { 
+    const input = document.getElementById('input-rapido').value;
+    processarFraseNLP(input); 
+};
+
+// ---------------------------------------------
+// O NOVO MICROFONE COM ONDAS SONORAS REAIS
+// ---------------------------------------------
+async function ativarMicrofone() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return alert("Seu navegador não suporta microfone nativo. Use o Google Chrome.");
+    
+    reconhecimentoDeVoz = new SpeechRecognition();
+    reconhecimentoDeVoz.lang = 'pt-BR';
+    reconhecimentoDeVoz.interimResults = true; // Permite captar o áudio enquanto você fala
+    
+    const modalMic = document.getElementById('modal-microfone');
+    const textoInterim = document.getElementById('texto-interim');
+    
+    modalMic.classList.remove('hidden');
+    textoInterim.innerText = "Fale agora...";
+
+    // Aciona a leitura da Placa de Som para fazer o Círculo Pular
+    iniciarOndasSonorasVisuais();
+
+    reconhecimentoDeVoz.onresult = (event) => {
+        let textoFinal = '';
+        let textoTemporario = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                textoFinal += event.results[i][0].transcript;
+            } else {
+                textoTemporario += event.results[i][0].transcript;
+            }
+        }
+        
+        let textoExibido = textoFinal || textoTemporario;
+        // Pulo do gato visual: transforma "r$" em "R$" para ficar bonito na tela preta
+        textoExibido = textoExibido.replace(/\br\$\b|\breais\b/gi, "R$");
+        if(textoExibido.length > 0) textoExibido = textoExibido.charAt(0).toUpperCase() + textoExibido.slice(1);
+        
+        textoInterim.innerText = textoExibido;
+
+        if (textoFinal) {
+            document.getElementById('input-rapido').value = textoFinal;
+            
+            // Pausa de 600ms para você ter o prazer de ler a frase formada antes de enviar pro Robô
+            setTimeout(() => {
+                cancelarMicrofone();
+                processarFraseNLP(textoFinal); 
+            }, 600);
+        }
+    };
+
+    reconhecimentoDeVoz.onerror = (e) => { 
+        if (e.error === 'not-allowed') alert("Permissão negada. Libere o microfone no cadeado do navegador.");
+        cancelarMicrofone();
+    };
+    
+    reconhecimentoDeVoz.onend = () => { 
+        if(!modalMic.classList.contains('hidden') && textoInterim.innerText === "Fale agora...") {
+            cancelarMicrofone();
+        }
+    };
+    
+    reconhecimentoDeVoz.start();
+}
+
+async function iniciarOndasSonorasVisuais() {
+    try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const analyser = audioContext.createAnalyser();
+        const microphone = audioContext.createMediaStreamSource(micStream);
+        
+        analyser.smoothingTimeConstant = 0.5;
+        analyser.fftSize = 256;
+        microphone.connect(analyser);
+        
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        const wave1 = document.getElementById('mic-wave-1');
+        const wave2 = document.getElementById('mic-wave-2');
+        
+        function desenharLoop() {
+            if (!audioContext) return;
+            analyser.getByteFrequencyData(dataArray);
+            
+            let soma = 0;
+            for(let i = 0; i < dataArray.length; i++) soma += dataArray[i];
+            let mediaVolume = soma / dataArray.length; 
+            
+            // Transforma o volume (0 a ~255) em escala CSS (1.0 a ~2.0)
+            let escala1 = 1 + (mediaVolume / 60);
+            let escala2 = 1 + (mediaVolume / 90);
+            
+            if (wave1) wave1.style.transform = `scale(${escala1})`;
+            if (wave2) wave2.style.transform = `scale(${escala2})`;
+            
+            animationId = requestAnimationFrame(desenharLoop);
+        }
+        desenharLoop();
+    } catch (e) {
+        console.warn("Animação de áudio não suportada ou bloqueada neste device.");
+    }
+}
+
+function cancelarMicrofone() {
+    if(reconhecimentoDeVoz) reconhecimentoDeVoz.abort();
+    
+    // Desliga a Placa de Som para economizar bateria do usuário
+    if(animationId) cancelAnimationFrame(animationId);
+    if(audioContext) audioContext.close();
+    if(micStream) micStream.getTracks().forEach(track => track.stop());
+    
+    audioContext = null;
+    micStream = null;
+    
+    const wave1 = document.getElementById('mic-wave-1');
+    const wave2 = document.getElementById('mic-wave-2');
+    if (wave1) wave1.style.transform = `scale(1)`;
+    if (wave2) wave2.style.transform = `scale(1)`;
+
+    document.getElementById('modal-microfone').classList.add('hidden');
+}
+
+// ---------------------------------------------
+// FUNÇÕES DE CRUD
+// ---------------------------------------------
 function abrirModalEdicao(id) {
     const t = transacoesGlobais.find(x => x.id === id);
     if(!t) return;
@@ -455,70 +632,4 @@ async function excluirTransacao(id) {
         await supabaseClient.from('transacoes').delete().eq('id', id).eq('usuario_id', usuarioLogado.id);
         await carregarDadosDoBanco();
     } catch(e) { alert("Erro ao excluir: " + e.message); }
-}
-
-// ---------------------------------------------
-// O NOVO MOTOR SÊNIOR DE RECONHECIMENTO VOCAL
-// ---------------------------------------------
-function ativarMicrofone() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return alert("Navegador não suporta microfone nativo. Use o Google Chrome.");
-    
-    reconhecimentoDeVoz = new SpeechRecognition();
-    reconhecimentoDeVoz.lang = 'pt-BR';
-    reconhecimentoDeVoz.interimResults = true; // A Mágica do Tempo Real
-    
-    const modal = document.getElementById('modal-microfone');
-    const textoInterim = document.getElementById('texto-interim');
-    
-    modal.classList.remove('hidden');
-    textoInterim.innerText = "Fale agora...";
-
-    reconhecimentoDeVoz.onstart = () => {
-        // Opcional: Feedback que iniciou (o modal já abriu)
-    };
-
-    reconhecimentoDeVoz.onresult = (event) => {
-        let textoTemporario = '';
-        let textoFinal = '';
-
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-                textoFinal += event.results[i][0].transcript;
-            } else {
-                textoTemporario += event.results[i][0].transcript;
-            }
-        }
-        
-        // Escreve as palavras na tela enquanto a pessoa fala (Google Assistant Style)
-        textoInterim.innerText = textoFinal || textoTemporario;
-
-        if (textoFinal) {
-            document.getElementById('input-rapido').value = textoFinal;
-            // Timeout leve para o cérebro do usuário ler a frase montada antes da tela piscar
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                processarFrase(); 
-            }, 600);
-        }
-    };
-
-    reconhecimentoDeVoz.onerror = (e) => { 
-        if (e.error === 'not-allowed') alert("Permissão de microfone negada. Libere no cadeado da barra do navegador.");
-        modal.classList.add('hidden');
-    };
-    
-    reconhecimentoDeVoz.onend = () => { 
-        // Garante que a tela saia da frente caso desligue por inatividade
-        if(!modal.classList.contains('hidden') && textoInterim.innerText === "Fale agora...") {
-            modal.classList.add('hidden');
-        }
-    };
-    
-    reconhecimentoDeVoz.start();
-}
-
-function cancelarMicrofone() {
-    if(reconhecimentoDeVoz) reconhecimentoDeVoz.abort();
-    document.getElementById('modal-microfone').classList.add('hidden');
 }
