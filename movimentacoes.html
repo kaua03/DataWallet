@@ -7,12 +7,14 @@
     
     <meta name="view-transition" content="same-origin">
     
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 1º: A REGRA (Injetada ANTES da biblioteca) -->
     <script>
-        tailwind.config = {
-            darkMode: 'class'
+        tailwind = {
+            config: { darkMode: 'class' }
         };
     </script>
+    <!-- 2º: A BIBLIOTECA -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -152,12 +154,10 @@
         </section>
     </main>
 
-    <!-- MODAL DE LANÇAMENTO (Com Fechamento por Clique Fora e Botão Gigante) -->
-    <div id="modal-transacao" onclick="if(event.target === this) window.fecharModal()" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center fade-in p-4 cursor-pointer">
-        <!-- O container do modal (cursor-default para não fechar quando clica dentro) -->
-        <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl p-6 relative border dark:border-slate-800 cursor-default">
+    <!-- MODAL DE LANÇAMENTO (Fechamento inteligente no fundo) -->
+    <div id="modal-transacao" onclick="if(event.target === this) window.fecharModal()" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer transition-opacity">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl p-6 relative border dark:border-slate-800 cursor-default fade-in">
             
-            <!-- HITBOX AUMENTADA: w-12 h-12 para facilitar o toque no mobile, z-50 para passar por cima de tudo -->
             <button onclick="window.fecharModal()" class="absolute top-3 right-3 md:top-4 md:right-4 w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center z-50 active:scale-95">
                 <i class="fa-solid fa-xmark text-xl"></i>
             </button>
