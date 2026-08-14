@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - MOTOR DE FLUXO DE CAIXA E NLP VIA REATIVIDADE DE EVENTOS
+// movimentacoes.js - MOTOR DE FLUXO DE CAIXA E NLP AVANÇADO
 // ==========================================
 
 let usuarioLogado = null;
@@ -170,7 +170,6 @@ function aplicarFiltrosHistorico() {
 }
 
 function renderizarMiniKPIs() {
-    // ERRO CORRIGIDO AQUI: A variável estava com espaço "qtd Saidas"
     let qtdEntradas = 0, qtdSaidas = 0, somaEntradas = 0, somaSaidas = 0;
 
     transacoesFiltradas.forEach(t => {
@@ -183,13 +182,13 @@ function renderizarMiniKPIs() {
     const sinalBalanco = balanco >= 0 ? '+' : '-';
 
     document.getElementById('mini-kpis-historico').innerHTML = `
-        <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-emerald-200" title="Total financeiro de entradas">
+        <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-emerald-200">
             <i class="fa-solid fa-arrow-trend-up"></i> ${qtdEntradas} Entradas • ${formatarMoeda(somaEntradas)}
         </span>
-        <span class="bg-rose-100 text-rose-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-rose-200" title="Total financeiro de saídas">
+        <span class="bg-rose-100 text-rose-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-rose-200">
             <i class="fa-solid fa-arrow-trend-down"></i> ${qtdSaidas} Saídas • ${formatarMoeda(somaSaidas)}
         </span>
-        <span class="${corBalanco} text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border" title="Seu fluxo de caixa final">
+        <span class="${corBalanco} text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border">
             Fluxo: ${sinalBalanco} ${formatarMoeda(Math.abs(balanco))}
         </span>
     `;
@@ -259,7 +258,7 @@ function renderizarListaHistorico() {
 }
 
 // ==========================================
-// CÉREBRO NLP PIPELINE (SÊNIOR)
+// CÉREBRO NLP PIPELINE (NOVA ORDEM DE EXTRAÇÃO)
 // ==========================================
 const dicionarioDeInteligencia = [
     { pasta: 'alimentação', regras: [
@@ -294,7 +293,7 @@ const dicionarioDeInteligencia = [
     { pasta: 'lazer', regras: [
         { titulo: 'Jogos', palavras: ['jogo', 'steam', 'xbox', 'playstation', 'game'] },
         { titulo: 'Passeio', palavras: ['cinema', 'festa', 'shopping', 'bar', 'show', 'viagem', 'ingresso'] },
-        { titulo: 'Compras Pessoais', palavras: ['roupa', 'presente', 'tênis', 'perfume', 'fone', 'celular', 'compras'] }
+        { titulo: 'Compras Pessoais', palavras: ['roupa', 'presente', 'tênis', 'perfume', 'fone', 'celular'] }
     ]},
     { pasta: 'assinaturas', regras: [
         { titulo: 'Streaming', palavras: ['netflix', 'spotify', 'amazon', 'prime', 'disney', 'hbo'] },
@@ -313,13 +312,16 @@ function processarFraseNLP(fraseBruta) {
     }
 
     let texto = removerAcentos(fraseBruta.toLowerCase());
-    let dataCalculada = new Date();
-    dataCalculada.setHours(0,0,0,0);
     
+    // Configura o relógio para o meio-dia (evita fuso horário jogar a data pro dia anterior)
+    let dataCalculada = new Date();
+    dataCalculada.setHours(12,0,0,0);
+    
+    // --- 1. A EXTIRPAÇÃO DAS DATAS ---
     let isMesPassado = false;
     if (texto.includes('mes passado')) {
         isMesPassado = true;
-        texto = texto.replace('do mes passado', '').replace('no mes passado', '').replace('mes passado', '');
+        texto = texto.replace(/do mes passado|no mes passado|mes passado/g, '');
     }
 
     if (texto.includes('anteontem')) {
@@ -332,24 +334,53 @@ function processarFraseNLP(fraseBruta) {
         texto = texto.replace('hoje', '');
     }
 
+    // Procura formatos "15/07" ou "15/07/2026"
+    const matchDataBarra = texto.match(/(?:dia\s*)?(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/i);
+    // Procura formatos "dia 15"
     const matchDia = texto.match(/(?:no )?dia\s*(\d{1,2})/i);
-    if (matchDia) {
-        const diaNum = parseInt(matchDia[1]);
-        dataCalculada.setDate(diaNum);
-        if (isMesPassado || diaNum > new Date().getDate()) {
-            dataCalculada.setMonth(dataCalculada.getMonth() - 1);
+
+    if (matchDataBarra) {
+        dataCalculada.setDate(1); // Blinda bugs de meses que não tem dia 31
+        dataCalculada.setMonth(parseInt(matchDataBarra[2]) - 1);
+        dataCalculada.setDate(parseInt(matchDataBarra[1]));
+        
+        if (matchDataBarra[3]) {
+            let ano = parseInt(matchDataBarra[3]);
+            if (ano < 100) ano += 2000;
+            dataCalculada.setFullYear(ano);
+        } else if (dataCalculada > new Date()) {
+            // Se falou 15/07 e hoje é fevereiro, entende automaticamente que foi no ano passado
+            dataCalculada.setFullYear(dataCalculada.getFullYear() - 1);
         }
-        texto = texto.replace(matchDia[0], ''); 
+        texto = texto.replace(matchDataBarra[0], ''); // Arranca a data da frase
+
+    } else if (matchDia) {
+        let diaNum = parseInt(matchDia[1]);
+        const mesAtual = new Date().getMonth();
+        dataCalculada.setDate(1); 
+        
+        if (isMesPassado || diaNum > new Date().getDate()) {
+            dataCalculada.setMonth(mesAtual - 1);
+        }
+        dataCalculada.setDate(diaNum);
+        texto = texto.replace(matchDia[0], ''); // Arranca a data da frase
+
     } else if (isMesPassado) {
         dataCalculada.setMonth(dataCalculada.getMonth() - 1);
     }
 
+    // --- 2. A EXTIRPAÇÃO DO SÍMBOLO MONETÁRIO ---
+    // Remove "r$", "reais" e "real" para eles nunca virarem título de despesa
+    texto = texto.replace(/\br\$\b|\breais\b|\breal\b|\$/gi, '');
+
+    // --- 3. A EXTIRPAÇÃO DOS NÚMEROS (VALOR FINANCEIRO) ---
     const nums = texto.match(/\d+(?:[.,]\d+)?/g);
     const valorExtraido = nums ? Math.max(...nums.map(n => parseFloat(n.replace(',', '.')))) : 0;
     if(nums) nums.forEach(n => texto = texto.replace(n, '')); 
 
+    // --- 4. A ANÁLISE SEMÂNTICA FINAL ---
     const palavrasReceita = ['recebi', 'ganhei', 'pix', 'salario', 'renda', 'vendi', 'deposito'];
-    const isReceita = palavrasReceita.some(p => removerAcentos(fraseBruta.toLowerCase()).includes(p));
+    const isReceita = palavrasReceita.some(p => texto.includes(p) || removerAcentos(fraseBruta.toLowerCase()).includes(p));
 
     let catDetectada = null;
     let tituloFinal = '';
@@ -360,30 +391,42 @@ function processarFraseNLP(fraseBruta) {
     } else {
         for (const d of dicionarioDeInteligencia) {
             for (const regra of d.regras) {
-                if (regra.palavras.some(p => texto.includes(p))) {
-                    let busca = d.pasta === 'saúde' ? 'imprevistos' : d.pasta;
+                // Compara a frase limpa com a regra do dicionario
+                if (regra.palavras.some(p => texto.includes(removerAcentos(p)))) {
+                    
+                    // CORREÇÃO MESTRA: O Bug da Categoria Alimentação foi resolvido aqui
+                    let busca = removerAcentos(d.pasta === 'saúde' ? 'imprevistos' : d.pasta);
                     catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes(busca));
                     tituloFinal = regra.titulo;
                     break;
                 }
             }
-            if (catDetectada) break;
+            if (catDetectada || tituloFinal) break;
         }
     }
 
+    // O Gerador de Fallback (Se não achar nenhuma regra, ele constrói um título bonito com o que sobrou)
     if (!tituloFinal) {
         let palavras = texto.split(' ');
-        const stopWords = ['eu', 'gastei', 'paguei', 'pague', 'botei', 'coloquei', 'um', 'uma', 'uns', 'umas', 'de', 'da', 'do', 'no', 'na', 'para', 'com', 'novo', 'nova', 'reais', 'real', 'meu', 'minha', 'fui', 'carro', 'moto', 'mercado'];
-        palavras = palavras.filter(p => p.trim() !== '' && !stopWords.includes(p.trim()));
+        // Adicionei ainda mais Stop Words
+        const stopWords = ['eu', 'gastei', 'paguei', 'pague', 'botei', 'coloquei', 'um', 'uma', 'uns', 'umas', 'de', 'da', 'do', 'no', 'na', 'para', 'com', 'novo', 'nova', 'meu', 'minha', 'fui', 'o', 'a', 'os', 'as', 'em', 'por', 'pra'];
+        
+        // Remove lixos e sobras numéricas
+        palavras = palavras.filter(p => p.trim() !== '' && !stopWords.includes(p.trim()) && isNaN(p));
         
         if (palavras.length > 0) {
-            tituloFinal = palavras[0].charAt(0).toUpperCase() + palavras[0].slice(1);
+            tituloFinal = palavras[0].charAt(0).toUpperCase() + palavras[0].slice(1); // Pega a primeira palavra e capitaliza
         } else {
             tituloFinal = 'Registro Rápido';
         }
-        if (!catDetectada) catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('lazer'));
+        
+        // Categoria Padrão Fallback
+        if (!catDetectada) {
+            catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('lazer') || removerAcentos(c.nome.toLowerCase()).includes('outros'));
+        }
     }
 
+    // --- 5. PREENCHIMENTO DO TELA ---
     document.getElementById('transacao-id').value = ''; 
     document.getElementById('modal-titulo').innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-indigo-600"></i> ${isReceita ? 'Registrar Entrada' : 'Registrar Saída'}`;
     document.getElementById('transacao-desc').value = tituloFinal;
@@ -396,9 +439,13 @@ function processarFraseNLP(fraseBruta) {
     } else { document.getElementById('transacao-valor').value = ''; }
 
     document.getElementById('transacao-data').value = dataCalculada.toISOString().split('T')[0];
-    if (catDetectada) document.getElementById('transacao-categoria').value = catDetectada.id;
+    
+    // Injeta a Categoria
+    if (catDetectada) {
+        document.getElementById('transacao-categoria').value = catDetectada.id;
+    }
+    
     document.querySelector(`input[name="tipo"][value="${isReceita ? 'receita' : 'despesa'}"]`).checked = true;
-
     document.getElementById('modal-transacao').classList.remove('hidden');
 }
 
@@ -444,7 +491,6 @@ function abrirModalMicrofoneNativo() {
             }
         }
         
-        // A MÁGICA VISUAL: Sincroniza a onda com a chegada das palavras
         if(wave1 && wave2) {
             let fatorVolumeFake = 1.1 + (textoTemporario.length % 5) * 0.15; 
             wave1.style.transform = `scale(${fatorVolumeFake * 1.3})`;
@@ -501,9 +547,9 @@ function cancelarMicrofone() {
     document.getElementById('modal-microfone').classList.add('hidden');
 }
 
-// ==========================================
+// ---------------------------------------------
 // FUNÇÕES DE CRUD
-// ==========================================
+// ---------------------------------------------
 function abrirModalEdicao(id) {
     const t = transacoesGlobais.find(x => x.id === id);
     if(!t) return;
