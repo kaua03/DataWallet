@@ -126,11 +126,12 @@ function aplicarFiltrosHistorico() {
     transacoesFiltradas = transacoesGlobais.filter(t => {
         let dataOk = true;
         if (t.data_vencimento) {
-            const d = new Date(t.data_vencimento + 'T12:00:00Z');
-            d.setHours(0,0,0,0);
+            // COMPARAÇÃO ISO (À prova de timezone e dia exato)
+            const dStr = t.data_vencimento; // Formato string YYYY-MM-DD direto do banco
             
-            // CORRIGIDO: A variável agora avalia "essa_semana"
             if (tipoFiltro === 'essa_semana') {
+                const d = new Date(t.data_vencimento + 'T12:00:00Z');
+                d.setHours(0,0,0,0);
                 const dataHoje = new Date();
                 dataHoje.setHours(0,0,0,0);
                 
@@ -144,16 +145,17 @@ function aplicarFiltrosHistorico() {
                 dataOk = (d >= inicioSemana && d <= fimSemana);
 
             } else if (tipoFiltro === 'por_mes') {
-                const val = document.getElementById('input-mes').value;
+                const val = document.getElementById('input-mes').value; // YYYY-MM
                 if(val) {
-                    const [anoF, mesF] = val.split('-');
-                    dataOk = (d.getMonth() === (parseInt(mesF) - 1) && d.getFullYear() === parseInt(anoF));
+                    dataOk = dStr.startsWith(val);
                 }
             } else if (tipoFiltro === 'personalizado') {
                 const dIni = document.getElementById('input-data-inicio').value;
                 const dFim = document.getElementById('input-data-fim').value;
-                if (dIni) dataOk = dataOk && (d >= new Date(dIni + 'T12:00:00Z'));
-                if (dFim) dataOk = dataOk && (d <= new Date(dFim + 'T12:00:00Z'));
+                
+                // Comparação Lexicográfica (Matemática Pura de Strings)
+                if (dIni) dataOk = dataOk && (dStr >= dIni);
+                if (dFim) dataOk = dataOk && (dStr <= dFim);
             }
         }
 
@@ -210,7 +212,7 @@ function renderizarListaHistorico() {
     const btnToggle = document.getElementById('btn-toggle-historico');
     
     if (transacoesFiltradas.length === 0) {
-        container.innerHTML = `<div class="bg-slate-50 rounded-2xl p-8 text-center border border-slate-200 border-dashed"><i class="fa-solid fa-magnifying-glass text-2xl text-slate-300 mb-2"></i><p class="text-xs font-bold text-slate-400">Nenhum registro encontrado nesta visão.</p></div>`;
+        container.innerHTML = `<div class="bg-slate-50 rounded-2xl p-8 text-center border border-slate-200 border-dashed"><i class="fa-solid fa-magnifying-glass text-2xl text-slate-300 mb-2"></i><p class="text-xs font-bold text-slate-400 mt-2">Nenhum registro encontrado nesta visão.</p></div>`;
         btnToggle.classList.add('hidden');
         return;
     }
@@ -228,15 +230,12 @@ function renderizarListaHistorico() {
         const iconeSinal = isReceita ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
         
         let dataStr = t.data_vencimento ? t.data_vencimento.split('-').reverse().join('/') : '--/--/----';
-        let horaStr = '--:--';
-        if (t.criado_em) {
-            const dataObj = new Date(t.criado_em);
-            horaStr = dataObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute:'2-digit' });
-        }
 
+        // CORREÇÃO DE UX MOBILE: Botões de Editar/Excluir sempre visíveis no celular (sm:), e com hover no PC (md:)
         return `
-        <div class="bg-white p-4 rounded-3xl border border-slate-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-all flex items-center justify-between gap-4 group">
-            <div class="flex items-center gap-4 min-w-0">
+        <div class="bg-white p-4 rounded-3xl border border-slate-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
+            
+            <div class="flex items-center gap-4 min-w-0 w-full sm:w-auto">
                 <div class="w-12 h-12 rounded-2xl ${corBg} flex items-center justify-center ${corTxt} text-xl shadow-inner shrink-0 relative">
                     <i class="fa-solid ${cat.icone}"></i>
                     <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full ${corBg} border border-white flex items-center justify-center">
@@ -244,20 +243,22 @@ function renderizarListaHistorico() {
                     </div>
                 </div>
                 
-                <div class="min-w-0">
-                    <h4 class="font-bold text-sm text-slate-900 truncate">${t.descricao}</h4>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate mt-0.5">
-                        ${cat.nome} • <i class="fa-regular fa-calendar ml-1"></i> ${dataStr}
+                <!-- Removido o truncate forçado para o mobile respirar -->
+                <div class="min-w-0 flex-1">
+                    <h4 class="font-bold text-sm text-slate-900 break-words whitespace-normal leading-tight">${t.descricao}</h4>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">
+                        ${cat.nome} • <i class="fa-regular fa-calendar ml-0.5"></i> ${dataStr}
                     </p>
                 </div>
             </div>
 
-            <div class="flex items-center gap-4 shrink-0">
-                <span class="font-black text-sm md:text-base ${corValor} whitespace-nowrap">${sinal} ${formatarMoeda(t.valor)}</span>
+            <!-- Botões foram movidos para baixo do preço no celular, mas ao lado no PC -->
+            <div class="flex flex-row sm:flex-col md:flex-row items-center sm:items-end md:items-center justify-between sm:justify-center gap-3 w-full sm:w-auto shrink-0 border-t sm:border-t-0 border-slate-100 pt-3 sm:pt-0">
+                <span class="font-black text-base md:text-lg ${corValor} whitespace-nowrap">${sinal} ${formatarMoeda(t.valor)}</span>
                 
-                <div class="hidden md:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onclick="abrirModalEdicao(${t.id})" class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-indigo-500 hover:text-white transition flex items-center justify-center border border-slate-200"><i class="fa-solid fa-pen text-[10px]"></i></button>
-                    <button onclick="excluirTransacao(${t.id})" class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center border border-slate-200"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                <div class="flex items-center gap-1.5 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onclick="abrirModalEdicao(${t.id})" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:bg-indigo-500 hover:text-white transition flex items-center justify-center border border-slate-200"><i class="fa-solid fa-pen text-xs"></i></button>
+                    <button onclick="excluirTransacao(${t.id})" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center border border-slate-200"><i class="fa-solid fa-trash text-xs"></i></button>
                 </div>
             </div>
         </div>`;
