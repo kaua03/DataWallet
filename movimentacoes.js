@@ -8,6 +8,7 @@ let transacoesFiltradas = [];
 let categoriasGlobais = [];
 
 let isHistoricoExpandido = false; 
+let reconhecimentoDeVoz = null; // Variável global para controlar e cancelar o mic
 
 document.addEventListener('DOMContentLoaded', async () => {
     usuarioLogado = await verificarSessaoSegura();
@@ -126,8 +127,7 @@ function aplicarFiltrosHistorico() {
     transacoesFiltradas = transacoesGlobais.filter(t => {
         let dataOk = true;
         if (t.data_vencimento) {
-            // COMPARAÇÃO ISO (À prova de timezone e dia exato)
-            const dStr = t.data_vencimento; // Formato string YYYY-MM-DD direto do banco
+            const dStr = t.data_vencimento; 
             
             if (tipoFiltro === 'essa_semana') {
                 const d = new Date(t.data_vencimento + 'T12:00:00Z');
@@ -145,7 +145,7 @@ function aplicarFiltrosHistorico() {
                 dataOk = (d >= inicioSemana && d <= fimSemana);
 
             } else if (tipoFiltro === 'por_mes') {
-                const val = document.getElementById('input-mes').value; // YYYY-MM
+                const val = document.getElementById('input-mes').value; 
                 if(val) {
                     dataOk = dStr.startsWith(val);
                 }
@@ -153,7 +153,6 @@ function aplicarFiltrosHistorico() {
                 const dIni = document.getElementById('input-data-inicio').value;
                 const dFim = document.getElementById('input-data-fim').value;
                 
-                // Comparação Lexicográfica (Matemática Pura de Strings)
                 if (dIni) dataOk = dataOk && (dStr >= dIni);
                 if (dFim) dataOk = dataOk && (dStr <= dFim);
             }
@@ -231,7 +230,6 @@ function renderizarListaHistorico() {
         
         let dataStr = t.data_vencimento ? t.data_vencimento.split('-').reverse().join('/') : '--/--/----';
 
-        // CORREÇÃO DE UX MOBILE: Botões de Editar/Excluir sempre visíveis no celular (sm:), e com hover no PC (md:)
         return `
         <div class="bg-white p-4 rounded-3xl border border-slate-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
             
@@ -243,7 +241,6 @@ function renderizarListaHistorico() {
                     </div>
                 </div>
                 
-                <!-- Removido o truncate forçado para o mobile respirar -->
                 <div class="min-w-0 flex-1">
                     <h4 class="font-bold text-sm text-slate-900 break-words whitespace-normal leading-tight">${t.descricao}</h4>
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">
@@ -252,7 +249,6 @@ function renderizarListaHistorico() {
                 </div>
             </div>
 
-            <!-- Botões foram movidos para baixo do preço no celular, mas ao lado no PC -->
             <div class="flex flex-row sm:flex-col md:flex-row items-center sm:items-end md:items-center justify-between sm:justify-center gap-3 w-full sm:w-auto shrink-0 border-t sm:border-t-0 border-slate-100 pt-3 sm:pt-0">
                 <span class="font-black text-base md:text-lg ${corValor} whitespace-nowrap">${sinal} ${formatarMoeda(t.valor)}</span>
                 
@@ -461,23 +457,68 @@ async function excluirTransacao(id) {
     } catch(e) { alert("Erro ao excluir: " + e.message); }
 }
 
+// ---------------------------------------------
+// O NOVO MOTOR SÊNIOR DE RECONHECIMENTO VOCAL
+// ---------------------------------------------
 function ativarMicrofone() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return alert("Navegador não suporta microfone nativo.");
+    if (!SpeechRecognition) return alert("Navegador não suporta microfone nativo. Use o Google Chrome.");
     
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'pt-BR';
-    const btnMic = document.getElementById('btn-mic');
-    const iconeAntigo = btnMic.innerHTML;
+    reconhecimentoDeVoz = new SpeechRecognition();
+    reconhecimentoDeVoz.lang = 'pt-BR';
+    reconhecimentoDeVoz.interimResults = true; // A Mágica do Tempo Real
     
-    btnMic.innerHTML = '<i class="fa-solid fa-microphone-lines fa-beat text-rose-500"></i>';
+    const modal = document.getElementById('modal-microfone');
+    const textoInterim = document.getElementById('texto-interim');
+    
+    modal.classList.remove('hidden');
+    textoInterim.innerText = "Fale agora...";
 
-    recognition.onresult = (event) => {
-        document.getElementById('input-rapido').value = event.results[0][0].transcript;
-        processarFrase(); 
+    reconhecimentoDeVoz.onstart = () => {
+        // Opcional: Feedback que iniciou (o modal já abriu)
     };
 
-    recognition.onerror = () => { btnMic.innerHTML = iconeAntigo; };
-    recognition.onend = () => { btnMic.innerHTML = iconeAntigo; };
-    recognition.start();
+    reconhecimentoDeVoz.onresult = (event) => {
+        let textoTemporario = '';
+        let textoFinal = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                textoFinal += event.results[i][0].transcript;
+            } else {
+                textoTemporario += event.results[i][0].transcript;
+            }
+        }
+        
+        // Escreve as palavras na tela enquanto a pessoa fala (Google Assistant Style)
+        textoInterim.innerText = textoFinal || textoTemporario;
+
+        if (textoFinal) {
+            document.getElementById('input-rapido').value = textoFinal;
+            // Timeout leve para o cérebro do usuário ler a frase montada antes da tela piscar
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                processarFrase(); 
+            }, 600);
+        }
+    };
+
+    reconhecimentoDeVoz.onerror = (e) => { 
+        if (e.error === 'not-allowed') alert("Permissão de microfone negada. Libere no cadeado da barra do navegador.");
+        modal.classList.add('hidden');
+    };
+    
+    reconhecimentoDeVoz.onend = () => { 
+        // Garante que a tela saia da frente caso desligue por inatividade
+        if(!modal.classList.contains('hidden') && textoInterim.innerText === "Fale agora...") {
+            modal.classList.add('hidden');
+        }
+    };
+    
+    reconhecimentoDeVoz.start();
+}
+
+function cancelarMicrofone() {
+    if(reconhecimentoDeVoz) reconhecimentoDeVoz.abort();
+    document.getElementById('modal-microfone').classList.add('hidden');
 }
