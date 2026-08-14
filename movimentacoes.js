@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - MOTOR COM ANIMAÇÕES INTELIGENTES E CENTRALIZADAS
+// movimentacoes.js - MOTOR COM ANIMAÇÕES INTELIGENTES E CENTRALIZAÇÃO NATIVA
 // ==========================================
 
 let usuarioLogado = null;
@@ -666,10 +666,10 @@ window.salvarTransacao = async function(event) {
             ? "https://lottie.host/85450f21-2b79-46bd-8e77-a0d7fc86ceaf/63OdW0EjZh.json" // O ✅ de Sucesso
             : "https://lottie.host/78d29cd2-20ba-42fa-89bb-5471e7c8353c/EglrVN8uNB.lottie"; // As moedas da Despesa
 
-        // O HACK PARA CENTRALIZAR O LOTTIE NO MOBILE ('fixed inset-0')
+        // O SEGREDO DA CENTRALIZAÇÃO (Deixando o SweetAlert gerenciar o Flexbox)
         Swal.fire({
             html: `
-                <div class="fixed inset-0 flex items-center justify-center pointer-events-none z-[9999]">
+                <div style="display: flex; align-items: center; justify-content: center;">
                     <dotlottie-wc
                       src="${urlAnimacao}"
                       style="width: 280px; height: 280px;"
@@ -682,7 +682,7 @@ window.salvarTransacao = async function(event) {
             background: 'transparent', 
             backdrop: 'rgba(15, 23, 42, 0.85)', 
             customClass: {
-                popup: 'shadow-none bg-transparent border-none m-0 p-0' 
+                popup: 'shadow-none bg-transparent border-none' 
             }
         });
 
