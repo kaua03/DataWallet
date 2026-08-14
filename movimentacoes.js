@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - NLP SEQUENCIAL E ÁUDIO EVENT-DRIVEN
+// movimentacoes.js - MOTOR DE FLUXO DE CAIXA E NLP VIA REATIVIDADE DE EVENTOS
 // ==========================================
 
 let usuarioLogado = null;
@@ -8,10 +8,7 @@ let transacoesFiltradas = [];
 let categoriasGlobais = [];
 
 let isHistoricoExpandido = false; 
-
-// A IA domina o hardware sozinha agora
 let reconhecimentoDeVoz = null; 
-let mockAudioInterval = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     usuarioLogado = await verificarSessaoSegura();
@@ -28,7 +25,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('input-mes').value = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
     document.getElementById('transacao-data').value = hoje.toISOString().split('T')[0];
 
-    mudarTipoFiltroHistorico();
     await carregarDadosDoBanco();
 });
 
@@ -77,7 +73,7 @@ async function carregarDadosDoBanco() {
             categoriasGlobais.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
 
         atualizarTopCards();
-        aplicarFiltrosHistorico(); 
+        mudarTipoFiltroHistorico(); 
 
     } catch (e) {
         console.error("Erro ao puxar dados:", e.message);
@@ -174,7 +170,7 @@ function aplicarFiltrosHistorico() {
 }
 
 function renderizarMiniKPIs() {
-    let qtdEntradas = 0, qtdSaidas = 0, somaEntradas = 0, somaSaidas = 0;
+    let qtdEntradas = 0, qtd Saidas = 0, somaEntradas = 0, somaSaidas = 0;
 
     transacoesFiltradas.forEach(t => {
         if(t.tipo === 'receita') { qtdEntradas++; somaEntradas += t.valor; }
@@ -186,24 +182,16 @@ function renderizarMiniKPIs() {
     const sinalBalanco = balanco >= 0 ? '+' : '-';
 
     document.getElementById('mini-kpis-historico').innerHTML = `
-        <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-emerald-200" title="Total financeiro de entradas">
+        <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-emerald-200">
             <i class="fa-solid fa-arrow-trend-up"></i> ${qtdEntradas} Entradas • ${formatarMoeda(somaEntradas)}
         </span>
-        <span class="bg-rose-100 text-rose-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-rose-200" title="Total financeiro de saídas">
+        <span class="bg-rose-100 text-rose-700 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-rose-200">
             <i class="fa-solid fa-arrow-trend-down"></i> ${qtdSaidas} Saídas • ${formatarMoeda(somaSaidas)}
         </span>
-        <span class="${corBalanco} text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border" title="Seu fluxo de caixa final">
+        <span class="${corBalanco} text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border">
             Fluxo: ${sinalBalanco} ${formatarMoeda(Math.abs(balanco))}
         </span>
     `;
-}
-
-// ---------------------------------------------
-// O MOTOR DE SANFONA
-// ---------------------------------------------
-function toggleExpandirHistorico() {
-    isHistoricoExpandido = !isHistoricoExpandido;
-    renderizarListaHistorico();
 }
 
 function renderizarListaHistorico() {
@@ -220,14 +208,12 @@ function renderizarListaHistorico() {
 
     const htmlLista = transacoesExibidas.map(t => {
         const cat = categoriasGlobais.find(c => c.id === t.categoria_id) || { nome: 'Outros', icone: 'fa-tag', cor: 'text-gray-500' };
-        
         const isReceita = t.tipo === 'receita';
         const corBg = isReceita ? 'bg-emerald-50' : 'bg-rose-50';
         const corTxt = isReceita ? 'text-emerald-500' : 'text-rose-500';
         const corValor = isReceita ? 'text-emerald-600' : 'text-rose-600';
         const sinal = isReceita ? '+' : '-';
         const iconeSinal = isReceita ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
-        
         let dataStr = t.data_vencimento ? t.data_vencimento.split('-').reverse().join('/') : '--/--/----';
 
         return `
@@ -246,10 +232,9 @@ function renderizarListaHistorico() {
                     </p>
                 </div>
             </div>
-
             <div class="flex flex-row sm:flex-col md:flex-row items-center sm:items-end md:items-center justify-between sm:justify-center gap-3 w-full sm:w-auto shrink-0 border-t sm:border-t-0 border-slate-100 pt-3 sm:pt-0">
                 <span class="font-black text-base md:text-lg ${corValor} whitespace-nowrap">${sinal} ${formatarMoeda(t.valor)}</span>
-                <div class="flex items-center gap-1.5 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                <div class="flex items-center gap-1.5 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onclick="abrirModalEdicao(${t.id})" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:bg-indigo-500 hover:text-white transition flex items-center justify-center border border-slate-200"><i class="fa-solid fa-pen text-xs"></i></button>
                     <button onclick="excluirTransacao(${t.id})" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center border border-slate-200"><i class="fa-solid fa-trash text-xs"></i></button>
                 </div>
@@ -272,13 +257,13 @@ function renderizarListaHistorico() {
     }
 }
 
-// ---------------------------------------------
-// O NOVO CÉREBRO NLP (Extração de Data Isolada)
-// ---------------------------------------------
+// ==========================================
+// CÉREBRO NLP PIPELINE (SÊNIOR)
+// ==========================================
 const dicionarioDeInteligencia = [
     { pasta: 'alimentação', regras: [
         { titulo: 'Delivery', palavras: ['ifood', 'delivery', 'rappi', 'zedelivery'] },
-        { titulo: 'Fast Food', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado', 'pastel', 'méqui'] },
+        { titulo: 'Fast Food', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado', 'pastel', 'mequi'] },
         { titulo: 'Mercado', palavras: ['mercado', 'supermercado', 'açougue', 'padaria', 'compra', 'compras'] },
         { titulo: 'Restaurante', palavras: ['restaurante', 'almoço', 'jantar', 'comida', 'self service'] }
     ]},
@@ -327,11 +312,10 @@ function processarFraseNLP(fraseBruta) {
     }
 
     let texto = removerAcentos(fraseBruta.toLowerCase());
-    
-    // 1. ISOLAMENTO CRONOLÓGICO: Acha a data e apaga ela da string
     let dataCalculada = new Date();
     dataCalculada.setHours(0,0,0,0);
     
+    // 1. EXTRAÇÃO CRONOLÓGICA SEQUENCIAL (Devora as datas primeiro)
     let isMesPassado = false;
     if (texto.includes('mes passado')) {
         isMesPassado = true;
@@ -344,16 +328,15 @@ function processarFraseNLP(fraseBruta) {
     } else if (texto.includes('ontem')) {
         dataCalculada.setDate(dataCalculada.getDate() - 1);
         texto = texto.replace('ontem', '');
+    } else if (texto.includes('hoje')) {
+        texto = texto.replace('hoje', '');
     }
 
     const matchDia = texto.match(/(?:no )?dia\s*(\d{1,2})/i);
     if (matchDia) {
         const diaNum = parseInt(matchDia[1]);
         dataCalculada.setDate(diaNum);
-        
-        if (isMesPassado) {
-            dataCalculada.setMonth(dataCalculada.getMonth() - 1);
-        } else if (diaNum > new Date().getDate()) {
+        if (isMesPassado || diaNum > new Date().getDate()) {
             dataCalculada.setMonth(dataCalculada.getMonth() - 1);
         }
         texto = texto.replace(matchDia[0], ''); 
@@ -361,12 +344,12 @@ function processarFraseNLP(fraseBruta) {
         dataCalculada.setMonth(dataCalculada.getMonth() - 1);
     }
 
-    // 2. EXTRAÇÃO FINANCEIRA SEGURA
+    // 2. EXTRAÇÃO VALOR FINANCEIRO (Na string limpa de dias)
     const nums = texto.match(/\d+(?:[.,]\d+)?/g);
     const valorExtraido = nums ? Math.max(...nums.map(n => parseFloat(n.replace(',', '.')))) : 0;
-    if(nums) nums.forEach(n => texto = texto.replace(n, '')); 
+    if(nums) nums.forEach(n => texto = texto.replace(n, ''));
 
-    // 3. ANÁLISE SEMÂNTICA
+    // 3. CATEGORIZAÇÃO SEMÂNTICA
     const palavrasReceita = ['recebi', 'ganhei', 'pix', 'salario', 'renda', 'vendi', 'deposito'];
     const isReceita = palavrasReceita.some(p => removerAcentos(fraseBruta.toLowerCase()).includes(p));
 
@@ -390,11 +373,9 @@ function processarFraseNLP(fraseBruta) {
         }
     }
 
-    // Gerador de Título Fallback (Remove as "Stop Words")
     if (!tituloFinal) {
         let palavras = texto.split(' ');
-        const stopWords = ['eu', 'gastei', 'paguei', 'botei', 'coloquei', 'um', 'uma', 'uns', 'umas', 'de', 'da', 'do', 'no', 'na', 'para', 'com', 'novo', 'nova', 'reais', 'real', 'hoje', 'meu', 'minha', 'fui'];
-        
+        const stopWords = ['eu', 'gastei', 'paguei', 'pague', 'botei', 'coloquei', 'um', 'uma', 'uns', 'umas', 'de', 'da', 'do', 'no', 'na', 'para', 'com', 'novo', 'nova', 'reais', 'real', 'meu', 'minha', 'fui', 'carro', 'moto', 'mercado'];
         palavras = palavras.filter(p => p.trim() !== '' && !stopWords.includes(p.trim()));
         
         if (palavras.length > 0) {
@@ -405,7 +386,7 @@ function processarFraseNLP(fraseBruta) {
         if (!catDetectada) catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('lazer'));
     }
 
-    // 4. PREENCHIMENTO DO MODAL
+    // 4. PREENCHIMENTO DO FORMULÁRIO DO MODAL
     document.getElementById('transacao-id').value = ''; 
     document.getElementById('modal-titulo').innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-indigo-600"></i> ${isReceita ? 'Registrar Entrada' : 'Registrar Saída'}`;
     document.getElementById('transacao-desc').value = tituloFinal;
@@ -430,35 +411,30 @@ window.abrirModalComTextoRapido = function() {
 };
 
 // ---------------------------------------------
-// MICROFONE EVENT-DRIVEN (BURlando bloqueio de hardware do Android)
+// MICROFONE REATIVO POR EVENTOS (100% SEGURO)
 // ---------------------------------------------
-async function ativarMicrofone() {
+function abrirModalMicrofoneNativo() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return alert("Seu navegador não suporta microfone nativo. Use o Google Chrome.");
     
     reconhecimentoDeVoz = new SpeechRecognition();
     reconhecimentoDeVoz.lang = 'pt-BR';
-    reconhecimentoDeVoz.interimResults = true; 
+    reconhecimentoDeVoz.interimResults = true; // Transcrição ao vivo ligada
     reconhecimentoDeVoz.continuous = false; 
-    
+
     const modalMic = document.getElementById('modal-microfone');
     const textoInterim = document.getElementById('texto-interim');
-    
-    modalMic.classList.remove('hidden');
+    const wave1 = document.getElementById('mic-wave-1');
+    const wave2 = document.getElementById('mic-wave-2');
 
-    reconhecimentoDeVoz.onstart = () => {
-        textoInterim.innerText = "Fale agora...";
-        
-        // Simulação de Respiração de Fundo
-        mockAudioInterval = setInterval(() => {
-            const w1 = document.getElementById('mic-wave-1');
-            const w2 = document.getElementById('mic-wave-2');
-            if(w1 && w2) {
-                w1.style.transform = `scale(${1.05 + Math.random() * 0.1})`;
-                w2.style.transform = `scale(${1.02 + Math.random() * 0.05})`;
-            }
-        }, 300);
-    };
+    modalMic.classList.remove('hidden');
+    textoInterim.innerText = "Fale agora...";
+
+    // Efeito de pulso de espera padrão (Leve respiração)
+    if(wave1 && wave2) {
+        wave1.style.transform = 'scale(1.1)';
+        wave2.style.transform = 'scale(1.05)';
+    }
 
     reconhecimentoDeVoz.onresult = (event) => {
         let textoTemporario = '';
@@ -472,12 +448,17 @@ async function ativarMicrofone() {
             }
         }
         
-        // PULO DO GATO: Reatividade Event-Driven. Cada vez que uma palavra é dita, a onda explode.
-        const w1 = document.getElementById('mic-wave-1');
-        const w2 = document.getElementById('mic-wave-2');
-        if(w1 && w2) {
-            w1.style.transform = `scale(${1.4 + Math.random() * 0.6})`;
-            w2.style.transform = `scale(${1.2 + Math.random() * 0.4})`;
+        // A MÁGICA: Reatividade puramente baseada nas palavras que entram (Event-Driven Ripple)
+        if(wave1 && wave2) {
+            let fatorVolumeFake = 1.1 + (textoTemporario.length % 5) * 0.15; 
+            wave1.style.transform = `scale(${fatorVolumeFake * 1.3})`;
+            wave2.style.transform = `scale(${fatorVolumeFake * 1.1})`;
+            
+            // Retorna ao tamanho estável em 150ms
+            setTimeout(() => {
+                wave1.style.transform = 'scale(1.1)';
+                wave2.style.transform = 'scale(1.05)';
+            }, 150);
         }
 
         let transcricaoAoVivo = textoFinal || textoTemporario;
@@ -492,14 +473,13 @@ async function ativarMicrofone() {
             setTimeout(() => {
                 cancelarMicrofone();
                 processarFraseNLP(textoFinal); 
-            }, 700);
+            }, 750);
         }
     };
 
     reconhecimentoDeVoz.onerror = (e) => { 
-        console.error("Mic Error:", e.error);
-        if (e.error === 'not-allowed') alert("Microfone bloqueado. Libere no cadeado do navegador.");
-        cancelarMicrofone();
+        console.error("Erro da API de Voz:", e.error);
+        cancelarMicrofone(); 
     };
     
     reconhecimentoDeVoz.onend = () => { 
@@ -507,11 +487,14 @@ async function ativarMicrofone() {
             if(!modalMic.classList.contains('hidden') && (textoInterim.innerText === "Fale agora..." || textoInterim.innerText === '')) {
                 cancelarMicrofone();
             }
-        }, 1000);
+        }, 1200);
     };
-    
+
     reconhecimentoDeVoz.start();
 }
+
+// Atalho do HTML redireciona direto para a função limpa
+window.ativarMicrofone = function() { abrirModalMicrofoneNativo(); };
 
 function cancelarMicrofone() {
     if(reconhecimentoDeVoz) {
@@ -520,22 +503,13 @@ function cancelarMicrofone() {
         reconhecimentoDeVoz.onend = null;
         reconhecimentoDeVoz.abort();
     }
-    
-    if(mockAudioInterval) clearInterval(mockAudioInterval);
-    mockAudioInterval = null;
     reconhecimentoDeVoz = null;
-    
-    const wave1 = document.getElementById('mic-wave-1');
-    const wave2 = document.getElementById('mic-wave-2');
-    if (wave1) wave1.style.transform = `scale(1)`;
-    if (wave2) wave2.style.transform = `scale(1)`;
-
     document.getElementById('modal-microfone').classList.add('hidden');
 }
 
-// ---------------------------------------------
+// ==========================================
 // FUNÇÕES DE CRUD
-// ---------------------------------------------
+// ==========================================
 function abrirModalEdicao(id) {
     const t = transacoesGlobais.find(x => x.id === id);
     if(!t) return;
