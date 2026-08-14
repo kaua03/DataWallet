@@ -41,11 +41,9 @@ window.toggleMobileMenu = function() {
     menuMobileAberto = !menuMobileAberto;
 
     if (menuMobileAberto) {
-        // Corre os ícones para fora e revela
         items.classList.remove('opacity-0', 'translate-x-12', 'pointer-events-none');
         items.classList.add('opacity-100', 'translate-x-0');
         
-        // Gira para um lado
         btn.style.transform = 'rotate(180deg)';
         setTimeout(() => {
             icon.classList.replace('fa-bars', 'fa-xmark');
@@ -54,11 +52,9 @@ window.toggleMobileMenu = function() {
         btn.classList.replace('bg-indigo-600', 'bg-slate-800');
         btn.classList.replace('shadow-[0_4px_20px_rgba(79,70,229,0.5)]', 'shadow-[0_4px_20px_rgba(30,41,59,0.5)]');
     } else {
-        // Encolhe os ícones de volta
         items.classList.add('opacity-0', 'translate-x-12', 'pointer-events-none');
         items.classList.remove('opacity-100', 'translate-x-0');
         
-        // Gira para o OUTRO lado e fecha
         btn.style.transform = 'rotate(0deg)';
         setTimeout(() => {
             icon.classList.replace('fa-xmark', 'fa-bars');
@@ -581,7 +577,7 @@ window.cancelarMicrofone = function() {
 };
 
 // ==========================================
-// FUNÇÕES DE CRUD (Lottie Sênior Flutuante)
+// FUNÇÕES DE CRUD
 // ==========================================
 window.abrirModalEdicao = function(id) {
     const t = transacoesGlobais.find(x => x.id === id);
@@ -644,7 +640,7 @@ window.salvarTransacao = async function(event) {
         window.fecharModal();
         document.getElementById('input-rapido').value = '';
         
-        // A MÁGICA: Efeito Lottie Sticker Imersivo Flutuante sem fundo
+        // LOTTIE SÊNIOR
         Swal.fire({
             html: `
                 <div class="flex justify-center items-center">
@@ -658,10 +654,10 @@ window.salvarTransacao = async function(event) {
             `,
             showConfirmButton: false,
             timer: 3500, 
-            background: 'transparent', // Fundo invisível
-            backdrop: 'rgba(15, 23, 42, 0.7)', // Película escura
+            background: 'transparent', 
+            backdrop: 'rgba(15, 23, 42, 0.7)', 
             customClass: {
-                popup: 'shadow-none bg-transparent border-none' // Remove qualquer sombra do modal
+                popup: 'shadow-none bg-transparent border-none' 
             }
         });
 
