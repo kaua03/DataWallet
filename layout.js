@@ -1,5 +1,5 @@
 // ==========================================
-// layout.js - O MOTOR DE COMPONENTIZAÇÃO E LOTTIE ANIMATIONS
+// layout.js - O MOTOR DE COMPONENTIZAÇÃO E LOTTIE INTERATIVO
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -34,9 +34,9 @@ function inicializarLayout() {
         `;
     }).join('');
 
-    // O SEU LOTTIE ANIMADO (Redimensionado matematicamente para o Botão)
-    const lottieHTML = `<dotlottie-wc src="https://lottie.host/8cfa9d1e-7352-41d6-be66-76f97b2694cd/L3xtoaY7nx.lottie" style="width: 28px; height: 28px" autoplay loop></dotlottie-wc>`;
-    const lottieMobileHTML = `<dotlottie-wc src="https://lottie.host/8cfa9d1e-7352-41d6-be66-76f97b2694cd/L3xtoaY7nx.lottie" style="width: 32px; height: 32px" autoplay loop></dotlottie-wc>`;
+    // O SEU LOTTIE (Sem autoplay, sem loop e GIGANTE: 42px)
+    const lottieHTML = `<dotlottie-wc id="lottie-dark-desktop" src="https://lottie.host/8cfa9d1e-7352-41d6-be66-76f97b2694cd/L3xtoaY7nx.lottie" style="width: 42px; height: 42px"></dotlottie-wc>`;
+    const lottieMobileHTML = `<dotlottie-wc id="lottie-dark-mobile" src="https://lottie.host/8cfa9d1e-7352-41d6-be66-76f97b2694cd/L3xtoaY7nx.lottie" style="width: 44px; height: 44px"></dotlottie-wc>`;
 
     const sidebarHtml = `
         <div class="hidden md:block w-20 shrink-0"></div>
@@ -49,21 +49,19 @@ function inicializarLayout() {
             </div>
             <nav class="flex-1 space-y-2 w-full">${navLinksHtml}</nav>
             <div class="mt-auto w-full space-y-2">
-                <button id="btn-dark-desktop" onclick="toggleDarkMode()" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold transition-colors w-full bg-slate-800 text-white hover:bg-slate-700">
-                    <div class="relative w-6 flex items-center justify-center shrink-0 overflow-visible">
-                        ${lottieHTML}
-                    </div>
-                    <span id="txt-dark-desktop" class="sidebar-text ml-3">Tema Escuro</span>
+                <!-- BOTÃO DE DARK MODE REDESENHADO (Quadrado 48x48 sem texto) -->
+                <button id="btn-dark-desktop" onclick="toggleDarkMode(true)" class="w-12 h-12 flex items-center justify-center rounded-xl font-bold transition-colors bg-slate-800 text-white hover:bg-slate-700" title="Alternar Tema">
+                    ${lottieHTML}
                 </button>
                 <button onclick="sairDoSistema()" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors overflow-hidden w-full">
                     <div class="w-6 flex items-center justify-center shrink-0"><i class="fa-solid fa-right-from-bracket text-lg"></i></div>
-                    <span class="sidebar-text ml-3">Sair do Sistema</span>
+                    <span class="sidebar-text ml-3">Sair</span>
                 </button>
             </div>
         </aside>
     `;
 
-    // 4. Monta os botões do Mobile (Abrindo para CIMA)
+    // 4. Monta os botões do Mobile
     let mobileLinksHtml = menuItems.slice().reverse().map(item => {
         const ativo = paginaAtual === item.link;
         const classesAtivo = ativo ? `bg-indigo-50 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30` : `bg-white text-slate-500 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700`;
@@ -74,7 +72,6 @@ function inicializarLayout() {
         `;
     }).join('');
 
-    // Se for dashboard, injeta o chat IA na torre mobile
     const btnIARotacionado = isDashboard ? `
         <button onclick="toggleCoach()" class="w-12 h-12 rounded-full bg-slate-900 text-indigo-400 dark:bg-black border border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.3)] flex items-center justify-center transition-transform hover:scale-110">
             <i class="fa-solid fa-robot"></i>
@@ -88,7 +85,7 @@ function inicializarLayout() {
                     <i class="fa-solid fa-right-from-bracket"></i>
                 </button>
                 
-                <button id="btn-dark-mobile" onclick="toggleDarkMode()" class="w-12 h-12 rounded-full bg-slate-800 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-hidden">
+                <button id="btn-dark-mobile" onclick="toggleDarkMode(true)" class="w-12 h-12 rounded-full bg-slate-800 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-hidden">
                     ${lottieMobileHTML}
                 </button>
 
@@ -103,7 +100,6 @@ function inicializarLayout() {
         </div>
     `;
 
-    // 5. Injeta no corpo da página
     document.body.insertAdjacentHTML('afterbegin', sidebarHtml);
     document.body.insertAdjacentHTML('beforeend', mobileMenuHtml);
 
@@ -137,43 +133,60 @@ window.toggleMobileMenu = function() {
     }
 };
 
-// LÓGICA DO DARK MODE
-window.toggleDarkMode = function() {
+// ==========================================
+// LÓGICA DO DARK MODE E LOTTIE API (CLIQUE E REVERSE)
+// ==========================================
+window.toggleDarkMode = function(foiClicado = false) {
     const htmlElement = document.documentElement;
     const isDark = htmlElement.classList.toggle('dark');
     
     localStorage.setItem('DataWallet_Tema', isDark ? 'escuro' : 'claro');
-    atualizarBotoesDark();
+    atualizarBotoesDark(isDark, foiClicado);
 };
 
 function verificarDarkMode() {
     const temaSalvo = localStorage.getItem('DataWallet_Tema');
     const htmlElement = document.documentElement;
 
+    let isDark = false;
     if (temaSalvo === 'escuro') {
         htmlElement.classList.add('dark');
+        isDark = true;
     } else {
         htmlElement.classList.remove('dark');
         localStorage.setItem('DataWallet_Tema', 'claro');
     }
     
-    atualizarBotoesDark();
+    // Atualiza os botões, mas passa "foiClicado = false" para inicializar o Lottie quietinho
+    atualizarBotoesDark(isDark, false);
 }
 
-function atualizarBotoesDark() {
-    const isDark = document.documentElement.classList.contains('dark');
+function atualizarBotoesDark(isDark, foiClicado) {
     const btnPc = document.getElementById('btn-dark-desktop');
-    const txtPc = document.getElementById('txt-dark-desktop');
     const btnMobile = document.getElementById('btn-dark-mobile');
     
-    // A animação Lottie fica rodando, nós apenas adaptamos as cores de fundo em volta dela
+    const lottiePc = document.getElementById('lottie-dark-desktop');
+    const lottieMobile = document.getElementById('lottie-dark-mobile');
+    
+    // Altera a cor de fundo do botão dependendo do tema para dar contraste
     if (isDark) {
-        if (btnPc) btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors w-full';
-        if (txtPc) txtPc.innerText = 'Tema Claro';
+        if (btnPc) btnPc.className = 'w-12 h-12 flex items-center justify-center rounded-xl transition-colors bg-indigo-500/10 hover:bg-indigo-500/20 shadow-inner';
         if (btnMobile) btnMobile.className = 'w-12 h-12 rounded-full bg-indigo-900 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-indigo-700 relative overflow-hidden';
     } else {
-        if (btnPc) btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-slate-800 text-white hover:bg-slate-700 transition-colors w-full';
-        if (txtPc) txtPc.innerText = 'Tema Escuro';
+        if (btnPc) btnPc.className = 'w-12 h-12 flex items-center justify-center rounded-xl transition-colors bg-slate-800 hover:bg-slate-700 shadow-inner';
         if (btnMobile) btnMobile.className = 'w-12 h-12 rounded-full bg-slate-800 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-hidden';
+    }
+
+    // A MÁGICA DA DIREÇÃO DO LOTTIE
+    const direcao = isDark ? 1 : -1; // 1 = Vai pro Sol / -1 = Volta pra Lua
+
+    // No clique, ele RODA a animação. No F5 (Load), ele apenas dá um play rápido para chegar na posição certa.
+    if (lottiePc) {
+        lottiePc.setAttribute('direction', direcao);
+        if (foiClicado || isDark) setTimeout(() => lottiePc.play(), 100);
+    }
+    if (lottieMobile) {
+        lottieMobile.setAttribute('direction', direcao);
+        if (foiClicado || isDark) setTimeout(() => lottieMobile.play(), 100);
     }
 }
