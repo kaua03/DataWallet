@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - MOTOR COM ANIMAÇÕES CENTRALIZADAS E NLP SÊNIOR
+// movimentacoes.js - NLP INTELIGENTE E ANIMAÇÃO CENTRALIZADA
 // ==========================================
 
 let usuarioLogado = null;
@@ -12,7 +12,9 @@ let reconhecimentoDeVoz = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     
-    // A MÁGICA DE NAVEGAÇÃO SPA
+    // Remove a armadilha de Transformação (CSS Stacking Context) que corta animações no mobile
+    setTimeout(() => document.body.classList.remove('fade-in'), 500);
+
     document.querySelectorAll('a').forEach(link => {
         if(link.hostname === window.location.hostname && link.target !== '_blank') {
             link.addEventListener('click', e => {
@@ -43,7 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// MOTOR DE ANIMAÇÃO DE CONTAGEM (O EFEITO ROLETA SÊNIOR)
+// MOTOR DE ANIMAÇÃO DE CONTAGEM
 // ==========================================
 window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 1000) {
     const elemento = document.getElementById(id);
@@ -63,9 +65,8 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
             elemento.innerText = Math.round(valorAtual);
         }
         
-        if (progress < 1) {
-            requestAnimationFrame(step);
-        } else {
+        if (progress < 1) requestAnimationFrame(step);
+        else {
             if (formato === 'moeda') {
                 let parts = Math.abs(valorFinal).toFixed(2).split('.');
                 parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -234,10 +235,10 @@ function renderizarMiniKPIs() {
 
     document.getElementById('mini-kpis-historico').innerHTML = `
         <span class="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-emerald-200 dark:border-emerald-500/30" title="Total financeiro de entradas">
-            <i class="fa-solid fa-arrow-trend-up"></i> <span id="kpi-mini-qtd-ent">0</span> • <span id="kpi-mini-val-ent">R$ 0,00</span>
+            <i class="fa-solid fa-arrow-trend-up"></i> <span id="kpi-mini-qtd-ent">0</span> Entradas • <span id="kpi-mini-val-ent">R$ 0,00</span>
         </span>
         <span class="bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-rose-200 dark:border-rose-500/30" title="Total financeiro de saídas">
-            <i class="fa-solid fa-arrow-trend-down"></i> <span id="kpi-mini-qtd-sai">0</span> • <span id="kpi-mini-val-sai">R$ 0,00</span>
+            <i class="fa-solid fa-arrow-trend-down"></i> <span id="kpi-mini-qtd-sai">0</span> Saídas • <span id="kpi-mini-val-sai">R$ 0,00</span>
         </span>
         <span class="${corBalanco} text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border" title="Seu fluxo de caixa final">
             Fluxo: ${sinalBalanco} <span id="kpi-mini-val-bal">R$ 0,00</span>
@@ -321,7 +322,7 @@ function renderizarListaHistorico() {
 }
 
 // ==========================================
-// CÉREBRO NLP PIPELINE
+// CÉREBRO NLP PIPELINE SÊNIOR
 // ==========================================
 const dicionarioDeInteligencia = [
     { pasta: 'alimentação', regras: [
@@ -422,7 +423,12 @@ function processarFraseNLP(fraseBruta) {
         dataCalculada.setMonth(dataCalculada.getMonth() - 1);
     }
 
-    texto = texto.replace(/\br\$\b|\breais\b|\breal\b|\$/gi, '');
+    // A MÁGICA DA MULTIPLICAÇÃO ("20 mil" -> 20000)
+    texto = texto.replace(/\br\$\b|\breais\b|\breal\b|\$/gi, ''); 
+    texto = texto.replace(/(\d+(?:[.,]\d+)?)\s*mil\b/gi, (match, numeroCru) => {
+        return (parseFloat(numeroCru.replace(',', '.')) * 1000).toString();
+    });
+
     const nums = texto.match(/\d+(?:[.,]\d+)?/g);
     const valorExtraido = nums ? Math.max(...nums.map(n => parseFloat(n.replace(',', '.')))) : 0;
     if(nums) nums.forEach(n => texto = texto.replace(n, '')); 
@@ -450,16 +456,15 @@ function processarFraseNLP(fraseBruta) {
         }
     }
 
-    // A MÁGICA DA DESCRIÇÃO INDEFINIDA SÊNIOR
+    // O HACK DO GASTO INDEFINIDO
     if (!tituloFinal) {
         let palavras = texto.split(' ');
-        const stopWords = ['eu', 'gastei', 'paguei', 'pague', 'botei', 'coloquei', 'um', 'uma', 'uns', 'umas', 'de', 'da', 'do', 'no', 'na', 'para', 'com', 'novo', 'nova', 'meu', 'minha', 'fui', 'o', 'a', 'os', 'as', 'em', 'por', 'pra', 'reais', 'real', 'r$'];
+        const stopWords = ['eu', 'gastei', 'paguei', 'pague', 'botei', 'coloquei', 'um', 'uma', 'uns', 'umas', 'de', 'da', 'do', 'no', 'na', 'para', 'com', 'novo', 'nova', 'meu', 'minha', 'fui', 'o', 'a', 'os', 'as', 'em', 'por', 'pra', 'mil'];
         palavras = palavras.filter(p => p.trim() !== '' && !stopWords.includes(p.trim()) && isNaN(p));
         
         if (palavras.length > 0) {
             tituloFinal = palavras[0].charAt(0).toUpperCase() + palavras[0].slice(1); 
         } else {
-            // Se o usuário digitou apenas "Gastei 50" e o filtro engoliu tudo:
             tituloFinal = isReceita ? 'Recebimento Indefinido' : 'Gasto Indefinido';
         }
         
@@ -663,26 +668,27 @@ window.salvarTransacao = async function(event) {
         window.fecharModal();
         document.getElementById('input-rapido').value = '';
         
-        // A MÁGICA DA CELEBRAÇÃO 
         const isReceita = tipo === 'receita';
         const urlAnimacao = isReceita 
             ? "https://lottie.host/85450f21-2b79-46bd-8e77-a0d7fc86ceaf/63OdW0EjZh.json" 
             : "https://lottie.host/78d29cd2-20ba-42fa-89bb-5471e7c8353c/EglrVN8uNB.lottie";
 
-        // O HACK DO DOM PURO (ADEUS SWEETALERT BUGADO NO CELULAR)
-        // Criamos uma div que se sobrepõe a tela inteira (fixed inset-0), travada no Z-Index máximo
+        // A MÁGICA DA INJEÇÃO DE DOM PURO (Tiro fatal na armadilha do celular)
         const overlayLottie = document.createElement('div');
-        overlayLottie.className = 'fixed inset-0 z-[999999] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm transition-opacity duration-300 opacity-0';
+        // Usando style inline cravado no vidro (100dvh garante cobertura total da tela)
+        overlayLottie.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 999999; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); transition: opacity 0.3s ease; opacity: 0;';
         overlayLottie.innerHTML = `<dotlottie-wc src="${urlAnimacao}" style="width: 280px; height: 280px;" autoplay></dotlottie-wc>`;
-        document.body.appendChild(overlayLottie);
         
-        // Dispara o Fade-In
-        requestAnimationFrame(() => overlayLottie.classList.remove('opacity-0'));
+        // Append no documentElement foge do body e de qualquer bug
+        document.documentElement.appendChild(overlayLottie);
+        
+        // Fade in suave
+        requestAnimationFrame(() => overlayLottie.style.opacity = '1');
 
-        // Remove a div após a animação rodar (2.6 Segundos)
+        // Remove a camada da tela após a festa
         setTimeout(() => {
-            overlayLottie.classList.add('opacity-0');
-            setTimeout(() => overlayLottie.remove(), 300); // 300ms do fade-out
+            overlayLottie.style.opacity = '0';
+            setTimeout(() => overlayLottie.remove(), 300);
         }, 2600);
 
     } catch(e) { 
