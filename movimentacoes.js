@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - MOTOR DE CAIXA COM NLP E ÁUDIO REATIVO
+// movimentacoes.js - NLP SEQUENCIAL E ÁUDIO EVENT-DRIVEN
 // ==========================================
 
 let usuarioLogado = null;
@@ -9,10 +9,9 @@ let categoriasGlobais = [];
 
 let isHistoricoExpandido = false; 
 
+// A IA domina o hardware sozinha agora
 let reconhecimentoDeVoz = null; 
-let audioContext = null;
-let micStream = null;
-let animationId = null;
+let mockAudioInterval = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     usuarioLogado = await verificarSessaoSegura();
@@ -29,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('input-mes').value = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
     document.getElementById('transacao-data').value = hoje.toISOString().split('T')[0];
 
-    // CARREGA OS DADOS PRIMEIRO, depois aplica os filtros! (Correção do Bug da Tela Zerada)
+    mudarTipoFiltroHistorico();
     await carregarDadosDoBanco();
 });
 
@@ -78,7 +77,7 @@ async function carregarDadosDoBanco() {
             categoriasGlobais.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
 
         atualizarTopCards();
-        mudarTipoFiltroHistorico(); // Só chama os filtros depois que a array estiver cheia
+        aplicarFiltrosHistorico(); 
 
     } catch (e) {
         console.error("Erro ao puxar dados:", e.message);
@@ -233,7 +232,6 @@ function renderizarListaHistorico() {
 
         return `
         <div class="bg-white p-4 rounded-3xl border border-slate-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
-            
             <div class="flex items-center gap-4 min-w-0 w-full sm:w-auto">
                 <div class="w-12 h-12 rounded-2xl ${corBg} flex items-center justify-center ${corTxt} text-xl shadow-inner shrink-0 relative">
                     <i class="fa-solid ${cat.icone}"></i>
@@ -241,7 +239,6 @@ function renderizarListaHistorico() {
                         <i class="fa-solid ${iconeSinal} text-[8px] ${corTxt}"></i>
                     </div>
                 </div>
-                
                 <div class="min-w-0 flex-1">
                     <h4 class="font-bold text-sm text-slate-900 break-words whitespace-normal leading-tight">${t.descricao}</h4>
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">
@@ -252,7 +249,6 @@ function renderizarListaHistorico() {
 
             <div class="flex flex-row sm:flex-col md:flex-row items-center sm:items-end md:items-center justify-between sm:justify-center gap-3 w-full sm:w-auto shrink-0 border-t sm:border-t-0 border-slate-100 pt-3 sm:pt-0">
                 <span class="font-black text-base md:text-lg ${corValor} whitespace-nowrap">${sinal} ${formatarMoeda(t.valor)}</span>
-                
                 <div class="flex items-center gap-1.5 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onclick="abrirModalEdicao(${t.id})" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:bg-indigo-500 hover:text-white transition flex items-center justify-center border border-slate-200"><i class="fa-solid fa-pen text-xs"></i></button>
                     <button onclick="excluirTransacao(${t.id})" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center border border-slate-200"><i class="fa-solid fa-trash text-xs"></i></button>
@@ -283,7 +279,7 @@ const dicionarioDeInteligencia = [
     { pasta: 'alimentação', regras: [
         { titulo: 'Delivery', palavras: ['ifood', 'delivery', 'rappi', 'zedelivery'] },
         { titulo: 'Fast Food', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado', 'pastel', 'méqui'] },
-        { titulo: 'Mercado', palavras: ['mercado', 'supermercado', 'açougue', 'padaria', 'compra'] },
+        { titulo: 'Mercado', palavras: ['mercado', 'supermercado', 'açougue', 'padaria', 'compra', 'compras'] },
         { titulo: 'Restaurante', palavras: ['restaurante', 'almoço', 'jantar', 'comida', 'self service'] }
     ]},
     { pasta: 'veículo', regras: [
@@ -358,10 +354,9 @@ function processarFraseNLP(fraseBruta) {
         if (isMesPassado) {
             dataCalculada.setMonth(dataCalculada.getMonth() - 1);
         } else if (diaNum > new Date().getDate()) {
-            // Se hoje é 10 e ele falou "dia 25", foi no mês passado
             dataCalculada.setMonth(dataCalculada.getMonth() - 1);
         }
-        texto = texto.replace(matchDia[0], ''); // Remove o dia para limpar o dinheiro
+        texto = texto.replace(matchDia[0], ''); 
     } else if (isMesPassado) {
         dataCalculada.setMonth(dataCalculada.getMonth() - 1);
     }
@@ -369,8 +364,7 @@ function processarFraseNLP(fraseBruta) {
     // 2. EXTRAÇÃO FINANCEIRA SEGURA
     const nums = texto.match(/\d+(?:[.,]\d+)?/g);
     const valorExtraido = nums ? Math.max(...nums.map(n => parseFloat(n.replace(',', '.')))) : 0;
-    
-    if(nums) nums.forEach(n => texto = texto.replace(n, '')); // Limpa os números do texto final
+    if(nums) nums.forEach(n => texto = texto.replace(n, '')); 
 
     // 3. ANÁLISE SEMÂNTICA
     const palavrasReceita = ['recebi', 'ganhei', 'pix', 'salario', 'renda', 'vendi', 'deposito'];
@@ -436,107 +430,87 @@ window.abrirModalComTextoRapido = function() {
 };
 
 // ---------------------------------------------
-// MICROFONE REATIVO COM BYPASS DE HARDWARE LOCK
+// MICROFONE EVENT-DRIVEN (BURlando bloqueio de hardware do Android)
 // ---------------------------------------------
 async function ativarMicrofone() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return alert("Seu navegador não suporta microfone nativo. Use o Google Chrome.");
+    
+    reconhecimentoDeVoz = new SpeechRecognition();
+    reconhecimentoDeVoz.lang = 'pt-BR';
+    reconhecimentoDeVoz.interimResults = true; 
+    reconhecimentoDeVoz.continuous = false; 
+    
     const modalMic = document.getElementById('modal-microfone');
     const textoInterim = document.getElementById('texto-interim');
     
     modalMic.classList.remove('hidden');
-    textoInterim.innerText = "Preparando...";
 
-    try {
-        // SOLUÇÃO SÊNIOR: Pede o stream antes para abrir a Placa de Som, e deixa a IA pegar carona
-        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    reconhecimentoDeVoz.onstart = () => {
+        textoInterim.innerText = "Fale agora...";
         
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const analyser = audioContext.createAnalyser();
-        const microphone = audioContext.createMediaStreamSource(micStream);
-        
-        analyser.smoothingTimeConstant = 0.4;
-        analyser.fftSize = 256;
-        microphone.connect(analyser);
-        
-        const dataArray = new Uint8Array(analyser.frequencyBinCount);
-        const wave1 = document.getElementById('mic-wave-1');
-        const wave2 = document.getElementById('mic-wave-2');
-        
-        function desenharLoop() {
-            if (!audioContext) return;
-            analyser.getByteFrequencyData(dataArray);
-            
-            let soma = 0;
-            for(let i = 0; i < dataArray.length; i++) soma += dataArray[i];
-            let mediaVolume = soma / dataArray.length; 
-            
-            let escala1 = 1 + (mediaVolume / 50);
-            let escala2 = 1 + (mediaVolume / 80);
-            
-            if (wave1) wave1.style.transform = `scale(${escala1})`;
-            if (wave2) wave2.style.transform = `scale(${escala2})`;
-            
-            animationId = requestAnimationFrame(desenharLoop);
+        // Simulação de Respiração de Fundo
+        mockAudioInterval = setInterval(() => {
+            const w1 = document.getElementById('mic-wave-1');
+            const w2 = document.getElementById('mic-wave-2');
+            if(w1 && w2) {
+                w1.style.transform = `scale(${1.05 + Math.random() * 0.1})`;
+                w2.style.transform = `scale(${1.02 + Math.random() * 0.05})`;
+            }
+        }, 300);
+    };
+
+    reconhecimentoDeVoz.onresult = (event) => {
+        let textoTemporario = '';
+        let textoFinal = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                textoFinal += event.results[i][0].transcript;
+            } else {
+                textoTemporario += event.results[i][0].transcript;
+            }
         }
-        desenharLoop();
-
-        // Inicia a Inteligência Artificial
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) throw new Error("Sem suporte NLP");
-
-        reconhecimentoDeVoz = new SpeechRecognition();
-        reconhecimentoDeVoz.lang = 'pt-BR';
-        reconhecimentoDeVoz.interimResults = true; 
         
-        reconhecimentoDeVoz.onstart = () => {
-            textoInterim.innerText = "Fale agora...";
-        };
+        // PULO DO GATO: Reatividade Event-Driven. Cada vez que uma palavra é dita, a onda explode.
+        const w1 = document.getElementById('mic-wave-1');
+        const w2 = document.getElementById('mic-wave-2');
+        if(w1 && w2) {
+            w1.style.transform = `scale(${1.4 + Math.random() * 0.6})`;
+            w2.style.transform = `scale(${1.2 + Math.random() * 0.4})`;
+        }
 
-        reconhecimentoDeVoz.onresult = (event) => {
-            let textoTemporario = '';
-            let textoFinal = '';
+        let transcricaoAoVivo = textoFinal || textoTemporario;
+        if (transcricaoAoVivo.length > 0) {
+            transcricaoAoVivo = transcricaoAoVivo.replace(/\br\$\b|\breais\b/gi, "R$");
+            transcricaoAoVivo = transcricaoAoVivo.charAt(0).toUpperCase() + transcricaoAoVivo.slice(1);
+            textoInterim.innerText = transcricaoAoVivo;
+        }
 
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    textoFinal += event.results[i][0].transcript;
-                } else {
-                    textoTemporario += event.results[i][0].transcript;
-                }
-            }
-            
-            // Transcrição ao vivo na tela
-            let textoExibido = textoFinal || textoTemporario;
-            if(textoExibido.length > 0) {
-                textoExibido = textoExibido.replace(/\br\$\b|\breais\b/gi, "R$");
-                textoExibido = textoExibido.charAt(0).toUpperCase() + textoExibido.slice(1);
-                textoInterim.innerText = textoExibido;
-            }
-
-            if (textoFinal && textoFinal.trim() !== '') {
-                document.getElementById('input-rapido').value = textoFinal;
-                setTimeout(() => {
-                    cancelarMicrofone();
-                    processarFraseNLP(textoFinal); 
-                }, 600);
-            }
-        };
-
-        reconhecimentoDeVoz.onerror = (e) => { 
-            console.error("Mic Error:", e.error);
-            cancelarMicrofone(); 
-        };
-        
-        reconhecimentoDeVoz.onend = () => { 
+        if (textoFinal && textoFinal.trim() !== '') {
+            document.getElementById('input-rapido').value = textoFinal;
             setTimeout(() => {
-                if(!modalMic.classList.contains('hidden')) cancelarMicrofone();
-            }, 500);
-        };
-        
-        reconhecimentoDeVoz.start();
+                cancelarMicrofone();
+                processarFraseNLP(textoFinal); 
+            }, 700);
+        }
+    };
 
-    } catch (e) {
-        alert("Microfone bloqueado ou sem permissão. " + e.message);
+    reconhecimentoDeVoz.onerror = (e) => { 
+        console.error("Mic Error:", e.error);
+        if (e.error === 'not-allowed') alert("Microfone bloqueado. Libere no cadeado do navegador.");
         cancelarMicrofone();
-    }
+    };
+    
+    reconhecimentoDeVoz.onend = () => { 
+        setTimeout(() => {
+            if(!modalMic.classList.contains('hidden') && (textoInterim.innerText === "Fale agora..." || textoInterim.innerText === '')) {
+                cancelarMicrofone();
+            }
+        }, 1000);
+    };
+    
+    reconhecimentoDeVoz.start();
 }
 
 function cancelarMicrofone() {
@@ -546,12 +520,9 @@ function cancelarMicrofone() {
         reconhecimentoDeVoz.onend = null;
         reconhecimentoDeVoz.abort();
     }
-    if(animationId) cancelAnimationFrame(animationId);
-    if(audioContext) audioContext.close().catch(()=>{});
-    if(micStream) micStream.getTracks().forEach(track => track.stop());
     
-    audioContext = null;
-    micStream = null;
+    if(mockAudioInterval) clearInterval(mockAudioInterval);
+    mockAudioInterval = null;
     reconhecimentoDeVoz = null;
     
     const wave1 = document.getElementById('mic-wave-1');
