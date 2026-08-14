@@ -1,5 +1,5 @@
 // ==========================================
-// dashboard.js - MOTOR DE BI COM FAB MENU E TRANSIÇÕES FLUIDAS
+// dashboard.js - MOTOR DE BI COM ANIMAÇÕES DE ROLETA E IA
 // ==========================================
 
 let usuarioLogado = null;
@@ -91,6 +91,45 @@ window.toggleMobileMenu = function() {
         btn.classList.replace('bg-slate-800', 'bg-indigo-600');
         btn.classList.replace('shadow-[0_4px_20px_rgba(30,41,59,0.5)]', 'shadow-[0_4px_20px_rgba(79,70,229,0.5)]');
     }
+};
+
+// ==========================================
+// MOTOR DE ANIMAÇÃO DE CONTAGEM (O EFEITO ROLETA SÊNIOR)
+// ==========================================
+window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 1000) {
+    const elemento = document.getElementById(id);
+    if (!elemento) return;
+    
+    const startTimestamp = performance.now();
+    const step = (currentTimestamp) => {
+        // Calcula o tempo percorrido
+        const progress = Math.min((currentTimestamp - startTimestamp) / duracao, 1);
+        // Aplica a física Cubic Ease-Out (inicia rápido e desacelera suavemente)
+        const easeProgress = 1 - Math.pow(1 - progress, 4); 
+        const valorAtual = easeProgress * valorFinal;
+        
+        if (formato === 'moeda') {
+            let parts = Math.abs(valorAtual).toFixed(2).split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            elemento.innerText = (valorAtual < 0 ? "- R$ " : "R$ ") + parts.join(',');
+        } else if (formato === 'porcentagem') {
+            elemento.innerText = valorAtual.toFixed(1) + "%";
+        }
+        
+        if (progress < 1) {
+            requestAnimationFrame(step);
+        } else {
+            // Garante que o frame final trave no número exato
+            if (formato === 'moeda') {
+                let parts = Math.abs(valorFinal).toFixed(2).split('.');
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                elemento.innerText = (valorFinal < 0 ? "- R$ " : "R$ ") + parts.join(',');
+            } else if (formato === 'porcentagem') {
+                elemento.innerText = valorFinal.toFixed(1) + "%";
+            }
+        }
+    };
+    requestAnimationFrame(step);
 };
 
 // ==========================================
@@ -203,15 +242,15 @@ function processarEAtualizarTudo() {
 
     statsGlobais = { receitas: totalReceitas, despesas: totalDespesas, saldo: totalReceitas - totalDespesas, taxaPoupanca: taxa, mediaDiaria: media, maiorGasto: maiorGasto, topCategoria: categoriasOrdenadas.length > 0 ? { nome: categoriasOrdenadas[0], valor: gastosPorCategoria[categoriasOrdenadas[0]] } : null, transacoesNoPeriodo: transacoesFiltradas.length };
 
-    document.getElementById('kpi-saldo').innerText = formatarMoeda(totalReceitas - totalDespesas);
-    document.getElementById('kpi-receitas').innerText = formatarMoeda(totalReceitas);
-    document.getElementById('kpi-despesas').innerText = formatarMoeda(totalDespesas);
-    
-    let taxaTexto = taxa.toFixed(1) + "%";
-    let corTaxa = taxa >= 20 ? 'bg-emerald-500' : (taxa > 0 ? 'bg-indigo-500' : 'bg-rose-500');
-    document.getElementById('kpi-taxa-texto').innerText = taxaTexto;
+    // DISPARO DAS ANIMAÇÕES DE ROLETA NOS KPIS
+    window.animarContador('kpi-saldo', totalReceitas - totalDespesas, 'moeda', 1000);
+    window.animarContador('kpi-receitas', totalReceitas, 'moeda', 1000);
+    window.animarContador('kpi-despesas', totalDespesas, 'moeda', 1000);
+    window.animarContador('kpi-taxa-texto', taxa, 'porcentagem', 1000);
+    window.animarContador('pizza-total', totalDespesas, 'moeda', 1000);
     
     let percentualBarra = Math.min(Math.max(taxa, 0), 100); 
+    let corTaxa = taxa >= 20 ? 'bg-emerald-500' : (taxa > 0 ? 'bg-indigo-500' : 'bg-rose-500');
     const barra = document.getElementById('kpi-taxa-barra');
     barra.style.width = `${percentualBarra}%`;
     barra.className = `h-1.5 rounded-full transition-all duration-1000 ${corTaxa}`;
@@ -224,9 +263,9 @@ function processarEAtualizarTudo() {
 // RENDERIZAÇÃO DE GRÁFICOS E LISTAS
 // ==========================================
 function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
-    const html = ordenadas.map(cat => {
+    const html = ordenadas.map((cat, index) => {
         const valor = gastos[cat];
-        const perc = totalGeral > 0 ? ((valor / totalGeral) * 100).toFixed(1) : 0;
+        const perc = totalGeral > 0 ? ((valor / totalGeral) * 100) : 0;
         const corBase = coresPorCategoria[cat] ? coresPorCategoria[cat].tw : coresPorCategoria['Outros'].tw;
         
         return `
@@ -234,8 +273,8 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
             <div class="flex justify-between items-end mb-1.5 gap-2">
                 <span class="text-xs font-bold text-slate-700 truncate flex-1" title="${cat}">${cat}</span>
                 <div class="text-right flex items-center gap-2 shrink-0">
-                    <span class="text-[10px] font-bold text-slate-400">${perc}%</span>
-                    <span class="text-sm font-black text-slate-900 whitespace-nowrap">${formatarMoeda(valor)}</span>
+                    <span class="text-[10px] font-bold text-slate-400" id="cat-perc-${index}">0.0%</span>
+                    <span class="text-sm font-black text-slate-900 whitespace-nowrap" id="cat-val-${index}">R$ 0,00</span>
                 </div>
             </div>
             <div class="w-full bg-slate-100 rounded-full h-2">
@@ -245,6 +284,14 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
         `;
     }).join('');
     document.getElementById('lista-categorias-progress').innerHTML = html || '<p class="text-xs text-slate-400 font-bold">Sem despesas.</p>';
+
+    // Dispara a roleta também para os dados da lista de categorias
+    ordenadas.forEach((cat, index) => {
+        const valor = gastos[cat];
+        const perc = totalGeral > 0 ? ((valor / totalGeral) * 100) : 0;
+        window.animarContador(`cat-val-${index}`, valor, 'moeda', 1000);
+        window.animarContador(`cat-perc-${index}`, perc, 'porcentagem', 1000);
+    });
 }
 
 function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, top5, totalDespesas) {
@@ -319,8 +366,6 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
         }
         if (categoriasOrdenadas.length > 5) { lblP.push('Outros'); datP.push(totalDespesas - soma); coresP.push(coresPorCategoria['Outros'].hex); }
     }
-
-    document.getElementById('pizza-total').innerText = formatarMoeda(totalDespesas);
 
     grafPizza = new Chart(ctxP, {
         type: 'doughnut',
