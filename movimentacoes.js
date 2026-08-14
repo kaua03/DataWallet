@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - MOTOR SÊNIOR COM NLP SEQUENCIAL
+// movimentacoes.js - MOTOR DE FLUXO DE CAIXA E BUSCA INTELIGENTE
 // ==========================================
 
 let usuarioLogado = null;
@@ -235,6 +235,7 @@ function renderizarListaHistorico() {
 
         return `
         <div class="bg-white p-4 rounded-3xl border border-slate-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
+            
             <div class="flex items-center gap-4 min-w-0 w-full sm:w-auto">
                 <div class="w-12 h-12 rounded-2xl ${corBg} flex items-center justify-center ${corTxt} text-xl shadow-inner shrink-0 relative">
                     <i class="fa-solid ${cat.icone}"></i>
@@ -278,52 +279,10 @@ function renderizarListaHistorico() {
 }
 
 // ---------------------------------------------
-// O NOVO CÉREBRO NLP (EXTRAÇÃO SEQUENCIAL)
+// O MOTOR NLP PIPELINE (EXTRAÇÃO SEQUENCIAL)
 // ---------------------------------------------
-const dicionarioDeInteligencia = [
-    { pasta: 'alimentação', regras: [
-        { titulo: 'Delivery', palavras: ['ifood', 'delivery', 'rappi', 'zedelivery'] },
-        { titulo: 'Fast Food', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado', 'pastel', 'méqui'] },
-        { titulo: 'Mercado', palavras: ['mercado', 'supermercado', 'açougue', 'padaria', 'compra'] },
-        { titulo: 'Restaurante', palavras: ['restaurante', 'almoço', 'jantar', 'comida', 'self service'] }
-    ]},
-    { pasta: 'veículo', regras: [
-        { titulo: 'Combustível', palavras: ['gasolina', 'álcool', 'alcool', 'etanol', 'diesel', 'posto', 'combustível', 'combustivel', 'abasteci'] },
-        { titulo: 'Peças / Manutenção', palavras: ['oficina', 'mecânico', 'peça', 'pneu', 'óleo', 'revisão'] },
-        { titulo: 'Serviços Auto', palavras: ['estacionamento', 'pedágio', 'lavagem', 'lava rápido'] },
-        { titulo: 'Transporte', palavras: ['uber', '99', 'ônibus', 'passagem', 'metrô'] }
-    ]},
-    { pasta: 'moradia', regras: [
-        { titulo: 'Aluguel', palavras: ['aluguel', 'condomínio'] },
-        { titulo: 'Conta de Luz', palavras: ['luz', 'energia', 'cpfl', 'cemig', 'enel'] },
-        { titulo: 'Conta de Água', palavras: ['água', 'sabesp', 'sanepar', 'copasa'] },
-        { titulo: 'Internet', palavras: ['internet', 'vivo', 'claro', 'tim', 'fibra'] },
-        { titulo: 'Reparos e Casa', palavras: ['reparo', 'faxina', 'limpeza', 'material de construção'] }
-    ]},
-    { pasta: 'estudo', regras: [
-        { titulo: 'Mensalidade', palavras: ['faculdade', 'escola', 'mensalidade'] },
-        { titulo: 'Cursos Extras', palavras: ['curso', 'certificado', 'prova', 'concurso'] },
-        { titulo: 'Material Didático', palavras: ['livro', 'caderno', 'material', 'papelaria'] }
-    ]},
-    { pasta: 'saúde', regras: [
-        { titulo: 'Remédios', palavras: ['farmácia', 'remédio', 'medicamento'] },
-        { titulo: 'Consultas Médicas', palavras: ['médico', 'consulta', 'exame', 'dentista', 'terapia', 'psicólogo'] },
-        { titulo: 'Imprevisto', palavras: ['imprevisto', 'acidente', 'pronto socorro', 'hospital'] }
-    ]},
-    { pasta: 'lazer', regras: [
-        { titulo: 'Jogos', palavras: ['jogo', 'steam', 'xbox', 'playstation', 'game'] },
-        { titulo: 'Passeio', palavras: ['cinema', 'festa', 'shopping', 'bar', 'show', 'viagem', 'ingresso'] },
-        { titulo: 'Compras Pessoais', palavras: ['roupa', 'presente', 'tênis', 'perfume', 'fone', 'celular'] }
-    ]},
-    { pasta: 'assinaturas', regras: [
-        { titulo: 'Streaming', palavras: ['netflix', 'spotify', 'amazon', 'prime', 'disney', 'hbo'] },
-        { titulo: 'Serviços Recorrentes', palavras: ['assinatura', 'gympass', 'academia'] }
-    ]}
-];
-
-// O CÉREBRO PRINCIPAL QUE RESOLVE O CONFLITO DE ENTIDADES
 function processarFraseNLP(fraseBruta) {
-    if(!fraseBruta) {
+    if(!fraseBruta || fraseBruta.trim() === '') {
         document.getElementById('form-transacao').reset();
         document.getElementById('transacao-id').value = '';
         document.getElementById('transacao-data').value = new Date().toISOString().split('T')[0];
@@ -334,7 +293,7 @@ function processarFraseNLP(fraseBruta) {
 
     let texto = removerAcentos(fraseBruta.toLowerCase());
     
-    // 1. O RELÓGIO (Extrai a Data e APAGA da frase)
+    // 1. O TIMELINE: Extrai as entidades cronológicas primeiro
     let dataCalculada = new Date();
     dataCalculada.setHours(0,0,0,0);
     
@@ -356,24 +315,21 @@ function processarFraseNLP(fraseBruta) {
         const match = texto.match(regexDia);
         const dia = parseInt(match[1]);
         dataCalculada.setDate(dia);
-        
-        // Se o dia falado for maior que o dia de hoje, assume inteligentemente que foi no mês passado
         if (dia > new Date().getDate()) {
             dataCalculada.setMonth(dataCalculada.getMonth() - 1);
         }
         texto = texto.replace(match[0], '');
     }
 
-    // 2. A CARTEIRA (Caça o valor no que restou da frase)
+    // 2. A MÁSCARA MATEMÁTICA: Puxa o dinheiro na frase limpa de dias
     const nums = texto.match(/\d+(?:[.,]\d+)?/g);
     const valorExtraido = nums ? Math.max(...nums.map(n => parseFloat(n.replace(',', '.')))) : 0;
     
-    // Se achou valor, apaga ele do texto também para limpar a descrição final
     if(nums) {
         nums.forEach(n => texto = texto.replace(n, ''));
     }
 
-    // 3. A INTENÇÃO E A PASTA (Descobre do que se trata)
+    // 3. A IDENTIFICAÇÃO SEMÂNTICA (Categorização)
     const palavrasReceita = ['recebi', 'ganhei', 'pix', 'salario', 'renda', 'vendi', 'deposito'];
     const isReceita = palavrasReceita.some(p => removerAcentos(fraseBruta.toLowerCase()).includes(p));
 
@@ -397,11 +353,9 @@ function processarFraseNLP(fraseBruta) {
         }
     }
 
-    // Se ainda não tiver título, cria um usando a palavra mais relevante que sobrou
     if (!tituloFinal) {
         let palavras = texto.split(' ');
         const stopWords = ['eu', 'gastei', 'paguei', 'botei', 'coloquei', 'um', 'uma', 'uns', 'umas', 'de', 'da', 'do', 'no', 'na', 'para', 'com', 'novo', 'nova', 'reais', 'real', 'hoje', 'meu', 'minha', 'fui', 'carro', 'moto'];
-        
         palavras = palavras.filter(p => p.trim() !== '' && !stopWords.includes(p.trim()));
         
         if (palavras.length > 0) {
@@ -413,7 +367,7 @@ function processarFraseNLP(fraseBruta) {
         if (!catDetectada) catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('lazer'));
     }
 
-    // 4. PREENCHE A TELA COM OS DADOS TRATADOS
+    // 4. INJEÇÃO DOS DADOS NO FORMULÁRIO DO MODAL
     document.getElementById('transacao-id').value = ''; 
     document.getElementById('modal-titulo').innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-indigo-600"></i> ${isReceita ? 'Registrar Entrada' : 'Registrar Saída'}`;
     
@@ -429,10 +383,7 @@ function processarFraseNLP(fraseBruta) {
     }
 
     document.getElementById('transacao-data').value = dataCalculada.toISOString().split('T')[0];
-    
-    if (catDetectada) {
-        document.getElementById('transacao-categoria').value = catDetectada.id;
-    }
+    if (catDetectada) document.getElementById('transacao-categoria').value = catDetectada.id;
     
     document.querySelector(`input[name="tipo"][value="${isReceita ? 'receita' : 'despesa'}"]`).checked = true;
     document.getElementById('modal-transacao').classList.remove('hidden');
@@ -444,7 +395,7 @@ window.abrirModalComTextoRapido = function() {
 };
 
 // ---------------------------------------------
-// O NOVO MICROFONE COM ONDAS SONORAS REAIS
+// O NOVO MICROFONE COM AUDIOCONTEXT ATIVO
 // ---------------------------------------------
 async function ativarMicrofone() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -452,7 +403,8 @@ async function ativarMicrofone() {
     
     reconhecimentoDeVoz = new SpeechRecognition();
     reconhecimentoDeVoz.lang = 'pt-BR';
-    reconhecimentoDeVoz.interimResults = true; // Permite captar o áudio enquanto você fala
+    reconhecimentoDeVoz.interimResults = true; // Captura em tempo real ativada
+    reconhecimentoDeVoz.continuous = false; // Garante parada ao fechar frase
     
     const modalMic = document.getElementById('modal-microfone');
     const textoInterim = document.getElementById('texto-interim');
@@ -460,12 +412,13 @@ async function ativarMicrofone() {
     modalMic.classList.remove('hidden');
     textoInterim.innerText = "Fale agora...";
 
-    // Aciona a leitura da Placa de Som para fazer o Círculo Pular
+    // Aciona a escuta de frequências de áudio da placa de som
     iniciarOndasSonorasVisuais();
 
+    // A CORREÇÃO DE OURO DA TRANSCRIÇÃO EM TEMPO REAL:
     reconhecimentoDeVoz.onresult = (event) => {
-        let textoFinal = '';
         let textoTemporario = '';
+        let textoFinal = '';
 
         for (let i = event.resultIndex; i < event.results.length; ++i) {
             if (event.results[i].isFinal) {
@@ -475,33 +428,38 @@ async function ativarMicrofone() {
             }
         }
         
-        let textoExibido = textoFinal || textoTemporario;
-        // Pulo do gato visual: transforma "r$" em "R$" para ficar bonito na tela preta
-        textoExibido = textoExibido.replace(/\br\$\b|\breais\b/gi, "R$");
-        if(textoExibido.length > 0) textoExibido = textoExibido.charAt(0).toUpperCase() + textoExibido.slice(1);
-        
-        textoInterim.innerText = textoExibido;
+        // Escreve dinamicamente na tela preta enquanto o usuário fala
+        let transcricaoAoVivo = textoFinal || textoTemporario;
+        if (transcricaoAoVivo.length > 0) {
+            transcricaoAoVivo = transcricaoAoVivo.replace(/\br\$\b|\breais\b/gi, "R$");
+            transcricaoAoVivo = transcricaoAoVivo.charAt(0).toUpperCase() + transcricaoAoVivo.slice(1);
+            textoInterim.innerText = transcricaoAoVivo;
+        }
 
-        if (textoFinal) {
+        // Se o motor consolidou a frase final, encerra o fluxo e entrega os dados para a NLP
+        if (textoFinal && textoFinal.trim() !== '') {
             document.getElementById('input-rapido').value = textoFinal;
             
-            // Pausa de 600ms para você ter o prazer de ler a frase formada antes de enviar pro Robô
+            // Pausa sutil de 700ms para o usuário ler sua própria frase montada antes do fechamento
             setTimeout(() => {
                 cancelarMicrofone();
                 processarFraseNLP(textoFinal); 
-            }, 600);
+            }, 700);
         }
     };
 
     reconhecimentoDeVoz.onerror = (e) => { 
-        if (e.error === 'not-allowed') alert("Permissão negada. Libere o microfone no cadeado do navegador.");
+        console.error("Erro da API de voz:", e.error);
         cancelarMicrofone();
     };
     
     reconhecimentoDeVoz.onend = () => { 
-        if(!modalMic.classList.contains('hidden') && textoInterim.innerText === "Fale agora...") {
-            cancelarMicrofone();
-        }
+        // Se parou por inatividade sem capturar nada, limpa e fecha
+        setTimeout(() => {
+            if(!modalMic.classList.contains('hidden') && (textoInterim.innerText === "Fale agora..." || textoInterim.innerText === '')) {
+                cancelarMicrofone();
+            }
+        }, 1000);
     };
     
     reconhecimentoDeVoz.start();
@@ -514,7 +472,7 @@ async function iniciarOndasSonorasVisuais() {
         const analyser = audioContext.createAnalyser();
         const microphone = audioContext.createMediaStreamSource(micStream);
         
-        analyser.smoothingTimeConstant = 0.5;
+        analyser.smoothingTimeConstant = 0.4;
         analyser.fftSize = 256;
         microphone.connect(analyser);
         
@@ -530,9 +488,8 @@ async function iniciarOndasSonorasVisuais() {
             for(let i = 0; i < dataArray.length; i++) soma += dataArray[i];
             let mediaVolume = soma / dataArray.length; 
             
-            // Transforma o volume (0 a ~255) em escala CSS (1.0 a ~2.0)
-            let escala1 = 1 + (mediaVolume / 60);
-            let escala2 = 1 + (mediaVolume / 90);
+            let escala1 = 1 + (mediaVolume / 50);
+            let escala2 = 1 + (mediaVolume / 80);
             
             if (wave1) wave1.style.transform = `scale(${escala1})`;
             if (wave2) wave2.style.transform = `scale(${escala2})`;
@@ -541,20 +498,25 @@ async function iniciarOndasSonorasVisuais() {
         }
         desenharLoop();
     } catch (e) {
-        console.warn("Animação de áudio não suportada ou bloqueada neste device.");
+        console.warn("Feedback tátil de som indisponível.");
     }
 }
 
 function cancelarMicrofone() {
-    if(reconhecimentoDeVoz) reconhecimentoDeVoz.abort();
+    if(reconhecimentoDeVoz) {
+        reconhecimentoDeVoz.onresult = null;
+        reconhecimentoDeVoz.onerror = null;
+        reconhecimentoDeVoz.onend = null;
+        reconhecimentoDeVoz.abort();
+    }
     
-    // Desliga a Placa de Som para economizar bateria do usuário
     if(animationId) cancelAnimationFrame(animationId);
-    if(audioContext) audioContext.close();
+    if(audioContext) audioContext.close().catch(() => {});
     if(micStream) micStream.getTracks().forEach(track => track.stop());
     
     audioContext = null;
     micStream = null;
+    reconhecimentoDeVoz = null;
     
     const wave1 = document.getElementById('mic-wave-1');
     const wave2 = document.getElementById('mic-wave-2');
