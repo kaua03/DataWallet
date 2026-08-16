@@ -105,8 +105,9 @@ function inicializarLayout() {
                 <button onclick="sairDoSistema()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-rose-500 border border-rose-100 dark:border-rose-900/50 shadow-lg flex items-center justify-center transition-transform hover:scale-110 pointer-events-auto">
                     <i class="fa-solid fa-right-from-bracket pointer-events-none"></i>
                 </button>
-                <button id="btn-dark-mobile" onclick="window.toggleDarkMode()" class="w-10 h-10 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110 border relative overflow-visible pointer-events-auto">
-                    <i id="icone-dark-mode-mobile" class="fa-solid fa-moon transition-colors duration-300 pointer-events-none"></i>
+                <button id="btn-dark-mobile" onclick="window.toggleDarkMode()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-200 dark:border-slate-700 relative overflow-visible pointer-events-auto">
+                    <i id="icone-dark-mode-mobile" class="fa-solid fa-moon dark:hidden text-amber-500 pointer-events-none"></i>
+                    <i class="fa-solid fa-sun hidden dark:block text-amber-400 pointer-events-none"></i>
                     <i id="star-mobile" class="fa-solid fa-star absolute text-[12px] text-white opacity-0 pointer-events-none z-50"></i>
                 </button>
                 <div class="w-8 h-px bg-slate-200 dark:bg-slate-700 my-1"></div>
@@ -196,8 +197,6 @@ function atualizarIconesDark(isDark) {
     const btnPc = document.getElementById('btn-dark-desktop');
     const txtPc = document.getElementById('txt-dark-desktop');
     const iconePc = document.getElementById('icone-dark-mode');
-    const btnMobile = document.getElementById('btn-dark-mobile');
-    const iconeMobile = document.getElementById('icone-dark-mode-mobile');
     const starPc = document.getElementById('star-desktop');
     const starMobile = document.getElementById('star-mobile');
     
@@ -206,16 +205,12 @@ function atualizarIconesDark(isDark) {
     
     if (isDark) {
         if (iconePc) iconePc.className = 'fa-solid fa-sun text-lg text-amber-400 transition-colors duration-300';
-        if (iconeMobile) iconeMobile.className = 'fa-solid fa-sun text-xl text-amber-400 transition-colors duration-300';
         if (btnPc) btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors w-full';
         if (txtPc) txtPc.innerText = 'Tema Claro';
-        if (btnMobile) btnMobile.className = 'w-10 h-10 rounded-full bg-slate-800 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible pointer-events-auto';
     } else {
         if (iconePc) iconePc.className = 'fa-solid fa-moon text-lg text-white transition-colors duration-300';
-        if (iconeMobile) iconeMobile.className = 'fa-solid fa-moon text-xl text-white transition-colors duration-300';
         if (btnPc) btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-slate-800 text-white hover:bg-slate-700 transition-colors w-full';
         if (txtPc) txtPc.innerText = 'Tema Escuro';
-        if (btnMobile) btnMobile.className = 'w-10 h-10 rounded-full bg-slate-800 text-white shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible pointer-events-auto';
         
         if(starPc) starPc.classList.add('animate-star');
         if(starMobile) starMobile.classList.add('animate-star');
