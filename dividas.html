@@ -16,10 +16,7 @@
         }
     </script>
     
-    <!-- 1. Carrega o script da CDN do Tailwind primeiro -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- 2. Configura o darkMode logo após o script carregar -->
     <script>
         tailwind.config = {
             darkMode: 'class'
@@ -52,7 +49,7 @@
         .cursor-grab { cursor: grab; }
         .cursor-grabbing { cursor: grabbing; }
 
-        .coluna-minimizada { width: 64px !important; min-width: 64px !important; cursor: pointer; transition: all 0.3s ease; }
+        .coluna-minimizada { width: 64px !important; min-width: 64px !important; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .coluna-minimizada .esconder-no-min { display: none !important; }
         .coluna-minimizada .mostrar-no-min { display: flex !important; }
 
