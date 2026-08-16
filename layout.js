@@ -83,7 +83,6 @@ function inicializarLayout() {
         `;
     }).join('');
 
-    // BOTÃO DE AÇÃO DINÂMICO NO MOBILE (Chat IA no Dashboard, Nova Dívida em Passivos)
     let btnAcaoMobileHtml = '';
     if (isDashboard) {
         btnAcaoMobileHtml = `
@@ -176,7 +175,6 @@ window.toggleDarkMode = function() {
     atualizarIconesDark(isDark);
 };
 
-// Aliases globais para garantir funcionamento independente do nome chamado nos botões
 window.alternarTema = window.toggleDarkMode;
 window.mudarTema = window.toggleDarkMode;
 
