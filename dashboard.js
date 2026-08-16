@@ -1,5 +1,5 @@
 // ==========================================
-// dashboard.js - MOTOR DE BI COM ANIMAÇÕES, FALSO 3D E OBSERVER
+// dashboard.js - CÉREBRO ANALÍTICO COM FALSO 3D E OBSERVER
 // ==========================================
 
 let usuarioLogado = null;
@@ -26,10 +26,8 @@ const coresPorCategoria = {
 
 document.addEventListener('DOMContentLoaded', async () => {
     
-    // Tira o pulo do CSS no Mobile
     setTimeout(() => document.body.classList.remove('fade-in'), 500);
 
-    // Navegação SPA Fluida
     document.querySelectorAll('a').forEach(link => {
         if(link.hostname === window.location.hostname && link.target !== '_blank') {
             link.addEventListener('click', e => {
@@ -58,8 +56,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await carregarDadosDoBanco();
 
-    // O OLHO DE SAURON (MUTATION OBSERVER)
-    // Vigia a tag HTML e redesenha os gráficos em milissegundos se o Dark Mode for ativado
+    // A MÁGICA: O MutationObserver. 
+    // Fica vigiando o clique no Dark Mode para redesenhar o Canvas com as cores da Noite.
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
             if (mutation.attributeName === 'class') {
@@ -70,9 +68,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     observer.observe(document.documentElement, { attributes: true });
 });
 
-// ==========================================
-// MOTOR DE ANIMAÇÃO DE CONTAGEM (ROLETA)
-// ==========================================
 window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 1000) {
     const elemento = document.getElementById(id);
     if (!elemento) return;
@@ -105,9 +100,6 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
     requestAnimationFrame(step);
 };
 
-// ==========================================
-// DADOS E FILTROS DO BI
-// ==========================================
 async function carregarDadosDoBanco() {
     try {
         const [rTrans, rCat] = await Promise.all([
@@ -126,9 +118,20 @@ window.mudarTipoFiltro = function() {
     document.getElementById('box-ano').classList.add('hidden');
     document.getElementById('box-personalizado').classList.add('hidden');
 
-    if (tipo === 'por_mes') document.getElementById('box-mes').classList.remove('hidden');
-    else if (tipo === 'por_ano') document.getElementById('box-ano').classList.remove('hidden');
-    else if (tipo === 'personalizado') document.getElementById('box-personalizado').classList.remove('hidden');
+    if (tipo === 'por_mes') {
+        document.getElementById('box-mes').classList.remove('hidden');
+        document.getElementById('label-periodo').innerText = "Mês Específico";
+    }
+    else if (tipo === 'por_ano') {
+        document.getElementById('box-ano').classList.remove('hidden');
+        document.getElementById('label-periodo').innerText = "Ano Específico";
+    }
+    else if (tipo === 'personalizado') {
+        document.getElementById('box-personalizado').classList.remove('hidden');
+        document.getElementById('label-periodo').innerText = "Período Livre";
+    } else {
+        document.getElementById('label-periodo').innerText = "Todo o Histórico";
+    }
 
     processarEAtualizarTudo();
 }
@@ -165,8 +168,7 @@ window.processarEAtualizarTudo = function() {
     const gastosPorCategoria = {};
     const agrupamentoTemporal = {}; 
     
-    // Nova Analise: Comportamento Semanal
-    let gastosPorDiaSemana = [0, 0, 0, 0, 0, 0, 0]; // Dom, Seg, Ter...
+    let gastosPorDiaSemana = [0, 0, 0, 0, 0, 0, 0];
 
     const agruparPorMes = (tipoFiltro === 'por_ano' || tipoFiltro === 'tudo');
 
@@ -219,7 +221,6 @@ window.processarEAtualizarTudo = function() {
 
     statsGlobais = { receitas: totalReceitas, despesas: totalDespesas, saldo: totalReceitas - totalDespesas, taxaPoupanca: taxa, mediaDiaria: media, maiorGasto: maiorGasto, topCategoria: categoriasOrdenadas.length > 0 ? { nome: categoriasOrdenadas[0], valor: gastosPorCategoria[categoriasOrdenadas[0]] } : null, transacoesNoPeriodo: transacoesFiltradas.length };
 
-    // DISPARO DAS ANIMAÇÕES DE ROLETA NOS KPIS
     window.animarContador('kpi-saldo', totalReceitas - totalDespesas, 'moeda', 1000);
     window.animarContador('kpi-receitas', totalReceitas, 'moeda', 1000);
     window.animarContador('kpi-despesas', totalDespesas, 'moeda', 1000);
@@ -229,11 +230,9 @@ window.processarEAtualizarTudo = function() {
     let corTaxa = taxa >= 20 ? 'bg-emerald-500' : (taxa > 0 ? 'bg-indigo-500' : 'bg-rose-500');
     const barra = document.getElementById('kpi-taxa-barra');
     barra.style.width = `${percentualBarra}%`;
-    barra.className = `h-1.5 rounded-full transition-all duration-1000 ${corTaxa}`;
+    barra.className = `h-2 rounded-full transition-all duration-1000 ${corTaxa}`;
 
     renderizarListaCategorias(categoriasOrdenadas, gastosPorCategoria, totalDespesas);
-    
-    // Passamos todos os dados pro motor gráfico desenhar
     renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, gastosPorDiaSemana);
 }
 
@@ -248,20 +247,20 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
         
         return `
         <div>
-            <div class="flex justify-between items-end mb-1.5 gap-2">
-                <span class="text-xs font-bold text-slate-700 dark:text-slate-300 truncate flex-1" title="${cat}">${cat}</span>
+            <div class="flex justify-between items-end mb-2 gap-2">
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-300 truncate flex-1">${cat}</span>
                 <div class="text-right flex items-center gap-2 shrink-0">
                     <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500" id="cat-perc-${index}">0.0%</span>
                     <span class="text-sm font-black text-slate-900 dark:text-white whitespace-nowrap" id="cat-val-${index}">R$ 0,00</span>
                 </div>
             </div>
             <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
-                <div class="${corBase} h-2 rounded-full transition-all duration-1000" style="width: ${perc}%"></div>
+                <div class="${corBase} h-2 rounded-full transition-all duration-1000 shadow-sm" style="width: ${perc}%"></div>
             </div>
         </div>
         `;
     }).join('');
-    document.getElementById('lista-categorias-progress').innerHTML = html || '<p class="text-xs text-slate-400 font-bold">Sem despesas.</p>';
+    document.getElementById('lista-categorias-progress').innerHTML = html || '<p class="text-xs text-slate-400 font-bold">Sem despesas no período.</p>';
 
     ordenadas.forEach((cat, index) => {
         const valor = gastos[cat];
@@ -276,11 +275,11 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
 // ==========================================
 function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, gastosPorDiaSemana) {
     
-    // Leitura Dinâmica do Dark Mode Real Time
+    // Leitura Dinâmica do Dark Mode
     const isDark = document.documentElement.classList.contains('dark');
-    const corTexto = isDark ? '#94a3b8' : '#64748b'; // slate-400 vs slate-500
-    const corGrid = isDark ? '#1e293b' : '#f1f5f9';  // slate-800 vs slate-100
-    const corBordaRosca = isDark ? '#0f172a' : '#ffffff'; // Fundo slate-900 vs white
+    const corTexto = isDark ? '#94a3b8' : '#64748b'; 
+    const corGrid = isDark ? '#1e293b' : '#f1f5f9';  
+    const corBordaRosca = isDark ? '#0f172a' : '#ffffff'; 
 
     Chart.defaults.font.family = "'Inter', sans-serif";
     Chart.defaults.color = corTexto; 
@@ -295,14 +294,13 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
     };
 
     // ----------------------------------------------------
-    // GRÁFICO 1: FLUXO DE CAIXA COMBO (Com Gradientes Neon)
+    // GRÁFICO 1: FLUXO DE CAIXA (Gradientes Neon 3D)
     // ----------------------------------------------------
     const ctxC = document.getElementById('graficoCombo').getContext('2d');
     if (grafCombo) grafCombo.destroy();
 
     const chavesTempo = Object.keys(agrupamentoTemporal).sort((a,b) => {
-        if(a==='S/D') return -1; if(b==='S/D') return 1;
-        return 1; 
+        if(a==='S/D') return -1; if(b==='S/D') return 1; return 1; 
     });
     
     const labelsT = [], dadosRec = [], dadosDes = [], dadosAcumulados = [];
@@ -316,14 +314,14 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
         dadosAcumulados.push(acumuladoAtual);
     });
 
-    // Criação dos Gradientes (Efeito 3D nas barras)
+    // Criando o Falso 3D nos gradientes de barra
     let gradVerde = ctxC.createLinearGradient(0, 0, 0, 400);
-    gradVerde.addColorStop(0, '#10b981'); // emerald-500
-    gradVerde.addColorStop(1, isDark ? 'rgba(16,185,129,0.2)' : 'rgba(16,185,129,0.5)');
+    gradVerde.addColorStop(0, '#10b981'); 
+    gradVerde.addColorStop(1, isDark ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.5)');
 
     let gradVermelho = ctxC.createLinearGradient(0, 0, 0, 400);
-    gradVermelho.addColorStop(0, '#ef4444'); // rose-500
-    gradVermelho.addColorStop(1, isDark ? 'rgba(239,68,68,0.2)' : 'rgba(239,68,68,0.5)');
+    gradVermelho.addColorStop(0, '#f43f5e'); 
+    gradVermelho.addColorStop(1, isDark ? 'rgba(244,63,94,0.1)' : 'rgba(244,63,94,0.5)');
 
     grafCombo = new Chart(ctxC, {
         type: 'bar',
@@ -331,10 +329,10 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
             labels: labelsT.length > 0 ? labelsT : ['Sem Dados'],
             datasets: [
                 {
-                    type: 'line', label: 'Acumulado', data: dadosAcumulados, 
-                    borderColor: '#4f46e5', borderWidth: 3, tension: 0.3, 
+                    type: 'line', label: 'Saldo', data: dadosAcumulados, 
+                    borderColor: '#6366f1', borderWidth: 4, tension: 0.4, 
                     pointBackgroundColor: isDark ? '#0f172a' : '#ffffff', 
-                    pointBorderColor: '#4f46e5', pointBorderWidth: 2, pointRadius: 4, pointHoverRadius: 6, fill: false
+                    pointBorderColor: '#6366f1', pointBorderWidth: 2, pointRadius: 4, pointHoverRadius: 6, fill: false
                 },
                 { type: 'bar', label: 'Entradas', data: dadosRec, backgroundColor: gradVerde, borderRadius: 4, maxBarThickness: 30 },
                 { type: 'bar', label: 'Saídas', data: dadosDes, backgroundColor: gradVermelho, borderRadius: 4, maxBarThickness: 30 }
@@ -356,7 +354,7 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
     });
 
     // ----------------------------------------------------
-    // GRÁFICO 2: PIZZA / ROSCA DE COMPOSIÇÃO (Sem Total Repetido)
+    // GRÁFICO 2: ROSCA MINIMALISTA (Sem o número central inútil)
     // ----------------------------------------------------
     const ctxP = document.getElementById('graficoPizza').getContext('2d');
     if (grafPizza) grafPizza.destroy();
@@ -372,7 +370,6 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
             soma += gastosPorCategoria[nomeCat];
         }
         if (categoriasOrdenadas.length > 5) { 
-            // Calcula o total correto usando reduce do array global para evitar bugs de filtro
             const totalGastoGlobal = categoriasOrdenadas.reduce((acc, cat) => acc + gastosPorCategoria[cat], 0);
             lblP.push('Outros'); datP.push(totalGastoGlobal - soma); coresP.push(coresPorCategoria['Outros'].hex); 
         }
@@ -381,16 +378,15 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
     grafPizza = new Chart(ctxP, {
         type: 'doughnut',
         data: { labels: lblP, datasets: [{ data: datP, backgroundColor: coresP, borderWidth: 4, borderColor: corBordaRosca, hoverOffset: 10 }] },
-        options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${categoriasOrdenadas.length === 0 ? 'R$ 0,00' : ctx.raw.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}` } } } }
+        options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${categoriasOrdenadas.length === 0 ? 'R$ 0,00' : ctx.raw.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}` } } } }
     });
 
     // ----------------------------------------------------
-    // GRÁFICO 3: NOVA ANÁLISE (RADAR COMPORTAMENTAL SEMANAL)
+    // GRÁFICO 3: RADAR DE TERMÔMETRO SEMANAL
     // ----------------------------------------------------
     const ctxR = document.getElementById('graficoRadar').getContext('2d');
     if (grafRadar) grafRadar.destroy();
 
-    // Cria um gradiente para o preenchimento do radar
     let gradRadar = ctxR.createRadialGradient(0, 0, 0, 0, 0, 200);
     gradRadar.addColorStop(0, isDark ? 'rgba(99, 102, 241, 0.4)' : 'rgba(99, 102, 241, 0.6)');
     gradRadar.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
@@ -404,7 +400,7 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
                 data: gastosPorDiaSemana,
                 backgroundColor: gradRadar,
                 borderColor: '#6366f1',
-                borderWidth: 2,
+                borderWidth: 3,
                 pointBackgroundColor: isDark ? '#0f172a' : '#ffffff',
                 pointBorderColor: '#6366f1',
                 pointBorderWidth: 2,
@@ -417,9 +413,9 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
             scales: {
                 r: {
                     angleLines: { color: corGrid },
-                    grid: { color: corGrid },
+                    grid: { color: corGrid, circular: true },
                     pointLabels: { color: corTexto, font: { family: 'Inter', weight: 'bold', size: 11 } },
-                    ticks: { display: false, backdropColor: 'transparent' }
+                    ticks: { display: false }
                 }
             },
             plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` R$ ${ctx.raw.toLocaleString('pt-BR', {minimumFractionDigits: 2})}` } } }
@@ -428,7 +424,7 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
 }
 
 // ==========================================
-// MÓDULO DA INTERFACE DO COACH (UI)
+// MÓDULO DA INTERFACE DO COACH (UI) E GEMINI
 // ==========================================
 window.toggleCoach = function() {
     const janela = document.getElementById('janela-coach');
@@ -471,20 +467,17 @@ window.enviarMensagemCoach = function() {
     const typingDiv = document.createElement('div');
     typingDiv.className = "text-slate-500 text-xs italic mt-2 self-start slide-up-chat flex items-center gap-2";
     typingDiv.id = "coach-typing";
-    typingDiv.innerHTML = "<i class='fa-solid fa-circle-notch fa-spin text-indigo-500'></i> Processando na Nuvem...";
+    typingDiv.innerHTML = "<i class='fa-solid fa-circle-notch fa-spin text-indigo-500'></i> Processando...";
     chatBox.appendChild(typingDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
 
     gerarRespostaIA(texto);
 }
 
-// ==========================================
-// MOTOR DE INTELIGÊNCIA ARTIFICIAL (GEMINI VIA API)
-// ==========================================
 async function gerarRespostaIA(pergunta) {
     if (statsGlobais.transacoesNoPeriodo === 0) {
         document.getElementById('coach-typing')?.remove();
-        return adicionarMensagemNoChat("O algoritmo requer dados populados para gerar predições. Altere o período analisado no painel superior.", false);
+        return adicionarMensagemNoChat("O algoritmo requer dados populados para gerar predições.", false);
     }
 
     const promptDeSistema = `
@@ -492,19 +485,19 @@ Você é o Consultor IA do DataWallet, um aplicativo financeiro corporativo de e
 Sua postura é profissional, direta, inteligente e analítica. Evite textos extremamente longos. Vá direto ao ponto.
 Sempre formate sua resposta em HTML limpo para exibir na tela web (use <b>, <i>, e <br>). NÃO use Markdown comum como ** ou *.
 
-AQUI ESTÃO OS DADOS REAIS E MATEMÁTICOS DO USUÁRIO NESTE EXATO MOMENTO:
-- Total Captado (Entradas): R$ ${statsGlobais.receitas.toFixed(2)}
-- Total Queimado (Saídas): R$ ${statsGlobais.despesas.toFixed(2)}
-- Saldo Líquido do Período: R$ ${statsGlobais.saldo.toFixed(2)}
-- Margem de Poupança (Retenção): ${statsGlobais.taxaPoupanca.toFixed(1)}%
-- Burn Rate (Queima Média Diária): R$ ${statsGlobais.mediaDiaria.toFixed(2)} / dia
-- Centro de custo mais oneroso: ${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'Nenhum'} (R$ ${statsGlobais.topCategoria ? statsGlobais.topCategoria.valor.toFixed(2) : 0})
-- Maior gasto isolado (o vilão individual): ${statsGlobais.maiorGasto.descricao} (R$ ${statsGlobais.maiorGasto.valor.toFixed(2)})
+AQUI ESTÃO OS DADOS REAIS:
+- Total Captado: R$ ${statsGlobais.receitas.toFixed(2)}
+- Total Queimado: R$ ${statsGlobais.despesas.toFixed(2)}
+- Saldo Líquido: R$ ${statsGlobais.saldo.toFixed(2)}
+- Retenção: ${statsGlobais.taxaPoupanca.toFixed(1)}%
+- Queima Média Diária: R$ ${statsGlobais.mediaDiaria.toFixed(2)} / dia
+- Top Categoria Gasto: ${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'Nenhum'}
+- Maior gasto isolado: ${statsGlobais.maiorGasto.descricao} (R$ ${statsGlobais.maiorGasto.valor.toFixed(2)})
 
-REGRA ESTRITA: Responda à pergunta do usuário usando APENAS a intenção dele cruzada com os dados acima. Aja como um humano sênior analisando a carteira. Se a margem for negativa, alerte severamente sobre a queima de caixa.
+REGRA ESTRITA: Responda à pergunta do usuário cruzando os dados acima. Aja como um humano sênior.
     `;
 
-    const payload = { contents: [{ parts: [{ text: promptDeSistema + "\n\nPergunta real do usuário: " + pergunta }] }] };
+    const payload = { contents: [{ parts: [{ text: promptDeSistema + "\n\nPergunta: " + pergunta }] }] };
 
     try {
         const chaveLimpa = GEMINI_API_KEY.trim();
@@ -526,6 +519,6 @@ REGRA ESTRITA: Responda à pergunta do usuário usando APENAS a intenção dele 
 
     } catch (erro) {
         document.getElementById('coach-typing')?.remove();
-        adicionarMensagemNoChat(`<b class="text-rose-500">Acesso Negado:</b><br>Erro de chave ou rede.<br><i class="text-slate-400">"${erro.message}"</i>`, false);
+        adicionarMensagemNoChat(`<b class="text-rose-500">Erro:</b><br><i class="text-slate-400">"${erro.message}"</i>`, false);
     }
 }
