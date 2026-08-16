@@ -90,7 +90,8 @@ function inicializarLayout() {
 
     const mobileMenuHtml = `
         <div class="md:hidden fixed bottom-10 right-6 z-[60] flex flex-col items-center gap-3">
-            <div id="fab-items" class="flex flex-col items-center gap-3 transition-all duration-500 transform translate-y-12 opacity-0 pointer-events-none mb-2">
+            <!-- A MÁGICA ACONTECE AQUI: Retirei o transition-all e duration-500 do código base -->
+            <div id="fab-items" class="flex flex-col items-center gap-3 transform translate-y-12 opacity-0 pointer-events-none mb-2">
                 <button onclick="sairDoSistema()" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-rose-500 border border-rose-100 dark:border-rose-900/50 shadow-lg flex items-center justify-center transition-transform hover:scale-110">
                     <i class="fa-solid fa-right-from-bracket"></i>
                 </button>
@@ -118,6 +119,13 @@ window.toggleMobileMenu = function() {
     const items = document.getElementById('fab-items');
     const icon = document.getElementById('fab-icon');
     const btn = document.getElementById('fab-menu');
+    
+    // O GATILHO SÊNIOR: Injeta a transição apenas quando o usuário vai interagir pela 1ª vez. 
+    // Isso mata o pulo fantasma do recarregamento da página.
+    if (!items.classList.contains('transition-all')) {
+        items.classList.add('transition-all', 'duration-500');
+    }
+    
     menuMobileAberto = !menuMobileAberto;
 
     if (menuMobileAberto) {
