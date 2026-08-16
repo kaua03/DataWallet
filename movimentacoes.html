@@ -10,7 +10,7 @@
     <!-- 1º: A BIBLIOTECA TAILWIND CARREGA PRIMEIRO -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 2º: A NOSSA CONFIGURAÇÃO ASSUME O CONTROLE -->
+    <!-- 2º: A CONFIGURAÇÃO ENTRA EM SEGUIDA DITANDO AS REGRAS -->
     <script>
         tailwind.config = {
             darkMode: 'class'
@@ -111,7 +111,7 @@
                 </div>
 
                 <div class="flex flex-col lg:flex-row items-center gap-3 mb-6 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 transition-colors">
-                    <div class="flex-1 flex items-center w-full bg-white dark:bg-slate-800 rounded-xl px-3 py-2 shadow-sm border border-slate-200 dark:border-slate-700 focus-within:border-indigo-50 transition-colors">
+                    <div class="flex-1 flex items-center w-full bg-white dark:bg-slate-800 rounded-xl px-3 py-2 shadow-sm border border-slate-200 dark:border-slate-700 focus-within:border-indigo-500 transition-colors">
                         <i class="fa-solid fa-magnifying-glass text-slate-400 mr-2"></i>
                         <input type="text" id="busca-historico" oninput="aplicarFiltrosHistorico()" placeholder="Buscar nome, valor..." class="bg-transparent outline-none w-full text-sm font-medium text-slate-700 dark:text-slate-200">
                     </div>
@@ -145,7 +145,7 @@
         </section>
     </main>
 
-    <!-- BARRA FLUTUANTE DE MÚLTIPLA SELEÇÃO (Long Press) -->
+    <!-- BARRA FLUTUANTE DE MÚLTIPLA SELEÇÃO -->
     <div id="barra-selecao" class="hidden fixed bottom-28 md:bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[80] items-center gap-5 border border-slate-700 fade-in w-[90%] md:w-auto whitespace-nowrap justify-between">
         <div class="flex items-center gap-3">
             <span class="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 font-black text-xs" id="contador-selecao">0</span>
@@ -161,7 +161,8 @@
     <div id="modal-transacao" onclick="if(event.target === this) window.fecharModal()" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
         <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl p-6 md:p-8 relative border dark:border-slate-800 cursor-default fade-in">
             
-            <button type="button" onclick="window.fecharModal()" onpointerdown="window.fecharModal()" class="absolute top-2 right-2 md:top-4 md:right-4 w-14 h-14 md:w-12 md:h-12 rounded-full text-slate-400 md:hover:bg-rose-500 md:hover:text-white transition flex items-center justify-center z-[999] bg-transparent active:scale-95">
+            <!-- BOTÃO X PURO: Sem hover para não prender o celular em cliques duplos -->
+            <button type="button" onclick="window.fecharModal()" class="absolute top-2 right-2 md:top-4 md:right-4 w-14 h-14 md:w-12 md:h-12 rounded-full text-slate-400 flex items-center justify-center z-[999] bg-transparent active:scale-95">
                 <i class="fa-solid fa-xmark text-2xl md:text-xl pointer-events-none"></i>
             </button>
             
@@ -209,7 +210,7 @@
 
     <!-- MODAL DO MICROFONE -->
     <div id="modal-microfone" class="hidden fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[60] flex flex-col items-center justify-center fade-in transition-all">
-        <button type="button" onclick="window.cancelarMicrofone()" onpointerdown="window.cancelarMicrofone()" class="absolute top-8 right-8 w-14 h-14 rounded-full bg-white/10 text-white hover:bg-rose-500 transition flex items-center justify-center z-[999]">
+        <button type="button" onclick="window.cancelarMicrofone()" class="absolute top-8 right-8 w-14 h-14 rounded-full bg-white/10 text-white flex items-center justify-center z-[999] active:scale-95">
             <i class="fa-solid fa-xmark text-2xl pointer-events-none"></i>
         </button>
         <div class="relative flex items-center justify-center w-32 h-32 mb-12">
