@@ -15,7 +15,6 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- BIBLIOTECAS (Sortable.js foi obliterada para garantir integridade) -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
@@ -56,6 +55,14 @@
         .dark input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.7; }
         input::-webkit-calendar-picker-indicator:hover { opacity: 1; }
         select { -webkit-appearance: none; -moz-appearance: none; appearance: none; }
+
+        /* MAGIA DA SIDEBAR RESTAURADA (Isso faz a barra minimizar e maximizar) */
+        #sidebar { width: 5rem; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, background-color 0.3s; z-index: 50; }
+        #sidebar:hover { width: 16rem; box-shadow: 15px 0 30px rgba(0,0,0,0.05); }
+        .sidebar-link { width: 3rem; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s; overflow: hidden; }
+        #sidebar:hover .sidebar-link { width: 100%; }
+        .sidebar-text { opacity: 0; transform: translateX(-10px); visibility: hidden; transition: all 0.2s ease-in-out; white-space: nowrap; }
+        #sidebar:hover .sidebar-text { visibility: visible; opacity: 1; transform: translateX(0); transition-delay: 0.15s; }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 h-[100dvh] overflow-hidden flex relative fade-in transition-colors duration-300">
@@ -97,7 +104,6 @@
                     <p class="text-[1.35rem] sm:text-2xl md:text-3xl font-black text-rose-600 dark:text-rose-400 tracking-tighter leading-none break-words relative z-10" id="kpi-atrasadas">R$ 0,00</p>
                 </div>
                 
-                <!-- KPI NOVO: Urgência 7 Dias -->
                 <div class="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors flex flex-col justify-center relative overflow-hidden group">
                     <div class="absolute -right-6 -top-6 w-16 h-16 bg-amber-50 dark:bg-amber-500/10 rounded-full transition-colors"></div>
                     <p class="text-[9px] md:text-[10px] text-amber-500 font-bold uppercase tracking-wider mb-1 relative z-10">Risco (Prox. 7 Dias)</p>
@@ -118,7 +124,7 @@
             </div>
         </header>
 
-        <!-- PRANCHA DO KANBAN BLINDADA (Apenas rolagem horizontal, zero arrasto de cards) -->
+        <!-- PRANCHA DO KANBAN -->
         <section class="flex-1 overflow-y-hidden overflow-x-auto p-4 md:p-8 pt-2 pb-28 md:pb-8 kanban-board cursor-grab w-full max-w-7xl mx-auto" id="container-scroll">
             <div id="board-dividas" class="flex gap-4 md:gap-6 h-full items-start w-max">
                 <div class="w-full text-center mt-20 text-slate-400 dark:text-slate-500"><i class="fa-solid fa-spinner fa-spin text-2xl"></i> Montando Kanban...</div>
