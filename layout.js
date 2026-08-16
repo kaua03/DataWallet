@@ -76,36 +76,36 @@ function inicializarLayout() {
         const ativo = paginaAtual === item.link;
         const classesAtivo = ativo ? `bg-indigo-50 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30` : `bg-white text-slate-500 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700`;
         return `
-            <a href="${item.link}" class="w-12 h-12 rounded-full shadow-lg flex items-center justify-center border transition-transform hover:scale-110 ${classesAtivo}">
-                <i class="fa-solid ${item.icone}"></i>
+            <a href="${item.link}" class="w-10 h-10 rounded-full shadow-lg flex items-center justify-center border transition-transform hover:scale-110 pointer-events-auto ${classesAtivo}">
+                <i class="fa-solid ${item.icone} pointer-events-none"></i>
             </a>
         `;
     }).join('');
 
+    // BOTÃO DE CHAT IA NO MOBILE (Aparece apenas no dashboard, abrindo para a esquerda em L-shape)
     const btnIARotacionado = isDashboard ? `
-        <button onclick="toggleCoach()" class="w-12 h-12 rounded-full bg-slate-900 text-indigo-400 dark:bg-black border border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.3)] flex items-center justify-center transition-transform hover:scale-110">
-            <i class="fa-solid fa-robot"></i>
+        <button onclick="toggleCoach()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-900 dark:bg-black text-indigo-400 shadow-lg flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-slate-700 dark:border-indigo-500/50">
+            <i class="fa-solid fa-robot pointer-events-none"></i>
         </button>
     ` : '';
 
     const mobileMenuHtml = `
-        <div class="md:hidden fixed bottom-10 right-6 z-[60] flex flex-col items-center gap-3">
-            <!-- A MÁGICA ACONTECE AQUI: Retirei o transition-all e duration-500 do código base -->
-            <div id="fab-items" class="flex flex-col items-center gap-3 transform translate-y-12 opacity-0 pointer-events-none mb-2">
-                <button onclick="sairDoSistema()" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-rose-500 border border-rose-100 dark:border-rose-900/50 shadow-lg flex items-center justify-center transition-transform hover:scale-110">
-                    <i class="fa-solid fa-right-from-bracket"></i>
+        <div class="md:hidden fixed bottom-6 right-6 z-[60] w-14 h-14">
+            ${btnIARotacionado}
+            <div id="fab-items" class="absolute bottom-16 right-2 w-10 flex flex-col items-center gap-2.5 transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none z-40">
+                <button onclick="sairDoSistema()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-rose-500 border border-rose-100 dark:border-rose-900/50 shadow-lg flex items-center justify-center transition-transform hover:scale-110 pointer-events-auto">
+                    <i class="fa-solid fa-right-from-bracket pointer-events-none"></i>
                 </button>
-                <button id="btn-dark-mobile" onclick="window.toggleDarkMode()" class="w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110 border relative overflow-visible">
-                    <i id="icone-dark-mode-mobile" class="fa-solid fa-moon transition-colors duration-300"></i>
+                <button id="btn-dark-mobile" onclick="window.toggleDarkMode()" class="w-10 h-10 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110 border relative overflow-visible pointer-events-auto">
+                    <i id="icone-dark-mode-mobile" class="fa-solid fa-moon transition-colors duration-300 pointer-events-none"></i>
                     <i id="star-mobile" class="fa-solid fa-star absolute text-[12px] text-white opacity-0 pointer-events-none z-50"></i>
                 </button>
-                ${btnIARotacionado}
                 <div class="w-8 h-px bg-slate-200 dark:bg-slate-700 my-1"></div>
                 ${mobileLinksHtml}
             </div>
             
-            <button onclick="toggleMobileMenu()" id="fab-menu" class="w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_4px_20px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-500 z-50 hover:scale-105">
-                <i class="fa-solid fa-bars transition-all duration-300" id="fab-icon"></i>
+            <button onclick="toggleMobileMenu()" id="fab-menu" class="absolute inset-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_4px_20px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 z-50 pointer-events-auto hover:scale-105">
+                <i class="fa-solid fa-bars transition-all duration-300 pointer-events-none" id="fab-icon"></i>
             </button>
         </div>
     `;
@@ -117,31 +117,44 @@ function inicializarLayout() {
 let menuMobileAberto = false;
 window.toggleMobileMenu = function() {
     const items = document.getElementById('fab-items');
+    const actionBtn = document.getElementById('fab-action');
     const icon = document.getElementById('fab-icon');
     const btn = document.getElementById('fab-menu');
-    
-    // O GATILHO SÊNIOR: Injeta a transição apenas quando o usuário vai interagir pela 1ª vez. 
-    // Isso mata o pulo fantasma do recarregamento da página.
-    if (!items.classList.contains('transition-all')) {
-        items.classList.add('transition-all', 'duration-500');
-    }
     
     menuMobileAberto = !menuMobileAberto;
 
     if (menuMobileAberto) {
-        items.classList.remove('opacity-0', 'translate-y-12', 'pointer-events-none');
-        items.classList.add('opacity-100', 'translate-y-0');
-        btn.style.transform = 'rotate(180deg)';
-        setTimeout(() => { icon.classList.replace('fa-bars', 'fa-xmark'); }, 150);
-        btn.classList.replace('bg-indigo-600', 'bg-slate-800');
-        btn.classList.replace('shadow-[0_4px_20px_rgba(79,70,229,0.5)]', 'shadow-[0_4px_20px_rgba(30,41,59,0.5)]');
+        if (items) {
+            items.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
+            items.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
+        }
+        if (actionBtn) {
+            actionBtn.classList.remove('opacity-0', 'pointer-events-none');
+            actionBtn.classList.add('opacity-100', 'pointer-events-auto');
+            actionBtn.style.transform = 'translateX(-70px) rotate(-360deg)';
+        }
+        if (btn) {
+            btn.style.transform = 'rotate(180deg)';
+            btn.classList.replace('bg-indigo-600', 'bg-slate-800');
+            btn.classList.replace('shadow-[0_4px_20px_rgba(79,70,229,0.5)]', 'shadow-[0_4px_20px_rgba(30,41,59,0.5)]');
+        }
+        setTimeout(() => { if(icon) icon.classList.replace('fa-bars', 'fa-xmark'); }, 150);
     } else {
-        items.classList.add('opacity-0', 'translate-y-12', 'pointer-events-none');
-        items.classList.remove('opacity-100', 'translate-y-0');
-        btn.style.transform = 'rotate(0deg)';
-        setTimeout(() => { icon.classList.replace('fa-xmark', 'fa-bars'); }, 150);
-        btn.classList.replace('bg-slate-800', 'bg-indigo-600');
-        btn.classList.replace('shadow-[0_4px_20px_rgba(30,41,59,0.5)]', 'shadow-[0_4px_20px_rgba(79,70,229,0.5)]');
+        if (items) {
+            items.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
+            items.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+        }
+        if (actionBtn) {
+            actionBtn.classList.add('opacity-0', 'pointer-events-none');
+            actionBtn.classList.remove('opacity-100', 'pointer-events-auto');
+            actionBtn.style.transform = 'translateX(0px) rotate(0deg)';
+        }
+        if (btn) {
+            btn.style.transform = 'rotate(0deg)';
+            btn.classList.replace('bg-slate-800', 'bg-indigo-600');
+            btn.classList.replace('shadow-[0_4px_20px_rgba(30,41,59,0.5)]', 'shadow-[0_4px_20px_rgba(79,70,229,0.5)]');
+        }
+        setTimeout(() => { if(icon) icon.classList.replace('fa-xmark', 'fa-bars'); }, 150);
     }
 };
 
@@ -183,13 +196,13 @@ function atualizarIconesDark(isDark) {
         if (iconeMobile) iconeMobile.className = 'fa-solid fa-sun text-xl text-amber-400 transition-colors duration-300';
         if (btnPc) btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors w-full';
         if (txtPc) txtPc.innerText = 'Tema Claro';
-        if (btnMobile) btnMobile.className = 'w-12 h-12 rounded-full bg-slate-800 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible';
+        if (btnMobile) btnMobile.className = 'w-10 h-10 rounded-full bg-slate-800 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible pointer-events-auto';
     } else {
         if (iconePc) iconePc.className = 'fa-solid fa-moon text-lg text-white transition-colors duration-300';
         if (iconeMobile) iconeMobile.className = 'fa-solid fa-moon text-xl text-white transition-colors duration-300';
         if (btnPc) btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-slate-800 text-white hover:bg-slate-700 transition-colors w-full';
         if (txtPc) txtPc.innerText = 'Tema Escuro';
-        if (btnMobile) btnMobile.className = 'w-12 h-12 rounded-full bg-slate-800 text-white shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible';
+        if (btnMobile) btnMobile.className = 'w-10 h-10 rounded-full bg-slate-800 text-white shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible pointer-events-auto';
         
         if(starPc) starPc.classList.add('animate-star');
         if(starMobile) starMobile.classList.add('animate-star');
