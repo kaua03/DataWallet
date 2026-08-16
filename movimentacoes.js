@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - IA COM RADAR DE FUTURO E PREVISIBILIDADE
+// movimentacoes.js - IA ESTRITA E PREVISÃO DE CAIXA ABSOLUTA
 // ==========================================
 
 let usuarioLogado = null;
@@ -47,9 +47,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     await carregarDadosDoBanco();
 });
 
-// ==========================================
-// MOTOR DE SELEÇÃO MULTIPLA (LONG PRESS)
-// ==========================================
 window.iniciarPressao = function(id) {
     if (modoSelecao) return; 
     timerPressao = setTimeout(() => { ativarModoSelecao(id); }, 500); 
@@ -304,10 +301,10 @@ function renderizarListaHistorico() {
 }
 
 // ==========================================
-// CÉREBRO NLP SÊNIOR: RADAR DE FUTURO, FUSÃO E REGRA ESTRITA
+// CÉREBRO NLP SÊNIOR: REGRA ESTRITA DE INDEFINIDO E DATAS
 // ==========================================
 const dicionarioDeInteligencia = [
-    { pasta: 'alimentação', regras: [{ titulo: 'Delivery', palavras: ['ifood', 'delivery', 'rappi', 'zedelivery'] }, { titulo: 'Fast Food', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado', 'pastel', 'mequi'] }, { titulo: 'Mercado', palavras: ['mercado', 'supermercado', 'açougue', 'padaria', 'compra', 'compras'] }, { titulo: 'Restaurante', palavras: ['restaurante', 'almoço', 'jantar', 'comida', 'self service'] }]},
+    { pasta: 'alimentação', regras: [{ titulo: 'Delivery', palavras: ['ifood', 'delivery', 'rappi', 'zedelivery', 'marmita', 'quentinha'] }, { titulo: 'Fast Food', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado', 'pastel', 'mequi', 'doce', 'chocolate', 'sorvete', 'acai', 'açaí'] }, { titulo: 'Mercado', palavras: ['mercado', 'supermercado', 'açougue', 'padaria', 'compra', 'compras', 'mercadinho', 'mercearia', 'hortifruti', 'feira', 'atacadao', 'atacadão'] }, { titulo: 'Restaurante', palavras: ['restaurante', 'almoço', 'jantar', 'comida', 'self service'] }]},
     { pasta: 'veículo', regras: [{ titulo: 'Combustível', palavras: ['gasolina', 'álcool', 'alcool', 'etanol', 'diesel', 'posto', 'combustível', 'combustivel', 'abasteci'] }, { titulo: 'Peças / Manutenção', palavras: ['oficina', 'mecânico', 'peça', 'pneu', 'óleo', 'revisão', 'carro', 'moto'] }, { titulo: 'Serviços Auto', palavras: ['estacionamento', 'pedágio', 'lavagem', 'lava rápido'] }, { titulo: 'Transporte', palavras: ['uber', '99', 'ônibus', 'passagem', 'metrô', 'táxi', 'taxi'] }]},
     { pasta: 'moradia', regras: [{ titulo: 'Aluguel', palavras: ['aluguel', 'condomínio'] }, { titulo: 'Conta de Luz', palavras: ['luz', 'energia', 'cpfl', 'cemig', 'enel'] }, { titulo: 'Conta de Água', palavras: ['água', 'sabesp', 'sanepar', 'copasa'] }, { titulo: 'Internet', palavras: ['internet', 'vivo', 'claro', 'tim', 'fibra'] }, { titulo: 'Reparos e Casa', palavras: ['reparo', 'faxina', 'limpeza', 'material de construção'] }]},
     { pasta: 'estudo', regras: [{ titulo: 'Mensalidade', palavras: ['faculdade', 'escola', 'mensalidade'] }, { titulo: 'Cursos Extras', palavras: ['curso', 'certificado', 'prova', 'concurso'] }, { titulo: 'Material Didático', palavras: ['livro', 'caderno', 'material', 'papelaria'] }]},
@@ -328,12 +325,13 @@ function processarFraseNLP(fraseBruta) {
 
     let textoCru = fraseBruta.toLowerCase();
     
-    // O RADAR DE INTENÇÃO FUTURA (Se a pessoa falar "Vou ganhar", sabemos que não é no passado)
-    let isFuturo = textoCru.match(/\b(vou|amanhã|amanha|receber|ganhar|pagar|mes que vem|mês que vem)\b/i);
-
-    // 1. DATA E TEMPO
+    // 1. ISOLANDO A MATEMÁTICA DE TEMPO
     let dataCalculada = new Date(); dataCalculada.setHours(12,0,0,0);
     
+    // O Radar de Futuro (Checa se tem verbo no futuro ANTES de processar os dias)
+    let isFuturo = textoCru.match(/\b(vou|amanhã|amanha|receber|ganhar|pagar|mes que vem|mês que vem)\b/i);
+
+    // Palavras de tempo relativas
     if (textoCru.includes('mes que vem') || textoCru.includes('mês que vem')) { dataCalculada.setMonth(dataCalculada.getMonth() + 1); textoCru = textoCru.replace(/do mes que vem|no mês que vem|mes que vem|mês que vem/g, ''); }
     else if (textoCru.includes('mes passado') || textoCru.includes('mês passado')) { dataCalculada.setMonth(dataCalculada.getMonth() - 1); textoCru = textoCru.replace(/do mes passado|no mes passado|mes passado|mês passado/g, ''); }
     
@@ -343,24 +341,32 @@ function processarFraseNLP(fraseBruta) {
     else if (textoCru.includes('ontem')) { dataCalculada.setDate(dataCalculada.getDate() - 1); textoCru = textoCru.replace('ontem', ''); }
     else if (textoCru.includes('hoje')) { textoCru = textoCru.replace('hoje', ''); }
 
-    // Interceptador avançado para datas escritas ou ditas (ex: "dia 19 do 08")
-    const matchDataBarra = textoCru.match(/(?:dia\s*)?(\d{1,2})\s*(?:de|do|\/)\s*(\d{1,2})(?:\s*(?:de|do|\/)\s*(\d{2,4}))?/i);
+    // Interceptador avançado para datas compostas ("18 do 8", "18/08", "18 de agosto")
+    const mesesMap = { 'janeiro': 0, 'fevereiro': 1, 'março': 2, 'marco': 2, 'abril': 3, 'maio': 4, 'junho': 5, 'julho': 6, 'agosto': 7, 'setembro': 8, 'outubro': 9, 'novembro': 10, 'dezembro': 11 };
+    
+    // Procura por "18 do 8", "18/08" ou "18 de 8"
+    const matchDataCompostaNum = textoCru.match(/(?:dia\s*)?(\d{1,2})\s*(?:de|do|\/)\s*(\d{1,2})(?:\s*(?:de|do|\/)\s*(\d{2,4}))?/i);
+    // Procura por "18 de agosto"
+    const matchDataCompostaTexto = textoCru.match(/(?:dia\s*)?(\d{1,2})\s*(?:de|do)\s*(janeiro|fevereiro|março|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)(?:\s*(?:de|do)\s*(\d{2,4}))?/i);
+    // Procura por "dia 18"
     const matchDia = textoCru.match(/(?:no )?dia\s*(\d{1,2})/i);
 
-    if (matchDataBarra) {
-        dataCalculada.setDate(1); dataCalculada.setMonth(parseInt(matchDataBarra[2]) - 1); dataCalculada.setDate(parseInt(matchDataBarra[1]));
-        if (matchDataBarra[3]) { let ano = parseInt(matchDataBarra[3]); if (ano < 100) ano += 2000; dataCalculada.setFullYear(ano); }
-        textoCru = textoCru.replace(matchDataBarra[0], ''); 
+    if (matchDataCompostaNum) {
+        dataCalculada.setDate(1); dataCalculada.setMonth(parseInt(matchDataCompostaNum[2]) - 1); dataCalculada.setDate(parseInt(matchDataCompostaNum[1]));
+        if (matchDataCompostaNum[3]) { let ano = parseInt(matchDataCompostaNum[3]); if (ano < 100) ano += 2000; dataCalculada.setFullYear(ano); }
+        textoCru = textoCru.replace(matchDataCompostaNum[0], ''); 
+    } else if (matchDataCompostaTexto) {
+        dataCalculada.setDate(1); dataCalculada.setMonth(mesesMap[matchDataCompostaTexto[2].toLowerCase()]); dataCalculada.setDate(parseInt(matchDataCompostaTexto[1]));
+        if (matchDataCompostaTexto[3]) { let ano = parseInt(matchDataCompostaTexto[3]); if (ano < 100) ano += 2000; dataCalculada.setFullYear(ano); }
+        textoCru = textoCru.replace(matchDataCompostaTexto[0], '');
     } else if (matchDia) {
         let diaNum = parseInt(matchDia[1]); const mesAtual = new Date().getMonth();
         dataCalculada.setDate(1); 
         
         // A Mágica da Lógica Temporal
         if (diaNum > new Date().getDate() && !isFuturo) {
-            // Falou "dia 19" e hoje é 16, SEM avisar que é futuro -> Mês Passado
             dataCalculada.setMonth(mesAtual - 1); 
         } else if (diaNum < new Date().getDate() && isFuturo) {
-            // Falou "VOU ganhar dia 10" e hoje é 16 -> Mês Que Vem
             dataCalculada.setMonth(mesAtual + 1); 
         }
         
@@ -386,10 +392,10 @@ function processarFraseNLP(fraseBruta) {
     let catDetectada = null; 
     let tituloFinal = '';
     
+    // Mata a pontuação para buscar no dicionário limpo
     let descCrua = removerAcentos(textoCru);
     descCrua = descCrua.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, " "); 
 
-    // 3. A REGRA ESTRITA DE ADIVINHAÇÃO (O Fim do Lixo)
     if (isReceita) {
         catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('renda') || removerAcentos(c.nome.toLowerCase()).includes('salario'));
         if (descCrua.includes('salario')) tituloFinal = 'Salário';
@@ -410,8 +416,24 @@ function processarFraseNLP(fraseBruta) {
 
     // A REGRA ABSOLUTA DE INDEFINIDO
     if (!tituloFinal) {
-        tituloFinal = isReceita ? 'Recebimento Indefinido' : 'Gasto Indefinido';
-        catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('lazer') || removerAcentos(c.nome.toLowerCase()).includes('outros'));
+        // Se a pessoa especificar para "quem" pagou/recebeu (ex: Recebi 25 do Pedro), tentamos pegar o nome.
+        let palavras = descCrua.split(/\s+/);
+        const stopWords = ['eu', 'gastei', 'gasto', 'gastar', 'paguei', 'pago', 'pagar', 'pague', 'custou', 'botei', 'coloquei', 'comprei', 'comprar', 'compra', 'de', 'da', 'do', 'no', 'na', 'para', 'com', 'novo', 'nova', 'meu', 'minha', 'fui', 'o', 'a', 'os', 'as', 'em', 'por', 'pra', 'fiz', 'tive', 'que', 'foi', 'deu', 'ficou', 'um', 'uma', 'uns', 'umas', 'recebi', 'receber', 'ganhei', 'ganhar', 'entrou', 'e', 'tem', 'tenho', 'ter', 'passei', 'passar', 'brl', 'amanha', 'ontem', 'hoje', 'dia'];
+        
+        palavras = palavras.filter(p => p.trim() !== '' && !stopWords.includes(p.trim()) && isNaN(p));
+        
+        if (palavras.length > 0 && palavras.length <= 3) {
+            // Se sobrou de 1 a 3 palavras (ex: "Pedro"), usa como título.
+            let titulo = palavras.join(' ');
+            tituloFinal = isReceita ? `Recebimento: ${titulo.charAt(0).toUpperCase() + titulo.slice(1)}` : titulo.charAt(0).toUpperCase() + titulo.slice(1); 
+        } else {
+            // Se for uma frase longa que o dicionário não mapeou, joga Indefinido
+            tituloFinal = isReceita ? 'Recebimento Indefinido' : 'Gasto Indefinido';
+        }
+        
+        if (!catDetectada) {
+            catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('lazer') || removerAcentos(c.nome.toLowerCase()).includes('outros'));
+        }
     }
 
     document.getElementById('transacao-id').value = ''; 
@@ -485,7 +507,6 @@ window.ativarMicrofone = function() {
         let transcricaoAoVivo = textoFinal || textoTemporario;
         if (transcricaoAoVivo.length > 0) {
             let t = transcricaoAoVivo.toLowerCase();
-            
             t = t.replace(/\bbrl\b/gi, "reais");
             t = t.replace(/(\d+(?:[.,]\d+)?)\s*(reais|real|r\$)/gi, "R$ $1");
             t = t.replace(/\breais\b|\breal\b/gi, "R$");
