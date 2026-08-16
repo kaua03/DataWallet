@@ -1,5 +1,5 @@
 // ==========================================
-// dashboard.js - MOTOR DE BI E DUAL-AXIS FAB 
+// dashboard.js - MOTOR DE BI COM DUAL-AXIS FAB E SEM REFRESH FANTASMA
 // ==========================================
 
 let usuarioLogado = null;
@@ -11,8 +11,8 @@ let grafPizza = null;
 let grafRadar = null;
 
 let statsGlobais = { receitas: 0, despesas: 0, saldo: 0, taxaPoupanca: 0, mediaDiaria: 0, maiorGasto: null, topCategoria: null, transacoesNoPeriodo: 0 };
-let menuMobileAberto = false; // Controle de Estado do Menu
-let inicializacaoCompleta = false; // Trava de Segurança contra refresh falso
+let menuMobileAberto = false; 
+let inicializacaoCompleta = false; // Trava de Segurança do Observer
 
 const coresPorCategoria = {
     'Alimentação': { hex: '#3b82f6', tw: 'bg-blue-500' },          
@@ -47,8 +47,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const hoje = new Date();
     document.getElementById('input-mes').value = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+    document.getElementById('input-ano').value = hoje.getFullYear();
     
-    // Inicia com "por_mes" ativado
     document.getElementById('filtro-periodo').value = 'por_mes';
     mudarTipoFiltro();
 
@@ -59,6 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await carregarDadosDoBanco();
     inicializacaoCompleta = true; 
 
+    // O OLHO DE SAURON (MUTATION OBSERVER)
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
             if (mutation.attributeName === 'class' && inicializacaoCompleta) {
@@ -71,7 +72,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     observer.observe(document.documentElement, { attributes: true });
 });
 
-// Helper de formatação instantânea (Usado quando a animação está desativada)
+// A MÁGICA DA EXPANSÃO EM DOIS EIXOS (L-Shape Mobile)
+window.toggleMobileMenu = function() {
+    const items = document.getElementById('fab-items');
+    const actionBtn = document.getElementById('fab-action');
+    const icon = document.getElementById('fab-icon');
+    const btn = document.getElementById('fab-menu');
+    
+    menuMobileAberto = !menuMobileAberto;
+
+    if (menuMobileAberto) {
+        items.classList.remove('opacity-0', 'translate-y-12', 'pointer-events-none');
+        items.classList.add('opacity-100');
+        
+        if (actionBtn) {
+            actionBtn.classList.remove('opacity-0', 'pointer-events-none');
+            actionBtn.classList.add('opacity-100', 'pointer-events-auto');
+            actionBtn.style.left = '0px';
+            actionBtn.style.transform = 'rotate(-360deg)';
+        }
+
+        btn.style.transform = 'rotate(180deg)';
+        setTimeout(() => { icon.classList.replace('fa-bars', 'fa-xmark'); }, 150);
+    } else {
+        items.classList.add('opacity-0', 'translate-y-12', 'pointer-events-none');
+        items.classList.remove('opacity-100');
+
+        if (actionBtn) {
+            actionBtn.classList.add('opacity-0', 'pointer-events-none');
+            actionBtn.classList.remove('opacity-100', 'pointer-events-auto');
+            actionBtn.style.left = 'calc(100% - 56px)';
+            actionBtn.style.transform = 'rotate(0deg)';
+        }
+
+        btn.style.transform = 'rotate(0deg)';
+        setTimeout(() => { icon.classList.replace('fa-xmark', 'fa-bars'); }, 150);
+    }
+};
+
 function formatarMoedaLocal(valor) {
     let p = Math.abs(valor).toFixed(2).split('.');
     p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -112,13 +150,14 @@ async function carregarDadosDoBanco() {
             supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id),
             supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
         ]);
-        transacoesGlobais = rTrans.data || [];
+        // Ignora despesas não pagas no balanço geral do Dashboard
+        transacoesGlobais = (rTrans.data || []).filter(t => t.tipo !== 'despesa' || t.pago === true);
         categoriasGlobais = rCat.data || [];
         processarEAtualizarTudo();
     } catch (e) { console.error("Erro ao puxar dados:", e.message); }
 }
 
-// O BUG DO FILTRO FOI RESOLVIDO AQUI: Removemos as classes antigas (grid/flex) e usamos apenas visibilidade
+// O BUG FOI RESOLVIDO AQUI: Removidas as classes de Grid do campo Flex e protegido as referências
 window.mudarTipoFiltro = function() {
     const tipo = document.getElementById('filtro-periodo').value;
     const boxMes = document.getElementById('box-mes');
@@ -127,7 +166,7 @@ window.mudarTipoFiltro = function() {
 
     if(boxMes) { boxMes.classList.add('hidden'); boxMes.classList.remove('flex'); }
     if(boxAno) { boxAno.classList.add('hidden'); boxAno.classList.remove('flex'); }
-    if(boxPers) { boxPers.classList.add('hidden'); boxPers.classList.remove('flex'); } // Atualizado para Flex 
+    if(boxPers) { boxPers.classList.add('hidden'); boxPers.classList.remove('flex'); } 
 
     if (tipo === 'por_mes' && boxMes) {
         boxMes.classList.remove('hidden'); boxMes.classList.add('flex');
@@ -136,7 +175,7 @@ window.mudarTipoFiltro = function() {
         boxAno.classList.remove('hidden'); boxAno.classList.add('flex');
     }
     else if (tipo === 'personalizado' && boxPers) {
-        boxPers.classList.remove('hidden'); boxPers.classList.add('flex'); // Alinhamos o Início e Fim como blocos Flex em linha
+        boxPers.classList.remove('hidden'); boxPers.classList.add('flex');
     }
 
     processarEAtualizarTudo();
@@ -274,7 +313,7 @@ window.processarEAtualizarTudo = function(isThemeChange = false) {
 }
 
 // ==========================================
-// RENDERIZAÇÃO DA UI (Listas)
+// RENDERIZAÇÃO DA UI (Listas em Cascata)
 // ==========================================
 function renderizarListaCategorias(ordenadas, gastos, totalGeral, isThemeChange) {
     const html = ordenadas.map((cat, index) => {
@@ -369,7 +408,7 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
             labels: labelsT.length > 0 ? labelsT : ['Sem Dados'],
             datasets: [
                 {
-                    type: 'line', label: 'Saldo', data: dadosAcumulados, yAxisID: 'y1',
+                    type: 'line', label: 'Saldo Acumulado', data: dadosAcumulados, yAxisID: 'y1',
                     borderColor: '#6366f1', borderWidth: 4, tension: 0.4, 
                     pointBackgroundColor: isDark ? '#0f172a' : '#ffffff', 
                     pointBorderColor: '#6366f1', pointBorderWidth: 2, pointRadius: 4, pointHoverRadius: 6, fill: false
@@ -455,49 +494,8 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
 }
 
 // ==========================================
-// A MÁGICA DA EXPANSÃO EM DOIS EIXOS (L-Shape Mobile para a IA)
+// MÓDULO DA INTERFACE DO COACH
 // ==========================================
-window.toggleMobileMenu = function() {
-    const items = document.getElementById('fab-items');
-    const actionBtn = document.getElementById('fab-action');
-    const icon = document.getElementById('fab-icon');
-    const btn = document.getElementById('fab-menu');
-    
-    menuMobileAberto = !menuMobileAberto;
-
-    if (menuMobileAberto) {
-        // Navegação sobe verticalmente
-        items.classList.remove('opacity-0', 'translate-y-12', 'pointer-events-none');
-        items.classList.add('opacity-100');
-        
-        // IA atira pra esquerda com rotação 360
-        if (actionBtn) {
-            actionBtn.classList.remove('opacity-0', 'pointer-events-none');
-            actionBtn.classList.add('opacity-100', 'pointer-events-auto');
-            actionBtn.style.left = '0px';
-            actionBtn.style.transform = 'rotate(-360deg)';
-        }
-
-        btn.style.transform = 'rotate(180deg)';
-        setTimeout(() => { icon.classList.replace('fa-bars', 'fa-xmark'); }, 150);
-    } else {
-        // Retrai navegação
-        items.classList.add('opacity-0', 'translate-y-12', 'pointer-events-none');
-        items.classList.remove('opacity-100');
-
-        // Retrai IA
-        if (actionBtn) {
-            actionBtn.classList.add('opacity-0', 'pointer-events-none');
-            actionBtn.classList.remove('opacity-100', 'pointer-events-auto');
-            actionBtn.style.left = 'calc(100% - 56px)';
-            actionBtn.style.transform = 'rotate(0deg)';
-        }
-
-        btn.style.transform = 'rotate(0deg)';
-        setTimeout(() => { icon.classList.replace('fa-xmark', 'fa-bars'); }, 150);
-    }
-};
-
 window.toggleCoach = function() {
     const janela = document.getElementById('janela-coach');
     if (janela.classList.contains('hidden')) {
