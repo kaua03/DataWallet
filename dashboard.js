@@ -1,5 +1,5 @@
 // ==========================================
-// dashboard.js - MOTOR DE BI COM FALSO 3D E DUAL-AXIS FAB 
+// dashboard.js - MOTOR DE BI COM FALSO 3D E SEM ERRO DE MEMÓRIA
 // ==========================================
 
 let usuarioLogado = null;
@@ -12,6 +12,8 @@ let grafRadar = null;
 
 let statsGlobais = { receitas: 0, despesas: 0, saldo: 0, taxaPoupanca: 0, mediaDiaria: 0, maiorGasto: null, topCategoria: null, transacoesNoPeriodo: 0 };
 
+// Trava Global de Segurança para o Menu e Observer
+window._menuMobileAberto = false;
 let inicializacaoCompleta = false; 
 
 const coresPorCategoria = {
@@ -70,7 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     observer.observe(document.documentElement, { attributes: true });
 });
 
-// A MÁGICA DA ESPINGARDA LATERAL (A Quebra do Vidro Invisível)
+// A MÁGICA DA ESPINGARDA LATERAL BLINDADA (L-Shape sem Bloqueio de Cliques)
 window.toggleMobileMenu = function() {
     const items = document.getElementById('fab-items');
     const actionBtn = document.getElementById('fab-action');
@@ -81,20 +83,19 @@ window.toggleMobileMenu = function() {
 
     if (window._menuMobileAberto) {
         if (items) {
-            // Remove o escudo invisível (pointer-events-none) e adiciona os eventos de auto!
+            // Vidro quebrado: pointer-events-auto permite clicar nos botões!
             items.classList.remove('opacity-0', 'translate-y-8', 'pointer-events-none');
             items.classList.add('opacity-100', 'pointer-events-auto');
         }
         if (actionBtn) {
             actionBtn.classList.remove('opacity-0', 'pointer-events-none');
             actionBtn.classList.add('opacity-100', 'pointer-events-auto');
-            actionBtn.style.transform = 'translateX(-70px) rotate(-360deg)';
+            actionBtn.style.transform = 'translateX(-64px) rotate(-360deg)';
         }
         if(btn) btn.style.transform = 'rotate(180deg)';
         setTimeout(() => { if(icon) icon.classList.replace('fa-bars', 'fa-xmark'); }, 150);
     } else {
         if (items) {
-            // Coloca o escudo de volta
             items.classList.add('opacity-0', 'translate-y-8', 'pointer-events-none');
             items.classList.remove('opacity-100', 'pointer-events-auto');
         }
@@ -142,6 +143,7 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
     requestAnimationFrame(step);
 };
 
+// O Cálculo Perfeito e Intacto
 async function carregarDadosDoBanco() {
     try {
         const [rTrans, rCat] = await Promise.all([
@@ -398,7 +400,7 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
             labels: labelsT.length > 0 ? labelsT : ['Sem Dados'],
             datasets: [
                 {
-                    type: 'line', label: 'Saldo', data: dadosAcumulados, yAxisID: 'y1',
+                    type: 'line', label: 'Saldo Acumulado', data: dadosAcumulados, yAxisID: 'y1',
                     borderColor: '#6366f1', borderWidth: 4, tension: 0.4, 
                     pointBackgroundColor: isDark ? '#0f172a' : '#ffffff', 
                     pointBorderColor: '#6366f1', pointBorderWidth: 2, pointRadius: 4, pointHoverRadius: 6, fill: false
