@@ -7,15 +7,15 @@
     
     <meta name="view-transition" content="same-origin">
     
-    <!-- 1º: A REGRA DE OURO (Sempre no objeto Window) -->
+    <!-- 1º: A BIBLIOTECA TAILWIND CARREGA PRIMEIRO -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2º: A NOSSA CONFIGURAÇÃO ASSUME O CONTROLE -->
     <script>
-        window.tailwind = {
-            config: { darkMode: 'class' }
+        tailwind.config = {
+            darkMode: 'class'
         };
     </script>
-    
-    <!-- 2º: A BIBLIOTECA (Agora obedece as regras do sistema) -->
-    <script src="https://cdn.tailwindcss.com"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -111,7 +111,7 @@
                 </div>
 
                 <div class="flex flex-col lg:flex-row items-center gap-3 mb-6 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 transition-colors">
-                    <div class="flex-1 flex items-center w-full bg-white dark:bg-slate-800 rounded-xl px-3 py-2 shadow-sm border border-slate-200 dark:border-slate-700 focus-within:border-indigo-500 transition-colors">
+                    <div class="flex-1 flex items-center w-full bg-white dark:bg-slate-800 rounded-xl px-3 py-2 shadow-sm border border-slate-200 dark:border-slate-700 focus-within:border-indigo-50 transition-colors">
                         <i class="fa-solid fa-magnifying-glass text-slate-400 mr-2"></i>
                         <input type="text" id="busca-historico" oninput="aplicarFiltrosHistorico()" placeholder="Buscar nome, valor..." class="bg-transparent outline-none w-full text-sm font-medium text-slate-700 dark:text-slate-200">
                     </div>
@@ -161,7 +161,6 @@
     <div id="modal-transacao" onclick="if(event.target === this) window.fecharModal()" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
         <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl p-6 md:p-8 relative border dark:border-slate-800 cursor-default fade-in">
             
-            <!-- O X LETAL: O 'onpointerdown' mata o delay do celular no exato instante do toque. -->
             <button type="button" onclick="window.fecharModal()" onpointerdown="window.fecharModal()" class="absolute top-2 right-2 md:top-4 md:right-4 w-14 h-14 md:w-12 md:h-12 rounded-full text-slate-400 md:hover:bg-rose-500 md:hover:text-white transition flex items-center justify-center z-[999] bg-transparent active:scale-95">
                 <i class="fa-solid fa-xmark text-2xl md:text-xl pointer-events-none"></i>
             </button>
