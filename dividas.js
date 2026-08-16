@@ -1,5 +1,5 @@
 // ==========================================
-// dividas.js - ERP KANBAN PURO E OTIMIZADO
+// dividas.js - ERP KANBAN BLINDADO CONTRA ERROS DE TEMPO (JWT)
 // ==========================================
 
 let usuarioLogado = null;
@@ -22,9 +22,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Usa a verificação exata que já funciona perfeitamente nas outras telas
-    usuarioLogado = await verificarSessaoSegura();
-    if (!usuarioLogado) return; 
+    try {
+        if (typeof verificarSessaoSegura === 'function') {
+            usuarioLogado = await verificarSessaoSegura();
+        } else if (window.supabaseClient) {
+            const { data: { session } } = await window.supabaseClient.auth.getSession();
+            usuarioLogado = session ? session.user : null;
+        }
+
+        if (!usuarioLogado) {
+            const board = document.getElementById('board-dividas');
+            if (board) board.innerHTML = `<div class="w-full text-center mt-20 text-rose-500 font-bold"><i class="fa-solid fa-lock mr-2"></i> Sessão não encontrada. Faça login novamente.</div>`;
+            return;
+        }
+    } catch (err) {
+        console.error("Erro na verificação de sessão:", err);
+    }
 
     const dataInput = document.getElementById('divida-data');
     if (dataInput) dataInput.value = new Date().toISOString().split('T')[0];
@@ -105,7 +118,6 @@ function desmascararMoeda(str) {
 
 async function carregarDadosDoBanco() {
     try {
-        // Uso direto da variável global exportada no config.js
         const [rTrans, rCat] = await Promise.all([
             supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).eq('tipo', 'despesa').order('data_vencimento', { ascending: true }),
             supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
@@ -126,8 +138,27 @@ async function carregarDadosDoBanco() {
         processarEAtualizarKanban();
 
     } catch (e) { 
-        console.error("Erro ao puxar dados:", e.message);
+        console.error("Erro ao puxar dados:", e);
         const board = document.getElementById('board-dividas');
+        
+        // Blindagem contra erro de relógio no futuro (JWT issued at future)
+        if (e.message && e.message.includes('JWT issued at future')) {
+            if (board) {
+                board.innerHTML = `
+                <div class="w-full text-center mt-12 flex flex-col items-center justify-center p-6 bg-white dark:bg-slate-900 rounded-3xl border border-rose-200 dark:border-rose-900/30 max-w-lg mx-auto shadow-sm">
+                    <div class="w-16 h-16 bg-rose-100 dark:bg-rose-500/20 text-rose-500 rounded-full flex items-center justify-center text-3xl mb-4">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <h3 class="text-lg font-black text-slate-900 dark:text-white mb-2">Erro de Sincronização Temporal</h3>
+                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-6">O relógio do seu dispositivo está no futuro ou desincronizado. Para a sua segurança, o servidor bloqueou o acesso.<br><br><b>Por favor, ajuste o relógio do seu sistema para a data/hora automática e faça login novamente.</b></p>
+                    <button onclick="if(typeof sairDoSistema === 'function') sairDoSistema(); else window.location.href='index.html';" class="px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl shadow-lg shadow-rose-500/30 font-bold transition flex items-center gap-2">
+                        <i class="fa-solid fa-right-from-bracket"></i> Limpar Sessão
+                    </button>
+                </div>`;
+            }
+            return;
+        }
+
         if (board) {
             board.innerHTML = `<div class="w-full text-center mt-20 text-rose-500 font-bold"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Erro ao carregar dados: ${e.message}</div>`;
         }
