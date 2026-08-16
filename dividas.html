@@ -23,7 +23,9 @@
         body { font-family: 'Inter', sans-serif; }
         
         .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .slide-up-chat { animation: slideUpChat 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; transform-origin: bottom right; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUpChat { from { opacity: 0; transform: scale(0.8) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
         
         .kanban-board::-webkit-scrollbar { display: none; }
         .kanban-board { scrollbar-width: none; } 
@@ -97,6 +99,28 @@
             </div>
         </section>
     </main>
+
+    <div class="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14">
+        
+        <button onclick="window.abrirModalNovaDivida()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-2xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500/50">
+            <i class="fa-solid fa-plus pointer-events-none"></i>
+        </button>
+
+        <div id="fab-items" class="absolute bottom-16 right-1 w-10 flex flex-col items-center gap-2.5 transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none z-40">
+            <button onclick="sairDoSistema()" title="Sair" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-rose-500 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-right-from-bracket pointer-events-none"></i></button>
+            <button onclick="window.alternarTema && window.alternarTema()" title="Tema" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-amber-500 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-moon dark:hidden pointer-events-none"></i><i class="fa-solid fa-sun hidden dark:block text-amber-400 pointer-events-none"></i></button>
+            <a href="mercado.html" title="Mercado" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-cart-shopping pointer-events-none"></i></a>
+            <a href="planos.html" title="Metas" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-bullseye pointer-events-none"></i></a>
+            <a href="categorias.html" title="Categorias" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-tags pointer-events-none"></i></a>
+            <a href="dividas.html" title="Dívidas" class="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 shadow-lg flex items-center justify-center border border-indigo-100 dark:border-indigo-500/30 pointer-events-auto"><i class="fa-solid fa-file-invoice-dollar pointer-events-none"></i></a>
+            <a href="dashboard.html" title="Dashboard" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-chart-pie pointer-events-none"></i></a>
+            <a href="movimentacoes.html" title="Movimentações" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-money-bill-transfer pointer-events-none"></i></a>
+        </div>
+
+        <button onclick="window.toggleMobileMenu()" id="fab-menu" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-800 dark:bg-indigo-600 text-white shadow-[0_4px_20px_rgba(30,41,59,0.5)] dark:shadow-[0_4px_20px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 z-50 pointer-events-auto">
+            <i class="fa-solid fa-bars transition-all duration-300 pointer-events-none" id="fab-icon"></i>
+        </button>
+    </div>
 
     <button onclick="window.abrirModalNovaDivida()" class="hidden md:flex fixed bottom-10 right-10 w-16 h-16 bg-indigo-600 rounded-full shadow-[0_10px_25px_rgba(79,70,229,0.5)] items-center justify-center text-white text-2xl z-40 hover:scale-105 hover:bg-indigo-700 transition-transform border border-indigo-400 dark:border-indigo-500/50">
         <i class="fa-solid fa-plus"></i>
