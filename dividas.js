@@ -1,11 +1,10 @@
 // ==========================================
-// dividas.js - ERP KANBAN PURO, SEM DRAG & DROP E COM DUAL-AXIS FAB
+// dividas.js - ERP KANBAN SEGURO (SEM DRAG & DROP DE CARDS)
 // ==========================================
 
 let usuarioLogado = null;
 let transacoesGlobais = [];
 let categoriasGlobais = [];
-let menuMobileAberto = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
     
@@ -31,43 +30,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     iniciarDragToScroll(); 
 });
 
-// A MÁGICA DA EXPANSÃO EM DOIS EIXOS (L-Shape Mobile)
-window.toggleMobileMenu = function() {
-    const items = document.getElementById('fab-items');
-    const actionBtn = document.getElementById('fab-action');
-    const icon = document.getElementById('fab-icon');
-    const btn = document.getElementById('fab-menu');
-    
-    menuMobileAberto = !menuMobileAberto;
-
-    if (menuMobileAberto) {
-        // Navegação sobe (Eixo Y)
-        items.classList.remove('opacity-0', 'translate-y-12', 'pointer-events-none');
-        items.classList.add('opacity-100');
-        
-        // Ação atira para a esquerda (Eixo X) com rotação
-        actionBtn.classList.remove('opacity-0', 'pointer-events-none');
-        actionBtn.classList.add('opacity-100', 'pointer-events-auto');
-        actionBtn.style.left = '0px';
-        actionBtn.style.transform = 'rotate(-360deg)';
-
-        btn.style.transform = 'rotate(180deg)';
-        setTimeout(() => { icon.classList.replace('fa-bars', 'fa-xmark'); }, 150);
-    } else {
-        // Retrai tudo
-        items.classList.add('opacity-0', 'translate-y-12', 'pointer-events-none');
-        items.classList.remove('opacity-100');
-
-        actionBtn.classList.add('opacity-0', 'pointer-events-none');
-        actionBtn.classList.remove('opacity-100', 'pointer-events-auto');
-        actionBtn.style.left = 'calc(100% - 56px)';
-        actionBtn.style.transform = 'rotate(0deg)';
-
-        btn.style.transform = 'rotate(0deg)';
-        setTimeout(() => { icon.classList.replace('fa-xmark', 'fa-bars'); }, 150);
-    }
-};
-
+// ==========================================
+// MOTOR DE FÍSICA E ANIMAÇÃO DE CONTADORES
+// ==========================================
 window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 1000) {
     const elemento = document.getElementById(id);
     if (!elemento) return;
@@ -100,7 +65,9 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
     requestAnimationFrame(step);
 };
 
-// Permite arrastar apenas a barra rolagem, NÃO OS CARDS
+// ==========================================
+// ARRASTAR PRANCHA KANBAN (NÃO OS CARDS)
+// ==========================================
 function iniciarDragToScroll() {
     const slider = document.getElementById('container-scroll');
     if(!slider) return;
@@ -176,7 +143,6 @@ function processarEAtualizarKanban() {
         
         const mesVenc = dVenc.getMonth(); const anoVenc = dVenc.getFullYear();
         
-        // MOTOR DE URGÊNCIA (Calcula diferença exata de dias para os Badges)
         const diffTime = dVenc - hojeData;
         const diasDiff = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         t.diasDiff = diasDiff;
@@ -212,6 +178,9 @@ function processarEAtualizarKanban() {
     renderizarColunas(agrupamentos);
 }
 
+// ==========================================
+// RENDERIZAÇÃO KANBAN ERP (Sem Arrastar Cards)
+// ==========================================
 function renderizarColunas(agrupamentos) {
     const board = document.getElementById('board-dividas');
     let html = '';
@@ -238,7 +207,7 @@ function renderizarColunas(agrupamentos) {
             cardsHtml = transacoesDaColuna.map(d => {
                 const isPago = d.pago === true;
                 const dVencObj = new Date(d.data_vencimento + 'T12:00:00Z');
-                const dataStr = dVencObj.toLocaleDateString('pt-BR').substring(0, 5); // Ex: 15/08
+                const dataStr = dVencObj.toLocaleDateString('pt-BR').substring(0, 5); 
                 const mesAnoAtualDoCard = `${mesesExtenso[dVencObj.getMonth()]} ${dVencObj.getFullYear()}`;
                 
                 let htmlDivisor = '';
@@ -252,7 +221,6 @@ function renderizarColunas(agrupamentos) {
                     mesAnoCorrente = mesAnoAtualDoCard;
                 }
                 
-                // SISTEMA VISUAL DE URGÊNCIA (Badges)
                 let badgeUrgencia = '';
                 if (!isPago) {
                     if (d.diasDiff < 0) badgeUrgencia = `<span class="bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase">Atrasado ${Math.abs(d.diasDiff)}d</span>`;
@@ -268,7 +236,6 @@ function renderizarColunas(agrupamentos) {
                 const corData = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-500' : 'text-slate-400 dark:text-slate-500';
                 const corValor = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white';
 
-                // NOTE: Sem cursor-grab e sem drag&drop. O Card é estático.
                 const cardHtmlCru = `
                 <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-3 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-all group flex flex-col gap-3">
                     <div class="flex justify-between items-start gap-3 w-full">
@@ -315,7 +282,6 @@ function renderizarColunas(agrupamentos) {
                 </div>
             </div>
 
-            <!-- Area de Scroll com pointer-events protegidos -->
             <div class="esconder-no-min p-3 flex-1 overflow-y-auto coluna-scroll pb-6" id="lista-cards-${idColunaSanitizado}">
                 ${cardsHtml}
             </div>
