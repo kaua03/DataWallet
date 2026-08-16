@@ -7,18 +7,14 @@
     
     <meta name="view-transition" content="same-origin">
     
-    <!-- 1º: A BIBLIOTECA TAILWIND CARREGA PRIMEIRO (A ordem que funciona na sua máquina) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- 2º: A CONFIGURAÇÃO ASSUME O CONTROLE -->
     <script>
-        tailwind.config = {
-            darkMode: 'class'
-        };
+        tailwind.config = { darkMode: 'class' };
     </script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- BIBLIOTECAS DE ELITE -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -42,7 +38,7 @@
 
         ::-webkit-scrollbar { width: 6px; display: none; }
         
-        /* O FALSO 3D QUE VOCÊ PEDIU NOS GRÁFICOS */
+        /* MAGIA DO FALSO 3D NEON NOS GRÁFICOS */
         .grafico-3d { filter: drop-shadow(0 20px 25px rgba(0,0,0,0.06)); transition: filter 0.4s ease; }
         .dark .grafico-3d { filter: drop-shadow(0 20px 25px rgba(0,0,0,0.4)); }
         
@@ -50,22 +46,17 @@
         input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.5; transition: 0.2s; }
         .dark input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.7; }
         input::-webkit-calendar-picker-indicator:hover { opacity: 1; }
-
-        #sidebar { width: 5rem; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, background-color 0.3s; }
-        #sidebar:hover { width: 16rem; box-shadow: 15px 0 30px rgba(0,0,0,0.05); }
-        .sidebar-link { width: 3rem; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s; }
-        #sidebar:hover .sidebar-link { width: 100%; }
-        .sidebar-text { opacity: 0; transform: translateX(-10px); visibility: hidden; transition: all 0.2s ease-in-out; white-space: nowrap; }
-        #sidebar:hover .sidebar-text { visibility: visible; opacity: 1; transform: translateX(0); transition-delay: 0.15s; }
     </style>
 </head>
 
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 h-[100dvh] overflow-hidden flex relative fade-in transition-colors duration-300">
 
+    <!-- O LAYOUT.JS INJETA A SIDEBAR E O MENU AQUI -->
+
     <main class="flex-1 h-full overflow-y-auto relative pb-32 md:pb-8 p-4 md:p-8">
         <section class="max-w-7xl mx-auto space-y-6">
             
-            <!-- HEADER ELITE -->
+            <!-- HEADER BLINDADO -->
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors relative overflow-hidden">
                 <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent pointer-events-none"></div>
                 <div class="relative z-10">
@@ -76,36 +67,30 @@
                 </div>
             </div>
 
-            <!-- FILTRO UNIFICADO (Idêntico ao de Movimentações) -->
-            <div class="flex flex-col lg:flex-row items-center gap-3 mb-6 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 transition-colors">
-                
-                <!-- Cápsula Esquerda (Simula a barra de pesquisa) -->
-                <div class="flex-1 flex items-center w-full bg-white dark:bg-slate-800 rounded-xl px-4 py-2.5 shadow-sm border border-slate-200 dark:border-slate-700 transition-colors">
-                    <i class="fa-solid fa-calendar-day text-indigo-500 mr-3"></i>
-                    <span class="text-sm font-black text-slate-700 dark:text-slate-200" id="label-periodo">Período Analisado</span>
-                </div>
-
-                <!-- Botões Direitos -->
-                <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-                    <div class="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-2.5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors w-full sm:w-auto">
+            <!-- FILTRO DE ELITE (MINIMALISTA E LIMPO) -->
+            <div class="flex justify-end mb-6">
+                <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 transition-colors w-full lg:w-auto justify-center">
+                    
+                    <div class="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors w-full sm:w-auto">
                         <i class="fa-solid fa-filter text-slate-400 text-xs"></i>
                         <select id="filtro-periodo" onchange="mudarTipoFiltro()" class="bg-transparent outline-none text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer w-full sm:w-auto">
-                            <option value="por_mes">Por Mês</option>
-                            <option value="por_ano">Por Ano</option>
-                            <option value="personalizado">Personalizado</option>
-                            <option value="tudo">Todo o Histórico</option>
+                            <!-- Options Blindados no Modo Escuro -->
+                            <option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="por_mes">Por Mês</option>
+                            <option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="por_ano">Por Ano</option>
+                            <option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="personalizado">Personalizado</option>
+                            <option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="tudo">Todo o Histórico</option>
                         </select>
                     </div>
 
-                    <div id="box-mes" class="hidden flex items-center bg-white dark:bg-slate-800 px-3 py-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors w-full sm:w-auto">
+                    <div id="box-mes" class="hidden flex items-center bg-white dark:bg-slate-800 px-3 py-1.5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors w-full sm:w-auto">
                         <input type="month" id="input-mes" onchange="processarEAtualizarTudo()" class="bg-transparent outline-none text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer w-full" style="color-scheme: dark;">
                     </div>
                     
-                    <div id="box-ano" class="hidden flex items-center bg-white dark:bg-slate-800 px-3 py-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors w-full sm:w-auto">
+                    <div id="box-ano" class="hidden flex items-center bg-white dark:bg-slate-800 px-3 py-1.5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors w-full sm:w-auto">
                         <input type="number" id="input-ano" onchange="processarEAtualizarTudo()" min="2000" max="2100" class="bg-transparent outline-none text-sm font-bold text-slate-700 dark:text-slate-300 w-full" placeholder="2026">
                     </div>
 
-                    <div id="box-personalizado" class="hidden flex flex-wrap items-center gap-2 bg-white dark:bg-slate-800 px-3 py-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors w-full sm:w-auto justify-center">
+                    <div id="box-personalizado" class="hidden flex flex-wrap items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors w-full sm:w-auto justify-center">
                         <input type="date" id="input-data-inicio" onchange="processarEAtualizarTudo()" class="bg-transparent outline-none text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer" style="color-scheme: dark;">
                         <span class="text-slate-400 text-xs">até</span>
                         <input type="date" id="input-data-fim" onchange="processarEAtualizarTudo()" class="bg-transparent outline-none text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer" style="color-scheme: dark;">
@@ -186,7 +171,7 @@
         </section>
     </main>
 
-    <!-- O BOTÃO DO CONSULTOR IA: Invisível no mobile para não brigar com o Menu -->
+    <!-- O BOTÃO DO CONSULTOR IA (Desktop Apenas) -->
     <button onclick="toggleCoach()" class="hidden md:flex fixed bottom-10 right-10 w-16 h-16 bg-slate-900 dark:bg-black rounded-full shadow-[0_10px_25px_rgba(15,23,42,0.4)] dark:shadow-[0_0_20px_rgba(99,102,241,0.3)] items-center justify-center text-white text-2xl z-40 hover:scale-105 transition-transform border border-slate-700 dark:border-indigo-500/30">
         <i class="fa-solid fa-robot text-indigo-400"></i>
     </button>
