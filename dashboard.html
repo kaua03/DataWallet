@@ -14,7 +14,6 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- BIBLIOTECAS DE ELITE -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -38,7 +37,6 @@
 
         ::-webkit-scrollbar { width: 6px; display: none; }
         
-        /* FALSO 3D NEON NOS GRÁFICOS */
         .grafico-3d { filter: drop-shadow(0 20px 25px rgba(0,0,0,0.06)); transition: filter 0.4s ease; }
         .dark .grafico-3d { filter: drop-shadow(0 20px 25px rgba(0,0,0,0.4)); }
         
@@ -60,12 +58,9 @@
 
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 h-[100dvh] overflow-hidden flex relative fade-in transition-colors duration-300">
 
-    <!-- O LAYOUT.JS INJETA A SIDEBAR AQUI -->
-
     <main class="flex-1 h-full overflow-y-auto relative pb-32 md:pb-8 p-3 md:p-8">
         <section class="max-w-7xl mx-auto space-y-4 md:space-y-6">
             
-            <!-- HEADER BLINDADO -->
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors relative overflow-hidden">
                 <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent pointer-events-none"></div>
                 <div class="relative z-10">
@@ -115,7 +110,7 @@
                 </div>
             </div>
 
-            <!-- KPIs UNIFICADOS -->
+            <!-- KPIs -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 <div class="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm flex flex-col justify-center transition-colors">
                     <p class="text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mb-1">Saldo Líquido</p>
@@ -188,29 +183,29 @@
         </section>
     </main>
 
-    <!-- MENU MOBILE EM EIXO-DUPLO (GEOMETRIA CELESTIAL BLINDADA) -->
-    <div class="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14">
+    <!-- MENU MOBILE L-SHAPE BLINDADO -->
+    <div class="md:hidden fixed bottom-6 right-6 z-50">
         
-        <!-- BOTÃO DA IA (Nasce oculto, perfeitamente centralizado atrás do botão Menu e atira pra esquerda) -->
-        <button onclick="toggleCoach()" id="fab-action" class="absolute inset-0 m-auto w-12 h-12 rounded-full bg-slate-900 dark:bg-black text-indigo-400 shadow-lg flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none border border-slate-700 dark:border-indigo-500/50 z-30">
-            <i class="fa-solid fa-robot pointer-events-none"></i>
+        <!-- BOTÃO DA IA (Atira pra esquerda. Nascendo oculto no exato mesmo lugar do menu) -->
+        <button onclick="toggleCoach()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-900 dark:bg-black text-indigo-400 shadow-[0_10px_25px_rgba(0,0,0,0.4)] dark:shadow-[0_0_20px_rgba(99,102,241,0.3)] flex items-center justify-center text-2xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-slate-700 dark:border-indigo-500/50">
+            <i class="fa-solid fa-robot"></i>
         </button>
 
-        <!-- ITENS DE NAVEGAÇÃO COMPLETOS (Sobem verticalmente na mesma proporção) -->
-        <div id="fab-items" class="absolute bottom-[4.5rem] right-2 w-10 flex flex-col items-center gap-2.5 transition-all duration-300 transform translate-y-8 opacity-0 pointer-events-none z-30">
-            <button onclick="sairDoSistema()" title="Sair" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-rose-500 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700"><i class="fa-solid fa-right-from-bracket pointer-events-none"></i></button>
-            <button onclick="window.alternarTema && window.alternarTema()" title="Tema" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-amber-500 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700"><i class="fa-solid fa-moon dark:hidden pointer-events-none"></i><i class="fa-solid fa-sun hidden dark:block text-amber-400 pointer-events-none"></i></button>
-            <a href="mercado.html" title="Mercado" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700"><i class="fa-solid fa-cart-shopping pointer-events-none"></i></a>
-            <a href="planos.html" title="Metas" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700"><i class="fa-solid fa-bullseye pointer-events-none"></i></a>
-            <a href="categorias.html" title="Categorias" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700"><i class="fa-solid fa-tags pointer-events-none"></i></a>
-            <a href="dividas.html" title="Dívidas" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700"><i class="fa-solid fa-file-invoice-dollar pointer-events-none"></i></a>
-            <a href="dashboard.html" title="Dashboard" class="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 shadow-lg flex items-center justify-center border border-indigo-100 dark:border-indigo-500/30"><i class="fa-solid fa-chart-pie pointer-events-none"></i></a>
-            <a href="movimentacoes.html" title="Movimentações" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700"><i class="fa-solid fa-money-bill-transfer pointer-events-none"></i></a>
+        <!-- ITENS DE NAVEGAÇÃO -->
+        <div id="fab-items" class="absolute bottom-16 right-1 w-12 flex flex-col items-center gap-3 transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none z-40">
+            <button onclick="sairDoSistema()" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-rose-500 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 transition-colors"><i class="fa-solid fa-right-from-bracket"></i></button>
+            <button onclick="window.alternarTema && window.alternarTema()" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-amber-500 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 transition-colors"><i class="fa-solid fa-moon dark:hidden"></i><i class="fa-solid fa-sun hidden dark:block text-amber-400"></i></button>
+            <a href="mercado.html" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 transition-colors"><i class="fa-solid fa-cart-shopping"></i></a>
+            <a href="planos.html" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 transition-colors"><i class="fa-solid fa-bullseye"></i></a>
+            <a href="categorias.html" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 transition-colors"><i class="fa-solid fa-tags"></i></a>
+            <a href="dividas.html" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 transition-colors"><i class="fa-solid fa-file-invoice-dollar"></i></a>
+            <a href="dashboard.html" class="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 shadow-lg flex items-center justify-center border border-indigo-100 dark:border-indigo-500/30 transition-colors"><i class="fa-solid fa-chart-pie"></i></a>
+            <a href="movimentacoes.html" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 transition-colors"><i class="fa-solid fa-money-bill-transfer"></i></a>
         </div>
 
-        <!-- BOTÃO PRINCIPAL (Por cima de tudo, z-50, forma rígida w-14 h-14) -->
-        <button onclick="window.toggleMobileMenu()" id="fab-menu" class="absolute inset-0 w-14 h-14 rounded-full bg-slate-800 dark:bg-indigo-600 text-white shadow-[0_4px_20px_rgba(30,41,59,0.5)] dark:shadow-[0_4px_20px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 z-50">
-            <i class="fa-solid fa-bars transition-all duration-300 pointer-events-none" id="fab-icon"></i>
+        <!-- BOTÃO PRINCIPAL -->
+        <button onclick="window.toggleMobileMenu()" id="fab-menu" class="relative w-14 h-14 rounded-full bg-slate-800 dark:bg-indigo-600 text-white shadow-[0_4px_20px_rgba(30,41,59,0.5)] dark:shadow-[0_4px_20px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-transform duration-300 z-50">
+            <i class="fa-solid fa-bars transition-all duration-300" id="fab-icon"></i>
         </button>
     </div>
 
@@ -219,7 +214,6 @@
         <i class="fa-solid fa-robot text-indigo-400"></i>
     </button>
 
-    <!-- MODAL DO CHAT IA -->
     <div id="janela-coach" class="hidden fixed bottom-40 md:bottom-32 right-4 md:right-10 w-[calc(100%-2rem)] md:w-[420px] h-[600px] max-h-[70vh] bg-slate-900 rounded-3xl shadow-[0_30px_60px_rgba(0,0,0,0.6)] z-50 flex flex-col overflow-hidden border border-slate-700 slide-up-chat">
         <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-600 opacity-10 blur-3xl rounded-full pointer-events-none"></div>
         <div class="p-5 border-b border-slate-800 flex items-center justify-between z-10 bg-slate-900/90 backdrop-blur-md shrink-0">
