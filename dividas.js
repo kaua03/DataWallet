@@ -1,14 +1,14 @@
 // ==========================================
-// dividas.js - KANBAN ERP (SEM DRAG & DROP) E MOTOR DE URGÊNCIA
+// dividas.js - ERP KANBAN PURO, SEM DRAG & DROP E COM DUAL-AXIS FAB
 // ==========================================
 
 let usuarioLogado = null;
 let transacoesGlobais = [];
 let categoriasGlobais = [];
+let menuMobileAberto = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
     
-    // A MÁGICA DE NAVEGAÇÃO SPA
     setTimeout(() => document.body.classList.remove('fade-in'), 500);
 
     document.querySelectorAll('a').forEach(link => {
@@ -28,12 +28,46 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('divida-data').value = new Date().toISOString().split('T')[0];
     await carregarDadosDoBanco();
-    iniciarDragToScroll(); // Apenas arrastar a prancha, não os cards!
+    iniciarDragToScroll(); 
 });
 
-// ==========================================
-// MOTOR DE FÍSICA E ANIMAÇÃO
-// ==========================================
+// A MÁGICA DA EXPANSÃO EM DOIS EIXOS (L-Shape Mobile)
+window.toggleMobileMenu = function() {
+    const items = document.getElementById('fab-items');
+    const actionBtn = document.getElementById('fab-action');
+    const icon = document.getElementById('fab-icon');
+    const btn = document.getElementById('fab-menu');
+    
+    menuMobileAberto = !menuMobileAberto;
+
+    if (menuMobileAberto) {
+        // Navegação sobe (Eixo Y)
+        items.classList.remove('opacity-0', 'translate-y-12', 'pointer-events-none');
+        items.classList.add('opacity-100');
+        
+        // Ação atira para a esquerda (Eixo X) com rotação
+        actionBtn.classList.remove('opacity-0', 'pointer-events-none');
+        actionBtn.classList.add('opacity-100', 'pointer-events-auto');
+        actionBtn.style.left = '0px';
+        actionBtn.style.transform = 'rotate(-360deg)';
+
+        btn.style.transform = 'rotate(180deg)';
+        setTimeout(() => { icon.classList.replace('fa-bars', 'fa-xmark'); }, 150);
+    } else {
+        // Retrai tudo
+        items.classList.add('opacity-0', 'translate-y-12', 'pointer-events-none');
+        items.classList.remove('opacity-100');
+
+        actionBtn.classList.add('opacity-0', 'pointer-events-none');
+        actionBtn.classList.remove('opacity-100', 'pointer-events-auto');
+        actionBtn.style.left = 'calc(100% - 56px)';
+        actionBtn.style.transform = 'rotate(0deg)';
+
+        btn.style.transform = 'rotate(0deg)';
+        setTimeout(() => { icon.classList.replace('fa-xmark', 'fa-bars'); }, 150);
+    }
+};
+
 window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 1000) {
     const elemento = document.getElementById(id);
     if (!elemento) return;
@@ -66,9 +100,7 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
     requestAnimationFrame(step);
 };
 
-// ==========================================
-// ARRASTAR PRANCHA (NÃO OS CARDS)
-// ==========================================
+// Permite arrastar apenas a barra rolagem, NÃO OS CARDS
 function iniciarDragToScroll() {
     const slider = document.getElementById('container-scroll');
     if(!slider) return;
@@ -119,7 +151,7 @@ async function carregarDadosDoBanco() {
 
         const selectCat = document.getElementById('divida-categoria');
         selectCat.innerHTML = '<option value="" disabled selected>Selecione uma pasta...</option>' + 
-            categoriasGlobais.map(c => `<option class="bg-slate-800 text-white" value="${c.id}">${c.nome}</option>`).join('');
+            categoriasGlobais.map(c => `<option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="${c.id}">${c.nome}</option>`).join('');
 
         processarEAtualizarKanban();
 
@@ -144,7 +176,7 @@ function processarEAtualizarKanban() {
         
         const mesVenc = dVenc.getMonth(); const anoVenc = dVenc.getFullYear();
         
-        // MOTOR DE URGÊNCIA (Calcula dias para o vencimento)
+        // MOTOR DE URGÊNCIA (Calcula diferença exata de dias para os Badges)
         const diffTime = dVenc - hojeData;
         const diasDiff = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         t.diasDiff = diasDiff;
@@ -153,10 +185,10 @@ function processarEAtualizarKanban() {
             totPagas += t.valor;
             agrupamentos['Histórico de Pagas'].push(t);
         } else {
-            totEmAberto += t.valor; // Tudo que não está pago soma no "Em Aberto"
+            totEmAberto += t.valor;
             
             if (diasDiff >= 0 && diasDiff <= 7) {
-                totRisco7Dias += t.valor; // Se vence hoje ou em até 7 dias, é Risco Imediato
+                totRisco7Dias += t.valor;
             }
 
             if (diasDiff < 0) { 
@@ -172,28 +204,14 @@ function processarEAtualizarKanban() {
         }
     });
 
-    // COMPLIANCE DE QUITAÇÃO (Quanto já paguei do total gerado?)
-    let compliance = 0;
-    const totalGeral = totEmAberto + totPagas;
-    if (totalGeral > 0) compliance = (totPagas / totalGeral) * 100;
-
-    // Roleta Sênior para as Métricas ERP
     window.animarContador('kpi-atrasadas', totAtrasadas, 'moeda', 800);
     window.animarContador('kpi-risco', totRisco7Dias, 'moeda', 800);
     window.animarContador('kpi-aberto', totEmAberto, 'moeda', 800);
     window.animarContador('kpi-pagas', totPagas, 'moeda', 800);
-    window.animarContador('kpi-compliance-texto', compliance, 'porcentagem', 800);
-
-    const barraComp = document.getElementById('kpi-compliance-barra');
-    barraComp.style.width = '0%';
-    setTimeout(() => { barraComp.style.width = `${compliance}%`; }, 100);
 
     renderizarColunas(agrupamentos);
 }
 
-// ==========================================
-// RENDERIZAÇÃO DO KANBAN BLINDADO (Sem Drag & Drop)
-// ==========================================
 function renderizarColunas(agrupamentos) {
     const board = document.getElementById('board-dividas');
     let html = '';
@@ -220,7 +238,7 @@ function renderizarColunas(agrupamentos) {
             cardsHtml = transacoesDaColuna.map(d => {
                 const isPago = d.pago === true;
                 const dVencObj = new Date(d.data_vencimento + 'T12:00:00Z');
-                const dataStr = dVencObj.toLocaleDateString('pt-BR').substring(0, 5); // Só DD/MM
+                const dataStr = dVencObj.toLocaleDateString('pt-BR').substring(0, 5); // Ex: 15/08
                 const mesAnoAtualDoCard = `${mesesExtenso[dVencObj.getMonth()]} ${dVencObj.getFullYear()}`;
                 
                 let htmlDivisor = '';
@@ -234,7 +252,7 @@ function renderizarColunas(agrupamentos) {
                     mesAnoCorrente = mesAnoAtualDoCard;
                 }
                 
-                // SISTEMA DE URGÊNCIA VISUAL (Badges)
+                // SISTEMA VISUAL DE URGÊNCIA (Badges)
                 let badgeUrgencia = '';
                 if (!isPago) {
                     if (d.diasDiff < 0) badgeUrgencia = `<span class="bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase">Atrasado ${Math.abs(d.diasDiff)}d</span>`;
@@ -250,12 +268,12 @@ function renderizarColunas(agrupamentos) {
                 const corData = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-500' : 'text-slate-400 dark:text-slate-500';
                 const corValor = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white';
 
-                // NOTE: Retirei o cursor-grab. O card não é mais arrastável!
+                // NOTE: Sem cursor-grab e sem drag&drop. O Card é estático.
                 const cardHtmlCru = `
                 <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-3 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-all group flex flex-col gap-3">
                     <div class="flex justify-between items-start gap-3 w-full">
                         <h4 class="font-bold text-xs ${classeTraco} leading-tight break-words whitespace-normal mt-0.5 flex-1">${d.descricao}</h4>
-                        <span class="font-black text-sm ${corValor} whitespace-nowrap shrink-0">${formatarMoeda(d.valor)}</span>
+                        <span class="font-black text-sm ${corValor} whitespace-nowrap shrink-0">R$ ${d.valor.toFixed(2).replace('.', ',')}</span>
                     </div>
                     <div class="flex items-center justify-between w-full">
                         <div class="flex items-center gap-2 text-[11px] font-bold ${corData}">
@@ -297,6 +315,7 @@ function renderizarColunas(agrupamentos) {
                 </div>
             </div>
 
+            <!-- Area de Scroll com pointer-events protegidos -->
             <div class="esconder-no-min p-3 flex-1 overflow-y-auto coluna-scroll pb-6" id="lista-cards-${idColunaSanitizado}">
                 ${cardsHtml}
             </div>
@@ -327,7 +346,8 @@ window.alterarStatusPagamento = async function(idTransacao, novoStatusPago) {
         processarEAtualizarKanban();
         
         if (novoStatusPago) {
-            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, timerProgressBar: true, background: document.documentElement.classList.contains('dark') ? '#1e293b' : '#fff', color: document.documentElement.classList.contains('dark') ? '#fff' : '#1e293b' });
+            const isDark = document.documentElement.classList.contains('dark');
+            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, timerProgressBar: true, background: isDark ? '#1e293b' : '#fff', color: isDark ? '#fff' : '#1e293b' });
             Toast.fire({ icon: 'success', title: 'Conta Liquidada!' });
         }
     } catch (e) { 
