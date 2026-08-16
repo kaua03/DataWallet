@@ -1,5 +1,5 @@
 // ==========================================
-// dashboard.js - CÉREBRO ANALÍTICO COM FALSO 3D E OBSERVER SÊNIOR
+// dashboard.js - MOTOR DE BI E DUAL Y-AXIS SÊNIOR
 // ==========================================
 
 let usuarioLogado = null;
@@ -56,8 +56,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await carregarDadosDoBanco();
 
-    // O OLHO DE SAURON (MUTATION OBSERVER)
-    // Vigia a tag HTML e redesenha os gráficos com as cores noturnas quando a classe mudar
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
             if (mutation.attributeName === 'class') {
@@ -120,20 +118,9 @@ window.mudarTipoFiltro = function() {
     document.getElementById('box-ano').classList.add('hidden');
     document.getElementById('box-personalizado').classList.add('hidden');
 
-    if (tipo === 'por_mes') {
-        document.getElementById('box-mes').classList.remove('hidden');
-        document.getElementById('label-periodo').innerText = "Mês Específico";
-    }
-    else if (tipo === 'por_ano') {
-        document.getElementById('box-ano').classList.remove('hidden');
-        document.getElementById('label-periodo').innerText = "Ano Específico";
-    }
-    else if (tipo === 'personalizado') {
-        document.getElementById('box-personalizado').classList.remove('hidden');
-        document.getElementById('label-periodo').innerText = "Período Livre";
-    } else {
-        document.getElementById('label-periodo').innerText = "Todo o Histórico";
-    }
+    if (tipo === 'por_mes') document.getElementById('box-mes').classList.remove('hidden');
+    else if (tipo === 'por_ano') document.getElementById('box-ano').classList.remove('hidden');
+    else if (tipo === 'personalizado') document.getElementById('box-personalizado').classList.remove('hidden');
 
     processarEAtualizarTudo();
 }
@@ -272,11 +259,10 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
 }
 
 // ==========================================
-// MOTOR DE GRÁFICOS (FALSO 3D E OBSERVER)
+// MOTOR DE GRÁFICOS (DUAL Y-AXIS SÊNIOR)
 // ==========================================
 function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, gastosPorDiaSemana) {
     
-    // Leitura Dinâmica do Dark Mode
     const isDark = document.documentElement.classList.contains('dark');
     const corTexto = isDark ? '#94a3b8' : '#64748b'; 
     const corGrid = isDark ? '#1e293b' : '#f1f5f9';  
@@ -295,7 +281,7 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
     };
 
     // ----------------------------------------------------
-    // GRÁFICO 1: FLUXO DE CAIXA (Gradientes Neon 3D)
+    // GRÁFICO 1: FLUXO COMBO (O FIM DO ESMAGAMENTO DE BARRAS)
     // ----------------------------------------------------
     const ctxC = document.getElementById('graficoCombo').getContext('2d');
     if (grafCombo) grafCombo.destroy();
@@ -329,25 +315,31 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
             labels: labelsT.length > 0 ? labelsT : ['Sem Dados'],
             datasets: [
                 {
-                    type: 'line', label: 'Saldo', data: dadosAcumulados, 
+                    // A linha agora tem o seu próprio eixo invisível ('y1') para não esmagar as barras!
+                    type: 'line', label: 'Saldo', data: dadosAcumulados, yAxisID: 'y1',
                     borderColor: '#6366f1', borderWidth: 4, tension: 0.4, 
                     pointBackgroundColor: isDark ? '#0f172a' : '#ffffff', 
                     pointBorderColor: '#6366f1', pointBorderWidth: 2, pointRadius: 4, pointHoverRadius: 6, fill: false
                 },
-                { type: 'bar', label: 'Entradas', data: dadosRec, backgroundColor: gradVerde, borderRadius: 4, maxBarThickness: 30 },
-                { type: 'bar', label: 'Saídas', data: dadosDes, backgroundColor: gradVermelho, borderRadius: 4, maxBarThickness: 30 }
+                { type: 'bar', label: 'Entradas', data: dadosRec, backgroundColor: gradVerde, borderRadius: 4, maxBarThickness: 30, yAxisID: 'y' },
+                { type: 'bar', label: 'Saídas', data: dadosDes, backgroundColor: gradVermelho, borderRadius: 4, maxBarThickness: 30, yAxisID: 'y' }
             ]
         },
         options: {
             responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+            animation: { duration: 1200, easing: 'easeOutQuart' }, // Animação fluida e impactante
             plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${Math.abs(ctx.raw).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}` } } },
             scales: {
                 x: { stacked: true, grid: { display: false }, border: {display: false}, ticks: { font: { size: 11, weight: 'bold' } } },
                 y: { 
-                    stacked: true, 
+                    type: 'linear', position: 'left', stacked: true, 
                     border: { display: false },
                     grid: { color: corGrid, lineWidth: 1, borderDash: [4, 4] }, 
                     ticks: { font: { size: 10, weight: 'bold' }, callback: (value) => value >= 0 ? `R$ ${value}` : `-R$ ${Math.abs(value)}` } 
+                },
+                y1: {
+                    // O Eixo Invisível Mestre. A linha sobe sem machucar as barras.
+                    type: 'linear', position: 'right', display: false, grid: { drawOnChartArea: false }
                 }
             }
         }
@@ -378,7 +370,7 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
     grafPizza = new Chart(ctxP, {
         type: 'doughnut',
         data: { labels: lblP, datasets: [{ data: datP, backgroundColor: coresP, borderWidth: 4, borderColor: corBordaRosca, hoverOffset: 10 }] },
-        options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${categoriasOrdenadas.length === 0 ? 'R$ 0,00' : ctx.raw.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}` } } } }
+        options: { animation: { duration: 1200, easing: 'easeOutQuart' }, responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${categoriasOrdenadas.length === 0 ? 'R$ 0,00' : ctx.raw.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}` } } } }
     });
 
     // ----------------------------------------------------
@@ -409,6 +401,7 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
             }]
         },
         options: {
+            animation: { duration: 1200, easing: 'easeOutQuart' },
             responsive: true, maintainAspectRatio: false,
             scales: {
                 r: {
