@@ -102,12 +102,14 @@
                         </div>
                     </div>
 
-                    <div id="box-personalizado" class="hidden grid-cols-2 gap-2 w-full sm:w-auto">
-                        <div class="relative bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 h-10 transition-colors">
-                            <input type="date" id="input-data-inicio" onchange="processarEAtualizarTudo()" class="absolute inset-0 w-full h-full px-3 bg-transparent outline-none text-[12px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer" style="color-scheme: dark;">
+                    <!-- BOX PERSONALIZADO (Compactado e Alinhado) -->
+                    <div id="box-personalizado" class="hidden flex items-center gap-1 w-full sm:w-auto">
+                        <div class="relative flex-1 sm:w-[130px] bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 h-10 transition-colors">
+                            <input type="date" id="input-data-inicio" onchange="processarEAtualizarTudo()" class="absolute inset-0 w-full h-full px-2 bg-transparent outline-none text-[11px] md:text-[12px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer" style="color-scheme: dark;">
                         </div>
-                        <div class="relative bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 h-10 transition-colors">
-                            <input type="date" id="input-data-fim" onchange="processarEAtualizarTudo()" class="absolute inset-0 w-full h-full px-3 bg-transparent outline-none text-[12px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer" style="color-scheme: dark;">
+                        <span class="text-slate-400 text-[10px] uppercase font-bold mx-1">até</span>
+                        <div class="relative flex-1 sm:w-[130px] bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 h-10 transition-colors">
+                            <input type="date" id="input-data-fim" onchange="processarEAtualizarTudo()" class="absolute inset-0 w-full h-full px-2 bg-transparent outline-none text-[11px] md:text-[12px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer" style="color-scheme: dark;">
                         </div>
                     </div>
 
@@ -159,7 +161,6 @@
 
             <!-- GRÁFICOS SECUNDÁRIOS -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-                
                 <div class="lg:col-span-1 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors flex flex-col">
                     <h3 class="text-slate-800 dark:text-white font-bold text-[1rem] md:text-lg">Centros de Custo</h3>
                     <p class="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 font-medium mb-4 md:mb-6">Detalhamento hierárquico</p>
@@ -187,7 +188,7 @@
         </section>
     </main>
 
-    <!-- MENU MOBILE DUAL-AXIS (A MÁGICA DA ESPINGARDA LATERAL) -->
+    <!-- NAVEGAÇÃO MOBILE DUAL-AXIS (A MÁGICA DA ESPINGARDA LATERAL) -->
     <div class="md:hidden fixed bottom-6 right-6 left-6 z-50 pointer-events-none">
         
         <!-- BOTÃO DA IA (Atira pra esquerda no Celular) -->
