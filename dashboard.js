@@ -1,5 +1,5 @@
 // ==========================================
-// dashboard.js - MOTOR DE BI COM ANIMAÇÕES DE ROLETA E IA
+// dashboard.js - MOTOR DE BI COM ANIMAÇÕES, FALSO 3D E OBSERVER
 // ==========================================
 
 let usuarioLogado = null;
@@ -8,7 +8,7 @@ let categoriasGlobais = [];
 
 let grafCombo = null;
 let grafPizza = null;
-let grafTop = null;
+let grafRadar = null;
 
 let statsGlobais = { receitas: 0, despesas: 0, saldo: 0, taxaPoupanca: 0, mediaDiaria: 0, maiorGasto: null, topCategoria: null, transacoesNoPeriodo: 0 };
 
@@ -21,12 +21,15 @@ const coresPorCategoria = {
     'Lazer & Pessoal': { hex: '#f97316', tw: 'bg-orange-500' },    
     'Assinaturas & Serviços': { hex: '#8b5cf6', tw: 'bg-violet-500' }, 
     'Renda & Salário': { hex: '#10b981', tw: 'bg-emerald-500' },   
-    'Outros': { hex: '#94a3b8', tw: 'bg-slate-400' }               
+    'Outros': { hex: '#94a3b8', tw: 'bg-slate-400' }                
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
     
-    // A MÁGICA DE NAVEGAÇÃO SPA (Evita Flickering Branco)
+    // Tira o pulo do CSS no Mobile
+    setTimeout(() => document.body.classList.remove('fade-in'), 500);
+
+    // Navegação SPA Fluida
     document.querySelectorAll('a').forEach(link => {
         if(link.hostname === window.location.hostname && link.target !== '_blank') {
             link.addEventListener('click', e => {
@@ -54,47 +57,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     await carregarDadosDoBanco();
+
+    // O OLHO DE SAURON (MUTATION OBSERVER)
+    // Vigia a tag HTML e redesenha os gráficos em milissegundos se o Dark Mode for ativado
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.attributeName === 'class') {
+                processarEAtualizarTudo(); 
+            }
+        });
+    });
+    observer.observe(document.documentElement, { attributes: true });
 });
 
 // ==========================================
-// ANIMAÇÃO DO FAB MOBILE (Botão Flutuante)
-// ==========================================
-let menuMobileAberto = false;
-
-window.toggleMobileMenu = function() {
-    const items = document.getElementById('fab-items');
-    const icon = document.getElementById('fab-icon');
-    const btn = document.getElementById('fab-menu');
-
-    menuMobileAberto = !menuMobileAberto;
-
-    if (menuMobileAberto) {
-        items.classList.remove('opacity-0', 'translate-x-12', 'pointer-events-none');
-        items.classList.add('opacity-100', 'translate-x-0');
-        
-        btn.style.transform = 'rotate(180deg)';
-        setTimeout(() => {
-            icon.classList.replace('fa-bars', 'fa-xmark');
-        }, 150);
-        
-        btn.classList.replace('bg-indigo-600', 'bg-slate-800');
-        btn.classList.replace('shadow-[0_4px_20px_rgba(79,70,229,0.5)]', 'shadow-[0_4px_20px_rgba(30,41,59,0.5)]');
-    } else {
-        items.classList.add('opacity-0', 'translate-x-12', 'pointer-events-none');
-        items.classList.remove('opacity-100', 'translate-x-0');
-        
-        btn.style.transform = 'rotate(0deg)';
-        setTimeout(() => {
-            icon.classList.replace('fa-xmark', 'fa-bars');
-        }, 150);
-        
-        btn.classList.replace('bg-slate-800', 'bg-indigo-600');
-        btn.classList.replace('shadow-[0_4px_20px_rgba(30,41,59,0.5)]', 'shadow-[0_4px_20px_rgba(79,70,229,0.5)]');
-    }
-};
-
-// ==========================================
-// MOTOR DE ANIMAÇÃO DE CONTAGEM (O EFEITO ROLETA SÊNIOR)
+// MOTOR DE ANIMAÇÃO DE CONTAGEM (ROLETA)
 // ==========================================
 window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 1000) {
     const elemento = document.getElementById(id);
@@ -102,9 +79,7 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
     
     const startTimestamp = performance.now();
     const step = (currentTimestamp) => {
-        // Calcula o tempo percorrido
         const progress = Math.min((currentTimestamp - startTimestamp) / duracao, 1);
-        // Aplica a física Cubic Ease-Out (inicia rápido e desacelera suavemente)
         const easeProgress = 1 - Math.pow(1 - progress, 4); 
         const valorAtual = easeProgress * valorFinal;
         
@@ -116,10 +91,8 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
             elemento.innerText = valorAtual.toFixed(1) + "%";
         }
         
-        if (progress < 1) {
-            requestAnimationFrame(step);
-        } else {
-            // Garante que o frame final trave no número exato
+        if (progress < 1) requestAnimationFrame(step);
+        else {
             if (formato === 'moeda') {
                 let parts = Math.abs(valorFinal).toFixed(2).split('.');
                 parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -147,7 +120,7 @@ async function carregarDadosDoBanco() {
     } catch (e) { console.error("Erro ao puxar dados:", e.message); }
 }
 
-function mudarTipoFiltro() {
+window.mudarTipoFiltro = function() {
     const tipo = document.getElementById('filtro-periodo').value;
     document.getElementById('box-mes').classList.add('hidden');
     document.getElementById('box-ano').classList.add('hidden');
@@ -160,7 +133,7 @@ function mudarTipoFiltro() {
     processarEAtualizarTudo();
 }
 
-function processarEAtualizarTudo() {
+window.processarEAtualizarTudo = function() {
     const tipoFiltro = document.getElementById('filtro-periodo').value;
 
     const transacoesFiltradas = transacoesGlobais.filter(t => {
@@ -190,26 +163,32 @@ function processarEAtualizarTudo() {
     let totalDespesas = 0, totalReceitas = 0;
     let maiorGasto = { valor: 0, descricao: "Nenhum", categoria: "Nenhuma" };
     const gastosPorCategoria = {};
-    const topGastos = [];
     const agrupamentoTemporal = {}; 
+    
+    // Nova Analise: Comportamento Semanal
+    let gastosPorDiaSemana = [0, 0, 0, 0, 0, 0, 0]; // Dom, Seg, Ter...
 
     const agruparPorMes = (tipoFiltro === 'por_ano' || tipoFiltro === 'tudo');
 
     transacoesFiltradas.forEach(t => { 
         let chaveTempo = 'S/D';
         if (t.data_vencimento) {
+            const dObjeto = new Date(t.data_vencimento + 'T12:00:00Z');
             const partes = t.data_vencimento.split('-'); 
+            
             if (agruparPorMes) {
                 const mesesAbv = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
                 chaveTempo = `${mesesAbv[parseInt(partes[1])-1]}/${partes[0].slice(2)}`; 
             } else {
                 chaveTempo = `${partes[2]}/${partes[1]}`; 
             }
+            
+            if(t.tipo === 'despesa') gastosPorDiaSemana[dObjeto.getDay()] += t.valor;
         }
+        
         if(!agrupamentoTemporal[chaveTempo]) agrupamentoTemporal[chaveTempo] = { rec: 0, des: 0 };
 
         const catNomeBase = categoriasGlobais.find(c => c.id === t.categoria_id)?.nome || 'Outros';
-        
         let catNomeCurto = catNomeBase;
         if(catNomeBase.includes('Alimentação')) catNomeCurto = 'Alimentação';
         if(catNomeBase.includes('Veículo')) catNomeCurto = 'Veículo & Transporte';
@@ -220,7 +199,6 @@ function processarEAtualizarTudo() {
             totalDespesas += t.valor; 
             agrupamentoTemporal[chaveTempo].des += t.valor;
             t.categoriaNome = catNomeCurto; 
-            topGastos.push(t);
             
             if(t.valor > maiorGasto.valor) maiorGasto = { valor: t.valor, descricao: t.descricao, categoria: catNomeCurto };
             gastosPorCategoria[catNomeCurto] = (gastosPorCategoria[catNomeCurto] || 0) + t.valor;
@@ -238,7 +216,6 @@ function processarEAtualizarTudo() {
     const media = totalDespesas > 0 ? (totalDespesas / diasNoPeriodo) : 0;
 
     const categoriasOrdenadas = Object.keys(gastosPorCategoria).sort((a, b) => gastosPorCategoria[b] - gastosPorCategoria[a]);
-    topGastos.sort((a, b) => b.valor - a.valor);
 
     statsGlobais = { receitas: totalReceitas, despesas: totalDespesas, saldo: totalReceitas - totalDespesas, taxaPoupanca: taxa, mediaDiaria: media, maiorGasto: maiorGasto, topCategoria: categoriasOrdenadas.length > 0 ? { nome: categoriasOrdenadas[0], valor: gastosPorCategoria[categoriasOrdenadas[0]] } : null, transacoesNoPeriodo: transacoesFiltradas.length };
 
@@ -247,7 +224,6 @@ function processarEAtualizarTudo() {
     window.animarContador('kpi-receitas', totalReceitas, 'moeda', 1000);
     window.animarContador('kpi-despesas', totalDespesas, 'moeda', 1000);
     window.animarContador('kpi-taxa-texto', taxa, 'porcentagem', 1000);
-    window.animarContador('pizza-total', totalDespesas, 'moeda', 1000);
     
     let percentualBarra = Math.min(Math.max(taxa, 0), 100); 
     let corTaxa = taxa >= 20 ? 'bg-emerald-500' : (taxa > 0 ? 'bg-indigo-500' : 'bg-rose-500');
@@ -256,11 +232,13 @@ function processarEAtualizarTudo() {
     barra.className = `h-1.5 rounded-full transition-all duration-1000 ${corTaxa}`;
 
     renderizarListaCategorias(categoriasOrdenadas, gastosPorCategoria, totalDespesas);
-    renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, topGastos.slice(0,5), totalDespesas);
+    
+    // Passamos todos os dados pro motor gráfico desenhar
+    renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, gastosPorDiaSemana);
 }
 
 // ==========================================
-// RENDERIZAÇÃO DE GRÁFICOS E LISTAS
+// RENDERIZAÇÃO DA UI (Listas)
 // ==========================================
 function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
     const html = ordenadas.map((cat, index) => {
@@ -271,13 +249,13 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
         return `
         <div>
             <div class="flex justify-between items-end mb-1.5 gap-2">
-                <span class="text-xs font-bold text-slate-700 truncate flex-1" title="${cat}">${cat}</span>
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-300 truncate flex-1" title="${cat}">${cat}</span>
                 <div class="text-right flex items-center gap-2 shrink-0">
-                    <span class="text-[10px] font-bold text-slate-400" id="cat-perc-${index}">0.0%</span>
-                    <span class="text-sm font-black text-slate-900 whitespace-nowrap" id="cat-val-${index}">R$ 0,00</span>
+                    <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500" id="cat-perc-${index}">0.0%</span>
+                    <span class="text-sm font-black text-slate-900 dark:text-white whitespace-nowrap" id="cat-val-${index}">R$ 0,00</span>
                 </div>
             </div>
-            <div class="w-full bg-slate-100 rounded-full h-2">
+            <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
                 <div class="${corBase} h-2 rounded-full transition-all duration-1000" style="width: ${perc}%"></div>
             </div>
         </div>
@@ -285,7 +263,6 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
     }).join('');
     document.getElementById('lista-categorias-progress').innerHTML = html || '<p class="text-xs text-slate-400 font-bold">Sem despesas.</p>';
 
-    // Dispara a roleta também para os dados da lista de categorias
     ordenadas.forEach((cat, index) => {
         const valor = gastos[cat];
         const perc = totalGeral > 0 ? ((valor / totalGeral) * 100) : 0;
@@ -294,11 +271,34 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
     });
 }
 
-function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, top5, totalDespesas) {
-    Chart.defaults.font.family = "'Inter', sans-serif";
-    Chart.defaults.color = '#94a3b8'; 
+// ==========================================
+// MOTOR DE GRÁFICOS (FALSO 3D E OBSERVER)
+// ==========================================
+function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, gastosPorDiaSemana) {
+    
+    // Leitura Dinâmica do Dark Mode Real Time
+    const isDark = document.documentElement.classList.contains('dark');
+    const corTexto = isDark ? '#94a3b8' : '#64748b'; // slate-400 vs slate-500
+    const corGrid = isDark ? '#1e293b' : '#f1f5f9';  // slate-800 vs slate-100
+    const corBordaRosca = isDark ? '#0f172a' : '#ffffff'; // Fundo slate-900 vs white
 
-    const tooltipPro = { backgroundColor: '#0f172a', titleFont: { size: 12, family: 'Inter', weight: 'bold' }, bodyFont: { size: 13, family: 'Inter', weight: 'bold' }, padding: 12, cornerRadius: 6, displayColors: true, boxPadding: 4 };
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.color = corTexto; 
+
+    const tooltipPro = { 
+        backgroundColor: isDark ? '#1e293b' : '#0f172a', 
+        titleColor: '#f8fafc',
+        bodyColor: '#e2e8f0',
+        titleFont: { size: 12, family: 'Inter', weight: 'bold' }, 
+        bodyFont: { size: 13, family: 'Inter', weight: 'bold' }, 
+        padding: 12, cornerRadius: 8, displayColors: true, boxPadding: 4 
+    };
+
+    // ----------------------------------------------------
+    // GRÁFICO 1: FLUXO DE CAIXA COMBO (Com Gradientes Neon)
+    // ----------------------------------------------------
+    const ctxC = document.getElementById('graficoCombo').getContext('2d');
+    if (grafCombo) grafCombo.destroy();
 
     const chavesTempo = Object.keys(agrupamentoTemporal).sort((a,b) => {
         if(a==='S/D') return -1; if(b==='S/D') return 1;
@@ -316,8 +316,14 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
         dadosAcumulados.push(acumuladoAtual);
     });
 
-    const ctxC = document.getElementById('graficoCombo').getContext('2d');
-    if (grafCombo) grafCombo.destroy();
+    // Criação dos Gradientes (Efeito 3D nas barras)
+    let gradVerde = ctxC.createLinearGradient(0, 0, 0, 400);
+    gradVerde.addColorStop(0, '#10b981'); // emerald-500
+    gradVerde.addColorStop(1, isDark ? 'rgba(16,185,129,0.2)' : 'rgba(16,185,129,0.5)');
+
+    let gradVermelho = ctxC.createLinearGradient(0, 0, 0, 400);
+    gradVermelho.addColorStop(0, '#ef4444'); // rose-500
+    gradVermelho.addColorStop(1, isDark ? 'rgba(239,68,68,0.2)' : 'rgba(239,68,68,0.5)');
 
     grafCombo = new Chart(ctxC, {
         type: 'bar',
@@ -325,37 +331,38 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
             labels: labelsT.length > 0 ? labelsT : ['Sem Dados'],
             datasets: [
                 {
-                    type: 'line', label: 'Saldo Acumulado', data: dadosAcumulados, borderColor: '#4f46e5', borderWidth: 3, tension: 0.1, 
-                    pointBackgroundColor: '#ffffff', pointBorderColor: '#4f46e5', pointBorderWidth: 2, pointRadius: 5, pointHoverRadius: 7, fill: false
+                    type: 'line', label: 'Acumulado', data: dadosAcumulados, 
+                    borderColor: '#4f46e5', borderWidth: 3, tension: 0.3, 
+                    pointBackgroundColor: isDark ? '#0f172a' : '#ffffff', 
+                    pointBorderColor: '#4f46e5', pointBorderWidth: 2, pointRadius: 4, pointHoverRadius: 6, fill: false
                 },
-                {
-                    type: 'bar', label: 'Entradas', data: dadosRec, backgroundColor: '#10b981', borderRadius: 2, maxBarThickness: 40, 
-                },
-                {
-                    type: 'bar', label: 'Saídas', data: dadosDes, backgroundColor: '#ef4444', borderRadius: 2, maxBarThickness: 40,
-                }
+                { type: 'bar', label: 'Entradas', data: dadosRec, backgroundColor: gradVerde, borderRadius: 4, maxBarThickness: 30 },
+                { type: 'bar', label: 'Saídas', data: dadosDes, backgroundColor: gradVermelho, borderRadius: 4, maxBarThickness: 30 }
             ]
         },
         options: {
             responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-            plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${formatarMoeda(Math.abs(ctx.raw))}` } } },
+            plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${Math.abs(ctx.raw).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}` } } },
             scales: {
-                x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11, weight: 'bold' } } },
+                x: { stacked: true, grid: { display: false }, border: {display: false}, ticks: { font: { size: 11, weight: 'bold' } } },
                 y: { 
                     stacked: true, 
-                    grid: { color: (ctx) => ctx.tick.value === 0 ? '#334155' : '#e2e8f0', lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1, borderDash: (ctx) => ctx.tick.value === 0 ? [] : [4, 4] }, 
-                    border: { display: false }, 
+                    border: { display: false },
+                    grid: { color: corGrid, lineWidth: 1, borderDash: [4, 4] }, 
                     ticks: { font: { size: 10, weight: 'bold' }, callback: (value) => value >= 0 ? `R$ ${value}` : `-R$ ${Math.abs(value)}` } 
                 }
             }
         }
     });
 
+    // ----------------------------------------------------
+    // GRÁFICO 2: PIZZA / ROSCA DE COMPOSIÇÃO (Sem Total Repetido)
+    // ----------------------------------------------------
     const ctxP = document.getElementById('graficoPizza').getContext('2d');
     if (grafPizza) grafPizza.destroy();
 
     let lblP = [], datP = [], coresP = [];
-    if (categoriasOrdenadas.length === 0) { lblP = ['Vazio']; datP = [1]; coresP = ['#f1f5f9']; } 
+    if (categoriasOrdenadas.length === 0) { lblP = ['Vazio']; datP = [1]; coresP = [corGrid]; } 
     else {
         let soma = 0;
         for (let i = 0; i < Math.min(5, categoriasOrdenadas.length); i++) {
@@ -364,32 +371,58 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
             coresP.push(coresPorCategoria[nomeCat] ? coresPorCategoria[nomeCat].hex : coresPorCategoria['Outros'].hex);
             soma += gastosPorCategoria[nomeCat];
         }
-        if (categoriasOrdenadas.length > 5) { lblP.push('Outros'); datP.push(totalDespesas - soma); coresP.push(coresPorCategoria['Outros'].hex); }
+        if (categoriasOrdenadas.length > 5) { 
+            // Calcula o total correto usando reduce do array global para evitar bugs de filtro
+            const totalGastoGlobal = categoriasOrdenadas.reduce((acc, cat) => acc + gastosPorCategoria[cat], 0);
+            lblP.push('Outros'); datP.push(totalGastoGlobal - soma); coresP.push(coresPorCategoria['Outros'].hex); 
+        }
     }
 
     grafPizza = new Chart(ctxP, {
         type: 'doughnut',
-        data: { labels: lblP, datasets: [{ data: datP, backgroundColor: coresP, borderWidth: 3, borderColor: '#ffffff', borderRadius: 4, hoverOffset: 6 }] },
-        options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${formatarMoeda(categoriasOrdenadas.length === 0 ? 0 : ctx.raw)}` } } } }
+        data: { labels: lblP, datasets: [{ data: datP, backgroundColor: coresP, borderWidth: 4, borderColor: corBordaRosca, hoverOffset: 10 }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${categoriasOrdenadas.length === 0 ? 'R$ 0,00' : ctx.raw.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}` } } } }
     });
 
-    const ctxT = document.getElementById('graficoTopGastos').getContext('2d');
-    if (grafTop) grafTop.destroy();
+    // ----------------------------------------------------
+    // GRÁFICO 3: NOVA ANÁLISE (RADAR COMPORTAMENTAL SEMANAL)
+    // ----------------------------------------------------
+    const ctxR = document.getElementById('graficoRadar').getContext('2d');
+    if (grafRadar) grafRadar.destroy();
 
-    grafTop = new Chart(ctxT, {
-        type: 'bar',
+    // Cria um gradiente para o preenchimento do radar
+    let gradRadar = ctxR.createRadialGradient(0, 0, 0, 0, 0, 200);
+    gradRadar.addColorStop(0, isDark ? 'rgba(99, 102, 241, 0.4)' : 'rgba(99, 102, 241, 0.6)');
+    gradRadar.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
+
+    grafRadar = new Chart(ctxR, {
+        type: 'radar',
         data: {
-            labels: top5.length > 0 ? top5.map(t => t.descricao.length > 15 ? t.descricao.substring(0, 15) + '...' : t.descricao) : ['Nenhum'],
+            labels: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
             datasets: [{
-                data: top5.length > 0 ? top5.map(t => t.valor) : [0],
-                backgroundColor: top5.length > 0 ? top5.map(t => coresPorCategoria[t.categoriaNome] ? coresPorCategoria[t.categoriaNome].hex : coresPorCategoria['Outros'].hex) : '#94a3b8',
-                borderRadius: 4, maxBarThickness: 16 
+                label: 'Queima de Caixa',
+                data: gastosPorDiaSemana,
+                backgroundColor: gradRadar,
+                borderColor: '#6366f1',
+                borderWidth: 2,
+                pointBackgroundColor: isDark ? '#0f172a' : '#ffffff',
+                pointBorderColor: '#6366f1',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
             }]
         },
         options: {
-            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${formatarMoeda(ctx.raw)}` } } },
-            scales: { x: { display: false }, y: { grid: { display: false }, border: { display: false }, ticks: { font: { weight: 'bold', size: 11 }, color: '#334155' } } }
+            responsive: true, maintainAspectRatio: false,
+            scales: {
+                r: {
+                    angleLines: { color: corGrid },
+                    grid: { color: corGrid },
+                    pointLabels: { color: corTexto, font: { family: 'Inter', weight: 'bold', size: 11 } },
+                    ticks: { display: false, backdropColor: 'transparent' }
+                }
+            },
+            plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` R$ ${ctx.raw.toLocaleString('pt-BR', {minimumFractionDigits: 2})}` } } }
         }
     });
 }
@@ -397,7 +430,7 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
 // ==========================================
 // MÓDULO DA INTERFACE DO COACH (UI)
 // ==========================================
-function toggleCoach() {
+window.toggleCoach = function() {
     const janela = document.getElementById('janela-coach');
     if (janela.classList.contains('hidden')) {
         janela.classList.remove('hidden');
@@ -427,12 +460,7 @@ function iniciarCoach() {
     adicionarMensagemNoChat("Olá, Kauã! Sou o seu Consultor de IA. Estou conectado aos seus dados em tempo real.<br><br>Você pode me fazer perguntas naturais como: <br><i>'Como estou este mês?'</i><br><i>'Minha carteira corre perigo?'</i><br><i>'Qual foi o meu ralo de dinheiro?'</i>", false);
 }
 
-function atalhoCoach(comando) {
-    document.getElementById('input-coach').value = comando;
-    enviarMensagemCoach();
-}
-
-function enviarMensagemCoach() {
+window.enviarMensagemCoach = function() {
     const input = document.getElementById('input-coach');
     const texto = input.value.trim();
     if (!texto) return;
@@ -476,43 +504,28 @@ AQUI ESTÃO OS DADOS REAIS E MATEMÁTICOS DO USUÁRIO NESTE EXATO MOMENTO:
 REGRA ESTRITA: Responda à pergunta do usuário usando APENAS a intenção dele cruzada com os dados acima. Aja como um humano sênior analisando a carteira. Se a margem for negativa, alerte severamente sobre a queima de caixa.
     `;
 
-    const payload = {
-        contents: [{
-            parts: [{ text: promptDeSistema + "\n\nPergunta real do usuário: " + pergunta }]
-        }]
-    };
+    const payload = { contents: [{ parts: [{ text: promptDeSistema + "\n\nPergunta real do usuário: " + pergunta }] }] };
 
     try {
         const chaveLimpa = GEMINI_API_KEY.trim();
-        
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${chaveLimpa}`;
         
-        const respostaDaNuvem = await fetch(url, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
+        const respostaDaNuvem = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
 
         if (!respostaDaNuvem.ok) {
             const erroDetalhe = await respostaDaNuvem.json();
-            console.error("ERRO COMPLETO DO GOOGLE:", erroDetalhe);
-            const msgErro = erroDetalhe.error?.message || "O servidor não explicou o motivo.";
-            throw new Error(msgErro);
+            throw new Error(erroDetalhe.error?.message || "Erro desconhecido do servidor.");
         }
 
         const dados = await respostaDaNuvem.json();
         let textoRespostaIA = dados.candidates[0].content.parts[0].text;
-
         textoRespostaIA = textoRespostaIA.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
 
         document.getElementById('coach-typing')?.remove();
         adicionarMensagemNoChat(textoRespostaIA, false);
 
     } catch (erro) {
-        console.error("Falha no Catch:", erro);
         document.getElementById('coach-typing')?.remove();
-        adicionarMensagemNoChat(`<b class="text-rose-500">Acesso Negado (401):</b><br>O Google rejeitou a sua chave. Motivo:<br><i class="text-slate-400">"${erro.message}"</i><br><br><b>Ação necessária:</b> Se você acabou de criar a chave, aguarde de 5 a 10 minutos para ela propagar nos servidores globais do Google e tente novamente.`, false);
+        adicionarMensagemNoChat(`<b class="text-rose-500">Acesso Negado:</b><br>Erro de chave ou rede.<br><i class="text-slate-400">"${erro.message}"</i>`, false);
     }
 }
