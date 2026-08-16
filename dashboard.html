@@ -47,12 +47,12 @@
         .dark input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.7; }
         input::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 
-        /* Remove seta padrão do select no celular para personalização total */
+        /* Remove seta padrão do select no celular */
         select { -webkit-appearance: none; -moz-appearance: none; appearance: none; }
 
-        #sidebar { width: 5rem; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, background-color 0.3s; }
+        #sidebar { width: 5rem; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, background-color 0.3s; z-index: 50; }
         #sidebar:hover { width: 16rem; box-shadow: 15px 0 30px rgba(0,0,0,0.05); }
-        .sidebar-link { width: 3rem; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s; }
+        .sidebar-link { width: 3rem; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s; overflow: hidden; }
         #sidebar:hover .sidebar-link { width: 100%; }
         .sidebar-text { opacity: 0; transform: translateX(-10px); visibility: hidden; transition: all 0.2s ease-in-out; white-space: nowrap; }
         #sidebar:hover .sidebar-text { visibility: visible; opacity: 1; transform: translateX(0); transition-delay: 0.15s; }
@@ -82,11 +82,12 @@
                 <div class="flex flex-col sm:flex-row items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 md:p-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 transition-colors w-full sm:w-auto">
                     
                     <div class="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
-                        <div class="relative bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 h-10 w-full sm:w-40 transition-colors">
-                            <i class="fa-solid fa-filter absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                        <div class="relative bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 h-10 w-full sm:w-40 transition-colors group">
+                            <i class="fa-solid fa-filter absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none group-focus-within:text-indigo-500 transition-colors"></i>
                             <select id="filtro-periodo" onchange="mudarTipoFiltro()" class="w-full h-full pl-8 pr-6 bg-transparent outline-none text-[13px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
                                 <option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="essa_semana">Essa Semana</option>
                                 <option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="por_mes" selected>Este Mês</option>
+                                <option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="por_ano">Este Ano</option>
                                 <option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="personalizado">Personalizado</option>
                                 <option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="tudo">Histórico</option>
                             </select>
@@ -102,20 +103,21 @@
                         </div>
                     </div>
 
+                    <!-- Box Personalizado (Compacto) -->
                     <div id="box-personalizado" class="hidden flex items-center gap-1.5 w-full sm:w-auto">
                         <div class="relative flex-1 sm:w-32 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 h-10 transition-colors">
-                            <input type="date" id="input-data-inicio" onchange="processarEAtualizarTudo()" class="absolute inset-0 w-full h-full px-3 bg-transparent outline-none text-[12px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer" style="color-scheme: dark;">
+                            <input type="date" id="input-data-inicio" onchange="processarEAtualizarTudo()" class="absolute inset-0 w-full h-full px-2 bg-transparent outline-none text-[12px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer" style="color-scheme: dark;">
                         </div>
                         <span class="text-slate-400 text-xs font-bold mx-0.5"><i class="fa-solid fa-arrow-right"></i></span>
                         <div class="relative flex-1 sm:w-32 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 h-10 transition-colors">
-                            <input type="date" id="input-data-fim" onchange="processarEAtualizarTudo()" class="absolute inset-0 w-full h-full px-3 bg-transparent outline-none text-[12px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer" style="color-scheme: dark;">
+                            <input type="date" id="input-data-fim" onchange="processarEAtualizarTudo()" class="absolute inset-0 w-full h-full px-2 bg-transparent outline-none text-[12px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer" style="color-scheme: dark;">
                         </div>
                     </div>
 
                 </div>
             </div>
 
-            <!-- KPIs UNIFICADOS E COMPRIMIDOS NO MOBILE -->
+            <!-- KPIs (Anti-Truncamento) -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 <div class="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm flex flex-col justify-center transition-colors">
                     <p class="text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mb-1">Saldo Líquido</p>
@@ -140,7 +142,7 @@
                 </div>
             </div>
 
-            <!-- GRÁFICO PRINCIPAL RESPONSIVO -->
+            <!-- GRÁFICO PRINCIPAL -->
             <div class="bg-white dark:bg-slate-900 p-4 md:p-8 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors">
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-3">
                     <div>
@@ -150,10 +152,9 @@
                     <div class="flex flex-wrap gap-2 md:gap-4 text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 md:py-2 rounded-lg md:rounded-xl border border-slate-200/60 dark:border-slate-700/50 w-full sm:w-auto justify-center">
                         <span class="flex items-center gap-1.5"><span class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></span> Entradas</span>
                         <span class="flex items-center gap-1.5"><span class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]"></span> Saídas</span>
-                        <span class="flex items-center gap-1.5"><span class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_#6366f1]"></span> Saldo</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_#6366f1]"></span> Saldo Acumulado</span>
                     </div>
                 </div>
-                <!-- Altura reduzida no mobile para não gastar 100% da tela atoa -->
                 <div class="relative h-[250px] md:h-[350px] w-full grafico-3d">
                     <canvas id="graficoCombo"></canvas>
                 </div>
@@ -189,26 +190,29 @@
         </section>
     </main>
 
-    <!-- MENU MOBILE L-SHAPE (A MÁGICA DA ESPINGARDA LATERAL) -->
-    <div class="md:hidden fixed bottom-6 right-6 left-6 z-50 pointer-events-none">
+    <!-- NAVEGAÇÃO MOBILE DUAL-AXIS (A MÁGICA DA ESPINGARDA LATERAL) -->
+    <!-- Sem flex no container para não amassar o botão principal -->
+    <div class="md:hidden fixed bottom-6 right-6 z-50">
         
-        <!-- BOTÃO DA IA (Nasce oculto sob o menu e atira pra esquerda) -->
-        <button onclick="toggleCoach()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-900 dark:bg-black text-indigo-400 shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-2xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-slate-700 dark:border-indigo-500/50">
+        <!-- BOTÃO DA IA (Nasce oculto, centralizado atrás do botão Menu e atira pra esquerda) -->
+        <button onclick="toggleCoach()" id="fab-action" class="absolute bottom-1 right-1 w-12 h-12 rounded-full bg-slate-900 dark:bg-black text-indigo-400 shadow-lg flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none border border-slate-700 dark:border-indigo-500/50">
             <i class="fa-solid fa-robot"></i>
         </button>
 
-        <!-- ITENS DE NAVEGAÇÃO COMPLETOS (Sobem verticalmente) -->
-        <div id="fab-items" class="absolute bottom-16 right-0 flex flex-col items-center gap-3 transition-all duration-300 transform translate-y-8 opacity-0 pointer-events-none z-40 w-14">
-            <button onclick="sairDoSistema()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-rose-500 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-right-from-bracket"></i></button>
-            <a href="planos.html" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-bullseye"></i></a>
-            <a href="categorias.html" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-tags"></i></a>
-            <a href="dividas.html" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-file-invoice-dollar"></i></a>
-            <a href="dashboard.html" class="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 shadow-lg flex items-center justify-center border border-indigo-100 dark:border-indigo-500/30 pointer-events-auto"><i class="fa-solid fa-chart-pie"></i></a>
-            <a href="movimentacoes.html" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-money-bill-transfer"></i></a>
+        <!-- ITENS DE NAVEGAÇÃO COMPLETOS (Sobem verticalmente alinhados) -->
+        <div id="fab-items" class="absolute bottom-16 right-1 w-12 flex flex-col items-center gap-3 transition-all duration-300 transform translate-y-8 opacity-0 pointer-events-none">
+            <button onclick="sairDoSistema()" title="Sair" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-rose-500 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-right-from-bracket"></i></button>
+            <button onclick="window.alternarTema && window.alternarTema()" title="Tema" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-amber-500 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-moon dark:hidden"></i><i class="fa-solid fa-sun hidden dark:block text-amber-400"></i></button>
+            <a href="mercado.html" title="Mercado" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-cart-shopping"></i></a>
+            <a href="planos.html" title="Metas" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-bullseye"></i></a>
+            <a href="categorias.html" title="Categorias" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-tags"></i></a>
+            <a href="dividas.html" title="Dívidas" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-file-invoice-dollar"></i></a>
+            <a href="dashboard.html" title="Dashboard" class="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 shadow-lg flex items-center justify-center border border-indigo-100 dark:border-indigo-500/30 pointer-events-auto"><i class="fa-solid fa-chart-pie"></i></a>
+            <a href="movimentacoes.html" title="Movimentações" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-money-bill-transfer"></i></a>
         </div>
 
-        <!-- BOTÃO PRINCIPAL -->
-        <button onclick="window.toggleMobileMenu()" id="fab-menu" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-800 dark:bg-indigo-600 text-white shadow-[0_4px_20px_rgba(30,41,59,0.5)] dark:shadow-[0_4px_20px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 z-50 pointer-events-auto">
+        <!-- BOTÃO PRINCIPAL (Aspect-Square garante o circulo perfeito) -->
+        <button onclick="window.toggleMobileMenu()" id="fab-menu" class="relative w-14 h-14 aspect-square shrink-0 rounded-full bg-slate-800 dark:bg-indigo-600 text-white shadow-[0_4px_20px_rgba(30,41,59,0.5)] dark:shadow-[0_4px_20px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 pointer-events-auto">
             <i class="fa-solid fa-bars transition-all duration-300" id="fab-icon"></i>
         </button>
     </div>
