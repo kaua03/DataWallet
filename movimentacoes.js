@@ -301,11 +301,21 @@ function renderizarListaHistorico() {
 }
 
 // ==========================================
-// CÉREBRO NLP SÊNIOR: REGRA ESTRITA DE INDEFINIDO
+// CÉREBRO NLP SÊNIOR: REGRA ESTRITA DE INDEFINIDO E DICIONÁRIO VIP
 // ==========================================
 const dicionarioDeInteligencia = [
-    { pasta: 'alimentação', regras: [{ titulo: 'Delivery', palavras: ['ifood', 'delivery', 'rappi', 'zedelivery'] }, { titulo: 'Fast Food', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado', 'pastel', 'mequi'] }, { titulo: 'Mercado', palavras: ['mercado', 'supermercado', 'açougue', 'padaria', 'compra', 'compras'] }, { titulo: 'Restaurante', palavras: ['restaurante', 'almoço', 'jantar', 'comida', 'self service'] }]},
-    { pasta: 'veículo', regras: [{ titulo: 'Combustível', palavras: ['gasolina', 'álcool', 'alcool', 'etanol', 'diesel', 'posto', 'combustível', 'combustivel', 'abasteci'] }, { titulo: 'Peças / Manutenção', palavras: ['oficina', 'mecânico', 'peça', 'pneu', 'óleo', 'revisão', 'carro', 'moto'] }, { titulo: 'Serviços Auto', palavras: ['estacionamento', 'pedágio', 'lavagem', 'lava rápido'] }, { titulo: 'Transporte', palavras: ['uber', '99', 'ônibus', 'passagem', 'metrô', 'táxi', 'taxi'] }]},
+    { pasta: 'alimentação', regras: [
+        { titulo: 'Delivery', palavras: ['ifood', 'delivery', 'rappi', 'zedelivery', 'marmita', 'quentinha'] }, 
+        { titulo: 'Fast Food / Lanches', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado', 'pastel', 'mequi', 'doce', 'chocolate', 'sorvete', 'sobremesa', 'acai', 'açaí'] }, 
+        { titulo: 'Mercado', palavras: ['mercado', 'supermercado', 'açougue', 'padaria', 'compra', 'compras', 'mercadinho', 'mercearia', 'hortifruti', 'feira', 'atacadao', 'atacadão', 'sacolao', 'sacolão'] }, 
+        { titulo: 'Restaurante', palavras: ['restaurante', 'almoço', 'almoco', 'jantar', 'comida', 'self service'] }
+    ]},
+    { pasta: 'veículo', regras: [
+        { titulo: 'Combustível', palavras: ['gasolina', 'álcool', 'alcool', 'etanol', 'diesel', 'posto', 'combustível', 'combustivel', 'abasteci', 'abastecer'] }, 
+        { titulo: 'Manutenção', palavras: ['oficina', 'mecânico', 'peça', 'pneu', 'óleo', 'revisão', 'carro', 'moto', 'veículo', 'veiculo', 'automóvel', 'automovel'] }, 
+        { titulo: 'Serviços Auto', palavras: ['estacionamento', 'pedágio', 'lavagem', 'lava rápido'] }, 
+        { titulo: 'Transporte', palavras: ['uber', '99', 'ônibus', 'onibus', 'passagem', 'metrô', 'metro', 'táxi', 'taxi', 'transporte'] }
+    ]},
     { pasta: 'moradia', regras: [{ titulo: 'Aluguel', palavras: ['aluguel', 'condomínio'] }, { titulo: 'Conta de Luz', palavras: ['luz', 'energia', 'cpfl', 'cemig', 'enel'] }, { titulo: 'Conta de Água', palavras: ['água', 'sabesp', 'sanepar', 'copasa'] }, { titulo: 'Internet', palavras: ['internet', 'vivo', 'claro', 'tim', 'fibra'] }, { titulo: 'Reparos e Casa', palavras: ['reparo', 'faxina', 'limpeza', 'material de construção'] }]},
     { pasta: 'estudo', regras: [{ titulo: 'Mensalidade', palavras: ['faculdade', 'escola', 'mensalidade'] }, { titulo: 'Cursos Extras', palavras: ['curso', 'certificado', 'prova', 'concurso'] }, { titulo: 'Material Didático', palavras: ['livro', 'caderno', 'material', 'papelaria'] }]},
     { pasta: 'saúde', regras: [{ titulo: 'Remédios', palavras: ['farmácia', 'remédio', 'medicamento'] }, { titulo: 'Consultas Médicas', palavras: ['médico', 'consulta', 'exame', 'dentista', 'terapia', 'psicólogo'] }, { titulo: 'Imprevisto', palavras: ['imprevisto', 'acidente', 'pronto socorro', 'hospital'] }]},
@@ -325,6 +335,7 @@ function processarFraseNLP(fraseBruta) {
 
     let textoCru = fraseBruta.toLowerCase();
     
+    // 1. DATA E TEMPO
     let dataCalculada = new Date(); dataCalculada.setHours(12,0,0,0);
     if (textoCru.includes('mes passado')) { dataCalculada.setMonth(dataCalculada.getMonth() - 1); textoCru = textoCru.replace(/do mes passado|no mes passado|mes passado/g, ''); }
     if (textoCru.includes('anteontem')) { dataCalculada.setDate(dataCalculada.getDate() - 2); textoCru = textoCru.replace('anteontem', ''); }
@@ -347,7 +358,7 @@ function processarFraseNLP(fraseBruta) {
         textoCru = textoCru.replace(matchDia[0], ''); 
     }
 
-    // A MÁGICA DA FUSÃO DE CENTAVOS ("45 e 46" -> "45,46")
+    // 2. A MÁGICA DA FUSÃO DE CENTAVOS ("45 e 46 centavos" vira "45,46")
     let textoValores = textoCru.replace(/(\d+)\s*(?:reais|r\$|brl)?\s*e\s*(\d{1,2})\s*(?:centavos|centavo|c)?\b/gi, "$1,$2");
     
     // Purificando o Sotaque do Chrome ("52.000" -> "52000")
@@ -358,7 +369,7 @@ function processarFraseNLP(fraseBruta) {
         return (parseFloat(numero.replace(',', '.')) * 1000).toString();
     });
 
-    // Removemos os símbolos para extração matemática
+    // Removemos todas as moedas possíveis da string final para capturar apenas o valor matemático puro
     let extracaoString = textoValores.replace(/\br\$\b|\breais\b|\breal\b|\$|\bconto\b|\bcontos\b|\bcentavos\b|\bcentavo\b|\bbrl\b/gi, ''); 
     const nums = extracaoString.match(/\d+(?:,\d+)?/g);
     const valorExtraido = nums ? Math.max(...nums.map(n => parseFloat(n.replace(',', '.')))) : 0;
@@ -369,20 +380,20 @@ function processarFraseNLP(fraseBruta) {
     let catDetectada = null; 
     let tituloFinal = '';
 
-    // Mata a pontuação para buscar no dicionário limpo
-    let descCrua = textoCru.replace(/\d+(?:[.,]\d+)?/g, '');
-    descCrua = descCrua.replace(/\br\$\b|\breais\b|\breal\b|\$|\bmil\b|\bk\b|\bconto\b|\bcontos\b|\bbrl\b|\bcentavos\b|\bcentavo\b/gi, ' ');
+    // Removemos caracteres especiais e pontos que o Chrome insere (Bug do "brl.")
+    let descCrua = removerAcentos(textoCru);
     descCrua = descCrua.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, " "); 
-    descCrua = removerAcentos(descCrua);
 
+    // 3. A REGRA ESTrita (Sem adivinhação. O que está no Dicionário é lei).
     if (isReceita) {
         catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('renda') || removerAcentos(c.nome.toLowerCase()).includes('salario'));
         if (descCrua.includes('salario')) tituloFinal = 'Salário';
         else if (descCrua.includes('pix')) tituloFinal = 'Transferência Pix';
+        else tituloFinal = 'Recebimento Indefinido';
     } else {
         for (const d of dicionarioDeInteligencia) {
             for (const regra of d.regras) {
-                // Caça de Palavra Exata do Dicionário VIP
+                // Caça da Palavra Exata do Dicionário
                 if (regra.palavras.some(p => descCrua.includes(removerAcentos(p)))) {
                     let busca = removerAcentos(d.pasta === 'saúde' ? 'imprevistos' : d.pasta);
                     catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes(busca));
@@ -394,7 +405,7 @@ function processarFraseNLP(fraseBruta) {
         }
     }
 
-    // A REGRA ABSOLUTA DE INDEFINIDO: Se não achou no dicionário, sem adivinhação.
+    // A REGRA DO FIM DA ADIVINHAÇÃO: Não sobrou palavra do dicionário VIP? Então é Gasto Indefinido.
     if (!tituloFinal) {
         tituloFinal = isReceita ? 'Recebimento Indefinido' : 'Gasto Indefinido';
         catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('lazer') || removerAcentos(c.nome.toLowerCase()).includes('outros'));
@@ -421,7 +432,7 @@ function processarFraseNLP(fraseBruta) {
 window.abrirModalComTextoRapido = function() { processarFraseNLP(document.getElementById('input-rapido').value); };
 
 // ==========================================
-// MICROFONE REATIVO (Com o Inversor de R$ ao Vivo)
+// MICROFONE REATIVO (Com o Inversor Matemático "R$")
 // ==========================================
 window.ativarMicrofone = function() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -472,14 +483,13 @@ window.ativarMicrofone = function() {
         if (transcricaoAoVivo.length > 0) {
             let t = transcricaoAoVivo.toLowerCase();
             
-            // 1. Purifica os sotaques do Chrome
-            t = t.replace(/\bbrl\b/g, "reais");
+            // 1. Purifica as falhas corporativas do Chrome (Remove BRL)
+            t = t.replace(/\bbrl\b/gi, "R$");
+            t = t.replace(/\breais\b|\breal\b/gi, "R$");
             
-            // 2. A MÁGICA: Joga o R$ para frente ("25 reais" vira "R$ 25")
-            t = t.replace(/(\d+(?:[.,]\d+)?)\s*(reais|real|r\$)/g, "R$ $1");
-            
-            // Se falou apenas "reais" sem número
-            t = t.replace(/\breais\b|\breal\b/g, "R$");
+            // 2. A MÁGICA: Joga o R$ para frente e empurra o número
+            t = t.replace(/(\d+(?:[.,]\d+)?)\s*r\$/gi, "R$ $1");
+            t = t.replace(/(r\$\s*)+/gi, "R$ "); // Remove duplicações do R$
             
             transcricaoAoVivo = t.charAt(0).toUpperCase() + t.slice(1);
             textoInterim.innerText = transcricaoAoVivo;
@@ -488,10 +498,11 @@ window.ativarMicrofone = function() {
         if (textoFinal && textoFinal.trim() !== '') {
             let t = textoFinal.toLowerCase();
             
-            t = t.replace(/\bbrl\b/g, "reais");
-            t = t.replace(/(\d+(?:[.,]\d+)?)\s*(reais|real|r\$)/g, "R$ $1");
-            t = t.replace(/\breais\b|\breal\b/g, "R$");
-            t = t.replace(/\.\s*$/g, ""); // Tira ponto final nojento do Chrome
+            t = t.replace(/\bbrl\b/gi, "R$");
+            t = t.replace(/\breais\b|\breal\b/gi, "R$");
+            t = t.replace(/(\d+(?:[.,]\d+)?)\s*r\$/gi, "R$ $1");
+            t = t.replace(/(r\$\s*)+/gi, "R$ ");
+            t = t.replace(/\.\s*$/g, ""); // Remove ponto final indesejado
             
             t = t.charAt(0).toUpperCase() + t.slice(1);
             document.getElementById('input-rapido').value = t;
