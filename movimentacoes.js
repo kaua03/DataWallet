@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - NLP IA SÊNIOR (Limpador de Lixo "BRL" e Hover Trap fix)
+// movimentacoes.js - NLP INTELIGENTE E ANIMAÇÃO CENTRALIZADA
 // ==========================================
 
 let usuarioLogado = null;
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// MOTOR DE SELEÇÃO MÚLTIPLA (LONG PRESS)
+// MOTOR DE SELEÇÃO MULTIPLA (LONG PRESS)
 // ==========================================
 window.iniciarPressao = function(id) {
     if (modoSelecao) return; 
@@ -411,9 +411,12 @@ function processarFraseNLP(fraseBruta) {
         textoCru = textoCru.replace(matchDia[0], ''); 
     }
 
-    // 2. EXTRAÇÃO DE VALORES E A REGRA DO "BRL" (Bug do Chrome Desktop)
-    // O Chrome Desktop transforma "reais" em "BRL" e coloca pontos. Vamos purificar isso.
-    let textoValores = textoCru.replace(/\.(\d{3})/g, '$1'); 
+    // 2. EXTRAÇÃO DE VALORES E A REGRA DO "BRL" E CENTAVOS (O Bug do Chrome)
+    // Se o usuário fala "200 reais e 50 centavos", nós juntamos para "200,50"
+    let textoValores = textoCru.replace(/(\d+)\s*(?:reais|r\$|brl)?\s*e\s*(\d+)\s*(?:centavos)?/gi, "$1,$2");
+    
+    // O Chrome Desktop transforma "reais" em "BRL" e coloca pontos de milhar ("52.000"). Vamos purificar:
+    textoValores = textoValores.replace(/\.(\d{3})/g, '$1'); 
     textoValores = textoValores.replace(/\bum mil\b/g, '1000'); 
     
     textoValores = textoValores.replace(/\b(\d+(?:,\d+)?)\s*(?:k|mil|milhares)\b/gi, (match, numero) => {
@@ -435,6 +438,9 @@ function processarFraseNLP(fraseBruta) {
     // Remove qualquer número, vírgula, e moedas da descrição bruta
     let descCrua = textoCru.replace(/\d+(?:[.,]\d+)?/g, '');
     descCrua = descCrua.replace(/\br\$\b|\breais\b|\breal\b|\$|\bmil\b|\bk\b|\bconto\b|\bcontos\b|\bbrl\b/gi, '');
+    
+    // MATA A PONTUAÇÃO DO CHROME (O Bug do "brl.")
+    descCrua = descCrua.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, " "); 
     descCrua = removerAcentos(descCrua);
 
     if (isReceita) {
@@ -550,16 +556,20 @@ window.ativarMicrofone = function() {
 
         let transcricaoAoVivo = textoFinal || textoTemporario;
         if (transcricaoAoVivo.length > 0) {
+            // MÁGICA VISUAL: Remove o BRL para não assustar o usuário
+            transcricaoAoVivo = transcricaoAoVivo.replace(/\bbrl\b/gi, "R$");
             transcricaoAoVivo = transcricaoAoVivo.replace(/\br\$\b|\breais\b/gi, "R$");
             transcricaoAoVivo = transcricaoAoVivo.charAt(0).toUpperCase() + transcricaoAoVivo.slice(1);
             textoInterim.innerText = transcricaoAoVivo;
         }
 
         if (textoFinal && textoFinal.trim() !== '') {
-            document.getElementById('input-rapido').value = textoFinal;
+            let textoParaInput = textoFinal.replace(/\bbrl\b/gi, "reais");
+            document.getElementById('input-rapido').value = textoParaInput;
+            
             setTimeout(() => { 
                 window.cancelarMicrofone(); 
-                processarFraseNLP(textoFinal); 
+                processarFraseNLP(textoParaInput); 
             }, 750);
         }
     };
@@ -594,7 +604,7 @@ window.cancelarMicrofone = function() {
 };
 
 // ==========================================
-// FUNÇÕES DE CRUD E INJEÇÃO DOM
+// FUNÇÕES DE CRUD
 // ==========================================
 window.abrirModalEdicao = function(id) {
     const t = transacoesGlobais.find(x => x.id === id); if(!t) return;
@@ -608,7 +618,7 @@ window.abrirModalEdicao = function(id) {
 window.fecharModal = function() { document.getElementById('modal-transacao').classList.add('hidden'); };
 
 window.excluirTransacao = async function(id) {
-    if(modoSelecao) return; 
+    if(modoSelecao) return; // Se for modo seleção, bloqueia exclusão individual
     const confirmacao = await Swal.fire({ title: 'Excluir Transação?', text: "Essa ação apagará este registro do fluxo.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8', confirmButtonText: 'Sim', cancelButtonText: 'Cancelar' });
     if(!confirmacao.isConfirmed) return;
     try {
