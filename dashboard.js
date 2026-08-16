@@ -1,5 +1,5 @@
 // ==========================================
-// dashboard.js - CÉREBRO ANALÍTICO COM FALSO 3D E OBSERVER
+// dashboard.js - CÉREBRO ANALÍTICO COM FALSO 3D E OBSERVER SÊNIOR
 // ==========================================
 
 let usuarioLogado = null;
@@ -56,12 +56,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await carregarDadosDoBanco();
 
-    // A MÁGICA: O MutationObserver. 
-    // Fica vigiando o clique no Dark Mode para redesenhar o Canvas com as cores da Noite.
+    // O OLHO DE SAURON (MUTATION OBSERVER)
+    // Vigia a tag HTML e redesenha os gráficos com as cores noturnas quando a classe mudar
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
             if (mutation.attributeName === 'class') {
-                processarEAtualizarTudo(); 
+                if (transacoesGlobais.length > 0) {
+                    processarEAtualizarTudo(); 
+                }
             }
         });
     });
@@ -167,7 +169,6 @@ window.processarEAtualizarTudo = function() {
     let maiorGasto = { valor: 0, descricao: "Nenhum", categoria: "Nenhuma" };
     const gastosPorCategoria = {};
     const agrupamentoTemporal = {}; 
-    
     let gastosPorDiaSemana = [0, 0, 0, 0, 0, 0, 0];
 
     const agruparPorMes = (tipoFiltro === 'por_ano' || tipoFiltro === 'tudo');
@@ -230,7 +231,7 @@ window.processarEAtualizarTudo = function() {
     let corTaxa = taxa >= 20 ? 'bg-emerald-500' : (taxa > 0 ? 'bg-indigo-500' : 'bg-rose-500');
     const barra = document.getElementById('kpi-taxa-barra');
     barra.style.width = `${percentualBarra}%`;
-    barra.className = `h-2 rounded-full transition-all duration-1000 ${corTaxa}`;
+    barra.className = `h-2 rounded-full transition-all duration-1000 shadow-sm ${corTaxa}`;
 
     renderizarListaCategorias(categoriasOrdenadas, gastosPorCategoria, totalDespesas);
     renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, gastosPorDiaSemana);
@@ -314,7 +315,6 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
         dadosAcumulados.push(acumuladoAtual);
     });
 
-    // Criando o Falso 3D nos gradientes de barra
     let gradVerde = ctxC.createLinearGradient(0, 0, 0, 400);
     gradVerde.addColorStop(0, '#10b981'); 
     gradVerde.addColorStop(1, isDark ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.5)');
@@ -354,7 +354,7 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
     });
 
     // ----------------------------------------------------
-    // GRÁFICO 2: ROSCA MINIMALISTA (Sem o número central inútil)
+    // GRÁFICO 2: ROSCA MINIMALISTA
     // ----------------------------------------------------
     const ctxP = document.getElementById('graficoPizza').getContext('2d');
     if (grafPizza) grafPizza.destroy();
