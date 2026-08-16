@@ -139,7 +139,6 @@ window.toggleMobileMenu = function() {
 
 window.toggleDarkMode = function() {
     const htmlElement = document.documentElement;
-    // Forçamos a classe na raiz do documento HTML
     const isDark = htmlElement.classList.toggle('dark');
     localStorage.setItem('DataWallet_Tema', isDark ? 'escuro' : 'claro');
     atualizarIconesDark(isDark);
@@ -168,8 +167,8 @@ function atualizarIconesDark(isDark) {
     const starPc = document.getElementById('star-desktop');
     const starMobile = document.getElementById('star-mobile');
     
-    if(starPc) starPc.classList.remove('animate-star');
-    if(starMobile) starMobile.classList.remove('animate-star');
+    if(starPc) { starPc.classList.remove('animate-star'); void starPc.offsetWidth; }
+    if(starMobile) { starMobile.classList.remove('animate-star'); void starMobile.offsetWidth; }
     
     if (isDark) {
         if (iconePc) iconePc.className = 'fa-solid fa-sun text-lg text-amber-400 transition-colors duration-300';
@@ -184,7 +183,6 @@ function atualizarIconesDark(isDark) {
         if (txtPc) txtPc.innerText = 'Tema Escuro';
         if (btnMobile) btnMobile.className = 'w-12 h-12 rounded-full bg-slate-800 text-white shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible';
         
-        void document.body.offsetWidth;
         if(starPc) starPc.classList.add('animate-star');
         if(starMobile) starMobile.classList.add('animate-star');
     }
