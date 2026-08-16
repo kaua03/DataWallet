@@ -14,6 +14,7 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- BIBLIOTECAS DE ELITE -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -37,15 +38,18 @@
 
         ::-webkit-scrollbar { width: 6px; display: none; }
         
+        /* FALSO 3D NEON NOS GRÁFICOS */
         .grafico-3d { filter: drop-shadow(0 20px 25px rgba(0,0,0,0.06)); transition: filter 0.4s ease; }
         .dark .grafico-3d { filter: drop-shadow(0 20px 25px rgba(0,0,0,0.4)); }
         
         input[type="month"]::-webkit-calendar-picker-indicator,
-        input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.5; transition: 0.2s; }
+        input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.5; transition: 0.2s; position: absolute; right: 12px; }
         .dark input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.7; }
         input::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 
-        /* MAGIA DA SIDEBAR RESTAURADA (Isso faz a barra minimizar e maximizar) */
+        /* Remove seta padrão do select no celular para personalização total */
+        select { -webkit-appearance: none; -moz-appearance: none; appearance: none; }
+
         #sidebar { width: 5rem; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, background-color 0.3s; }
         #sidebar:hover { width: 16rem; box-shadow: 15px 0 30px rgba(0,0,0,0.05); }
         .sidebar-link { width: 3rem; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s; }
@@ -57,111 +61,133 @@
 
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 h-[100dvh] overflow-hidden flex relative fade-in transition-colors duration-300">
 
-    <main class="flex-1 h-full overflow-y-auto relative pb-32 md:pb-8 p-4 md:p-8">
-        <section class="max-w-7xl mx-auto space-y-6">
+    <!-- O LAYOUT.JS INJETA A SIDEBAR E O MENU AQUI -->
+
+    <main class="flex-1 h-full overflow-y-auto relative pb-32 md:pb-8 p-3 md:p-8">
+        <section class="max-w-7xl mx-auto space-y-4 md:space-y-6">
             
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors relative overflow-hidden">
+            <!-- HEADER BLINDADO -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors relative overflow-hidden">
                 <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent pointer-events-none"></div>
                 <div class="relative z-10">
-                    <h2 class="text-2xl md:text-3xl font-black text-slate-900 dark:text-white flex items-center gap-3">
+                    <h2 class="text-xl md:text-3xl font-black text-slate-900 dark:text-white flex items-center gap-3">
                         <i class="fa-solid fa-chart-line text-indigo-600 dark:text-indigo-400"></i> Executive Analytics
                     </h2>
-                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Sua inteligência financeira em tempo real.</p>
+                    <p class="text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Sua inteligência financeira em tempo real.</p>
                 </div>
             </div>
 
-            <!-- FILTRO IDÊNTICO AO DA TELA DE MOVIMENTAÇÕES -->
-            <div class="flex justify-end mb-6">
-                <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 transition-colors w-full lg:w-auto justify-center">
+            <!-- FILTRO DE ELITE MOBILE-FIRST (Hitboxes resolvidas e agrupamento lateral) -->
+            <div class="flex justify-end mb-4 md:mb-6">
+                <div class="flex flex-col sm:flex-row items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 md:p-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 transition-colors w-full sm:w-auto">
                     
-                    <div class="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors w-full sm:w-auto">
-                        <i class="fa-solid fa-filter text-slate-400 text-xs"></i>
-                        <select id="filtro-periodo" onchange="mudarTipoFiltro()" class="bg-transparent outline-none text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer w-full sm:w-auto">
-                            <option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="essa_semana">Essa Semana</option>
-                            <option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="por_mes" selected>Este Mês</option>
-                            <option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="personalizado">Personalizado</option>
-                            <option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="tudo">Todo o Histórico</option>
-                        </select>
+                    <!-- Grid Mobile perfeito para não ocupar tela inteira verticalmente -->
+                    <div class="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
+                        
+                        <!-- Select de Período com Hitbox Absoluta -->
+                        <div class="relative bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 h-10 w-full sm:w-40 transition-colors">
+                            <i class="fa-solid fa-filter absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                            <select id="filtro-periodo" onchange="mudarTipoFiltro()" class="w-full h-full pl-8 pr-6 bg-transparent outline-none text-[13px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                                <option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="essa_semana">Essa Semana</option>
+                                <option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="por_mes" selected>Este Mês</option>
+                                <option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="personalizado">Personalizado</option>
+                                <option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="tudo">Histórico</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] pointer-events-none"></i>
+                        </div>
+
+                        <!-- Box Mês -->
+                        <div id="box-mes" class="relative bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 h-10 w-full sm:w-44 transition-colors">
+                            <input type="month" id="input-mes" onchange="processarEAtualizarTudo()" class="absolute inset-0 w-full h-full px-3 bg-transparent outline-none text-[13px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer" style="color-scheme: dark;">
+                        </div>
+                        
+                        <!-- Box Ano -->
+                        <div id="box-ano" class="hidden relative bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 h-10 w-full sm:w-28 transition-colors">
+                            <input type="number" id="input-ano" onchange="processarEAtualizarTudo()" min="2000" max="2100" class="absolute inset-0 w-full h-full text-center bg-transparent outline-none text-[13px] font-bold text-slate-700 dark:text-slate-300" placeholder="2026">
+                        </div>
+
                     </div>
 
-                    <div id="box-mes" class="flex items-center bg-white dark:bg-slate-800 px-3 py-1.5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors w-full sm:w-auto">
-                        <input type="month" id="input-mes" onchange="processarEAtualizarTudo()" class="bg-transparent outline-none text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer w-full" style="color-scheme: dark;">
+                    <!-- Box Personalizado (Data Início e Fim juntas) -->
+                    <div id="box-personalizado" class="hidden grid-cols-2 gap-2 w-full sm:w-auto">
+                        <div class="relative bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 h-10 transition-colors">
+                            <input type="date" id="input-data-inicio" onchange="processarEAtualizarTudo()" class="absolute inset-0 w-full h-full px-3 bg-transparent outline-none text-[12px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer" style="color-scheme: dark;">
+                        </div>
+                        <div class="relative bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 h-10 transition-colors">
+                            <input type="date" id="input-data-fim" onchange="processarEAtualizarTudo()" class="absolute inset-0 w-full h-full px-3 bg-transparent outline-none text-[12px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer" style="color-scheme: dark;">
+                        </div>
                     </div>
 
-                    <div id="box-personalizado" class="hidden flex flex-wrap items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors w-full sm:w-auto justify-center">
-                        <input type="date" id="input-data-inicio" onchange="processarEAtualizarTudo()" class="bg-transparent outline-none text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer" style="color-scheme: dark;">
-                        <span class="text-slate-400 text-xs">até</span>
-                        <input type="date" id="input-data-fim" onchange="processarEAtualizarTudo()" class="bg-transparent outline-none text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer" style="color-scheme: dark;">
+                </div>
+            </div>
+
+            <!-- KPIs UNIFICADOS E COMPRIMIDOS NO MOBILE -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                <div class="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm flex flex-col justify-center transition-colors">
+                    <p class="text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mb-1">Saldo Líquido</p>
+                    <p class="text-[1.35rem] sm:text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tighter leading-none break-words" id="kpi-saldo">R$ 0,00</p>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm flex flex-col justify-center transition-colors">
+                    <p class="text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mb-1">Total Captado</p>
+                    <p class="text-[1.35rem] sm:text-2xl md:text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter leading-none break-words" id="kpi-receitas">R$ 0,00</p>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm flex flex-col justify-center transition-colors">
+                    <p class="text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mb-1">Total Queimado</p>
+                    <p class="text-[1.35rem] sm:text-2xl md:text-3xl font-black text-rose-600 dark:text-rose-400 tracking-tighter leading-none break-words" id="kpi-despesas">R$ 0,00</p>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm flex flex-col justify-center transition-colors">
+                    <div class="flex justify-between items-end mb-2 md:mb-3">
+                        <p class="text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Retenção</p>
+                        <p class="text-base md:text-lg font-black text-slate-800 dark:text-slate-200 leading-none" id="kpi-taxa-texto">0%</p>
+                    </div>
+                    <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 md:h-2 transition-colors overflow-hidden">
+                        <div id="kpi-taxa-barra" class="bg-indigo-600 h-1.5 md:h-2 rounded-full transition-all duration-1000 shadow-sm" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- KPIs -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all relative overflow-hidden group">
-                    <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mb-2">Saldo Líquido</p>
-                    <p class="text-2xl md:text-3xl font-black text-slate-900 dark:text-white truncate" id="kpi-saldo">R$ 0,00</p>
-                </div>
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all relative overflow-hidden group">
-                    <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mb-2">Total Captado</p>
-                    <p class="text-2xl md:text-3xl font-black text-emerald-600 dark:text-emerald-400 truncate" id="kpi-receitas">R$ 0,00</p>
-                </div>
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all relative overflow-hidden group">
-                    <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mb-2">Total Queimado</p>
-                    <p class="text-2xl md:text-3xl font-black text-rose-600 dark:text-rose-400 truncate" id="kpi-despesas">R$ 0,00</p>
-                </div>
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all flex flex-col justify-center">
-                    <div class="flex justify-between items-end mb-3">
-                        <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Retenção</p>
-                        <p class="text-lg font-black text-slate-800 dark:text-slate-200" id="kpi-taxa-texto">0%</p>
-                    </div>
-                    <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 transition-colors overflow-hidden">
-                        <div id="kpi-taxa-barra" class="bg-indigo-600 h-2 rounded-full transition-all duration-1000 shadow-sm" style="width: 0%"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- GRÁFICO PRINCIPAL -->
-            <div class="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors">
-                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
+            <!-- GRÁFICO PRINCIPAL RESPONSIVO -->
+            <div class="bg-white dark:bg-slate-900 p-4 md:p-8 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-3">
                     <div>
-                        <h3 class="text-slate-800 dark:text-white font-bold text-lg lg:text-xl">Fluxo de Caixa Operacional</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">Comparativo de queima vs captação com tendência</p>
+                        <h3 class="text-slate-800 dark:text-white font-bold text-[1rem] md:text-lg lg:text-xl leading-tight">Fluxo Operacional</h3>
+                        <p class="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">Entradas vs Saídas com tendência</p>
                     </div>
-                    <div class="flex flex-wrap gap-4 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-xl border border-slate-200/60 dark:border-slate-700/50">
-                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></span> Entradas</span>
-                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]"></span> Saídas</span>
-                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_#6366f1]"></span> Saldo Acumulado</span>
+                    <div class="flex flex-wrap gap-2 md:gap-4 text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 md:py-2 rounded-lg md:rounded-xl border border-slate-200/60 dark:border-slate-700/50 w-full sm:w-auto justify-center">
+                        <span class="flex items-center gap-1.5"><span class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></span> Entradas</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]"></span> Saídas</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_#6366f1]"></span> Saldo</span>
                     </div>
                 </div>
-                <div class="relative h-[350px] w-full grafico-3d">
+                <!-- Altura reduzida no mobile para não gastar 100% da tela atoa -->
+                <div class="relative h-[250px] md:h-[350px] w-full grafico-3d">
                     <canvas id="graficoCombo"></canvas>
                 </div>
             </div>
 
             <!-- GRÁFICOS SECUNDÁRIOS -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
                 
-                <div class="lg:col-span-1 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors flex flex-col">
-                    <h3 class="text-slate-800 dark:text-white font-bold text-lg">Centros de Custo</h3>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mb-6">Detalhamento hierárquico</p>
-                    <div id="lista-categorias-progress" class="space-y-6 overflow-y-auto flex-1 pr-2" style="scrollbar-width: thin;"></div>
+                <div class="lg:col-span-1 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors flex flex-col">
+                    <h3 class="text-slate-800 dark:text-white font-bold text-[1rem] md:text-lg">Centros de Custo</h3>
+                    <p class="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 font-medium mb-4 md:mb-6">Detalhamento hierárquico</p>
+                    <div id="lista-categorias-progress" class="space-y-5 md:space-y-6 overflow-y-auto flex-1 pr-2" style="scrollbar-width: thin;"></div>
                 </div>
 
-                <div class="lg:col-span-1 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm flex flex-col transition-colors">
+                <div class="lg:col-span-1 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm flex flex-col transition-colors">
                     <div class="mb-4">
-                        <h3 class="text-slate-800 dark:text-white font-bold text-lg">Composição Macro</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Divisão do capital queimado</p>
+                        <h3 class="text-slate-800 dark:text-white font-bold text-[1rem] md:text-lg">Composição Macro</h3>
+                        <p class="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 font-medium">Divisão do capital queimado</p>
                     </div>
-                    <div class="relative flex-1 w-full min-h-[220px] flex justify-center items-center grafico-3d">
+                    <div class="relative flex-1 w-full min-h-[180px] md:min-h-[220px] flex justify-center items-center grafico-3d">
                         <canvas id="graficoPizza"></canvas>
                     </div>
                 </div>
 
-                <div class="lg:col-span-1 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm flex flex-col transition-colors">
-                    <h3 class="text-slate-800 dark:text-white font-bold text-lg">Termômetro Semanal</h3>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mb-2">Comportamento de queima por dia</p>
-                    <div class="relative flex-1 w-full min-h-[200px] grafico-3d mt-4">
+                <div class="lg:col-span-1 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm flex flex-col transition-colors">
+                    <h3 class="text-slate-800 dark:text-white font-bold text-[1rem] md:text-lg">Termômetro Semanal</h3>
+                    <p class="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 font-medium mb-2">Comportamento por dia</p>
+                    <div class="relative flex-1 w-full min-h-[180px] md:min-h-[200px] grafico-3d mt-2 md:mt-4">
                         <canvas id="graficoRadar"></canvas>
                     </div>
                 </div>
