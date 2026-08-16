@@ -1,5 +1,5 @@
 // ==========================================
-// dashboard.js - MOTOR DE BI E DELAY DE ANIMAÇÃO DE BARRAS
+// dashboard.js - MOTOR DE BI COM FALSO 3D E SEM REFRESH FANTASMA
 // ==========================================
 
 let usuarioLogado = null;
@@ -45,9 +45,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const hoje = new Date();
     document.getElementById('input-mes').value = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
-    document.getElementById('input-ano').value = hoje.getFullYear();
     
-    document.getElementById('filtro-periodo').value = 'por_mes';
+    // Inicia com "por_mes" ativado
     mudarTipoFiltro();
 
     document.getElementById('input-coach').addEventListener('keypress', function(e) {
@@ -56,17 +55,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await carregarDadosDoBanco();
 
+    // O OLHO DE SAURON (MUTATION OBSERVER): Agora ele recebe o parâmetro 'true' (isThemeChange)
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
             if (mutation.attributeName === 'class') {
                 if (transacoesGlobais.length > 0) {
-                    processarEAtualizarTudo(); 
+                    processarEAtualizarTudo(true); // O 'true' mata a ilusão de refresh da página!
                 }
             }
         });
     });
     observer.observe(document.documentElement, { attributes: true });
 });
+
+// Helper de formatação instantânea (Usado quando a animação está desativada)
+function formatarMoedaLocal(valor) {
+    let p = Math.abs(valor).toFixed(2).split('.');
+    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return (valor < 0 ? "- R$ " : "R$ ") + p.join(',');
+}
 
 window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 1000) {
     const elemento = document.getElementById(id);
@@ -79,9 +86,7 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
         const valorAtual = easeProgress * valorFinal;
         
         if (formato === 'moeda') {
-            let parts = Math.abs(valorAtual).toFixed(2).split('.');
-            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-            elemento.innerText = (valorAtual < 0 ? "- R$ " : "R$ ") + parts.join(',');
+            elemento.innerText = formatarMoedaLocal(valorAtual);
         } else if (formato === 'porcentagem') {
             elemento.innerText = valorAtual.toFixed(1) + "%";
         }
@@ -89,9 +94,7 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
         if (progress < 1) requestAnimationFrame(step);
         else {
             if (formato === 'moeda') {
-                let parts = Math.abs(valorFinal).toFixed(2).split('.');
-                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-                elemento.innerText = (valorFinal < 0 ? "- R$ " : "R$ ") + parts.join(',');
+                elemento.innerText = formatarMoedaLocal(valorFinal);
             } else if (formato === 'porcentagem') {
                 elemento.innerText = valorFinal.toFixed(1) + "%";
             }
@@ -115,41 +118,46 @@ async function carregarDadosDoBanco() {
 window.mudarTipoFiltro = function() {
     const tipo = document.getElementById('filtro-periodo').value;
     document.getElementById('box-mes').classList.add('hidden');
-    document.getElementById('box-ano').classList.add('hidden');
     document.getElementById('box-personalizado').classList.add('hidden');
 
-    if (tipo === 'por_mes') document.getElementById('box-mes').classList.remove('hidden');
-    else if (tipo === 'por_ano') document.getElementById('box-ano').classList.remove('hidden');
-    else if (tipo === 'personalizado') document.getElementById('box-personalizado').classList.remove('hidden');
+    if (tipo === 'por_mes') {
+        document.getElementById('box-mes').classList.remove('hidden');
+    }
+    else if (tipo === 'personalizado') {
+        document.getElementById('box-personalizado').classList.remove('hidden');
+    }
 
     processarEAtualizarTudo();
 }
 
-window.processarEAtualizarTudo = function() {
+// O parâmetro 'isThemeChange' evita que tudo zere e rode a roleta na hora do Dark Mode
+window.processarEAtualizarTudo = function(isThemeChange = false) {
     const tipoFiltro = document.getElementById('filtro-periodo').value;
 
     const transacoesFiltradas = transacoesGlobais.filter(t => {
         if (!t.data_vencimento) return true;
+        const dStr = t.data_vencimento; 
         const d = new Date(t.data_vencimento + 'T12:00:00Z');
         
-        if (tipoFiltro === 'por_mes') {
+        if (tipoFiltro === 'essa_semana') {
+            d.setHours(0,0,0,0);
+            const dataHoje = new Date(); dataHoje.setHours(0,0,0,0);
+            const inicioSemana = new Date(dataHoje); inicioSemana.setDate(dataHoje.getDate() - dataHoje.getDay()); 
+            const fimSemana = new Date(inicioSemana); fimSemana.setDate(inicioSemana.getDate() + 6); fimSemana.setHours(23, 59, 59, 999);
+            return (d >= inicioSemana && d <= fimSemana);
+        } else if (tipoFiltro === 'por_mes') {
             const val = document.getElementById('input-mes').value;
             if(!val) return true;
-            const [anoF, mesF] = val.split('-');
-            return d.getMonth() === (parseInt(mesF) - 1) && d.getFullYear() === parseInt(anoF);
-        } else if (tipoFiltro === 'por_ano') {
-            const val = document.getElementById('input-ano').value;
-            if(!val) return true;
-            return d.getFullYear() === parseInt(val);
+            return dStr.startsWith(val);
         } else if (tipoFiltro === 'personalizado') {
             const dIni = document.getElementById('input-data-inicio').value;
             const dFim = document.getElementById('input-data-fim').value;
             let valid = true;
-            if (dIni) valid = valid && d >= new Date(dIni + 'T12:00:00Z');
-            if (dFim) valid = valid && d <= new Date(dFim + 'T12:00:00Z');
+            if (dIni) valid = valid && (dStr >= dIni);
+            if (dFim) valid = valid && (dStr <= dFim);
             return valid;
         }
-        return true; 
+        return true; // "tudo" cai aqui
     });
 
     let totalDespesas = 0, totalReceitas = 0;
@@ -158,7 +166,21 @@ window.processarEAtualizarTudo = function() {
     const agrupamentoTemporal = {}; 
     let gastosPorDiaSemana = [0, 0, 0, 0, 0, 0, 0];
 
-    const agruparPorMes = (tipoFiltro === 'por_ano' || tipoFiltro === 'tudo');
+    // Se o filtro for Tudo ou um período Personalizado muito longo (> 40 dias), agrupa os gráficos por mês. Senão, por dia.
+    let agruparPorMes = false;
+    if (tipoFiltro === 'tudo') {
+        agruparPorMes = true;
+    } else if (tipoFiltro === 'personalizado') {
+        const dIni = document.getElementById('input-data-inicio').value;
+        const dFim = document.getElementById('input-data-fim').value;
+        if (dIni && dFim) {
+            const diffTime = Math.abs(new Date(dFim) - new Date(dIni));
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            if (diffDays > 40) agruparPorMes = true;
+        } else {
+            agruparPorMes = true;
+        }
+    }
 
     transacoesFiltradas.forEach(t => { 
         let chaveTempo = 'S/D';
@@ -209,30 +231,40 @@ window.processarEAtualizarTudo = function() {
 
     statsGlobais = { receitas: totalReceitas, despesas: totalDespesas, saldo: totalReceitas - totalDespesas, taxaPoupanca: taxa, mediaDiaria: media, maiorGasto: maiorGasto, topCategoria: categoriasOrdenadas.length > 0 ? { nome: categoriasOrdenadas[0], valor: gastosPorCategoria[categoriasOrdenadas[0]] } : null, transacoesNoPeriodo: transacoesFiltradas.length };
 
-    window.animarContador('kpi-saldo', totalReceitas - totalDespesas, 'moeda', 1000);
-    window.animarContador('kpi-receitas', totalReceitas, 'moeda', 1000);
-    window.animarContador('kpi-despesas', totalDespesas, 'moeda', 1000);
-    window.animarContador('kpi-taxa-texto', taxa, 'porcentagem', 1000);
-    
+    const barra = document.getElementById('kpi-taxa-barra');
     let percentualBarra = Math.min(Math.max(taxa, 0), 100); 
     let corTaxa = taxa >= 20 ? 'bg-emerald-500' : (taxa > 0 ? 'bg-indigo-500' : 'bg-rose-500');
-    const barra = document.getElementById('kpi-taxa-barra');
-    
-    // DELAY DE FÍSICA PARA ANIMAR A BARRA DE RETENÇÃO DO 0 AO REAL
-    barra.style.width = '0%';
-    setTimeout(() => {
-        barra.style.width = `${percentualBarra}%`;
-    }, 50);
-    barra.className = `h-2 rounded-full transition-all duration-1000 shadow-sm ${corTaxa}`;
 
-    renderizarListaCategorias(categoriasOrdenadas, gastosPorCategoria, totalDespesas);
-    renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, gastosPorDiaSemana);
+    // SE NÃO É TROCA DE TEMA: Roda a roleta e a física da barra
+    if (!isThemeChange) {
+        window.animarContador('kpi-saldo', totalReceitas - totalDespesas, 'moeda', 1000);
+        window.animarContador('kpi-receitas', totalReceitas, 'moeda', 1000);
+        window.animarContador('kpi-despesas', totalDespesas, 'moeda', 1000);
+        window.animarContador('kpi-taxa-texto', taxa, 'porcentagem', 1000);
+        
+        barra.style.width = '0%';
+        setTimeout(() => { barra.style.width = `${percentualBarra}%`; }, 50);
+        barra.className = `h-2 rounded-full transition-all duration-1000 shadow-sm ${corTaxa}`;
+    } 
+    // SE É APENAS TROCA DE TEMA: Altera os valores instataneamente sem rodar as animações para não parecer Refresh
+    else {
+        document.getElementById('kpi-saldo').innerText = formatarMoedaLocal(totalReceitas - totalDespesas);
+        document.getElementById('kpi-receitas').innerText = formatarMoedaLocal(totalReceitas);
+        document.getElementById('kpi-despesas').innerText = formatarMoedaLocal(totalDespesas);
+        document.getElementById('kpi-taxa-texto').innerText = taxa.toFixed(1) + "%";
+        
+        barra.style.width = `${percentualBarra}%`;
+        barra.className = `h-2 rounded-full shadow-sm ${corTaxa}`; // Sem a classe transition
+    }
+
+    renderizarListaCategorias(categoriasOrdenadas, gastosPorCategoria, totalDespesas, isThemeChange);
+    renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, gastosPorDiaSemana, isThemeChange);
 }
 
 // ==========================================
-// RENDERIZAÇÃO DA UI (Listas com Delay de Animação)
+// RENDERIZAÇÃO DA UI (Listas)
 // ==========================================
-function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
+function renderizarListaCategorias(ordenadas, gastos, totalGeral, isThemeChange) {
     const html = ordenadas.map((cat, index) => {
         const valor = gastos[cat];
         const perc = totalGeral > 0 ? ((valor / totalGeral) * 100) : 0;
@@ -243,37 +275,38 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
             <div class="flex justify-between items-end mb-2 gap-2">
                 <span class="text-xs font-bold text-slate-700 dark:text-slate-300 truncate flex-1">${cat}</span>
                 <div class="text-right flex items-center gap-2 shrink-0">
-                    <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500" id="cat-perc-${index}">0.0%</span>
-                    <span class="text-sm font-black text-slate-900 dark:text-white whitespace-nowrap" id="cat-val-${index}">R$ 0,00</span>
+                    <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500" id="cat-perc-${index}">${perc.toFixed(1)}%</span>
+                    <span class="text-sm font-black text-slate-900 dark:text-white whitespace-nowrap" id="cat-val-${index}">${formatarMoedaLocal(valor)}</span>
                 </div>
             </div>
             <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
-                <!-- Barra nasce em 0% e anima via JS -->
-                <div id="bar-cat-${index}" class="${corBase} h-2 rounded-full transition-all duration-1000 shadow-sm" style="width: 0%"></div>
+                <div id="bar-cat-${index}" class="${corBase} h-2 rounded-full ${isThemeChange ? '' : 'transition-all duration-1000'} shadow-sm" style="width: ${isThemeChange ? perc + '%' : '0%'}"></div>
             </div>
         </div>
         `;
     }).join('');
+    
     document.getElementById('lista-categorias-progress').innerHTML = html || '<p class="text-xs text-slate-400 font-bold">Sem despesas no período.</p>';
 
-    // Dispara a animação física das barrinhas de progresso em cascata
-    setTimeout(() => {
-        ordenadas.forEach((cat, index) => {
-            const valor = gastos[cat];
-            const perc = totalGeral > 0 ? ((valor / totalGeral) * 100) : 0;
-            const bar = document.getElementById(`bar-cat-${index}`);
-            if(bar) bar.style.width = `${perc}%`;
-            
-            window.animarContador(`cat-val-${index}`, valor, 'moeda', 1000);
-            window.animarContador(`cat-perc-${index}`, perc, 'porcentagem', 1000);
-        });
-    }, 50);
+    if (!isThemeChange) {
+        setTimeout(() => {
+            ordenadas.forEach((cat, index) => {
+                const valor = gastos[cat];
+                const perc = totalGeral > 0 ? ((valor / totalGeral) * 100) : 0;
+                const bar = document.getElementById(`bar-cat-${index}`);
+                if(bar) bar.style.width = `${perc}%`;
+                
+                window.animarContador(`cat-val-${index}`, valor, 'moeda', 1000);
+                window.animarContador(`cat-perc-${index}`, perc, 'porcentagem', 1000);
+            });
+        }, 50);
+    }
 }
 
 // ==========================================
-// MOTOR DE GRÁFICOS (DUAL Y-AXIS SÊNIOR)
+// MOTOR DE GRÁFICOS (DUAL Y-AXIS SÊNIOR SEM REFRESH FANTASMA)
 // ==========================================
-function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, gastosPorDiaSemana) {
+function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, gastosPorDiaSemana, isThemeChange) {
     
     const isDark = document.documentElement.classList.contains('dark');
     const corTexto = isDark ? '#94a3b8' : '#64748b'; 
@@ -292,6 +325,9 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
         padding: 12, cornerRadius: 8, displayColors: true, boxPadding: 4 
     };
 
+    // ----------------------------------------------------
+    // GRÁFICO 1: FLUXO COMBO (DUAL Y-AXIS)
+    // ----------------------------------------------------
     const ctxC = document.getElementById('graficoCombo').getContext('2d');
     if (grafCombo) grafCombo.destroy();
 
@@ -335,7 +371,8 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
         },
         options: {
             responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-            animation: { duration: 1200, easing: 'easeOutQuart' },
+            // MATA A ANIMAÇÃO SE FOR APENAS TROCA DE TEMA PARA NÃO PARECER REFRESH DA PÁGINA
+            animation: isThemeChange ? false : { duration: 1200, easing: 'easeOutQuart' },
             plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${Math.abs(ctx.raw).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}` } } },
             scales: {
                 x: { stacked: true, grid: { display: false }, border: {display: false}, ticks: { font: { size: 11, weight: 'bold' } } },
@@ -352,6 +389,9 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
         }
     });
 
+    // ----------------------------------------------------
+    // GRÁFICO 2: ROSCA MINIMALISTA
+    // ----------------------------------------------------
     const ctxP = document.getElementById('graficoPizza').getContext('2d');
     if (grafPizza) grafPizza.destroy();
 
@@ -374,9 +414,14 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
     grafPizza = new Chart(ctxP, {
         type: 'doughnut',
         data: { labels: lblP, datasets: [{ data: datP, backgroundColor: coresP, borderWidth: 4, borderColor: corBordaRosca, hoverOffset: 10 }] },
-        options: { animation: { duration: 1200, easing: 'easeOutQuart' }, responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${categoriasOrdenadas.length === 0 ? 'R$ 0,00' : ctx.raw.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}` } } } }
+        options: { 
+            animation: isThemeChange ? false : { duration: 1200, easing: 'easeOutQuart' }, 
+            responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${categoriasOrdenadas.length === 0 ? 'R$ 0,00' : ctx.raw.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}` } } } }
     });
 
+    // ----------------------------------------------------
+    // GRÁFICO 3: RADAR DE TERMÔMETRO SEMANAL
+    // ----------------------------------------------------
     const ctxR = document.getElementById('graficoRadar').getContext('2d');
     if (grafRadar) grafRadar.destroy();
 
@@ -402,7 +447,7 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
             }]
         },
         options: {
-            animation: { duration: 1200, easing: 'easeOutQuart' },
+            animation: isThemeChange ? false : { duration: 1200, easing: 'easeOutQuart' },
             responsive: true, maintainAspectRatio: false,
             scales: {
                 r: {
@@ -417,6 +462,9 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
     });
 }
 
+// ==========================================
+// MÓDULO DA INTERFACE DO COACH (UI) E GEMINI
+// ==========================================
 window.toggleCoach = function() {
     const janela = document.getElementById('janela-coach');
     if (janela.classList.contains('hidden')) {
@@ -481,7 +529,7 @@ AQUI ESTÃO OS DADOS REAIS:
 - Total Queimado: R$ ${statsGlobais.despesas.toFixed(2)}
 - Saldo Líquido: R$ ${statsGlobais.saldo.toFixed(2)}
 - Retenção: ${statsGlobais.taxaPoupanca.toFixed(1)}%
-- Queima Média Diaria: R$ ${statsGlobais.mediaDiaria.toFixed(2)} / dia
+- Queima Média Diária: R$ ${statsGlobais.mediaDiaria.toFixed(2)} / dia
 - Top Categoria Gasto: ${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'Nenhum'}
 - Maior gasto isolado: ${statsGlobais.maiorGasto.descricao} (R$ ${statsGlobais.maiorGasto.valor.toFixed(2)})
 
