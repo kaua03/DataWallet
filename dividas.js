@@ -145,21 +145,35 @@ function desmascararMoeda(str) {
 
 async function carregarDadosDoBanco() {
     try {
+        if (!usuarioLogado || !usuarioLogado.id) {
+            console.error("Sessão inválida para carregar dados.");
+            return;
+        }
+
         const [rTrans, rCat] = await Promise.all([
             supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).eq('tipo', 'despesa').order('data_vencimento', { ascending: true }),
             supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
         ]);
 
+        if (rTrans.error) throw rTrans.error;
+        if (rCat.error) throw rCat.error;
+
         transacoesGlobais = rTrans.data || [];
         categoriasGlobais = rCat.data || [];
 
         const selectCat = document.getElementById('divida-categoria');
-        selectCat.innerHTML = '<option value="" disabled selected>Selecione uma pasta...</option>' + 
-            categoriasGlobais.map(c => `<option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="${c.id}">${c.nome}</option>`).join('');
+        if (selectCat) {
+            selectCat.innerHTML = '<option value="" disabled selected>Selecione uma pasta...</option>' + 
+                categoriasGlobais.map(c => `<option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="${c.id}">${c.nome}</option>`).join('');
+        }
 
         processarEAtualizarKanban();
 
-    } catch (e) { console.error("Erro ao puxar dados:", e.message); }
+    } catch (e) { 
+        console.error("Erro ao puxar dados:", e.message);
+        const board = document.getElementById('board-dividas');
+        if (board) board.innerHTML = `<div class="w-full text-center mt-20 text-rose-500 font-bold"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Erro ao carregar dados: ${e.message}</div>`;
+    }
 }
 
 function processarEAtualizarKanban() {
@@ -217,6 +231,7 @@ function processarEAtualizarKanban() {
 
 function renderizarColunas(agrupamentos) {
     const board = document.getElementById('board-dividas');
+    if (!board) return;
     let html = '';
 
     const mesesExtenso = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
@@ -327,6 +342,7 @@ function renderizarColunas(agrupamentos) {
 
 window.toggleColuna = function(id) {
     const col = document.getElementById(id);
+    if (!col) return;
     col.classList.toggle('coluna-minimizada');
     const icone = col.querySelector('.fa-chevron-left');
     if(icone) {
@@ -428,3 +444,60 @@ window.salvarDivida = async function(event) {
 
     if (valorFloat <= 0) {
         Swal.fire('Aviso', 'O valor não pode ser zero.', 'warning');
+        btn.innerHTML = conteudoOriginal; btn.disabled = false; return;
+    }
+
+    try {
+        if (idExistente) {
+            const { data, error } = await supabaseClient.from('transacoes').update({
+                descricao: descBase, valor: valorFloat, data_vencimento: dataInicialISO, categoria_id: catId
+            }).eq('id', idExistente).select();
+
+            if (error) throw error;
+            const idx = transacoesGlobais.findIndex(t => t.id == idExistente);
+            if (idx !== -1 && data && data.length > 0) transacoesGlobais[idx] = data[0];
+            
+            transacoesGlobais.sort((a,b) => new Date(a.data_vencimento) - new Date(b.data_vencimento));
+
+        } else {
+            const qtdParcelas = parseInt(document.getElementById('divida-parcelas').value) || 1;
+            let loteInsercao = [];
+
+            for (let i = 0; i < qtdParcelas; i++) {
+                let dataCalc = new Date(dataInicialISO + 'T12:00:00Z');
+                let diaOriginal = dataCalc.getDate();
+                dataCalc.setMonth(dataCalc.getMonth() + i);
+                if (dataCalc.getDate() !== diaOriginal) dataCalc.setDate(0); 
+
+                let dataFormatada = dataCalc.toISOString().split('T')[0];
+                let descFinal = qtdParcelas > 1 ? `${descBase} (${i + 1}/${qtdParcelas})` : descBase;
+
+                loteInsercao.push({
+                    usuario_id: usuarioLogado.id, tipo: 'despesa', descricao: descFinal, valor: valorFloat, data_vencimento: dataFormatada, categoria_id: catId, pago: false
+                });
+            }
+
+            const { data, error } = await supabaseClient.from('transacoes').insert(loteInsercao).select();
+            if (error) throw error;
+            if(data) {
+                transacoesGlobais.push(...data);
+                transacoesGlobais.sort((a,b) => new Date(a.data_vencimento) - new Date(b.data_vencimento));
+            }
+        }
+        
+        window.fecharModalNovaDivida();
+        processarEAtualizarKanban();
+
+        const isDark = document.documentElement.classList.contains('dark');
+        const Toast = Swal.mixin({
+            toast: true, position: 'top-end', showConfirmButton: false, timer: 2000, timerProgressBar: true, background: isDark ? '#1e293b' : '#fff', color: isDark ? '#fff' : '#1e293b'
+        });
+        Toast.fire({ icon: 'success', title: 'Registro guardado!' });
+
+    } catch (e) {
+        Swal.fire('Erro', e.message, 'error');
+    } finally {
+        btn.innerHTML = conteudoOriginal;
+        btn.disabled = false;
+    }
+};
