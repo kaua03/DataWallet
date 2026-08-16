@@ -1,5 +1,5 @@
 // ==========================================
-// dashboard.js - MOTOR DE BI COM FALSO 3D E SEM ERRO DE MEMÓRIA
+// dashboard.js - MOTOR DE BI COM FALSO 3D E DUAL-AXIS FAB 
 // ==========================================
 
 let usuarioLogado = null;
@@ -11,9 +11,6 @@ let grafPizza = null;
 let grafRadar = null;
 
 let statsGlobais = { receitas: 0, despesas: 0, saldo: 0, taxaPoupanca: 0, mediaDiaria: 0, maiorGasto: null, topCategoria: null, transacoesNoPeriodo: 0 };
-
-// Trava Global de Segurança para o Menu e Observer
-window._menuMobileAberto = false;
 let inicializacaoCompleta = false; 
 
 const coresPorCategoria = {
@@ -83,20 +80,22 @@ window.toggleMobileMenu = function() {
 
     if (window._menuMobileAberto) {
         if (items) {
-            // Vidro quebrado: pointer-events-auto permite clicar nos botões!
-            items.classList.remove('opacity-0', 'translate-y-8', 'pointer-events-none');
+            // Vidro quebrado: pointer-events-auto permite clicar nos botões livremente!
+            items.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
             items.classList.add('opacity-100', 'pointer-events-auto');
         }
         if (actionBtn) {
             actionBtn.classList.remove('opacity-0', 'pointer-events-none');
             actionBtn.classList.add('opacity-100', 'pointer-events-auto');
-            actionBtn.style.transform = 'translateX(-64px) rotate(-360deg)';
+            // Tiro forte para a esquerda:
+            actionBtn.style.transform = 'translateX(-72px) rotate(-360deg)';
         }
         if(btn) btn.style.transform = 'rotate(180deg)';
         setTimeout(() => { if(icon) icon.classList.replace('fa-bars', 'fa-xmark'); }, 150);
     } else {
         if (items) {
-            items.classList.add('opacity-0', 'translate-y-8', 'pointer-events-none');
+            // Vidro restaurado
+            items.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
             items.classList.remove('opacity-100', 'pointer-events-auto');
         }
         if (actionBtn) {
@@ -143,7 +142,6 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
     requestAnimationFrame(step);
 };
 
-// O Cálculo Perfeito e Intacto
 async function carregarDadosDoBanco() {
     try {
         const [rTrans, rCat] = await Promise.all([
