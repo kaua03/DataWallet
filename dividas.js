@@ -5,7 +5,6 @@
 let usuarioLogado = null;
 let transacoesGlobais = [];
 let categoriasGlobais = [];
-let menuMobileAberto = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
     
@@ -46,47 +45,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     await carregarDadosDoBanco();
     iniciarDragToScroll(); 
 });
-
-window.toggleMobileMenu = function() {
-    const items = document.getElementById('fab-items');
-    const actionBtn = document.getElementById('fab-action');
-    const icon = document.getElementById('fab-icon');
-    const btn = document.getElementById('fab-menu');
-    
-    menuMobileAberto = !menuMobileAberto;
-
-    if (menuMobileAberto) {
-        if (items) {
-            items.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
-            items.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
-        }
-        if (actionBtn) {
-            actionBtn.classList.remove('opacity-0', 'pointer-events-none');
-            actionBtn.classList.add('opacity-100', 'pointer-events-auto');
-            actionBtn.style.transform = 'translateX(-70px) rotate(-360deg)';
-        }
-        if(btn) {
-            btn.style.transform = 'rotate(180deg)';
-            btn.classList.replace('bg-indigo-600', 'bg-slate-800');
-        }
-        setTimeout(() => { if(icon) icon.classList.replace('fa-bars', 'fa-xmark'); }, 150);
-    } else {
-        if (items) {
-            items.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
-            items.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
-        }
-        if (actionBtn) {
-            actionBtn.classList.add('opacity-0', 'pointer-events-none');
-            actionBtn.classList.remove('opacity-100', 'pointer-events-auto');
-            actionBtn.style.transform = 'translateX(0px) rotate(0deg)';
-        }
-        if(btn) {
-            btn.style.transform = 'rotate(0deg)';
-            btn.classList.replace('bg-slate-800', 'bg-indigo-600');
-        }
-        setTimeout(() => { if(icon) icon.classList.replace('fa-xmark', 'fa-bars'); }, 150);
-    }
-};
 
 window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 1000) {
     const elemento = document.getElementById(id);
