@@ -1,5 +1,5 @@
 // ==========================================
-// dividas.js - ERP KANBAN PURO E ALTA PERFORMANCE (FLUIDEZ ABSOLUTA)
+// dividas.js - ERP KANBAN 100% DEFINITIVO (FLUIDEZ + DB)
 // ==========================================
 
 let usuarioLogado = null;
@@ -23,10 +23,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     try {
-        usuarioLogado = await verificarSessaoSegura();
+        if (typeof verificarSessaoSegura === 'function') {
+            usuarioLogado = await verificarSessaoSegura();
+        } else if (typeof supabaseClient !== 'undefined') {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            usuarioLogado = session ? session.user : null;
+        }
+
         if (!usuarioLogado) {
             const board = document.getElementById('board-dividas');
-            if (board) board.innerHTML = `<div class="w-full text-center mt-20 text-rose-500 font-bold"><i class="fa-solid fa-lock mr-2"></i> Sessão não encontrada. Faça login novamente.</div>`;
+            if (board) board.innerHTML = `<div class="w-full text-center mt-20 text-rose-500 font-bold transition-colors duration-300"><i class="fa-solid fa-lock mr-2"></i> Sessão não encontrada. Faça login novamente.</div>`;
             return;
         }
     } catch (err) {
@@ -112,6 +118,10 @@ function desmascararMoeda(str) {
 
 async function carregarDadosDoBanco() {
     try {
+        if (typeof supabaseClient === 'undefined' || !usuarioLogado || !usuarioLogado.id) {
+            throw new Error("Cliente Supabase ou usuário não inicializado.");
+        }
+
         const [rTrans, rCat] = await Promise.all([
             supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).eq('tipo', 'despesa').order('data_vencimento', { ascending: true }),
             supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
@@ -126,7 +136,7 @@ async function carregarDadosDoBanco() {
         const selectCat = document.getElementById('divida-categoria');
         if (selectCat) {
             selectCat.innerHTML = '<option value="" disabled selected>Selecione uma pasta...</option>' + 
-                categoriasGlobais.map(c => `<option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="${c.id}">${c.nome}</option>`).join('');
+                categoriasGlobais.map(c => `<option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white transition-colors duration-300" value="${c.id}">${c.nome}</option>`).join('');
         }
 
         processarEAtualizarKanban();
@@ -135,7 +145,7 @@ async function carregarDadosDoBanco() {
         console.error("Erro ao puxar dados:", e.message);
         const board = document.getElementById('board-dividas');
         if (board) {
-            board.innerHTML = `<div class="w-full text-center mt-20 text-rose-500 font-bold"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Erro ao carregar dados: ${e.message}</div>`;
+            board.innerHTML = `<div class="w-full text-center mt-20 text-rose-500 font-bold transition-colors duration-300"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Erro ao carregar dados: ${e.message}</div>`;
         }
     }
 }
@@ -204,17 +214,17 @@ function renderizarColunas(agrupamentos) {
     ordemColunas.forEach(nomeColuna => {
         const transacoesDaColuna = agrupamentos[nomeColuna];
         
-        let config = { icon: 'fa-calendar-day', titleColor: 'slate-600 dark:text-slate-300', badgeColor: 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300', borderColor: 'border-slate-200/60 dark:border-slate-700' };
-        if (nomeColuna === 'Atrasadas') config = { icon: 'fa-circle-exclamation', titleColor: 'rose-600 dark:text-rose-400', badgeColor: 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400', borderColor: 'border-rose-200/60 dark:border-rose-500/30' };
-        if (nomeColuna === 'Este Mês') config = { icon: 'fa-calendar-check', titleColor: 'indigo-600 dark:text-indigo-400', badgeColor: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400', borderColor: 'border-indigo-200/60 dark:border-indigo-500/30' };
-        if (nomeColuna === 'Próximos Meses') config = { icon: 'fa-forward-fast', titleColor: 'slate-500 dark:text-slate-400', badgeColor: 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400', borderColor: 'border-slate-200/60 dark:border-slate-700' };
-        if (nomeColuna === 'Histórico de Pagas') config = { icon: 'fa-check-double', titleColor: 'emerald-600 dark:text-emerald-400', badgeColor: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400', borderColor: 'border-emerald-200/60 dark:border-emerald-500/30' };
+        let config = { icon: 'fa-calendar-day', titleColor: 'text-slate-600 dark:text-slate-300', badgeColor: 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300', borderColor: 'border-slate-200/60 dark:border-slate-700' };
+        if (nomeColuna === 'Atrasadas') config = { icon: 'fa-circle-exclamation', titleColor: 'text-rose-600 dark:text-rose-400', badgeColor: 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400', borderColor: 'border-rose-200/60 dark:border-rose-500/30' };
+        if (nomeColuna === 'Este Mês') config = { icon: 'fa-calendar-check', titleColor: 'text-indigo-600 dark:text-indigo-400', badgeColor: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400', borderColor: 'border-indigo-200/60 dark:border-indigo-500/30' };
+        if (nomeColuna === 'Próximos Meses') config = { icon: 'fa-forward-fast', titleColor: 'text-slate-500 dark:text-slate-400', badgeColor: 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400', borderColor: 'border-slate-200/60 dark:border-slate-700' };
+        if (nomeColuna === 'Histórico de Pagas') config = { icon: 'fa-check-double', titleColor: 'text-emerald-600 dark:text-emerald-400', badgeColor: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400', borderColor: 'border-emerald-200/60 dark:border-emerald-500/30' };
 
         const idColunaSanitizado = 'col_' + nomeColuna.replace(/\s+/g, '').replace(/\//g, '');
 
         let cardsHtml = '';
         if (transacoesDaColuna.length === 0) {
-            cardsHtml = `<div class="text-center py-8 opacity-50"><i class="fa-solid fa-wind text-2xl text-slate-300 dark:text-slate-600 mb-2"></i><p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tudo Limpo</p></div>`;
+            cardsHtml = `<div class="text-center py-8 opacity-50 transition-colors duration-300"><i class="fa-solid fa-wind text-2xl text-slate-300 dark:text-slate-600 mb-2 transition-colors duration-300"></i><p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase transition-colors duration-300">Tudo Limpo</p></div>`;
         } else {
             let mesAnoCorrente = ''; 
             cardsHtml = transacoesDaColuna.map(d => {
@@ -242,16 +252,15 @@ function renderizarColunas(agrupamentos) {
                 }
 
                 const btnAcao = isPago 
-                    ? `<button onclick="window.alterarStatusPagamento(${d.id}, false)" title="Desfazer" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition-colors duration-300 flex items-center justify-center shadow-sm shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-rotate-left"></i></button>`
-                    : `<button onclick="window.alterarStatusPagamento(${d.id}, true)" title="Quitar" class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors duration-300 flex items-center justify-center shadow-sm shrink-0 border border-emerald-200 dark:border-emerald-500/30"><i class="fa-solid fa-check"></i></button>`;
+                    ? `<button onclick="window.alterarStatusPagamento(${d.id}, false)" title="Desfazer" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition-all duration-300 flex items-center justify-center shadow-sm shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-rotate-left"></i></button>`
+                    : `<button onclick="window.alterarStatusPagamento(${d.id}, true)" title="Quitar" class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all duration-300 flex items-center justify-center shadow-sm shrink-0 border border-emerald-200 dark:border-emerald-500/30"><i class="fa-solid fa-check"></i></button>`;
 
                 const classeTraco = isPago ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200';
                 const corData = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-500' : 'text-slate-400 dark:text-slate-500';
                 const corValor = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white';
 
-                // Aplicação da otimização de transição de cor em todo o HTML gerado para os cards
                 const cardHtmlCru = `
-                <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-3 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-colors duration-300 group flex flex-col gap-3">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-3 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 group flex flex-col gap-3">
                     <div class="flex justify-between items-start gap-3 w-full">
                         <h4 class="font-bold text-xs ${classeTraco} leading-tight break-words whitespace-normal mt-0.5 flex-1 transition-colors duration-300">${d.descricao}</h4>
                         <span class="font-black text-sm ${corValor} whitespace-nowrap shrink-0 transition-colors duration-300">R$ ${d.valor.toFixed(2).replace('.', ',')}</span>
@@ -264,8 +273,8 @@ function renderizarColunas(agrupamentos) {
                         
                         <div class="flex items-center gap-1.5">
                             <div class="flex items-center gap-1.5 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                <button onclick="window.abrirModalEdicao(${d.id})" title="Editar" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-indigo-500 hover:text-white transition-colors duration-300 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-pen text-[10px]"></i></button>
-                                <button onclick="window.excluirDivida(${d.id})" title="Excluir" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition-colors duration-300 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                                <button onclick="window.abrirModalEdicao(${d.id})" title="Editar" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-indigo-500 hover:text-white transition-all duration-300 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                                <button onclick="window.excluirDivida(${d.id})" title="Excluir" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition-all duration-300 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-trash text-[10px]"></i></button>
                             </div>
                             <div class="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5 hidden md:block transition-colors duration-300"></div>
                             ${btnAcao}
@@ -339,7 +348,7 @@ window.alterarStatusPagamento = async function(idTransacao, novoStatusPago) {
 window.abrirModalNovaDivida = function() { 
     document.getElementById('form-divida').reset();
     document.getElementById('divida-id').value = ''; 
-    document.getElementById('modal-titulo').innerHTML = '<i class="fa-solid fa-file-signature text-indigo-500"></i> Lançar Contas';
+    document.getElementById('modal-titulo').innerHTML = '<i class="fa-solid fa-file-signature text-indigo-500 transition-colors duration-300"></i> Lançar Contas';
     document.getElementById('modal-subtitulo').innerText = 'Contas ou parcelamentos lançados aqui entram como "Pendentes".';
     document.getElementById('wrapper-parcelas').classList.remove('hidden');
     document.getElementById('wrapper-categoria').classList.replace('col-span-3', 'col-span-2');
@@ -361,7 +370,7 @@ window.abrirModalEdicao = function(idTransacao) {
     document.getElementById('divida-data').value = t.data_vencimento;
     document.getElementById('divida-categoria').value = t.categoria_id;
 
-    document.getElementById('modal-titulo').innerHTML = '<i class="fa-solid fa-pen text-indigo-500"></i> Editar Parcela';
+    document.getElementById('modal-titulo').innerHTML = '<i class="fa-solid fa-pen text-indigo-500 transition-colors duration-300"></i> Editar Parcela';
     document.getElementById('modal-subtitulo').innerText = 'Altere as informações deste lançamento específico.';
     document.getElementById('wrapper-parcelas').classList.add('hidden');
     document.getElementById('wrapper-categoria').classList.replace('col-span-2', 'col-span-3');
