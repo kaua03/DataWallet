@@ -7,14 +7,9 @@
     
     <meta name="view-transition" content="same-origin">
     
-    <!-- 1º: A BIBLIOTECA CARREGA PRIMEIRO -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- 2º: A CONFIGURAÇÃO ENTRA EM SEGUIDA (Regra oficial do Tailwind) -->
     <script>
-        tailwind.config = {
-            darkMode: 'class'
-        };
+        tailwind.config = { darkMode: 'class' };
     </script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -46,6 +41,11 @@
 
         ::-webkit-scrollbar { width: 6px; display: none; }
         
+        input[type="month"]::-webkit-calendar-picker-indicator,
+        input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.5; transition: 0.2s; }
+        .dark input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.7; }
+        input::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+
         #sidebar { width: 5rem; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, background-color 0.3s; }
         #sidebar:hover { width: 16rem; box-shadow: 15px 0 30px rgba(0,0,0,0.05); }
         .sidebar-link { width: 3rem; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s; }
@@ -118,11 +118,13 @@
                     <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
                         <div class="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 w-full sm:w-auto transition-colors">
                             <i class="fa-solid fa-filter text-slate-400 text-xs"></i>
+                            
+                            <!-- SOLUÇÃO SÊNIOR: Options forçando o dark mode para evitar bug nativo do SO -->
                             <select id="filtro-periodo" onchange="mudarTipoFiltroHistorico()" class="bg-transparent outline-none text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer w-full sm:w-auto">
-                                <option value="essa_semana">Essa Semana</option>
-                                <option value="por_mes">Este Mês</option>
-                                <option value="personalizado">Personalizado</option>
-                                <option value="tudo">Todo o Histórico</option>
+                                <option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="essa_semana">Essa Semana</option>
+                                <option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="por_mes">Este Mês</option>
+                                <option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="personalizado">Personalizado</option>
+                                <option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="tudo">Todo o Histórico</option>
                             </select>
                         </div>
                         <div id="box-mes" class="hidden flex items-center bg-white dark:bg-slate-800 px-3 py-1.5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 w-full sm:w-auto transition-colors">
