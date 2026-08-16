@@ -1,15 +1,16 @@
 // ==========================================
-// dividas.js - KANBAN SÊNIOR COM DRAG & DROP E TOASTS DISCRETOS
+// dividas.js - KANBAN ERP (SEM DRAG & DROP) E MOTOR DE URGÊNCIA
 // ==========================================
 
 let usuarioLogado = null;
 let transacoesGlobais = [];
 let categoriasGlobais = [];
-let mostrandoPagas = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
     
-    // A MÁGICA DE NAVEGAÇÃO SPA (Anti-Flicker Simétrico)
+    // A MÁGICA DE NAVEGAÇÃO SPA
+    setTimeout(() => document.body.classList.remove('fade-in'), 500);
+
     document.querySelectorAll('a').forEach(link => {
         if(link.hostname === window.location.hostname && link.target !== '_blank') {
             link.addEventListener('click', e => {
@@ -27,11 +28,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('divida-data').value = new Date().toISOString().split('T')[0];
     await carregarDadosDoBanco();
-    iniciarDragToScroll(); 
+    iniciarDragToScroll(); // Apenas arrastar a prancha, não os cards!
 });
 
 // ==========================================
-// MOTOR DE ANIMAÇÃO DE CONTAGEM (Roleta)
+// MOTOR DE FÍSICA E ANIMAÇÃO
 // ==========================================
 window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 1000) {
     const elemento = document.getElementById(id);
@@ -47,6 +48,8 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
             let parts = Math.abs(valorAtual).toFixed(2).split('.');
             parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
             elemento.innerText = (valorAtual < 0 ? "- R$ " : "R$ ") + parts.join(',');
+        } else if (formato === 'porcentagem') {
+            elemento.innerText = valorAtual.toFixed(1) + "%";
         }
         
         if (progress < 1) requestAnimationFrame(step);
@@ -55,6 +58,8 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
                 let parts = Math.abs(valorFinal).toFixed(2).split('.');
                 parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
                 elemento.innerText = (valorFinal < 0 ? "- R$ " : "R$ ") + parts.join(',');
+            } else if (formato === 'porcentagem') {
+                elemento.innerText = valorFinal.toFixed(1) + "%";
             }
         }
     };
@@ -62,34 +67,7 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
 };
 
 // ==========================================
-// ANIMAÇÃO DO FAB MOBILE (Botão Flutuante)
-// ==========================================
-let menuMobileAberto = false;
-window.toggleMobileMenu = function() {
-    const items = document.getElementById('fab-items');
-    const icon = document.getElementById('fab-icon');
-    const btn = document.getElementById('fab-menu');
-    menuMobileAberto = !menuMobileAberto;
-
-    if (menuMobileAberto) {
-        items.classList.remove('opacity-0', 'translate-x-12', 'pointer-events-none');
-        items.classList.add('opacity-100', 'translate-x-0');
-        btn.style.transform = 'rotate(180deg)';
-        setTimeout(() => { icon.classList.replace('fa-bars', 'fa-xmark'); }, 150);
-        btn.classList.replace('bg-indigo-600', 'bg-slate-800');
-        btn.classList.replace('shadow-[0_4px_20px_rgba(79,70,229,0.5)]', 'shadow-[0_4px_20px_rgba(30,41,59,0.5)]');
-    } else {
-        items.classList.add('opacity-0', 'translate-x-12', 'pointer-events-none');
-        items.classList.remove('opacity-100', 'translate-x-0');
-        btn.style.transform = 'rotate(0deg)';
-        setTimeout(() => { icon.classList.replace('fa-xmark', 'fa-bars'); }, 150);
-        btn.classList.replace('bg-slate-800', 'bg-indigo-600');
-        btn.classList.replace('shadow-[0_4px_20px_rgba(30,41,59,0.5)]', 'shadow-[0_4px_20px_rgba(79,70,229,0.5)]');
-    }
-};
-
-// ==========================================
-// ARRASTAR PRANCHA KANBAN NO PC
+// ARRASTAR PRANCHA (NÃO OS CARDS)
 // ==========================================
 function iniciarDragToScroll() {
     const slider = document.getElementById('container-scroll');
@@ -141,7 +119,7 @@ async function carregarDadosDoBanco() {
 
         const selectCat = document.getElementById('divida-categoria');
         selectCat.innerHTML = '<option value="" disabled selected>Selecione uma pasta...</option>' + 
-            categoriasGlobais.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+            categoriasGlobais.map(c => `<option class="bg-slate-800 text-white" value="${c.id}">${c.nome}</option>`).join('');
 
         processarEAtualizarKanban();
 
@@ -154,40 +132,67 @@ function processarEAtualizarKanban() {
     const mesAtual = hojeData.getMonth(); const anoAtual = hojeData.getFullYear();
 
     const agrupamentos = { 'Atrasadas': [], 'Este Mês': [], 'Próximos Meses': [], 'Histórico de Pagas': [] };
-    let totAtrasadas = 0, totMes = 0, totFuturo = 0, totPagas = 0;
+    
+    let totAtrasadas = 0, totRisco7Dias = 0, totEmAberto = 0, totPagas = 0;
 
     transacoesGlobais.forEach(t => {
         if (!t.data_vencimento) return; 
         
         const isPago = t.pago === true; 
-
-        if (isPago) {
-            totPagas += t.valor;
-            agrupamentos['Histórico de Pagas'].push(t);
-            return; 
-        }
-
         const dVenc = new Date(t.data_vencimento + 'T12:00:00Z');
         dVenc.setHours(0, 0, 0, 0);
         
         const mesVenc = dVenc.getMonth(); const anoVenc = dVenc.getFullYear();
+        
+        // MOTOR DE URGÊNCIA (Calcula dias para o vencimento)
+        const diffTime = dVenc - hojeData;
+        const diasDiff = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        t.diasDiff = diasDiff;
 
-        if (dVenc < hojeData) { agrupamentos['Atrasadas'].push(t); totAtrasadas += t.valor; } 
-        else if (mesVenc === mesAtual && anoVenc === anoAtual) { agrupamentos['Este Mês'].push(t); totMes += t.valor; } 
-        else { agrupamentos['Próximos Meses'].push(t); totFuturo += t.valor; }
+        if (isPago) {
+            totPagas += t.valor;
+            agrupamentos['Histórico de Pagas'].push(t);
+        } else {
+            totEmAberto += t.valor; // Tudo que não está pago soma no "Em Aberto"
+            
+            if (diasDiff >= 0 && diasDiff <= 7) {
+                totRisco7Dias += t.valor; // Se vence hoje ou em até 7 dias, é Risco Imediato
+            }
+
+            if (diasDiff < 0) { 
+                agrupamentos['Atrasadas'].push(t); 
+                totAtrasadas += t.valor; 
+            } 
+            else if (mesVenc === mesAtual && anoVenc === anoAtual) { 
+                agrupamentos['Este Mês'].push(t); 
+            } 
+            else { 
+                agrupamentos['Próximos Meses'].push(t); 
+            }
+        }
     });
 
-    // Roleta Sênior para as Dívidas
+    // COMPLIANCE DE QUITAÇÃO (Quanto já paguei do total gerado?)
+    let compliance = 0;
+    const totalGeral = totEmAberto + totPagas;
+    if (totalGeral > 0) compliance = (totPagas / totalGeral) * 100;
+
+    // Roleta Sênior para as Métricas ERP
     window.animarContador('kpi-atrasadas', totAtrasadas, 'moeda', 800);
-    window.animarContador('kpi-mes', totMes, 'moeda', 800);
-    window.animarContador('kpi-futuro', totFuturo, 'moeda', 800);
+    window.animarContador('kpi-risco', totRisco7Dias, 'moeda', 800);
+    window.animarContador('kpi-aberto', totEmAberto, 'moeda', 800);
     window.animarContador('kpi-pagas', totPagas, 'moeda', 800);
+    window.animarContador('kpi-compliance-texto', compliance, 'porcentagem', 800);
+
+    const barraComp = document.getElementById('kpi-compliance-barra');
+    barraComp.style.width = '0%';
+    setTimeout(() => { barraComp.style.width = `${compliance}%`; }, 100);
 
     renderizarColunas(agrupamentos);
 }
 
 // ==========================================
-// RENDERIZAÇÃO E MOTOR DRAG & DROP KANBAN
+// RENDERIZAÇÃO DO KANBAN BLINDADO (Sem Drag & Drop)
 // ==========================================
 function renderizarColunas(agrupamentos) {
     const board = document.getElementById('board-dividas');
@@ -199,60 +204,71 @@ function renderizarColunas(agrupamentos) {
     ordemColunas.forEach(nomeColuna => {
         const transacoesDaColuna = agrupamentos[nomeColuna];
         
-        let config = { icon: 'fa-calendar-day', titleColor: 'slate-600', badgeColor: 'bg-slate-200 text-slate-600' };
-        if (nomeColuna === 'Atrasadas') config = { icon: 'fa-circle-exclamation', titleColor: 'rose-600', badgeColor: 'bg-rose-100 text-rose-600' };
-        if (nomeColuna === 'Este Mês') config = { icon: 'fa-calendar-check', titleColor: 'indigo-600', badgeColor: 'bg-indigo-100 text-indigo-600' };
-        if (nomeColuna === 'Próximos Meses') config = { icon: 'fa-forward-fast', titleColor: 'slate-500', badgeColor: 'bg-slate-200 text-slate-600' };
-        if (nomeColuna === 'Histórico de Pagas') config = { icon: 'fa-check-double', titleColor: 'emerald-600', badgeColor: 'bg-emerald-100 text-emerald-600' };
+        let config = { icon: 'fa-calendar-day', titleColor: 'slate-600 dark:text-slate-300', badgeColor: 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300', borderColor: 'border-slate-200/60 dark:border-slate-700' };
+        if (nomeColuna === 'Atrasadas') config = { icon: 'fa-circle-exclamation', titleColor: 'rose-600 dark:text-rose-400', badgeColor: 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400', borderColor: 'border-rose-200/60 dark:border-rose-500/30' };
+        if (nomeColuna === 'Este Mês') config = { icon: 'fa-calendar-check', titleColor: 'indigo-600 dark:text-indigo-400', badgeColor: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400', borderColor: 'border-indigo-200/60 dark:border-indigo-500/30' };
+        if (nomeColuna === 'Próximos Meses') config = { icon: 'fa-forward-fast', titleColor: 'slate-500 dark:text-slate-400', badgeColor: 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400', borderColor: 'border-slate-200/60 dark:border-slate-700' };
+        if (nomeColuna === 'Histórico de Pagas') config = { icon: 'fa-check-double', titleColor: 'emerald-600 dark:text-emerald-400', badgeColor: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400', borderColor: 'border-emerald-200/60 dark:border-emerald-500/30' };
 
         const idColunaSanitizado = 'col_' + nomeColuna.replace(/\s+/g, '').replace(/\//g, '');
 
         let cardsHtml = '';
         if (transacoesDaColuna.length === 0) {
-            cardsHtml = `<div class="text-center py-8 opacity-50"><i class="fa-solid fa-wind text-2xl text-slate-300 mb-2"></i><p class="text-[10px] font-bold text-slate-400 uppercase">Tudo Limpo</p></div>`;
+            cardsHtml = `<div class="text-center py-8 opacity-50"><i class="fa-solid fa-wind text-2xl text-slate-300 dark:text-slate-600 mb-2"></i><p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tudo Limpo</p></div>`;
         } else {
             let mesAnoCorrente = ''; 
             cardsHtml = transacoesDaColuna.map(d => {
                 const isPago = d.pago === true;
                 const dVencObj = new Date(d.data_vencimento + 'T12:00:00Z');
-                const dataStr = dVencObj.toLocaleDateString('pt-BR');
+                const dataStr = dVencObj.toLocaleDateString('pt-BR').substring(0, 5); // Só DD/MM
                 const mesAnoAtualDoCard = `${mesesExtenso[dVencObj.getMonth()]} ${dVencObj.getFullYear()}`;
                 
                 let htmlDivisor = '';
                 if ((nomeColuna === 'Próximos Meses' || nomeColuna === 'Histórico de Pagas') && mesAnoAtualDoCard !== mesAnoCorrente) {
                     htmlDivisor = `
                     <div class="divisor-mes flex items-center gap-3 mt-6 mb-3 first:mt-1 cursor-default pointer-events-none">
-                        <div class="h-px bg-slate-200/80 flex-1"></div>
-                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${mesAnoAtualDoCard}</span>
-                        <div class="h-px bg-slate-200/80 flex-1"></div>
+                        <div class="h-px bg-slate-200 dark:bg-slate-700 flex-1"></div>
+                        <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">${mesAnoAtualDoCard}</span>
+                        <div class="h-px bg-slate-200 dark:bg-slate-700 flex-1"></div>
                     </div>`;
                     mesAnoCorrente = mesAnoAtualDoCard;
                 }
                 
+                // SISTEMA DE URGÊNCIA VISUAL (Badges)
+                let badgeUrgencia = '';
+                if (!isPago) {
+                    if (d.diasDiff < 0) badgeUrgencia = `<span class="bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase">Atrasado ${Math.abs(d.diasDiff)}d</span>`;
+                    else if (d.diasDiff === 0) badgeUrgencia = `<span class="bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase">Vence Hoje</span>`;
+                    else if (d.diasDiff <= 7) badgeUrgencia = `<span class="bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase">Vence em ${d.diasDiff}d</span>`;
+                }
+
                 const btnAcao = isPago 
-                    ? `<button onclick="window.alterarStatusPagamento(${d.id}, false)" title="Desfazer" class="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center shadow-sm shrink-0"><i class="fa-solid fa-rotate-left"></i></button>`
-                    : `<button onclick="window.alterarStatusPagamento(${d.id}, true)" title="Quitar" class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white transition flex items-center justify-center shadow-sm shrink-0"><i class="fa-solid fa-check"></i></button>`;
+                    ? `<button onclick="window.alterarStatusPagamento(${d.id}, false)" title="Desfazer" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center shadow-sm shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-rotate-left"></i></button>`
+                    : `<button onclick="window.alterarStatusPagamento(${d.id}, true)" title="Quitar" class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition flex items-center justify-center shadow-sm shrink-0 border border-emerald-200 dark:border-emerald-500/30"><i class="fa-solid fa-check"></i></button>`;
 
-                const classeTraco = isPago ? 'line-through text-slate-400' : 'text-slate-800';
-                const corData = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-500' : 'text-slate-400';
-                const corValor = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-600' : 'text-slate-900';
+                const classeTraco = isPago ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200';
+                const corData = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-500' : 'text-slate-400 dark:text-slate-500';
+                const corValor = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white';
 
+                // NOTE: Retirei o cursor-grab. O card não é mais arrastável!
                 const cardHtmlCru = `
-                <div data-id="${d.id}" class="bg-white rounded-2xl p-4 mb-3 border border-slate-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-all group flex flex-col gap-3 cursor-grab">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-3 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-all group flex flex-col gap-3">
                     <div class="flex justify-between items-start gap-3 w-full">
                         <h4 class="font-bold text-xs ${classeTraco} leading-tight break-words whitespace-normal mt-0.5 flex-1">${d.descricao}</h4>
                         <span class="font-black text-sm ${corValor} whitespace-nowrap shrink-0">${formatarMoeda(d.valor)}</span>
                     </div>
                     <div class="flex items-center justify-between w-full">
-                        <div class="flex items-center gap-1.5 text-[11px] font-bold ${corData}">
-                            <i class="fa-regular fa-calendar"></i> <span>${dataStr}</span>
+                        <div class="flex items-center gap-2 text-[11px] font-bold ${corData}">
+                            <div class="flex items-center gap-1.5"><i class="fa-regular fa-calendar"></i> <span>${dataStr}</span></div>
+                            ${badgeUrgencia}
                         </div>
                         
-                        <div class="flex items-center gap-1">
-                            <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick="window.abrirModalEdicao(${d.id})" title="Editar" class="w-7 h-7 rounded bg-slate-50 text-slate-400 hover:bg-indigo-500 hover:text-white transition flex items-center justify-center shrink-0"><i class="fa-solid fa-pen text-[10px]"></i></button>
-                                <button onclick="window.excluirDivida(${d.id})" title="Excluir" class="w-7 h-7 rounded bg-slate-50 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center mr-1 shrink-0"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                        <div class="flex items-center gap-1.5">
+                            <div class="flex items-center gap-1.5 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="window.abrirModalEdicao(${d.id})" title="Editar" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-indigo-500 hover:text-white transition flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                                <button onclick="window.excluirDivida(${d.id})" title="Excluir" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-trash text-[10px]"></i></button>
                             </div>
+                            <div class="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5 hidden md:block"></div>
                             ${btnAcao}
                         </div>
                     </div>
@@ -263,21 +279,21 @@ function renderizarColunas(agrupamentos) {
         }
 
         html += `
-        <div id="${idColunaSanitizado}" class="w-[340px] shrink-0 bg-slate-100/50 rounded-2xl border border-slate-200/60 flex flex-col max-h-full transition-all duration-300 relative">
-            <div onclick="window.toggleColuna('${idColunaSanitizado}')" class="p-4 border-b border-slate-200/80 flex justify-between items-center bg-white rounded-t-2xl shrink-0 cursor-pointer hover:bg-slate-50 transition relative z-10">
+        <div id="${idColunaSanitizado}" class="w-[300px] md:w-[340px] shrink-0 bg-slate-100/50 dark:bg-slate-800/20 rounded-3xl ${config.borderColor} border flex flex-col max-h-full transition-all duration-300 relative">
+            <div onclick="window.toggleColuna('${idColunaSanitizado}')" class="p-4 border-b border-slate-200/80 dark:border-slate-700/50 flex justify-between items-center bg-white dark:bg-slate-900 rounded-t-3xl shrink-0 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition relative z-10">
                 <div class="esconder-no-min flex items-center gap-2">
-                    <i class="fa-solid ${config.icon} text-${config.titleColor}"></i>
-                    <h3 class="font-bold text-${config.titleColor} text-sm">${nomeColuna}</h3>
+                    <i class="fa-solid ${config.icon} ${config.titleColor}"></i>
+                    <h3 class="font-bold ${config.titleColor} text-sm">${nomeColuna}</h3>
                 </div>
                 
                 <div class="hidden mostrar-no-min flex-col items-center justify-start w-full gap-3 pt-2">
                     <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm">${transacoesDaColuna.length}</span>
-                    <h3 class="font-black text-slate-400 text-xs tracking-widest uppercase transform rotate-180" style="writing-mode: vertical-rl;">${nomeColuna}</h3>
+                    <h3 class="font-black text-slate-400 dark:text-slate-500 text-xs tracking-widest uppercase transform rotate-180" style="writing-mode: vertical-rl;">${nomeColuna}</h3>
                 </div>
                 
                 <div class="esconder-no-min flex items-center gap-2">
                     <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm">${transacoesDaColuna.length}</span>
-                    <i class="fa-solid fa-chevron-left text-slate-300 text-xs transition-transform transform -rotate-90"></i>
+                    <i class="fa-solid fa-chevron-left text-slate-300 dark:text-slate-600 text-xs transition-transform transform -rotate-90"></i>
                 </div>
             </div>
 
@@ -288,48 +304,6 @@ function renderizarColunas(agrupamentos) {
     });
 
     board.innerHTML = html;
-
-    // INJEÇÃO DA BIBLIOTECA SORTABLE.JS NAS COLUNAS (O SEGREDO DO DRAG & DROP)
-    ordemColunas.forEach(nomeColuna => {
-        const idColunaSanitizado = 'col_' + nomeColuna.replace(/\s+/g, '').replace(/\//g, '');
-        const el = document.getElementById(`lista-cards-${idColunaSanitizado}`);
-        
-        if(el && el.innerHTML.indexOf('Tudo Limpo') === -1) {
-            new Sortable(el, {
-                group: 'kanban', // Permite arrastar entre colunas
-                animation: 150,
-                ghostClass: 'sortable-ghost',
-                filter: '.divisor-mes', // Impede que os textos divisores de mês sejam arrastados
-                onMove: function (evt) { return evt.related.className.indexOf('divisor-mes') === -1; },
-                onEnd: async function (evt) {
-                    const idTransacao = evt.item.getAttribute('data-id');
-                    const colunaDestino = evt.to.id;
-                    const colunaOrigem = evt.from.id;
-
-                    if (colunaDestino !== colunaOrigem) {
-                        // Regra de Negócio: Se jogou no "Histórico de Pagas", vira PAGO.
-                        if (colunaDestino === 'lista-cards-col_HistóricodePagas') {
-                            await window.alterarStatusPagamento(idTransacao, true, true);
-                        } 
-                        // Se tirou do "Histórico de Pagas", vira PENDENTE.
-                        else if (colunaOrigem === 'lista-cards-col_HistóricodePagas') {
-                            await window.alterarStatusPagamento(idTransacao, false, true);
-                        } 
-                        // Se tentou pular entre Atrasado/MêsAtual sem pagar, avisa que a coluna é cravada na data.
-                        else {
-                            Swal.fire({
-                                icon: 'info',
-                                title: 'Regra de Sistema',
-                                text: 'Para mover entre colunas pendentes, clique no lápis e edite a Data de Vencimento.',
-                                confirmButtonColor: '#4f46e5'
-                            });
-                            processarEAtualizarKanban(); // Devolve o card pro lugar original magicamente
-                        }
-                    }
-                },
-            });
-        }
-    });
 }
 
 window.toggleColuna = function(id) {
@@ -342,7 +316,7 @@ window.toggleColuna = function(id) {
     }
 };
 
-window.alterarStatusPagamento = async function(idTransacao, novoStatusPago, isDragAndDrop = false) {
+window.alterarStatusPagamento = async function(idTransacao, novoStatusPago) {
     try {
         const { error } = await supabaseClient.from('transacoes').update({ pago: novoStatusPago }).eq('id', idTransacao);
         if (error) throw error;
@@ -352,8 +326,8 @@ window.alterarStatusPagamento = async function(idTransacao, novoStatusPago, isDr
         
         processarEAtualizarKanban();
         
-        if (!isDragAndDrop && novoStatusPago) {
-            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, timerProgressBar: true });
+        if (novoStatusPago) {
+            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, timerProgressBar: true, background: document.documentElement.classList.contains('dark') ? '#1e293b' : '#fff', color: document.documentElement.classList.contains('dark') ? '#fff' : '#1e293b' });
             Toast.fire({ icon: 'success', title: 'Conta Liquidada!' });
         }
     } catch (e) { 
@@ -396,14 +370,17 @@ window.abrirModalEdicao = function(idTransacao) {
 window.fecharModalNovaDivida = function() { document.getElementById('modal-divida').classList.add('hidden'); };
 
 window.excluirDivida = async function(idTransacao) {
+    const isDark = document.documentElement.classList.contains('dark');
     const confirmacao = await Swal.fire({
         title: 'Excluir Transação?',
-        text: "Essa ação apagará este registo permanentemente.",
+        text: "Essa ação apagará este registro permanentemente.",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
         cancelButtonColor: '#94a3b8',
-        confirmButtonText: 'Sim, excluir'
+        confirmButtonText: 'Sim, excluir',
+        background: isDark ? '#1e293b' : '#fff',
+        color: isDark ? '#fff' : '#1e293b'
     });
 
     if(!confirmacao.isConfirmed) return;
@@ -475,18 +452,11 @@ window.salvarDivida = async function(event) {
         window.fecharModalNovaDivida();
         processarEAtualizarKanban();
 
-        // TOAST DISCRETO EM VEZ DO LOTTIE CELEBRATIVO
+        const isDark = document.documentElement.classList.contains('dark');
         const Toast = Swal.mixin({
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 2000,
-            timerProgressBar: true
+            toast: true, position: 'top-end', showConfirmButton: false, timer: 2000, timerProgressBar: true, background: isDark ? '#1e293b' : '#fff', color: isDark ? '#fff' : '#1e293b'
         });
-        Toast.fire({
-            icon: 'success',
-            title: 'Registo guardado!'
-        });
+        Toast.fire({ icon: 'success', title: 'Registro guardado!' });
 
     } catch (e) {
         Swal.fire('Erro', e.message, 'error');
