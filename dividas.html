@@ -67,7 +67,6 @@
                 </div>
             </div>
 
-            <!-- KPIs BLINDADOS E RESPONSIVOS (Anti-Truncamento no Mobile) -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 <div class="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors flex flex-col justify-center relative overflow-hidden group">
                     <div class="absolute -right-6 -top-6 w-16 h-16 bg-rose-50 dark:bg-rose-500/10 rounded-full transition-colors"></div>
@@ -99,36 +98,10 @@
         </section>
     </main>
 
-    <!-- NAVEGAÇÃO MOBILE DUAL-AXIS (A MÁGICA DA ESPINGARDA LATERAL) -->
-    <div class="md:hidden fixed bottom-6 right-6 left-6 z-50 pointer-events-none">
-        
-        <!-- BOTÃO DE AÇÃO (Nasce atrás do menu e atira pra esquerda) -->
-        <button onclick="window.abrirModalNovaDivida()" id="fab-action" class="absolute bottom-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-2xl transition-all duration-500 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500/50" style="left: calc(100% - 56px);">
-            <i class="fa-solid fa-plus"></i>
-        </button>
-
-        <!-- ITENS DE NAVEGAÇÃO (Sobem verticalmente) -->
-        <div id="fab-items" class="absolute bottom-16 right-0 w-14 flex flex-col items-center gap-3 transition-all duration-500 transform translate-y-12 opacity-0 pointer-events-none z-40">
-            <button onclick="sairDoSistema()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-rose-500 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-right-from-bracket"></i></button>
-            <a href="planos.html" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-bullseye"></i></a>
-            <a href="categorias.html" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-tags"></i></a>
-            <a href="dividas.html" class="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 shadow-lg flex items-center justify-center border border-indigo-100 dark:border-indigo-500/30 pointer-events-auto"><i class="fa-solid fa-file-invoice-dollar"></i></a>
-            <a href="dashboard.html" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-chart-pie"></i></a>
-            <a href="movimentacoes.html" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-money-bill-transfer"></i></a>
-        </div>
-
-        <!-- BOTÃO PRINCIPAL -->
-        <button onclick="window.toggleMobileMenu()" id="fab-menu" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-800 dark:bg-indigo-600 text-white shadow-[0_4px_20px_rgba(30,41,59,0.5)] dark:shadow-[0_4px_20px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-500 z-50 pointer-events-auto">
-            <i class="fa-solid fa-bars transition-all duration-300" id="fab-icon"></i>
-        </button>
-    </div>
-
-    <!-- BOTÃO ADICIONAR (Desktop Apenas) -->
     <button onclick="window.abrirModalNovaDivida()" class="hidden md:flex fixed bottom-10 right-10 w-16 h-16 bg-indigo-600 rounded-full shadow-[0_10px_25px_rgba(79,70,229,0.5)] items-center justify-center text-white text-2xl z-40 hover:scale-105 hover:bg-indigo-700 transition-transform border border-indigo-400 dark:border-indigo-500/50">
         <i class="fa-solid fa-plus"></i>
     </button>
 
-    <!-- MODAL -->
     <div id="modal-divida" onclick="if(event.target === this) window.fecharModalNovaDivida()" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center fade-in p-4 cursor-pointer">
         <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl p-6 md:p-8 relative border border-slate-200 dark:border-slate-800 transition-colors cursor-default">
             
@@ -172,5 +145,6 @@
             </form>
         </div>
     </div>
+
 </body>
 </html>
