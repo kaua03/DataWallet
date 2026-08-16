@@ -7,16 +7,18 @@
     
     <meta name="view-transition" content="same-origin">
     
-    <!-- 1º REGRA DE OURO DO TAILWIND -->
-    <script>
-        window.tailwind = { config: { darkMode: 'class' } };
-    </script>
-    <!-- 2º BIBLIOTECA -->
+    <!-- 1º: A BIBLIOTECA TAILWIND CARREGA PRIMEIRO (A ordem que funciona na sua máquina) -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2º: A CONFIGURAÇÃO ASSUME O CONTROLE -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        };
+    </script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- BIBLIOTECAS DE ELITE -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -29,7 +31,6 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
-        /* Fade In Fluido que não buga o mobile */
         .fade-in { animation: fadeIn 0.4s ease-out forwards; }
         .slide-up-chat { animation: slideUpChat 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; transform-origin: bottom right; }
         
@@ -41,7 +42,7 @@
 
         ::-webkit-scrollbar { width: 6px; display: none; }
         
-        /* MAGIA DO FALSO 3D NEON NOS GRÁFICOS */
+        /* O FALSO 3D QUE VOCÊ PEDIU NOS GRÁFICOS */
         .grafico-3d { filter: drop-shadow(0 20px 25px rgba(0,0,0,0.06)); transition: filter 0.4s ease; }
         .dark .grafico-3d { filter: drop-shadow(0 20px 25px rgba(0,0,0,0.4)); }
         
@@ -49,36 +50,44 @@
         input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.5; transition: 0.2s; }
         .dark input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.7; }
         input::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+
+        #sidebar { width: 5rem; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, background-color 0.3s; }
+        #sidebar:hover { width: 16rem; box-shadow: 15px 0 30px rgba(0,0,0,0.05); }
+        .sidebar-link { width: 3rem; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s; }
+        #sidebar:hover .sidebar-link { width: 100%; }
+        .sidebar-text { opacity: 0; transform: translateX(-10px); visibility: hidden; transition: all 0.2s ease-in-out; white-space: nowrap; }
+        #sidebar:hover .sidebar-text { visibility: visible; opacity: 1; transform: translateX(0); transition-delay: 0.15s; }
     </style>
 </head>
 
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 h-[100dvh] overflow-hidden flex relative fade-in transition-colors duration-300">
 
-    <!-- O LAYOUT.JS INJETA A SIDEBAR E O MENU AQUI -->
-
     <main class="flex-1 h-full overflow-y-auto relative pb-32 md:pb-8 p-4 md:p-8">
         <section class="max-w-7xl mx-auto space-y-6">
             
-            <!-- HEADER BLINDADO -->
+            <!-- HEADER ELITE -->
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors relative overflow-hidden">
                 <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent pointer-events-none"></div>
                 <div class="relative z-10">
                     <h2 class="text-2xl md:text-3xl font-black text-slate-900 dark:text-white flex items-center gap-3">
                         <i class="fa-solid fa-chart-line text-indigo-600 dark:text-indigo-400"></i> Executive Analytics
                     </h2>
-                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Análise de saúde financeira em tempo real.</p>
+                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Sua inteligência financeira em tempo real.</p>
                 </div>
             </div>
 
-            <!-- FILTRO HARMONIZADO COM A TELA DE MOVIMENTAÇÕES -->
-            <div class="flex flex-col lg:flex-row items-center justify-between gap-4 bg-slate-100 dark:bg-slate-800/40 p-2.5 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 transition-colors">
-                <div class="flex items-center gap-2 pl-2">
-                    <i class="fa-solid fa-calendar-day text-indigo-500"></i>
-                    <span class="text-sm font-black text-slate-700 dark:text-slate-200" id="label-periodo">Período de Análise</span>
-                </div>
+            <!-- FILTRO UNIFICADO (Idêntico ao de Movimentações) -->
+            <div class="flex flex-col lg:flex-row items-center gap-3 mb-6 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 transition-colors">
                 
-                <div class="flex flex-wrap items-center justify-center gap-2 w-full lg:w-auto">
-                    <div class="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors w-full sm:w-auto">
+                <!-- Cápsula Esquerda (Simula a barra de pesquisa) -->
+                <div class="flex-1 flex items-center w-full bg-white dark:bg-slate-800 rounded-xl px-4 py-2.5 shadow-sm border border-slate-200 dark:border-slate-700 transition-colors">
+                    <i class="fa-solid fa-calendar-day text-indigo-500 mr-3"></i>
+                    <span class="text-sm font-black text-slate-700 dark:text-slate-200" id="label-periodo">Período Analisado</span>
+                </div>
+
+                <!-- Botões Direitos -->
+                <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                    <div class="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-2.5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors w-full sm:w-auto">
                         <i class="fa-solid fa-filter text-slate-400 text-xs"></i>
                         <select id="filtro-periodo" onchange="mudarTipoFiltro()" class="bg-transparent outline-none text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer w-full sm:w-auto">
                             <option value="por_mes">Por Mês</option>
@@ -88,15 +97,15 @@
                         </select>
                     </div>
 
-                    <div id="box-mes" class="hidden flex items-center bg-white dark:bg-slate-800 px-3 py-1.5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors w-full sm:w-auto">
+                    <div id="box-mes" class="hidden flex items-center bg-white dark:bg-slate-800 px-3 py-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors w-full sm:w-auto">
                         <input type="month" id="input-mes" onchange="processarEAtualizarTudo()" class="bg-transparent outline-none text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer w-full" style="color-scheme: dark;">
                     </div>
                     
-                    <div id="box-ano" class="hidden flex items-center bg-white dark:bg-slate-800 px-3 py-1.5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors w-full sm:w-auto">
+                    <div id="box-ano" class="hidden flex items-center bg-white dark:bg-slate-800 px-3 py-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors w-full sm:w-auto">
                         <input type="number" id="input-ano" onchange="processarEAtualizarTudo()" min="2000" max="2100" class="bg-transparent outline-none text-sm font-bold text-slate-700 dark:text-slate-300 w-full" placeholder="2026">
                     </div>
 
-                    <div id="box-personalizado" class="hidden flex flex-wrap items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 w-full sm:w-auto justify-center transition-colors">
+                    <div id="box-personalizado" class="hidden flex flex-wrap items-center gap-2 bg-white dark:bg-slate-800 px-3 py-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors w-full sm:w-auto justify-center">
                         <input type="date" id="input-data-inicio" onchange="processarEAtualizarTudo()" class="bg-transparent outline-none text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer" style="color-scheme: dark;">
                         <span class="text-slate-400 text-xs">até</span>
                         <input type="date" id="input-data-fim" onchange="processarEAtualizarTudo()" class="bg-transparent outline-none text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer" style="color-scheme: dark;">
@@ -104,21 +113,21 @@
                 </div>
             </div>
 
-            <!-- KPIs DE ELITE (COM EFEITOS HOVER MASSIVOS) -->
+            <!-- KPIs UNIFICADOS -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all relative overflow-hidden group">
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all relative overflow-hidden group">
                     <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mb-2">Saldo Líquido</p>
                     <p class="text-2xl md:text-3xl font-black text-slate-900 dark:text-white truncate" id="kpi-saldo">R$ 0,00</p>
                 </div>
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all relative overflow-hidden group">
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all relative overflow-hidden group">
                     <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mb-2">Total Captado</p>
                     <p class="text-2xl md:text-3xl font-black text-emerald-600 dark:text-emerald-400 truncate" id="kpi-receitas">R$ 0,00</p>
                 </div>
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all relative overflow-hidden group">
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all relative overflow-hidden group">
                     <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mb-2">Total Queimado</p>
                     <p class="text-2xl md:text-3xl font-black text-rose-600 dark:text-rose-400 truncate" id="kpi-despesas">R$ 0,00</p>
                 </div>
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col justify-center">
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all flex flex-col justify-center">
                     <div class="flex justify-between items-end mb-3">
                         <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Retenção</p>
                         <p class="text-lg font-black text-slate-800 dark:text-slate-200" id="kpi-taxa-texto">0%</p>
@@ -130,19 +139,18 @@
             </div>
 
             <!-- GRÁFICO PRINCIPAL -->
-            <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors">
+            <div class="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors">
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
                     <div>
                         <h3 class="text-slate-800 dark:text-white font-bold text-lg lg:text-xl">Fluxo de Caixa Operacional</h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">Comparativo de queima vs captação com tendência</p>
                     </div>
-                    <div class="flex flex-wrap gap-4 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-xl">
+                    <div class="flex flex-wrap gap-4 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-xl border border-slate-200/60 dark:border-slate-700/50">
                         <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></span> Entradas</span>
                         <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]"></span> Saídas</span>
                         <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_#6366f1]"></span> Saldo</span>
                     </div>
                 </div>
-                <!-- Classe grafico-3d aplica o filtro mágico -->
                 <div class="relative h-[350px] w-full grafico-3d">
                     <canvas id="graficoCombo"></canvas>
                 </div>
@@ -151,14 +159,12 @@
             <!-- GRÁFICOS SECUNDÁRIOS -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                <!-- PROGRESS BAR: CENTROS DE CUSTO -->
                 <div class="lg:col-span-1 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors flex flex-col">
                     <h3 class="text-slate-800 dark:text-white font-bold text-lg">Centros de Custo</h3>
                     <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mb-6">Detalhamento hierárquico</p>
                     <div id="lista-categorias-progress" class="space-y-6 overflow-y-auto flex-1 pr-2" style="scrollbar-width: thin;"></div>
                 </div>
 
-                <!-- GRÁFICO DE COMPOSIÇÃO MINIMALISTA (SEM TEXTO NO MEIO) -->
                 <div class="lg:col-span-1 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm flex flex-col transition-colors">
                     <div class="mb-4">
                         <h3 class="text-slate-800 dark:text-white font-bold text-lg">Composição Macro</h3>
@@ -169,7 +175,6 @@
                     </div>
                 </div>
 
-                <!-- RADAR COMPORTAMENTAL SEMANAL -->
                 <div class="lg:col-span-1 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm flex flex-col transition-colors">
                     <h3 class="text-slate-800 dark:text-white font-bold text-lg">Termômetro Semanal</h3>
                     <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mb-2">Comportamento de queima por dia</p>
@@ -181,7 +186,7 @@
         </section>
     </main>
 
-    <!-- O BOTÃO DO CONSULTOR IA: Apenas no Desktop, pois o Celular já tem no menu -->
+    <!-- O BOTÃO DO CONSULTOR IA: Invisível no mobile para não brigar com o Menu -->
     <button onclick="toggleCoach()" class="hidden md:flex fixed bottom-10 right-10 w-16 h-16 bg-slate-900 dark:bg-black rounded-full shadow-[0_10px_25px_rgba(15,23,42,0.4)] dark:shadow-[0_0_20px_rgba(99,102,241,0.3)] items-center justify-center text-white text-2xl z-40 hover:scale-105 transition-transform border border-slate-700 dark:border-indigo-500/30">
         <i class="fa-solid fa-robot text-indigo-400"></i>
     </button>
