@@ -1,22 +1,25 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Passivos - DataWallet</title>
     
-    <!-- A MÁGICA DA TRANSIÇÃO SPA (Anti-Flicker) -->
     <meta name="view-transition" content="same-origin">
     
+    <!-- 1º REGRA DE OURO DO TAILWIND -->
+    <script>
+        window.tailwind = { config: { darkMode: 'class' } };
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- BIBLIOTECAS SÊNIOR (Alertas, Lottie e Kanban Drag & Drop) -->
+    <!-- BIBLIOTECAS (Sortable.js foi obliterada para garantir integridade) -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.4/dist/dotlottie-wc.js" type="module"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script src="layout.js" defer></script>
     <script src="config.js" defer></script>
     <script src="dividas.js" defer></script>
     
@@ -24,235 +27,154 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
-        /* Fade In Fluido Sênior */
-        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes fadeIn { 
-            from { opacity: 0; transform: translateY(15px); } 
-            to { opacity: 1; transform: translateY(0); } 
-        }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .slide-up-chat { animation: slideUpChat 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; transform-origin: bottom right; }
         
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUpChat { 
+            from { opacity: 0; transform: scale(0.8) translateY(20px); } 
+            to { opacity: 1; transform: scale(1) translateY(0); } 
+        }
+
+        /* Rolagem elegante para o Kanban */
         .kanban-board::-webkit-scrollbar { display: none; }
         .kanban-board { scrollbar-width: none; } 
         
         .coluna-scroll::-webkit-scrollbar { width: 4px; }
         .coluna-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark .coluna-scroll::-webkit-scrollbar-thumb { background: #475569; }
         
         .cursor-grab { cursor: grab; }
         .cursor-grabbing { cursor: grabbing; }
 
+        /* Coluna Minimizada (Acordeon lateral) */
         .coluna-minimizada { width: 64px !important; min-width: 64px !important; cursor: pointer; transition: all 0.3s ease; }
         .coluna-minimizada .esconder-no-min { display: none !important; }
         .coluna-minimizada .mostrar-no-min { display: flex !important; }
 
-        /* A MÁGICA DA SIDEBAR HOVER NO DESKTOP */
-        #sidebar {
-            width: 5rem;
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
-        }
-        #sidebar:hover {
-            width: 16rem;
-            box-shadow: 15px 0 30px rgba(0,0,0,0.05);
-        }
-        .sidebar-link {
-            width: 3rem; 
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s;
-        }
-        #sidebar:hover .sidebar-link { width: 100%; }
-        .sidebar-text {
-            opacity: 0;
-            transform: translateX(-10px);
-            visibility: hidden;
-            transition: all 0.2s ease-in-out;
-            white-space: nowrap;
-        }
-        #sidebar:hover .sidebar-text {
-            visibility: visible;
-            opacity: 1;
-            transform: translateX(0);
-            transition-delay: 0.15s; 
-        }
-
-        /* Classe fantasma do Drag and Drop Kanban */
-        .sortable-ghost { opacity: 0.4; background-color: #f8fafc; border: 2px dashed #818cf8; transform: scale(0.98); }
+        input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.5; transition: 0.2s; position: absolute; right: 12px; }
+        .dark input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.7; }
+        input::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+        select { -webkit-appearance: none; -moz-appearance: none; appearance: none; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 h-screen overflow-hidden flex relative fade-in">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 h-[100dvh] overflow-hidden flex relative fade-in transition-colors duration-300">
 
-    <!-- ESPAÇADOR FALSO PARA O DESKTOP -->
-    <div class="hidden md:block w-20 shrink-0"></div>
+    <!-- O LAYOUT.JS INJETA A SIDEBAR E O MENU AQUI -->
 
-    <!-- SIDEBAR REAL DO DESKTOP (Flutua por cima via Hover) -->
-    <aside id="sidebar" class="hidden md:flex flex-col bg-white border-r border-slate-200/60 py-6 px-4 h-full z-40 fixed left-0 top-0 overflow-hidden">
-        <div class="flex items-center justify-start mb-10 h-12 px-1">
-            <div class="w-10 h-10 shrink-0 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-indigo-600/30">
-                <i class="fa-solid fa-wallet text-xl"></i>
-            </div>
-            <h2 class="sidebar-text text-2xl font-black text-slate-900 tracking-tight ml-3">DataWallet</h2>
-        </div>
+    <!-- O MIOLO DO SISTEMA ERP KANBAN -->
+    <main class="flex-1 h-full flex flex-col relative overflow-hidden">
         
-        <nav class="flex-1 space-y-2 w-full">
-            <a href="movimentacoes.html" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-colors overflow-hidden">
-                <div class="w-6 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-money-bill-transfer text-lg"></i>
-                </div>
-                <span class="sidebar-text ml-3">Movimentações</span>
-            </a>
-            <a href="dashboard.html" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-colors overflow-hidden">
-                <div class="w-6 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-chart-pie text-lg"></i>
-                </div>
-                <span class="sidebar-text ml-3">Dashboard</span>
-            </a>
-            <a href="dividas.html" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-50 text-indigo-700 overflow-hidden">
-                <div class="w-6 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-file-invoice-dollar text-lg"></i>
-                </div>
-                <span class="sidebar-text ml-3">Dívidas</span>
-            </a>
-            <a href="categorias.html" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-colors overflow-hidden">
-                <div class="w-6 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-tags text-lg"></i>
-                </div>
-                <span class="sidebar-text ml-3">Categorias</span>
-            </a>
-            <a href="planos.html" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-colors overflow-hidden">
-                <div class="w-6 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-bullseye text-lg"></i>
-                </div>
-                <span class="sidebar-text ml-3">Metas</span>
-            </a>
-        </nav>
-
-        <div class="mt-auto w-full">
-            <button onclick="sairDoSistema()" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold text-rose-500 hover:bg-rose-50 transition-colors overflow-hidden">
-                <div class="w-6 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-right-from-bracket text-lg"></i>
-                </div>
-                <span class="sidebar-text ml-3">Sair do Sistema</span>
-            </button>
-        </div>
-    </aside>
-
-    <!-- O MIOLO DO SISTEMA KANBAN -->
-    <main class="flex-1 h-full flex flex-col relative bg-slate-50 overflow-hidden">
-        
-        <header class="p-6 md:p-8 pb-2 shrink-0 w-full">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm mb-4">
-                <div>
-                    <h2 class="text-2xl font-black text-slate-900 flex items-center gap-3">
-                        <i class="fa-solid fa-file-invoice-dollar text-indigo-600"></i> Gestão de Passivos
+        <header class="p-4 md:p-8 pb-2 shrink-0 w-full max-w-7xl mx-auto">
+            
+            <!-- HEADER ELITE -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors relative overflow-hidden mb-4 md:mb-6">
+                <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent pointer-events-none"></div>
+                <div class="relative z-10">
+                    <h2 class="text-xl md:text-3xl font-black text-slate-900 dark:text-white flex items-center gap-3">
+                        <i class="fa-solid fa-file-invoice-dollar text-indigo-600 dark:text-indigo-400"></i> Tesouraria & Passivos
                     </h2>
-                    <p class="text-xs font-medium text-slate-500 mt-1">Acompanhamento de contas a pagar, parcelamentos e histórico.</p>
+                    <p class="text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Acompanhamento e quitação de obrigações financeiras.</p>
+                </div>
+                
+                <!-- Compliance de Quitação (Saúde da Carteira de Passivos) -->
+                <div class="relative z-10 w-full md:w-64 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/50 transition-colors">
+                    <div class="flex justify-between items-end mb-1.5">
+                        <p class="text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Compliance de Quitação</p>
+                        <p class="text-xs md:text-sm font-black text-slate-800 dark:text-slate-200 leading-none" id="kpi-compliance-texto">0%</p>
+                    </div>
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                        <div id="kpi-compliance-barra" class="bg-emerald-500 h-1.5 rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- KPIs PREPARADOS PARA A ROLETA -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="bg-white p-4 rounded-xl border border-rose-200/60 shadow-sm relative overflow-hidden">
-                    <div class="absolute -right-4 -top-4 w-12 h-12 bg-rose-50 rounded-full"></div>
-                    <p class="text-[10px] text-rose-500 font-bold uppercase tracking-wider mb-1 relative z-10">Atrasadas</p>
-                    <p class="text-xl md:text-2xl font-black text-rose-600 truncate relative z-10" id="kpi-atrasadas">R$ 0,00</p>
+            <!-- KPIs NÍVEL ENTERPRISE -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                <div class="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors flex flex-col justify-center relative overflow-hidden group">
+                    <div class="absolute -right-6 -top-6 w-16 h-16 bg-rose-50 dark:bg-rose-500/10 rounded-full transition-colors"></div>
+                    <p class="text-[9px] md:text-[10px] text-rose-500 font-bold uppercase tracking-wider mb-1 relative z-10">Atrasadas</p>
+                    <p class="text-[1.35rem] sm:text-2xl md:text-3xl font-black text-rose-600 dark:text-rose-400 tracking-tighter leading-none break-words relative z-10" id="kpi-atrasadas">R$ 0,00</p>
                 </div>
-                <div class="bg-white p-4 rounded-xl border border-indigo-200/60 shadow-sm relative overflow-hidden">
-                    <div class="absolute -right-4 -top-4 w-12 h-12 bg-indigo-50 rounded-full"></div>
-                    <p class="text-[10px] text-indigo-500 font-bold uppercase tracking-wider mb-1 relative z-10">Este Mês</p>
-                    <p class="text-xl md:text-2xl font-black text-indigo-600 truncate relative z-10" id="kpi-mes">R$ 0,00</p>
+                
+                <!-- KPI NOVO: Urgência 7 Dias -->
+                <div class="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors flex flex-col justify-center relative overflow-hidden group">
+                    <div class="absolute -right-6 -top-6 w-16 h-16 bg-amber-50 dark:bg-amber-500/10 rounded-full transition-colors"></div>
+                    <p class="text-[9px] md:text-[10px] text-amber-500 font-bold uppercase tracking-wider mb-1 relative z-10">Risco (Prox. 7 Dias)</p>
+                    <p class="text-[1.35rem] sm:text-2xl md:text-3xl font-black text-amber-600 dark:text-amber-400 tracking-tighter leading-none break-words relative z-10" id="kpi-risco">R$ 0,00</p>
                 </div>
-                <div class="bg-white p-4 rounded-xl border border-slate-200/60 shadow-sm relative overflow-hidden">
-                    <div class="absolute -right-4 -top-4 w-12 h-12 bg-slate-50 rounded-full"></div>
-                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1 relative z-10">Total Futuro</p>
-                    <p class="text-xl md:text-2xl font-black text-slate-600 truncate relative z-10" id="kpi-futuro">R$ 0,00</p>
+
+                <div class="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors flex flex-col justify-center relative overflow-hidden group">
+                    <div class="absolute -right-6 -top-6 w-16 h-16 bg-indigo-50 dark:bg-indigo-500/10 rounded-full transition-colors"></div>
+                    <p class="text-[9px] md:text-[10px] text-indigo-500 font-bold uppercase tracking-wider mb-1 relative z-10">Em Aberto (Total)</p>
+                    <p class="text-[1.35rem] sm:text-2xl md:text-3xl font-black text-indigo-600 dark:text-indigo-400 tracking-tighter leading-none break-words relative z-10" id="kpi-aberto">R$ 0,00</p>
                 </div>
-                <div class="bg-white p-4 rounded-xl border border-emerald-200/60 shadow-sm relative overflow-hidden">
-                    <div class="absolute -right-4 -top-4 w-12 h-12 bg-emerald-50 rounded-full"></div>
-                    <p class="text-[10px] text-emerald-500 font-bold uppercase tracking-wider mb-1 relative z-10">Total Quitado</p>
-                    <p class="text-xl md:text-2xl font-black text-emerald-600 truncate relative z-10" id="kpi-pagas">R$ 0,00</p>
+
+                <div class="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors flex flex-col justify-center relative overflow-hidden group">
+                    <div class="absolute -right-6 -top-6 w-16 h-16 bg-emerald-50 dark:bg-emerald-500/10 rounded-full transition-colors"></div>
+                    <p class="text-[9px] md:text-[10px] text-emerald-500 font-bold uppercase tracking-wider mb-1 relative z-10">Total Quitado</p>
+                    <p class="text-[1.35rem] sm:text-2xl md:text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter leading-none break-words relative z-10" id="kpi-pagas">R$ 0,00</p>
                 </div>
             </div>
         </header>
 
-        <section class="flex-1 overflow-y-hidden overflow-x-auto p-6 md:p-8 pt-2 pb-28 md:pb-8 kanban-board cursor-grab" id="container-scroll">
-            <div id="board-dividas" class="flex gap-6 h-full items-start w-max">
-                <div class="w-full text-center mt-20 text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl"></i> Montando Kanban...</div>
+        <!-- PRANCHA DO KANBAN BLINDADA (Apenas rolagem horizontal, zero arrasto de cards) -->
+        <section class="flex-1 overflow-y-hidden overflow-x-auto p-4 md:p-8 pt-2 pb-28 md:pb-8 kanban-board cursor-grab w-full max-w-7xl mx-auto" id="container-scroll">
+            <div id="board-dividas" class="flex gap-4 md:gap-6 h-full items-start w-max">
+                <div class="w-full text-center mt-20 text-slate-400 dark:text-slate-500"><i class="fa-solid fa-spinner fa-spin text-2xl"></i> Montando Kanban...</div>
             </div>
         </section>
     </main>
 
-    <!-- NAVEGAÇÃO MOBILE (FAB ANIMADO) -->
-    <div class="md:hidden fixed bottom-6 right-6 z-40 flex items-center gap-3 flex-row-reverse">
-        <button onclick="window.toggleMobileMenu()" id="fab-menu" class="w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_4px_20px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-500 z-50">
-            <i class="fa-solid fa-bars transition-all duration-300" id="fab-icon"></i>
-        </button>
-
-        <div id="fab-items" class="flex items-center gap-3 transition-all duration-500 transform translate-x-12 opacity-0 pointer-events-none">
-            <button onclick="sairDoSistema()" class="w-10 h-10 rounded-full bg-white text-rose-500 shadow-lg flex items-center justify-center border border-slate-100">
-                <i class="fa-solid fa-right-from-bracket"></i>
-            </button>
-            <a href="planos.html" class="w-10 h-10 rounded-full bg-white text-slate-500 shadow-lg flex items-center justify-center border border-slate-100">
-                <i class="fa-solid fa-bullseye"></i>
-            </a>
-            <a href="categorias.html" class="w-10 h-10 rounded-full bg-white text-slate-500 shadow-lg flex items-center justify-center border border-slate-100">
-                <i class="fa-solid fa-tags"></i>
-            </a>
-            <a href="dividas.html" class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 shadow-lg flex items-center justify-center border border-indigo-100">
-                <i class="fa-solid fa-file-invoice-dollar"></i>
-            </a>
-            <a href="dashboard.html" class="w-10 h-10 rounded-full bg-white text-slate-500 shadow-lg flex items-center justify-center border border-slate-100">
-                <i class="fa-solid fa-chart-pie"></i>
-            </a>
-            <a href="movimentacoes.html" class="w-10 h-10 rounded-full bg-white text-slate-500 shadow-lg flex items-center justify-center border border-slate-100">
-                <i class="fa-solid fa-money-bill-transfer"></i>
-            </a>
-        </div>
-    </div>
-
-    <!-- BOTÃO ADICIONAR (Lado Esquerdo no Mobile para não brigar com o Menu) -->
-    <button onclick="window.abrirModalNovaDivida()" class="fixed bottom-6 left-6 md:bottom-10 md:right-10 md:left-auto w-14 h-14 bg-indigo-600 rounded-full shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-white text-2xl z-40 hover:scale-105 hover:bg-indigo-700 transition-all border border-indigo-400">
+    <!-- BOTÃO ADICIONAR DE ELITE -->
+    <button onclick="window.abrirModalNovaDivida()" class="fixed bottom-6 left-6 md:bottom-10 md:right-10 md:left-auto w-14 h-14 md:w-16 md:h-16 bg-indigo-600 rounded-full shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-white text-2xl z-40 hover:scale-105 hover:bg-indigo-700 transition-transform border border-indigo-400 dark:border-indigo-500/30">
         <i class="fa-solid fa-plus"></i>
     </button>
 
-    <!-- MODAL -->
-    <div id="modal-divida" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center fade-in p-4">
-        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 relative">
-            <button onclick="window.fecharModalNovaDivida()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+    <!-- MODAL BLINDADO DARK MODE -->
+    <div id="modal-divida" onclick="if(event.target === this) window.fecharModalNovaDivida()" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center fade-in p-4 cursor-pointer">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl p-6 md:p-8 relative border border-slate-200 dark:border-slate-800 transition-colors cursor-default">
             
-            <h3 id="modal-titulo" class="text-xl font-black text-slate-900 mb-1"><i class="fa-solid fa-file-signature text-indigo-500"></i> Lançar Contas</h3>
-            <p id="modal-subtitulo" class="text-xs text-slate-500 mb-6 font-medium">Contas ou parcelamentos lançados aqui entram como "Pendentes".</p>
+            <button type="button" onclick="window.fecharModalNovaDivida()" class="absolute top-3 right-3 w-12 h-12 rounded-full text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center z-[999] bg-transparent active:scale-95"><i class="fa-solid fa-xmark text-xl pointer-events-none"></i></button>
+            
+            <h3 id="modal-titulo" class="text-xl font-black text-slate-900 dark:text-white mb-1 pr-10"><i class="fa-solid fa-file-signature text-indigo-500"></i> Lançar Contas</h3>
+            <p id="modal-subtitulo" class="text-xs text-slate-500 dark:text-slate-400 mb-6 font-medium">Lançamentos entram na prancha como "Pendentes".</p>
             
             <form id="form-divida" onsubmit="window.salvarDivida(event)" class="space-y-4">
                 <input type="hidden" id="divida-id">
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Descrição / Nome</label>
-                    <input type="text" id="divida-desc" required placeholder="Ex: Financiamento Carro" class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 font-medium">
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Descrição / Nome</label>
+                    <input type="text" id="divida-desc" required placeholder="Ex: Financiamento Veículo" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 outline-none focus:border-indigo-500 font-medium transition-colors">
                 </div>
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Valor da Parcela</label>
-                        <input type="text" id="divida-valor" inputmode="numeric" oninput="aplicarMascaraMoeda(this)" required placeholder="0,00" class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 font-bold">
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Valor da Parcela</label>
+                        <input type="text" id="divida-valor" inputmode="numeric" oninput="aplicarMascaraMoeda(this)" required placeholder="0,00" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 outline-none focus:border-indigo-500 font-black transition-colors">
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Vencimento</label>
-                        <input type="date" id="divida-data" required class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 font-medium cursor-pointer">
+                    <div class="relative">
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Vencimento</label>
+                        <input type="date" id="divida-data" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 outline-none focus:border-indigo-500 font-medium cursor-pointer transition-colors" style="color-scheme: dark;">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-3 gap-4">
-                    <div id="wrapper-categoria" class="col-span-2">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Centro de Custo</label>
-                        <select id="divida-categoria" required class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 font-medium cursor-pointer">
+                    <div id="wrapper-categoria" class="col-span-2 relative">
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Centro de Custo</label>
+                        <i class="fa-solid fa-chevron-down absolute right-3 top-[38px] text-slate-400 text-[10px] pointer-events-none"></i>
+                        <select id="divida-categoria" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl pl-4 pr-8 py-3 outline-none focus:border-indigo-500 font-medium cursor-pointer transition-colors appearance-none">
                             <option value="">Carregando pastas...</option>
                         </select>
                     </div>
                     <div id="wrapper-parcelas">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1" title="Quantidade de meses">Parcelas</label>
-                        <input type="number" id="divida-parcelas" min="1" max="360" value="1" required class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 font-bold text-center">
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1" title="Quantidade de meses">Parcelas</label>
+                        <input type="number" id="divida-parcelas" min="1" max="360" value="1" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 outline-none focus:border-indigo-500 font-black text-center transition-colors">
                     </div>
                 </div>
 
-                <button type="submit" id="btn-salvar-divida" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3 rounded-xl transition shadow-lg shadow-indigo-500/30 mt-4 flex justify-center items-center gap-2">
-                    <i class="fa-solid fa-check"></i> Registrar Conta
+                <button type="submit" id="btn-salvar-divida" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3.5 rounded-xl transition shadow-lg shadow-indigo-500/30 mt-4 flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-check"></i> Registrar Obrigação
                 </button>
             </form>
         </div>
