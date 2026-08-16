@@ -7,17 +7,15 @@
     
     <meta name="view-transition" content="same-origin">
     
-    <!-- 1º REGRA DE OURO: O Objeto de configuração nasce primeiro -->
+    <!-- 1º: A BIBLIOTECA CARREGA PRIMEIRO -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2º: A CONFIGURAÇÃO ENTRA EM SEGUIDA (Regra oficial do Tailwind) -->
     <script>
-        tailwind = {
-            config: {
-                darkMode: 'class'
-            }
+        tailwind.config = {
+            darkMode: 'class'
         };
     </script>
-    
-    <!-- 2º REGRA: A biblioteca entra e lê a configuração acima -->
-    <script src="https://cdn.tailwindcss.com"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
