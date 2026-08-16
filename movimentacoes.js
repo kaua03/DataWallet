@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - IA ESTRITA E PREVISÃO DE CAIXA ABSOLUTA
+// movimentacoes.js - IA ESTRITA E INVERSOR DE MOEDA
 // ==========================================
 
 let usuarioLogado = null;
@@ -301,7 +301,7 @@ function renderizarListaHistorico() {
 }
 
 // ==========================================
-// CÉREBRO NLP SÊNIOR: REGRA ESTRITA DE INDEFINIDO E DATAS
+// CÉREBRO NLP SÊNIOR
 // ==========================================
 const dicionarioDeInteligencia = [
     { pasta: 'alimentação', regras: [{ titulo: 'Delivery', palavras: ['ifood', 'delivery', 'rappi', 'zedelivery', 'marmita', 'quentinha'] }, { titulo: 'Fast Food', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado', 'pastel', 'mequi', 'doce', 'chocolate', 'sorvete', 'acai', 'açaí'] }, { titulo: 'Mercado', palavras: ['mercado', 'supermercado', 'açougue', 'padaria', 'compra', 'compras', 'mercadinho', 'mercearia', 'hortifruti', 'feira', 'atacadao', 'atacadão'] }, { titulo: 'Restaurante', palavras: ['restaurante', 'almoço', 'jantar', 'comida', 'self service'] }]},
@@ -325,13 +325,10 @@ function processarFraseNLP(fraseBruta) {
 
     let textoCru = fraseBruta.toLowerCase();
     
-    // 1. ISOLANDO A MATEMÁTICA DE TEMPO
+    // 1. DATA E TEMPO
     let dataCalculada = new Date(); dataCalculada.setHours(12,0,0,0);
-    
-    // O Radar de Futuro (Checa se tem verbo no futuro ANTES de processar os dias)
     let isFuturo = textoCru.match(/\b(vou|amanhã|amanha|receber|ganhar|pagar|mes que vem|mês que vem)\b/i);
 
-    // Palavras de tempo relativas
     if (textoCru.includes('mes que vem') || textoCru.includes('mês que vem')) { dataCalculada.setMonth(dataCalculada.getMonth() + 1); textoCru = textoCru.replace(/do mes que vem|no mês que vem|mes que vem|mês que vem/g, ''); }
     else if (textoCru.includes('mes passado') || textoCru.includes('mês passado')) { dataCalculada.setMonth(dataCalculada.getMonth() - 1); textoCru = textoCru.replace(/do mes passado|no mes passado|mes passado|mês passado/g, ''); }
     
@@ -341,14 +338,10 @@ function processarFraseNLP(fraseBruta) {
     else if (textoCru.includes('ontem')) { dataCalculada.setDate(dataCalculada.getDate() - 1); textoCru = textoCru.replace('ontem', ''); }
     else if (textoCru.includes('hoje')) { textoCru = textoCru.replace('hoje', ''); }
 
-    // Interceptador avançado para datas compostas ("18 do 8", "18/08", "18 de agosto")
     const mesesMap = { 'janeiro': 0, 'fevereiro': 1, 'março': 2, 'marco': 2, 'abril': 3, 'maio': 4, 'junho': 5, 'julho': 6, 'agosto': 7, 'setembro': 8, 'outubro': 9, 'novembro': 10, 'dezembro': 11 };
     
-    // Procura por "18 do 8", "18/08" ou "18 de 8"
     const matchDataCompostaNum = textoCru.match(/(?:dia\s*)?(\d{1,2})\s*(?:de|do|\/)\s*(\d{1,2})(?:\s*(?:de|do|\/)\s*(\d{2,4}))?/i);
-    // Procura por "18 de agosto"
     const matchDataCompostaTexto = textoCru.match(/(?:dia\s*)?(\d{1,2})\s*(?:de|do)\s*(janeiro|fevereiro|março|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)(?:\s*(?:de|do)\s*(\d{2,4}))?/i);
-    // Procura por "dia 18"
     const matchDia = textoCru.match(/(?:no )?dia\s*(\d{1,2})/i);
 
     if (matchDataCompostaNum) {
@@ -362,19 +355,13 @@ function processarFraseNLP(fraseBruta) {
     } else if (matchDia) {
         let diaNum = parseInt(matchDia[1]); const mesAtual = new Date().getMonth();
         dataCalculada.setDate(1); 
-        
-        // A Mágica da Lógica Temporal
-        if (diaNum > new Date().getDate() && !isFuturo) {
-            dataCalculada.setMonth(mesAtual - 1); 
-        } else if (diaNum < new Date().getDate() && isFuturo) {
-            dataCalculada.setMonth(mesAtual + 1); 
-        }
-        
+        if (diaNum > new Date().getDate() && !isFuturo) { dataCalculada.setMonth(mesAtual - 1); } 
+        else if (diaNum < new Date().getDate() && isFuturo) { dataCalculada.setMonth(mesAtual + 1); }
         dataCalculada.setDate(diaNum);
         textoCru = textoCru.replace(matchDia[0], ''); 
     }
 
-    // 2. FUSÃO DE CENTAVOS E MILHARES
+    // 2. FUSÃO E EXTRAÇÃO MATEMÁTICA
     let textoValores = textoCru.replace(/(\d+)\s*(?:reais|r\$|brl)?\s*e\s*(\d{1,2})\s*(?:centavos|centavo|c)?\b/gi, "$1,$2");
     textoValores = textoValores.replace(/\.(\d{3})/g, '$1'); 
     textoValores = textoValores.replace(/\bum mil\b/g, '1000'); 
@@ -392,7 +379,7 @@ function processarFraseNLP(fraseBruta) {
     let catDetectada = null; 
     let tituloFinal = '';
     
-    // Mata a pontuação para buscar no dicionário limpo
+    // 3. A REGRA ESTRITA (Sem Adivinhações de Sobras)
     let descCrua = removerAcentos(textoCru);
     descCrua = descCrua.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, " "); 
 
@@ -414,26 +401,10 @@ function processarFraseNLP(fraseBruta) {
         }
     }
 
-    // A REGRA ABSOLUTA DE INDEFINIDO
+    // A PUNIÇÃO DA ADIVINHAÇÃO: Se não achou palavra exata no dicionário, crava Indefinido
     if (!tituloFinal) {
-        // Se a pessoa especificar para "quem" pagou/recebeu (ex: Recebi 25 do Pedro), tentamos pegar o nome.
-        let palavras = descCrua.split(/\s+/);
-        const stopWords = ['eu', 'gastei', 'gasto', 'gastar', 'paguei', 'pago', 'pagar', 'pague', 'custou', 'botei', 'coloquei', 'comprei', 'comprar', 'compra', 'de', 'da', 'do', 'no', 'na', 'para', 'com', 'novo', 'nova', 'meu', 'minha', 'fui', 'o', 'a', 'os', 'as', 'em', 'por', 'pra', 'fiz', 'tive', 'que', 'foi', 'deu', 'ficou', 'um', 'uma', 'uns', 'umas', 'recebi', 'receber', 'ganhei', 'ganhar', 'entrou', 'e', 'tem', 'tenho', 'ter', 'passei', 'passar', 'brl', 'amanha', 'ontem', 'hoje', 'dia'];
-        
-        palavras = palavras.filter(p => p.trim() !== '' && !stopWords.includes(p.trim()) && isNaN(p));
-        
-        if (palavras.length > 0 && palavras.length <= 3) {
-            // Se sobrou de 1 a 3 palavras (ex: "Pedro"), usa como título.
-            let titulo = palavras.join(' ');
-            tituloFinal = isReceita ? `Recebimento: ${titulo.charAt(0).toUpperCase() + titulo.slice(1)}` : titulo.charAt(0).toUpperCase() + titulo.slice(1); 
-        } else {
-            // Se for uma frase longa que o dicionário não mapeou, joga Indefinido
-            tituloFinal = isReceita ? 'Recebimento Indefinido' : 'Gasto Indefinido';
-        }
-        
-        if (!catDetectada) {
-            catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('lazer') || removerAcentos(c.nome.toLowerCase()).includes('outros'));
-        }
+        tituloFinal = isReceita ? 'Recebimento Indefinido' : 'Gasto Indefinido';
+        catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('lazer') || removerAcentos(c.nome.toLowerCase()).includes('outros'));
     }
 
     document.getElementById('transacao-id').value = ''; 
@@ -452,6 +423,26 @@ function processarFraseNLP(fraseBruta) {
     
     document.querySelector(`input[name="tipo"][value="${isReceita ? 'receita' : 'despesa'}"]`).checked = true;
     document.getElementById('modal-transacao').classList.remove('hidden');
+}
+
+// ==========================================
+// FORMATADOR VISUAL AO VIVO (A Mágica do R$)
+// ==========================================
+function formatarTextoAoVivo(texto) {
+    let t = texto.toLowerCase();
+    
+    // Padroniza as moedas
+    t = t.replace(/\b(?:brl|reais|real)\b/g, "r$");
+    
+    // Inversor Matemático: O que estiver atrás do número vai para frente
+    t = t.replace(/(\d+(?:[.,]\d+)?)\s*r\$/g, "r$ $1");
+    
+    // Limpa excesso de R$ no começo da frase
+    t = t.replace(/(r\$)\s*(r\$)+/g, "r$");
+    t = t.replace(/r\$\s*/g, "R$ ");
+    
+    // Coloca a primeira letra maiúscula
+    return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
 window.abrirModalComTextoRapido = function() { processarFraseNLP(document.getElementById('input-rapido').value); };
@@ -497,7 +488,6 @@ window.ativarMicrofone = function() {
             let fatorVolumeFake = 1.1 + (textoTemporario.length % 5) * 0.15; 
             wave1.style.transform = `scale(${fatorVolumeFake * 1.3})`;
             wave2.style.transform = `scale(${fatorVolumeFake * 1.1})`;
-            
             setTimeout(() => {
                 wave1.style.transform = 'scale(1.1)';
                 wave2.style.transform = 'scale(1.05)';
@@ -505,30 +495,19 @@ window.ativarMicrofone = function() {
         }
 
         let transcricaoAoVivo = textoFinal || textoTemporario;
-        if (transcricaoAoVivo.length > 0) {
-            let t = transcricaoAoVivo.toLowerCase();
-            t = t.replace(/\bbrl\b/gi, "reais");
-            t = t.replace(/(\d+(?:[.,]\d+)?)\s*(reais|real|r\$)/gi, "R$ $1");
-            t = t.replace(/\breais\b|\breal\b/gi, "R$");
-            
-            transcricaoAoVivo = t.charAt(0).toUpperCase() + t.slice(1);
-            textoInterim.innerText = transcricaoAoVivo;
+        if (transcricaoAoVivo.trim().length > 0) {
+            textoInterim.innerText = formatarTextoAoVivo(transcricaoAoVivo);
         }
 
         if (textoFinal && textoFinal.trim() !== '') {
-            let t = textoFinal.toLowerCase();
+            let tFormatado = formatarTextoAoVivo(textoFinal);
+            tFormatado = tFormatado.replace(/\.\s*$/g, ""); // Remove o ponto final indesejado
             
-            t = t.replace(/\bbrl\b/gi, "reais");
-            t = t.replace(/(\d+(?:[.,]\d+)?)\s*(reais|real|r\$)/gi, "R$ $1");
-            t = t.replace(/\breais\b|\breal\b/gi, "R$");
-            t = t.replace(/\.\s*$/g, ""); 
-            
-            t = t.charAt(0).toUpperCase() + t.slice(1);
-            document.getElementById('input-rapido').value = t;
+            document.getElementById('input-rapido').value = tFormatado;
             
             setTimeout(() => { 
                 window.cancelarMicrofone(); 
-                processarFraseNLP(t); 
+                processarFraseNLP(tFormatado); 
             }, 750);
         }
     };
