@@ -1,163 +1,468 @@
-<!DOCTYPE html>
-<html lang="pt-BR" class="">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Passivos - DataWallet</title>
+// ==========================================
+// dividas.js - ERP KANBAN PURO E ALTA PERFORMANCE (FLUIDEZ ABSOLUTA)
+// ==========================================
+
+let usuarioLogado = null;
+let transacoesGlobais = [];
+let categoriasGlobais = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
     
-    <meta name="view-transition" content="same-origin">
+    setTimeout(() => document.body.classList.remove('fade-in'), 500);
+
+    document.querySelectorAll('a').forEach(link => {
+        if(link.hostname === window.location.hostname && link.target !== '_blank') {
+            link.addEventListener('click', e => {
+                e.preventDefault();
+                const href = link.getAttribute('href');
+                document.body.style.opacity = 0;
+                document.body.style.transition = 'opacity 0.2s ease-in-out';
+                setTimeout(() => window.location.href = href, 200);
+            });
+        }
+    });
+
+    try {
+        usuarioLogado = await verificarSessaoSegura();
+        if (!usuarioLogado) {
+            const board = document.getElementById('board-dividas');
+            if (board) board.innerHTML = `<div class="w-full text-center mt-20 text-rose-500 font-bold"><i class="fa-solid fa-lock mr-2"></i> Sessão não encontrada. Faça login novamente.</div>`;
+            return;
+        }
+    } catch (err) {
+        console.error("Erro na verificação de sessão:", err);
+    }
+
+    const dataInput = document.getElementById('divida-data');
+    if (dataInput) dataInput.value = new Date().toISOString().split('T')[0];
+
+    await carregarDadosDoBanco();
+    iniciarDragToScroll(); 
+});
+
+window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 1000) {
+    const elemento = document.getElementById(id);
+    if (!elemento) return;
     
-    <script>
-        // 1. Restaura o tema instantaneamente antes de renderizar (Zero Flash)
-        const temaSalvo = localStorage.getItem('DataWallet_Tema') || localStorage.getItem('theme');
-        if (temaSalvo === 'escuro' || temaSalvo === 'dark' || (!temaSalvo && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
+    const startTimestamp = performance.now();
+    const step = (currentTimestamp) => {
+        const progress = Math.min((currentTimestamp - startTimestamp) / duracao, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 4); 
+        const valorAtual = easeProgress * valorFinal;
+        
+        if (formato === 'moeda') {
+            let parts = Math.abs(valorAtual).toFixed(2).split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            elemento.innerText = (valorAtual < 0 ? "- R$ " : "R$ ") + parts.join(',');
+        } else if (formato === 'porcentagem') {
+            elemento.innerText = valorAtual.toFixed(1) + "%";
+        }
+        
+        if (progress < 1) requestAnimationFrame(step);
+        else {
+            if (formato === 'moeda') {
+                let parts = Math.abs(valorFinal).toFixed(2).split('.');
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                elemento.innerText = (valorFinal < 0 ? "- R$ " : "R$ ") + parts.join(',');
+            } else if (formato === 'porcentagem') {
+                elemento.innerText = valorFinal.toFixed(1) + "%";
+            }
+        }
+    };
+    requestAnimationFrame(step);
+};
+
+function iniciarDragToScroll() {
+    const slider = document.getElementById('container-scroll');
+    if(!slider) return;
+    let isDown = false; let startX; let scrollLeft;
+
+    slider.addEventListener('mousedown', (e) => {
+        isDown = true; slider.classList.add('cursor-grabbing'); slider.classList.remove('cursor-grab');
+        startX = e.pageX - slider.offsetLeft; scrollLeft = slider.scrollLeft;
+    });
+    slider.addEventListener('mouseleave', () => {
+        isDown = false; slider.classList.remove('cursor-grabbing'); slider.classList.add('cursor-grab');
+    });
+    slider.addEventListener('mouseup', () => {
+        isDown = false; slider.classList.remove('cursor-grabbing'); slider.classList.add('cursor-grab');
+    });
+    slider.addEventListener('mousemove', (e) => {
+        if (!isDown) return; e.preventDefault();
+        const x = e.pageX - slider.offsetLeft; const walk = (x - startX) * 1.5; 
+        slider.scrollLeft = scrollLeft - walk;
+    });
+}
+
+function aplicarMascaraMoeda(input) {
+    let valor = input.value.replace(/\D/g, ''); 
+    if (valor === '') { input.value = ''; return; }
+    valor = (parseInt(valor) / 100).toFixed(2) + '';
+    valor = valor.replace(".", ",");
+    valor = valor.replace(/(\d)(\d{3})(\d{3}),/g, "$1.$2.$3,");
+    valor = valor.replace(/(\d)(\d{3}),/g, "$1.$2,");
+    input.value = valor;
+}
+window.aplicarMascaraMoeda = aplicarMascaraMoeda;
+
+function desmascararMoeda(str) {
+    if (!str) return 0;
+    return parseFloat(str.replace(/\./g, '').replace(',', '.'));
+}
+
+async function carregarDadosDoBanco() {
+    try {
+        const [rTrans, rCat] = await Promise.all([
+            supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).eq('tipo', 'despesa').order('data_vencimento', { ascending: true }),
+            supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
+        ]);
+
+        if (rTrans.error) throw rTrans.error;
+        if (rCat.error) throw rCat.error;
+
+        transacoesGlobais = rTrans.data || [];
+        categoriasGlobais = rCat.data || [];
+
+        const selectCat = document.getElementById('divida-categoria');
+        if (selectCat) {
+            selectCat.innerHTML = '<option value="" disabled selected>Selecione uma pasta...</option>' + 
+                categoriasGlobais.map(c => `<option class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white" value="${c.id}">${c.nome}</option>`).join('');
         }
 
-        // 2. Configura o Tailwind ANTES do script para evitar re-compilação e flicadas
-        window.tailwind = {
-            config: { darkMode: 'class' }
-        };
-    </script>
-    
-    <!-- 3. Carrega a CDN do Tailwind -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <script src="config.js" defer></script>
-    <script src="layout.js" defer></script>
-    <script src="dividas.js" defer></script>
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        
-        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
-        .kanban-board::-webkit-scrollbar { display: none; }
-        .kanban-board { scrollbar-width: none; } 
-        
-        .coluna-scroll::-webkit-scrollbar { width: 4px; }
-        .coluna-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .dark .coluna-scroll::-webkit-scrollbar-thumb { background: #475569; }
-        
-        .cursor-grab { cursor: grab; }
-        .cursor-grabbing { cursor: grabbing; }
+        processarEAtualizarKanban();
 
-        .coluna-minimizada { width: 64px !important; min-width: 64px !important; cursor: pointer; transition: all 0.3s ease; }
-        .coluna-minimizada .esconder-no-min { display: none !important; }
-        .coluna-minimizada .mostrar-no-min { display: flex !important; }
+    } catch (e) { 
+        console.error("Erro ao puxar dados:", e.message);
+        const board = document.getElementById('board-dividas');
+        if (board) {
+            board.innerHTML = `<div class="w-full text-center mt-20 text-rose-500 font-bold"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Erro ao carregar dados: ${e.message}</div>`;
+        }
+    }
+}
 
-        input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.5; transition: 0.2s; position: absolute; right: 12px; }
-        .dark input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.7; }
-        input::-webkit-calendar-picker-indicator:hover { opacity: 1; }
-        select { -webkit-appearance: none; -moz-appearance: none; appearance: none; }
-    </style>
-</head>
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 h-[100dvh] overflow-hidden flex relative fade-in transition-colors duration-300">
+function processarEAtualizarKanban() {
+    const hojeData = new Date();
+    hojeData.setHours(0, 0, 0, 0); 
+    const mesAtual = hojeData.getMonth(); const anoAtual = hojeData.getFullYear();
 
-    <main class="flex-1 h-full flex flex-col relative overflow-hidden w-full">
+    const agrupamentos = { 'Atrasadas': [], 'Este Mês': [], 'Próximos Meses': [], 'Histórico de Pagas': [] };
+    
+    let totAtrasadas = 0, totRisco7Dias = 0, totEmAberto = 0, totPagas = 0;
+
+    transacoesGlobais.forEach(t => {
+        if (!t.data_vencimento) return; 
         
-        <header class="p-3 md:p-8 pb-2 shrink-0 w-full max-w-7xl mx-auto">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors relative overflow-hidden mb-4 md:mb-6">
-                <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent pointer-events-none"></div>
-                <div class="relative z-10">
-                    <h2 class="text-xl md:text-3xl font-black text-slate-900 dark:text-white flex items-center gap-3">
-                        <i class="fa-solid fa-file-invoice-dollar text-indigo-600 dark:text-indigo-400"></i> Gestão de Passivos
-                    </h2>
-                    <p class="text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Acompanhamento de quitação e vencimentos.</p>
+        const isPago = t.pago === true; 
+        const dVenc = new Date(t.data_vencimento + 'T12:00:00Z');
+        dVenc.setHours(0, 0, 0, 0);
+        
+        const mesVenc = dVenc.getMonth(); const anoVenc = dVenc.getFullYear();
+        
+        const diffTime = dVenc - hojeData;
+        const diasDiff = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        t.diasDiff = diasDiff;
+
+        if (isPago) {
+            totPagas += t.valor;
+            agrupamentos['Histórico de Pagas'].push(t);
+        } else {
+            totEmAberto += t.valor;
+            
+            if (diasDiff >= 0 && diasDiff <= 7) {
+                totRisco7Dias += t.valor;
+            }
+
+            if (diasDiff < 0) { 
+                agrupamentos['Atrasadas'].push(t); 
+                totAtrasadas += t.valor; 
+            } 
+            else if (mesVenc === mesAtual && anoVenc === anoAtual) { 
+                agrupamentos['Este Mês'].push(t); 
+            } 
+            else { 
+                agrupamentos['Próximos Meses'].push(t); 
+            }
+        }
+    });
+
+    window.animarContador('kpi-atrasadas', totAtrasadas, 'moeda', 800);
+    window.animarContador('kpi-risco', totRisco7Dias, 'moeda', 800);
+    window.animarContador('kpi-aberto', totEmAberto, 'moeda', 800);
+    window.animarContador('kpi-pagas', totPagas, 'moeda', 800);
+
+    renderizarColunas(agrupamentos);
+}
+
+function renderizarColunas(agrupamentos) {
+    const board = document.getElementById('board-dividas');
+    if (!board) return;
+    let html = '';
+
+    const mesesExtenso = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const ordemColunas = ['Atrasadas', 'Este Mês', 'Próximos Meses', 'Histórico de Pagas'];
+
+    ordemColunas.forEach(nomeColuna => {
+        const transacoesDaColuna = agrupamentos[nomeColuna];
+        
+        let config = { icon: 'fa-calendar-day', titleColor: 'slate-600 dark:text-slate-300', badgeColor: 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300', borderColor: 'border-slate-200/60 dark:border-slate-700' };
+        if (nomeColuna === 'Atrasadas') config = { icon: 'fa-circle-exclamation', titleColor: 'rose-600 dark:text-rose-400', badgeColor: 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400', borderColor: 'border-rose-200/60 dark:border-rose-500/30' };
+        if (nomeColuna === 'Este Mês') config = { icon: 'fa-calendar-check', titleColor: 'indigo-600 dark:text-indigo-400', badgeColor: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400', borderColor: 'border-indigo-200/60 dark:border-indigo-500/30' };
+        if (nomeColuna === 'Próximos Meses') config = { icon: 'fa-forward-fast', titleColor: 'slate-500 dark:text-slate-400', badgeColor: 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400', borderColor: 'border-slate-200/60 dark:border-slate-700' };
+        if (nomeColuna === 'Histórico de Pagas') config = { icon: 'fa-check-double', titleColor: 'emerald-600 dark:text-emerald-400', badgeColor: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400', borderColor: 'border-emerald-200/60 dark:border-emerald-500/30' };
+
+        const idColunaSanitizado = 'col_' + nomeColuna.replace(/\s+/g, '').replace(/\//g, '');
+
+        let cardsHtml = '';
+        if (transacoesDaColuna.length === 0) {
+            cardsHtml = `<div class="text-center py-8 opacity-50"><i class="fa-solid fa-wind text-2xl text-slate-300 dark:text-slate-600 mb-2"></i><p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tudo Limpo</p></div>`;
+        } else {
+            let mesAnoCorrente = ''; 
+            cardsHtml = transacoesDaColuna.map(d => {
+                const isPago = d.pago === true;
+                const dVencObj = new Date(d.data_vencimento + 'T12:00:00Z');
+                const dataStr = dVencObj.toLocaleDateString('pt-BR').substring(0, 5); 
+                const mesAnoAtualDoCard = `${mesesExtenso[dVencObj.getMonth()]} ${dVencObj.getFullYear()}`;
+                
+                let htmlDivisor = '';
+                if ((nomeColuna === 'Próximos Meses' || nomeColuna === 'Histórico de Pagas') && mesAnoAtualDoCard !== mesAnoCorrente) {
+                    htmlDivisor = `
+                    <div class="divisor-mes flex items-center gap-3 mt-6 mb-3 first:mt-1 cursor-default pointer-events-none transition-colors duration-300">
+                        <div class="h-px bg-slate-200 dark:bg-slate-700 flex-1 transition-colors duration-300"></div>
+                        <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors duration-300">${mesAnoAtualDoCard}</span>
+                        <div class="h-px bg-slate-200 dark:bg-slate-700 flex-1 transition-colors duration-300"></div>
+                    </div>`;
+                    mesAnoCorrente = mesAnoAtualDoCard;
+                }
+                
+                let badgeUrgencia = '';
+                if (!isPago) {
+                    if (d.diasDiff < 0) badgeUrgencia = `<span class="bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase transition-colors duration-300">Atrasado ${Math.abs(d.diasDiff)}d</span>`;
+                    else if (d.diasDiff === 0) badgeUrgencia = `<span class="bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase transition-colors duration-300">Vence Hoje</span>`;
+                    else if (d.diasDiff <= 7) badgeUrgencia = `<span class="bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase transition-colors duration-300">Vence em ${d.diasDiff}d</span>`;
+                }
+
+                const btnAcao = isPago 
+                    ? `<button onclick="window.alterarStatusPagamento(${d.id}, false)" title="Desfazer" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition-colors duration-300 flex items-center justify-center shadow-sm shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-rotate-left"></i></button>`
+                    : `<button onclick="window.alterarStatusPagamento(${d.id}, true)" title="Quitar" class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors duration-300 flex items-center justify-center shadow-sm shrink-0 border border-emerald-200 dark:border-emerald-500/30"><i class="fa-solid fa-check"></i></button>`;
+
+                const classeTraco = isPago ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200';
+                const corData = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-500' : 'text-slate-400 dark:text-slate-500';
+                const corValor = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white';
+
+                // Aplicação da otimização de transição de cor em todo o HTML gerado para os cards
+                const cardHtmlCru = `
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-3 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-colors duration-300 group flex flex-col gap-3">
+                    <div class="flex justify-between items-start gap-3 w-full">
+                        <h4 class="font-bold text-xs ${classeTraco} leading-tight break-words whitespace-normal mt-0.5 flex-1 transition-colors duration-300">${d.descricao}</h4>
+                        <span class="font-black text-sm ${corValor} whitespace-nowrap shrink-0 transition-colors duration-300">R$ ${d.valor.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                    <div class="flex items-center justify-between w-full">
+                        <div class="flex items-center gap-2 text-[11px] font-bold ${corData} transition-colors duration-300">
+                            <div class="flex items-center gap-1.5"><i class="fa-regular fa-calendar transition-colors duration-300"></i> <span class="transition-colors duration-300">${dataStr}</span></div>
+                            ${badgeUrgencia}
+                        </div>
+                        
+                        <div class="flex items-center gap-1.5">
+                            <div class="flex items-center gap-1.5 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <button onclick="window.abrirModalEdicao(${d.id})" title="Editar" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-indigo-500 hover:text-white transition-colors duration-300 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                                <button onclick="window.excluirDivida(${d.id})" title="Excluir" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition-colors duration-300 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                            </div>
+                            <div class="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5 hidden md:block transition-colors duration-300"></div>
+                            ${btnAcao}
+                        </div>
+                    </div>
+                </div>`;
+
+                return htmlDivisor + cardHtmlCru;
+            }).join('');
+        }
+
+        html += `
+        <div id="${idColunaSanitizado}" class="w-[300px] md:w-[340px] shrink-0 bg-slate-100/50 dark:bg-slate-800/20 rounded-3xl ${config.borderColor} border flex flex-col max-h-full transition-colors duration-300 relative">
+            <div onclick="window.toggleColuna('${idColunaSanitizado}')" class="p-4 border-b border-slate-200/80 dark:border-slate-700/50 flex justify-between items-center bg-white dark:bg-slate-900 rounded-t-3xl shrink-0 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-300 relative z-10">
+                <div class="esconder-no-min flex items-center gap-2">
+                    <i class="fa-solid ${config.icon} ${config.titleColor} transition-colors duration-300"></i>
+                    <h3 class="font-bold ${config.titleColor} text-sm transition-colors duration-300">${nomeColuna}</h3>
+                </div>
+                
+                <div class="hidden mostrar-no-min flex-col items-center justify-start w-full gap-3 pt-2">
+                    <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm transition-colors duration-300">${transacoesDaColuna.length}</span>
+                    <h3 class="font-black text-slate-400 dark:text-slate-500 text-xs tracking-widest uppercase transform rotate-180 transition-colors duration-300" style="writing-mode: vertical-rl;">${nomeColuna}</h3>
+                </div>
+                
+                <div class="esconder-no-min flex items-center gap-2">
+                    <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm transition-colors duration-300">${transacoesDaColuna.length}</span>
+                    <i class="fa-solid fa-chevron-left text-slate-300 dark:text-slate-600 text-xs transition-transform transform -rotate-90"></i>
                 </div>
             </div>
 
-            <!-- KPIS DE PASSIVOS -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                <div class="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors flex flex-col justify-center relative overflow-hidden group">
-                    <div class="absolute -right-6 -top-6 w-16 h-16 bg-rose-50 dark:bg-rose-500/10 rounded-full transition-colors"></div>
-                    <p class="text-[9px] md:text-[10px] text-rose-500 font-bold uppercase tracking-wider mb-1 relative z-10">Atrasadas</p>
-                    <p class="text-[1.35rem] sm:text-2xl md:text-3xl font-black text-rose-600 dark:text-rose-400 tracking-tighter leading-none break-words relative z-10" id="kpi-atrasadas">R$ 0,00</p>
-                </div>
-                <div class="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors flex flex-col justify-center relative overflow-hidden group">
-                    <div class="absolute -right-6 -top-6 w-16 h-16 bg-amber-50 dark:bg-amber-500/10 rounded-full transition-colors"></div>
-                    <p class="text-[9px] md:text-[10px] text-amber-500 font-bold uppercase tracking-wider mb-1 relative z-10">Risco (Próx. 7 Dias)</p>
-                    <p class="text-[1.35rem] sm:text-2xl md:text-3xl font-black text-amber-600 dark:text-amber-400 tracking-tighter leading-none break-words relative z-10" id="kpi-risco">R$ 0,00</p>
-                </div>
-                <div class="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors flex flex-col justify-center relative overflow-hidden group">
-                    <div class="absolute -right-6 -top-6 w-16 h-16 bg-indigo-50 dark:bg-indigo-500/10 rounded-full transition-colors"></div>
-                    <p class="text-[9px] md:text-[10px] text-indigo-500 font-bold uppercase tracking-wider mb-1 relative z-10">Em Aberto (Total)</p>
-                    <p class="text-[1.35rem] sm:text-2xl md:text-3xl font-black text-indigo-600 dark:text-indigo-400 tracking-tighter leading-none break-words relative z-10" id="kpi-aberto">R$ 0,00</p>
-                </div>
-                <div class="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors flex flex-col justify-center relative overflow-hidden group">
-                    <div class="absolute -right-6 -top-6 w-16 h-16 bg-emerald-50 dark:bg-emerald-500/10 rounded-full transition-colors"></div>
-                    <p class="text-[9px] md:text-[10px] text-emerald-500 font-bold uppercase tracking-wider mb-1 relative z-10">Total Quitado</p>
-                    <p class="text-[1.35rem] sm:text-2xl md:text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter leading-none break-words relative z-10" id="kpi-pagas">R$ 0,00</p>
-                </div>
+            <div class="esconder-no-min p-3 flex-1 overflow-y-auto coluna-scroll pb-6" id="lista-cards-${idColunaSanitizado}">
+                ${cardsHtml}
             </div>
-        </header>
+        </div>`;
+    });
 
-        <!-- KANBAN BOARD -->
-        <section class="flex-1 overflow-y-hidden overflow-x-auto p-4 md:p-8 pt-2 pb-28 md:pb-8 kanban-board cursor-grab w-full max-w-7xl mx-auto" id="container-scroll">
-            <div id="board-dividas" class="flex gap-4 md:gap-6 h-full items-start w-max">
-                <div class="w-full text-center mt-20 text-slate-400 dark:text-slate-500"><i class="fa-solid fa-spinner fa-spin text-2xl"></i> Montando Kanban...</div>
-            </div>
-        </section>
-    </main>
+    board.innerHTML = html;
+}
 
-    <!-- BOTÃO ADICIONAR (Desktop Apenas) -->
-    <button onclick="window.abrirModalNovaDivida()" class="hidden md:flex fixed bottom-10 right-10 w-16 h-16 bg-indigo-600 rounded-full shadow-[0_10px_25px_rgba(79,70,229,0.5)] items-center justify-center text-white text-2xl z-40 hover:scale-105 hover:bg-indigo-700 transition-transform border border-indigo-400 dark:border-indigo-500/50">
-        <i class="fa-solid fa-plus"></i>
-    </button>
+window.toggleColuna = function(id) {
+    const col = document.getElementById(id);
+    if (!col) return;
+    col.classList.toggle('coluna-minimizada');
+    const icone = col.querySelector('.fa-chevron-left');
+    if(icone) {
+        if(col.classList.contains('coluna-minimizada')) icone.classList.replace('-rotate-90', 'rotate-180');
+        else icone.classList.replace('rotate-180', '-rotate-90');
+    }
+};
 
-    <!-- MODAL DE DÍVIDAS -->
-    <div id="modal-divida" onclick="if(event.target === this) window.fecharModalNovaDivida()" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center fade-in p-4 cursor-pointer">
-        <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl p-6 md:p-8 relative border border-slate-200 dark:border-slate-800 transition-colors cursor-default">
+window.alterarStatusPagamento = async function(idTransacao, novoStatusPago) {
+    try {
+        const { error } = await supabaseClient.from('transacoes').update({ pago: novoStatusPago }).eq('id', idTransacao);
+        if (error) throw error;
+        
+        const idx = transacoesGlobais.findIndex(t => t.id == idTransacao);
+        if (idx !== -1) transacoesGlobais[idx].pago = novoStatusPago;
+        
+        processarEAtualizarKanban();
+        
+        if (novoStatusPago) {
+            const isDark = document.documentElement.classList.contains('dark');
+            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, timerProgressBar: true, background: isDark ? '#1e293b' : '#fff', color: isDark ? '#fff' : '#1e293b' });
+            Toast.fire({ icon: 'success', title: 'Conta Liquidada!' });
+        }
+    } catch (e) { 
+        Swal.fire('Erro', e.message, 'error'); 
+    }
+};
+
+window.abrirModalNovaDivida = function() { 
+    document.getElementById('form-divida').reset();
+    document.getElementById('divida-id').value = ''; 
+    document.getElementById('modal-titulo').innerHTML = '<i class="fa-solid fa-file-signature text-indigo-500"></i> Lançar Contas';
+    document.getElementById('modal-subtitulo').innerText = 'Contas ou parcelamentos lançados aqui entram como "Pendentes".';
+    document.getElementById('wrapper-parcelas').classList.remove('hidden');
+    document.getElementById('wrapper-categoria').classList.replace('col-span-3', 'col-span-2');
+    document.getElementById('divida-data').value = new Date().toISOString().split('T')[0];
+    document.getElementById('modal-divida').classList.remove('hidden'); 
+};
+
+window.abrirModalEdicao = function(idTransacao) {
+    const t = transacoesGlobais.find(x => x.id == idTransacao);
+    if (!t) return;
+    document.getElementById('divida-id').value = t.id;
+    document.getElementById('divida-desc').value = t.descricao;
+    
+    let valorStr = t.valor.toFixed(2).replace('.', ',');
+    valorStr = valorStr.replace(/(\d)(\d{3})(\d{3}),/g, "$1.$2.$3,");
+    valorStr = valorStr.replace(/(\d)(\d{3}),/g, "$1.$2,");
+    document.getElementById('divida-valor').value = valorStr;
+    
+    document.getElementById('divida-data').value = t.data_vencimento;
+    document.getElementById('divida-categoria').value = t.categoria_id;
+
+    document.getElementById('modal-titulo').innerHTML = '<i class="fa-solid fa-pen text-indigo-500"></i> Editar Parcela';
+    document.getElementById('modal-subtitulo').innerText = 'Altere as informações deste lançamento específico.';
+    document.getElementById('wrapper-parcelas').classList.add('hidden');
+    document.getElementById('wrapper-categoria').classList.replace('col-span-2', 'col-span-3');
+    document.getElementById('modal-divida').classList.remove('hidden');
+};
+
+window.fecharModalNovaDivida = function() { document.getElementById('modal-divida').classList.add('hidden'); };
+
+window.excluirDivida = async function(idTransacao) {
+    const isDark = document.documentElement.classList.contains('dark');
+    const confirmacao = await Swal.fire({
+        title: 'Excluir Transação?',
+        text: "Essa ação apagará este registro permanentemente.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'Sim, excluir',
+        background: isDark ? '#1e293b' : '#fff',
+        color: isDark ? '#fff' : '#1e293b'
+    });
+
+    if(!confirmacao.isConfirmed) return;
+
+    try {
+        const { error } = await supabaseClient.from('transacoes').delete().eq('id', idTransacao);
+        if (error) throw error;
+        transacoesGlobais = transacoesGlobais.filter(t => t.id != idTransacao);
+        processarEAtualizarKanban();
+    } catch (e) { Swal.fire('Erro', e.message, 'error'); }
+};
+
+window.salvarDivida = async function(event) {
+    event.preventDefault();
+    const btn = document.getElementById('btn-salvar-divida');
+    const conteudoOriginal = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando...';
+    btn.disabled = true;
+
+    const idExistente = document.getElementById('divida-id').value;
+    const descBase = document.getElementById('divida-desc').value;
+    const valorFloat = desmascararMoeda(document.getElementById('divida-valor').value);
+    const dataInicialISO = document.getElementById('divida-data').value;
+    const catId = document.getElementById('divida-categoria').value;
+
+    if (valorFloat <= 0) {
+        Swal.fire('Aviso', 'O valor não pode ser zero.', 'warning');
+        btn.innerHTML = conteudoOriginal; btn.disabled = false; return;
+    }
+
+    try {
+        if (idExistente) {
+            const { data, error } = await supabaseClient.from('transacoes').update({
+                descricao: descBase, valor: valorFloat, data_vencimento: dataInicialISO, categoria_id: catId
+            }).eq('id', idExistente).select();
+
+            if (error) throw error;
+            const idx = transacoesGlobais.findIndex(t => t.id == idExistente);
+            if (idx !== -1 && data && data.length > 0) transacoesGlobais[idx] = data[0];
             
-            <button type="button" onclick="window.fecharModalNovaDivida()" class="absolute top-3 right-3 w-12 h-12 rounded-full text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center z-[999] bg-transparent active:scale-95"><i class="fa-solid fa-xmark text-xl pointer-events-none"></i></button>
-            
-            <h3 id="modal-titulo" class="text-xl font-black text-slate-900 dark:text-white mb-1 pr-10 transition-colors duration-300"><i class="fa-solid fa-file-signature text-indigo-500"></i> Lançar Contas</h3>
-            <p id="modal-subtitulo" class="text-xs text-slate-500 dark:text-slate-400 mb-6 font-medium transition-colors duration-300">Contas ou parcelamentos entram como "Pendentes".</p>
-            
-            <form id="form-divida" onsubmit="window.salvarDivida(event)" class="space-y-4">
-                <input type="hidden" id="divida-id">
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 transition-colors duration-300">Descrição / Nome</label>
-                    <input type="text" id="divida-desc" required placeholder="Ex: Financiamento Veículo" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 outline-none focus:border-indigo-500 font-medium transition-colors duration-300">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 transition-colors duration-300">Valor da Parcela</label>
-                        <input type="text" id="divida-valor" inputmode="numeric" oninput="aplicarMascaraMoeda(this)" required placeholder="0,00" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 outline-none focus:border-indigo-500 font-black transition-colors duration-300">
-                    </div>
-                    <div class="relative">
-                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 transition-colors duration-300">Vencimento</label>
-                        <input type="date" id="divida-data" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 outline-none focus:border-indigo-500 font-medium cursor-pointer transition-colors duration-300" style="color-scheme: dark;">
-                    </div>
-                </div>
-                <div class="grid grid-cols-3 gap-4">
-                    <div id="wrapper-categoria" class="col-span-2 relative">
-                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 transition-colors duration-300">Centro de Custo</label>
-                        <i class="fa-solid fa-chevron-down absolute right-3 top-[38px] text-slate-400 text-[10px] pointer-events-none"></i>
-                        <select id="divida-categoria" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl pl-4 pr-8 py-3 outline-none focus:border-indigo-500 font-medium cursor-pointer transition-colors duration-300 appearance-none">
-                            <option value="">Carregando pastas...</option>
-                        </select>
-                    </div>
-                    <div id="wrapper-parcelas">
-                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 transition-colors duration-300" title="Quantidade de meses">Parcelas</label>
-                        <input type="number" id="divida-parcelas" min="1" max="360" value="1" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 outline-none focus:border-indigo-500 font-black text-center transition-colors duration-300">
-                    </div>
-                </div>
-                <button type="submit" id="btn-salvar-divida" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3.5 rounded-xl transition shadow-lg shadow-indigo-500/30 mt-4 flex justify-center items-center gap-2">
-                    <i class="fa-solid fa-check"></i> Registrar Obrigação
-                </button>
-            </form>
-        </div>
-    </div>
+            transacoesGlobais.sort((a,b) => new Date(a.data_vencimento) - new Date(b.data_vencimento));
 
-</body>
-</html>
+        } else {
+            const qtdParcelas = parseInt(document.getElementById('divida-parcelas').value) || 1;
+            let loteInsercao = [];
+
+            for (let i = 0; i < qtdParcelas; i++) {
+                let dataCalc = new Date(dataInicialISO + 'T12:00:00Z');
+                let diaOriginal = dataCalc.getDate();
+                dataCalc.setMonth(dataCalc.getMonth() + i);
+                if (dataCalc.getDate() !== diaOriginal) dataCalc.setDate(0); 
+
+                let dataFormatada = dataCalc.toISOString().split('T')[0];
+                let descFinal = qtdParcelas > 1 ? `${descBase} (${i + 1}/${qtdParcelas})` : descBase;
+
+                loteInsercao.push({
+                    usuario_id: usuarioLogado.id, tipo: 'despesa', descricao: descFinal, valor: valorFloat, data_vencimento: dataFormatada, categoria_id: catId, pago: false
+                });
+            }
+
+            const { data, error } = await supabaseClient.from('transacoes').insert(loteInsercao).select();
+            if (error) throw error;
+            if(data) {
+                transacoesGlobais.push(...data);
+                transacoesGlobais.sort((a,b) => new Date(a.data_vencimento) - new Date(b.data_vencimento));
+            }
+        }
+        
+        window.fecharModalNovaDivida();
+        processarEAtualizarKanban();
+
+        const isDark = document.documentElement.classList.contains('dark');
+        const Toast = Swal.mixin({
+            toast: true, position: 'top-end', showConfirmButton: false, timer: 2000, timerProgressBar: true, background: isDark ? '#1e293b' : '#fff', color: isDark ? '#fff' : '#1e293b'
+        });
+        Toast.fire({ icon: 'success', title: 'Registro guardado!' });
+
+    } catch (e) {
+        Swal.fire('Erro', e.message, 'error');
+    } finally {
+        btn.innerHTML = conteudoOriginal;
+        btn.disabled = false;
+    }
+};
