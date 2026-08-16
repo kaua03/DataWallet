@@ -1,5 +1,5 @@
 // ==========================================
-// dividas.js - ERP KANBAN BLINDADO E OTIMIZADO
+// dividas.js - ERP KANBAN PURO E OTIMIZADO
 // ==========================================
 
 let usuarioLogado = null;
@@ -22,22 +22,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    try {
-        if (typeof verificarSessaoSegura === 'function') {
-            usuarioLogado = await verificarSessaoSegura();
-        } else if (window.supabaseClient) {
-            const { data: { session } } = await window.supabaseClient.auth.getSession();
-            usuarioLogado = session ? session.user : null;
-        }
-
-        if (!usuarioLogado) {
-            const board = document.getElementById('board-dividas');
-            if (board) board.innerHTML = `<div class="w-full text-center mt-20 text-rose-500 font-bold"><i class="fa-solid fa-lock mr-2"></i> Sessão não encontrada. Faça login novamente.</div>`;
-            return;
-        }
-    } catch (err) {
-        console.error("Erro na verificação de sessão:", err);
-    }
+    // Usa a verificação exata que já funciona perfeitamente nas outras telas
+    usuarioLogado = await verificarSessaoSegura();
+    if (!usuarioLogado) return; 
 
     const dataInput = document.getElementById('divida-data');
     if (dataInput) dataInput.value = new Date().toISOString().split('T')[0];
@@ -118,14 +105,10 @@ function desmascararMoeda(str) {
 
 async function carregarDadosDoBanco() {
     try {
-        const client = window.supabaseClient;
-        if (!client || !usuarioLogado || !usuarioLogado.id) {
-            throw new Error("Cliente Supabase ou usuário não inicializado.");
-        }
-
+        // Uso direto da variável global exportada no config.js
         const [rTrans, rCat] = await Promise.all([
-            client.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).eq('tipo', 'despesa').order('data_vencimento', { ascending: true }),
-            client.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
+            supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).eq('tipo', 'despesa').order('data_vencimento', { ascending: true }),
+            supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
         ]);
 
         if (rTrans.error) throw rTrans.error;
@@ -328,8 +311,7 @@ window.toggleColuna = function(id) {
 
 window.alterarStatusPagamento = async function(idTransacao, novoStatusPago) {
     try {
-        const client = window.supabaseClient;
-        const { error } = await client.from('transacoes').update({ pago: novoStatusPago }).eq('id', idTransacao);
+        const { error } = await supabaseClient.from('transacoes').update({ pago: novoStatusPago }).eq('id', idTransacao);
         if (error) throw error;
         
         const idx = transacoesGlobais.findIndex(t => t.id == idTransacao);
@@ -398,8 +380,7 @@ window.excluirDivida = async function(idTransacao) {
     if(!confirmacao.isConfirmed) return;
 
     try {
-        const client = window.supabaseClient;
-        const { error } = await client.from('transacoes').delete().eq('id', idTransacao);
+        const { error } = await supabaseClient.from('transacoes').delete().eq('id', idTransacao);
         if (error) throw error;
         transacoesGlobais = transacoesGlobais.filter(t => t.id != idTransacao);
         processarEAtualizarKanban();
@@ -425,9 +406,8 @@ window.salvarDivida = async function(event) {
     }
 
     try {
-        const client = window.supabaseClient;
         if (idExistente) {
-            const { data, error } = await client.from('transacoes').update({
+            const { data, error } = await supabaseClient.from('transacoes').update({
                 descricao: descBase, valor: valorFloat, data_vencimento: dataInicialISO, categoria_id: catId
             }).eq('id', idExistente).select();
 
@@ -455,7 +435,7 @@ window.salvarDivida = async function(event) {
                 });
             }
 
-            const { data, error } = await client.from('transacoes').insert(loteInsercao).select();
+            const { data, error } = await supabaseClient.from('transacoes').insert(loteInsercao).select();
             if (error) throw error;
             if(data) {
                 transacoesGlobais.push(...data);
