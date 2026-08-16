@@ -176,6 +176,10 @@ window.toggleDarkMode = function() {
     atualizarIconesDark(isDark);
 };
 
+// Aliases globais para garantir funcionamento independente do nome chamado nos botões
+window.alternarTema = window.toggleDarkMode;
+window.mudarTema = window.toggleDarkMode;
+
 function verificarDarkMode() {
     const temaSalvo = localStorage.getItem('DataWallet_Tema') || localStorage.getItem('theme');
     const htmlElement = document.documentElement;
