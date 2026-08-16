@@ -1,5 +1,5 @@
 // ==========================================
-// dashboard.js - MOTOR DE BI E DUAL Y-AXIS SÊNIOR
+// dashboard.js - MOTOR DE BI E DELAY DE ANIMAÇÃO DE BARRAS
 // ==========================================
 
 let usuarioLogado = null;
@@ -217,7 +217,12 @@ window.processarEAtualizarTudo = function() {
     let percentualBarra = Math.min(Math.max(taxa, 0), 100); 
     let corTaxa = taxa >= 20 ? 'bg-emerald-500' : (taxa > 0 ? 'bg-indigo-500' : 'bg-rose-500');
     const barra = document.getElementById('kpi-taxa-barra');
-    barra.style.width = `${percentualBarra}%`;
+    
+    // DELAY DE FÍSICA PARA ANIMAR A BARRA DE RETENÇÃO DO 0 AO REAL
+    barra.style.width = '0%';
+    setTimeout(() => {
+        barra.style.width = `${percentualBarra}%`;
+    }, 50);
     barra.className = `h-2 rounded-full transition-all duration-1000 shadow-sm ${corTaxa}`;
 
     renderizarListaCategorias(categoriasOrdenadas, gastosPorCategoria, totalDespesas);
@@ -225,7 +230,7 @@ window.processarEAtualizarTudo = function() {
 }
 
 // ==========================================
-// RENDERIZAÇÃO DA UI (Listas)
+// RENDERIZAÇÃO DA UI (Listas com Delay de Animação)
 // ==========================================
 function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
     const html = ordenadas.map((cat, index) => {
@@ -243,19 +248,26 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral) {
                 </div>
             </div>
             <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
-                <div class="${corBase} h-2 rounded-full transition-all duration-1000 shadow-sm" style="width: ${perc}%"></div>
+                <!-- Barra nasce em 0% e anima via JS -->
+                <div id="bar-cat-${index}" class="${corBase} h-2 rounded-full transition-all duration-1000 shadow-sm" style="width: 0%"></div>
             </div>
         </div>
         `;
     }).join('');
     document.getElementById('lista-categorias-progress').innerHTML = html || '<p class="text-xs text-slate-400 font-bold">Sem despesas no período.</p>';
 
-    ordenadas.forEach((cat, index) => {
-        const valor = gastos[cat];
-        const perc = totalGeral > 0 ? ((valor / totalGeral) * 100) : 0;
-        window.animarContador(`cat-val-${index}`, valor, 'moeda', 1000);
-        window.animarContador(`cat-perc-${index}`, perc, 'porcentagem', 1000);
-    });
+    // Dispara a animação física das barrinhas de progresso em cascata
+    setTimeout(() => {
+        ordenadas.forEach((cat, index) => {
+            const valor = gastos[cat];
+            const perc = totalGeral > 0 ? ((valor / totalGeral) * 100) : 0;
+            const bar = document.getElementById(`bar-cat-${index}`);
+            if(bar) bar.style.width = `${perc}%`;
+            
+            window.animarContador(`cat-val-${index}`, valor, 'moeda', 1000);
+            window.animarContador(`cat-perc-${index}`, perc, 'porcentagem', 1000);
+        });
+    }, 50);
 }
 
 // ==========================================
@@ -280,9 +292,6 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
         padding: 12, cornerRadius: 8, displayColors: true, boxPadding: 4 
     };
 
-    // ----------------------------------------------------
-    // GRÁFICO 1: FLUXO COMBO (O FIM DO ESMAGAMENTO DE BARRAS)
-    // ----------------------------------------------------
     const ctxC = document.getElementById('graficoCombo').getContext('2d');
     if (grafCombo) grafCombo.destroy();
 
@@ -315,7 +324,6 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
             labels: labelsT.length > 0 ? labelsT : ['Sem Dados'],
             datasets: [
                 {
-                    // A linha agora tem o seu próprio eixo invisível ('y1') para não esmagar as barras!
                     type: 'line', label: 'Saldo', data: dadosAcumulados, yAxisID: 'y1',
                     borderColor: '#6366f1', borderWidth: 4, tension: 0.4, 
                     pointBackgroundColor: isDark ? '#0f172a' : '#ffffff', 
@@ -327,7 +335,7 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
         },
         options: {
             responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-            animation: { duration: 1200, easing: 'easeOutQuart' }, // Animação fluida e impactante
+            animation: { duration: 1200, easing: 'easeOutQuart' },
             plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${Math.abs(ctx.raw).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}` } } },
             scales: {
                 x: { stacked: true, grid: { display: false }, border: {display: false}, ticks: { font: { size: 11, weight: 'bold' } } },
@@ -338,16 +346,12 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
                     ticks: { font: { size: 10, weight: 'bold' }, callback: (value) => value >= 0 ? `R$ ${value}` : `-R$ ${Math.abs(value)}` } 
                 },
                 y1: {
-                    // O Eixo Invisível Mestre. A linha sobe sem machucar as barras.
                     type: 'linear', position: 'right', display: false, grid: { drawOnChartArea: false }
                 }
             }
         }
     });
 
-    // ----------------------------------------------------
-    // GRÁFICO 2: ROSCA MINIMALISTA
-    // ----------------------------------------------------
     const ctxP = document.getElementById('graficoPizza').getContext('2d');
     if (grafPizza) grafPizza.destroy();
 
@@ -373,9 +377,6 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
         options: { animation: { duration: 1200, easing: 'easeOutQuart' }, responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${categoriasOrdenadas.length === 0 ? 'R$ 0,00' : ctx.raw.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}` } } } }
     });
 
-    // ----------------------------------------------------
-    // GRÁFICO 3: RADAR DE TERMÔMETRO SEMANAL
-    // ----------------------------------------------------
     const ctxR = document.getElementById('graficoRadar').getContext('2d');
     if (grafRadar) grafRadar.destroy();
 
@@ -416,9 +417,6 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
     });
 }
 
-// ==========================================
-// MÓDULO DA INTERFACE DO COACH (UI) E GEMINI
-// ==========================================
 window.toggleCoach = function() {
     const janela = document.getElementById('janela-coach');
     if (janela.classList.contains('hidden')) {
@@ -483,7 +481,7 @@ AQUI ESTÃO OS DADOS REAIS:
 - Total Queimado: R$ ${statsGlobais.despesas.toFixed(2)}
 - Saldo Líquido: R$ ${statsGlobais.saldo.toFixed(2)}
 - Retenção: ${statsGlobais.taxaPoupanca.toFixed(1)}%
-- Queima Média Diária: R$ ${statsGlobais.mediaDiaria.toFixed(2)} / dia
+- Queima Média Diaria: R$ ${statsGlobais.mediaDiaria.toFixed(2)} / dia
 - Top Categoria Gasto: ${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'Nenhum'}
 - Maior gasto isolado: ${statsGlobais.maiorGasto.descricao} (R$ ${statsGlobais.maiorGasto.valor.toFixed(2)})
 
