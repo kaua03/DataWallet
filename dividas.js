@@ -1,10 +1,11 @@
 // ==========================================
-// dividas.js - ERP KANBAN SEGURO (SEM DRAG & DROP DE CARDS)
+// dividas.js - ERP KANBAN SEGURO E L-SHAPE MOBILE
 // ==========================================
 
 let usuarioLogado = null;
 let transacoesGlobais = [];
 let categoriasGlobais = [];
+let menuMobileAberto = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
     
@@ -30,9 +31,48 @@ document.addEventListener('DOMContentLoaded', async () => {
     iniciarDragToScroll(); 
 });
 
-// ==========================================
-// MOTOR DE FÍSICA E ANIMAÇÃO DE CONTADORES
-// ==========================================
+// A MÁGICA DA ESPINGARDA LATERAL (L-Shape Mobile para Nova Dívida)
+window.toggleMobileMenu = function() {
+    const items = document.getElementById('fab-items');
+    const actionBtn = document.getElementById('fab-action');
+    const icon = document.getElementById('fab-icon');
+    const btn = document.getElementById('fab-menu');
+    
+    menuMobileAberto = !menuMobileAberto;
+
+    if (menuMobileAberto) {
+        if (items) {
+            items.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
+            items.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
+        }
+        if (actionBtn) {
+            actionBtn.classList.remove('opacity-0', 'pointer-events-none');
+            actionBtn.classList.add('opacity-100', 'pointer-events-auto');
+            actionBtn.style.transform = 'translateX(-70px) rotate(-360deg)';
+        }
+        if(btn) {
+            btn.style.transform = 'rotate(180deg)';
+            btn.classList.replace('bg-indigo-600', 'bg-slate-800');
+        }
+        setTimeout(() => { if(icon) icon.classList.replace('fa-bars', 'fa-xmark'); }, 150);
+    } else {
+        if (items) {
+            items.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
+            items.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+        }
+        if (actionBtn) {
+            actionBtn.classList.add('opacity-0', 'pointer-events-none');
+            actionBtn.classList.remove('opacity-100', 'pointer-events-auto');
+            actionBtn.style.transform = 'translateX(0px) rotate(0deg)';
+        }
+        if(btn) {
+            btn.style.transform = 'rotate(0deg)';
+            btn.classList.replace('bg-slate-800', 'bg-indigo-600');
+        }
+        setTimeout(() => { if(icon) icon.classList.replace('fa-xmark', 'fa-bars'); }, 150);
+    }
+};
+
 window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 1000) {
     const elemento = document.getElementById(id);
     if (!elemento) return;
@@ -65,9 +105,6 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
     requestAnimationFrame(step);
 };
 
-// ==========================================
-// ARRASTAR PRANCHA KANBAN (NÃO OS CARDS)
-// ==========================================
 function iniciarDragToScroll() {
     const slider = document.getElementById('container-scroll');
     if(!slider) return;
@@ -178,9 +215,6 @@ function processarEAtualizarKanban() {
     renderizarColunas(agrupamentos);
 }
 
-// ==========================================
-// RENDERIZAÇÃO KANBAN ERP (Sem Arrastar Cards)
-// ==========================================
 function renderizarColunas(agrupamentos) {
     const board = document.getElementById('board-dividas');
     let html = '';
@@ -394,60 +428,3 @@ window.salvarDivida = async function(event) {
 
     if (valorFloat <= 0) {
         Swal.fire('Aviso', 'O valor não pode ser zero.', 'warning');
-        btn.innerHTML = conteudoOriginal; btn.disabled = false; return;
-    }
-
-    try {
-        if (idExistente) {
-            const { data, error } = await supabaseClient.from('transacoes').update({
-                descricao: descBase, valor: valorFloat, data_vencimento: dataInicialISO, categoria_id: catId
-            }).eq('id', idExistente).select();
-
-            if (error) throw error;
-            const idx = transacoesGlobais.findIndex(t => t.id == idExistente);
-            if (idx !== -1 && data && data.length > 0) transacoesGlobais[idx] = data[0];
-            
-            transacoesGlobais.sort((a,b) => new Date(a.data_vencimento) - new Date(b.data_vencimento));
-
-        } else {
-            const qtdParcelas = parseInt(document.getElementById('divida-parcelas').value) || 1;
-            let loteInsercao = [];
-
-            for (let i = 0; i < qtdParcelas; i++) {
-                let dataCalc = new Date(dataInicialISO + 'T12:00:00Z');
-                let diaOriginal = dataCalc.getDate();
-                dataCalc.setMonth(dataCalc.getMonth() + i);
-                if (dataCalc.getDate() !== diaOriginal) dataCalc.setDate(0); 
-
-                let dataFormatada = dataCalc.toISOString().split('T')[0];
-                let descFinal = qtdParcelas > 1 ? `${descBase} (${i + 1}/${qtdParcelas})` : descBase;
-
-                loteInsercao.push({
-                    usuario_id: usuarioLogado.id, tipo: 'despesa', descricao: descFinal, valor: valorFloat, data_vencimento: dataFormatada, categoria_id: catId, pago: false
-                });
-            }
-
-            const { data, error } = await supabaseClient.from('transacoes').insert(loteInsercao).select();
-            if (error) throw error;
-            if(data) {
-                transacoesGlobais.push(...data);
-                transacoesGlobais.sort((a,b) => new Date(a.data_vencimento) - new Date(b.data_vencimento));
-            }
-        }
-        
-        window.fecharModalNovaDivida();
-        processarEAtualizarKanban();
-
-        const isDark = document.documentElement.classList.contains('dark');
-        const Toast = Swal.mixin({
-            toast: true, position: 'top-end', showConfirmButton: false, timer: 2000, timerProgressBar: true, background: isDark ? '#1e293b' : '#fff', color: isDark ? '#fff' : '#1e293b'
-        });
-        Toast.fire({ icon: 'success', title: 'Registro guardado!' });
-
-    } catch (e) {
-        Swal.fire('Erro', e.message, 'error');
-    } finally {
-        btn.innerHTML = conteudoOriginal;
-        btn.disabled = false;
-    }
-};
