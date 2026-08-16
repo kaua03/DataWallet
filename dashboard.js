@@ -1,5 +1,5 @@
 // ==========================================
-// dashboard.js - MOTOR DE BI COM FALSO 3D E DUAL-AXIS FAB 
+// dashboard.js - MOTOR DE BI COM FALSO 3D E MENU HORIZONTAL
 // ==========================================
 
 let usuarioLogado = null;
@@ -69,41 +69,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     observer.observe(document.documentElement, { attributes: true });
 });
 
-// A MÁGICA DA ESPINGARDA LATERAL BLINDADA (L-Shape sem Bloqueio de Cliques)
+// MENU HORIZONTAL IDÊNTICO AO DE MOVIMENTAÇÕES
+let menuMobileAberto = false;
 window.toggleMobileMenu = function() {
     const items = document.getElementById('fab-items');
-    const actionBtn = document.getElementById('fab-action');
     const icon = document.getElementById('fab-icon');
     const btn = document.getElementById('fab-menu');
-    
-    window._menuMobileAberto = !window._menuMobileAberto;
 
-    if (window._menuMobileAberto) {
-        if (items) {
-            // Vidro quebrado: pointer-events-auto permite clicar nos botões livremente!
-            items.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
-            items.classList.add('opacity-100', 'pointer-events-auto');
+    menuMobileAberto = !menuMobileAberto;
+
+    if (menuMobileAberto) {
+        if(items) {
+            items.classList.remove('opacity-0', 'translate-x-12', 'pointer-events-none');
+            items.classList.add('opacity-100', 'translate-x-0', 'pointer-events-auto');
         }
-        if (actionBtn) {
-            actionBtn.classList.remove('opacity-0', 'pointer-events-none');
-            actionBtn.classList.add('opacity-100', 'pointer-events-auto');
-            // Tiro forte para a esquerda:
-            actionBtn.style.transform = 'translateX(-72px) rotate(-360deg)';
+        if(btn) {
+            btn.style.transform = 'rotate(180deg)';
+            btn.classList.replace('bg-indigo-600', 'bg-slate-800');
         }
-        if(btn) btn.style.transform = 'rotate(180deg)';
         setTimeout(() => { if(icon) icon.classList.replace('fa-bars', 'fa-xmark'); }, 150);
     } else {
-        if (items) {
-            // Vidro restaurado
-            items.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
-            items.classList.remove('opacity-100', 'pointer-events-auto');
+        if(items) {
+            items.classList.add('opacity-0', 'translate-x-12', 'pointer-events-none');
+            items.classList.remove('opacity-100', 'translate-x-0', 'pointer-events-auto');
         }
-        if (actionBtn) {
-            actionBtn.classList.add('opacity-0', 'pointer-events-none');
-            actionBtn.classList.remove('opacity-100', 'pointer-events-auto');
-            actionBtn.style.transform = 'translateX(0px) rotate(0deg)';
+        if(btn) {
+            btn.style.transform = 'rotate(0deg)';
+            btn.classList.replace('bg-slate-800', 'bg-indigo-600');
         }
-        if(btn) btn.style.transform = 'rotate(0deg)';
         setTimeout(() => { if(icon) icon.classList.replace('fa-xmark', 'fa-bars'); }, 150);
     }
 };
