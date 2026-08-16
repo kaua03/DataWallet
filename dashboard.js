@@ -1,5 +1,5 @@
 // ==========================================
-// dashboard.js - MOTOR DE BI COM FALSO 3D E SEM REFRESH FANTASMA
+// dashboard.js - MOTOR DE BI E DUAL-AXIS FAB 
 // ==========================================
 
 let usuarioLogado = null;
@@ -12,6 +12,7 @@ let grafRadar = null;
 
 let statsGlobais = { receitas: 0, despesas: 0, saldo: 0, taxaPoupanca: 0, mediaDiaria: 0, maiorGasto: null, topCategoria: null, transacoesNoPeriodo: 0 };
 let menuMobileAberto = false; // Controle de Estado do Menu
+let inicializacaoCompleta = false; // Trava de Segurança contra refresh falso
 
 const coresPorCategoria = {
     'Alimentação': { hex: '#3b82f6', tw: 'bg-blue-500' },          
@@ -24,8 +25,6 @@ const coresPorCategoria = {
     'Renda & Salário': { hex: '#10b981', tw: 'bg-emerald-500' },   
     'Outros': { hex: '#94a3b8', tw: 'bg-slate-400' }                
 };
-
-let inicializacaoCompleta = false; // Trava de Segurança contra refresh falso
 
 document.addEventListener('DOMContentLoaded', async () => {
     
@@ -58,14 +57,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     await carregarDadosDoBanco();
-    inicializacaoCompleta = true; // Libera o Observer
+    inicializacaoCompleta = true; 
 
-    // O OLHO DE SAURON (MUTATION OBSERVER): Agora ele recebe o parâmetro 'true' (isThemeChange)
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
             if (mutation.attributeName === 'class' && inicializacaoCompleta) {
                 if (transacoesGlobais.length > 0) {
-                    processarEAtualizarTudo(true); // O 'true' mata a ilusão de refresh da página!
+                    processarEAtualizarTudo(true); 
                 }
             }
         });
@@ -120,19 +118,17 @@ async function carregarDadosDoBanco() {
     } catch (e) { console.error("Erro ao puxar dados:", e.message); }
 }
 
-// O BUG FOI ANIQUILADO AQUI: Removidas as referências de innerText em tags que não existem
+// O BUG DO FILTRO FOI RESOLVIDO AQUI: Removemos as classes antigas (grid/flex) e usamos apenas visibilidade
 window.mudarTipoFiltro = function() {
     const tipo = document.getElementById('filtro-periodo').value;
     const boxMes = document.getElementById('box-mes');
     const boxAno = document.getElementById('box-ano');
     const boxPers = document.getElementById('box-personalizado');
 
-    // Removemos os box da tela usando o classList ADD para segurança absoluta
     if(boxMes) { boxMes.classList.add('hidden'); boxMes.classList.remove('flex'); }
     if(boxAno) { boxAno.classList.add('hidden'); boxAno.classList.remove('flex'); }
-    if(boxPers) { boxPers.classList.add('hidden'); boxPers.classList.remove('grid'); }
+    if(boxPers) { boxPers.classList.add('hidden'); boxPers.classList.remove('flex'); } // Atualizado para Flex 
 
-    // Revelamos a caixa correta
     if (tipo === 'por_mes' && boxMes) {
         boxMes.classList.remove('hidden'); boxMes.classList.add('flex');
     }
@@ -140,13 +136,12 @@ window.mudarTipoFiltro = function() {
         boxAno.classList.remove('hidden'); boxAno.classList.add('flex');
     }
     else if (tipo === 'personalizado' && boxPers) {
-        boxPers.classList.remove('hidden'); boxPers.classList.add('grid');
+        boxPers.classList.remove('hidden'); boxPers.classList.add('flex'); // Alinhamos o Início e Fim como blocos Flex em linha
     }
 
     processarEAtualizarTudo();
 }
 
-// O parâmetro 'isThemeChange' evita que tudo zere e rode a roleta na hora do Dark Mode
 window.processarEAtualizarTudo = function(isThemeChange = false) {
     const tipoFiltro = document.getElementById('filtro-periodo').value;
 
@@ -177,7 +172,7 @@ window.processarEAtualizarTudo = function(isThemeChange = false) {
             if (dFim) valid = valid && (dStr <= dFim);
             return valid;
         }
-        return true; // "tudo" cai aqui
+        return true; 
     });
 
     let totalDespesas = 0, totalReceitas = 0;
@@ -186,7 +181,6 @@ window.processarEAtualizarTudo = function(isThemeChange = false) {
     const agrupamentoTemporal = {}; 
     let gastosPorDiaSemana = [0, 0, 0, 0, 0, 0, 0];
 
-    // Se o filtro for Tudo ou um período Personalizado muito longo (> 40 dias), agrupa os gráficos por mês. Senão, por dia.
     let agruparPorMes = false;
     if (tipoFiltro === 'tudo' || tipoFiltro === 'por_ano') {
         agruparPorMes = true;
@@ -280,7 +274,7 @@ window.processarEAtualizarTudo = function(isThemeChange = false) {
 }
 
 // ==========================================
-// RENDERIZAÇÃO DA UI (Listas em Cascata)
+// RENDERIZAÇÃO DA UI (Listas)
 // ==========================================
 function renderizarListaCategorias(ordenadas, gastos, totalGeral, isThemeChange) {
     const html = ordenadas.map((cat, index) => {
@@ -391,8 +385,7 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
             scales: {
                 x: { stacked: true, grid: { display: false }, border: {display: false}, ticks: { font: { size: 11, weight: 'bold' } } },
                 y: { 
-                    type: 'linear', position: 'left', stacked: true, 
-                    border: { display: false },
+                    type: 'linear', position: 'left', stacked: true, border: { display: false },
                     grid: { color: corGrid, lineWidth: 1, borderDash: [4, 4] }, 
                     ticks: { font: { size: 10, weight: 'bold' }, callback: (value) => value >= 0 ? `R$ ${value}` : `-R$ ${Math.abs(value)}` } 
                 },
@@ -454,12 +447,7 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
             animation: isThemeChange ? false : { duration: 1200, easing: 'easeOutQuart' },
             responsive: true, maintainAspectRatio: false,
             scales: {
-                r: {
-                    angleLines: { color: corGrid },
-                    grid: { color: corGrid, circular: true },
-                    pointLabels: { color: corTexto, font: { family: 'Inter', weight: 'bold', size: 11 } },
-                    ticks: { display: false }
-                }
+                r: { angleLines: { color: corGrid }, grid: { color: corGrid, circular: true }, pointLabels: { color: corTexto, font: { family: 'Inter', weight: 'bold', size: 11 } }, ticks: { display: false } }
             },
             plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` R$ ${ctx.raw.toLocaleString('pt-BR', {minimumFractionDigits: 2})}` } } }
         }
@@ -467,7 +455,7 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
 }
 
 // ==========================================
-// A MÁGICA DA EXPANSÃO EM DOIS EIXOS (L-Shape Mobile)
+// A MÁGICA DA EXPANSÃO EM DOIS EIXOS (L-Shape Mobile para a IA)
 // ==========================================
 window.toggleMobileMenu = function() {
     const items = document.getElementById('fab-items');
@@ -564,8 +552,7 @@ async function gerarRespostaIA(pergunta) {
         return adicionarMensagemNoChat("O algoritmo requer dados populados para gerar predições.", false);
     }
 
-    const promptDeSistema = `
-Você é o Consultor IA do DataWallet, um aplicativo financeiro corporativo de elite construído pelo Kauã.
+    const promptDeSistema = `Você é o Consultor IA do DataWallet, um aplicativo financeiro corporativo de elite construído pelo Kauã.
 Sua postura é profissional, direta, inteligente e analítica. Evite textos extremamente longos. Vá direto ao ponto.
 Sempre formate sua resposta em HTML limpo para exibir na tela web (use <b>, <i>, e <br>). NÃO use Markdown comum como ** ou *.
 
@@ -578,8 +565,7 @@ AQUI ESTÃO OS DADOS REAIS:
 - Top Categoria Gasto: ${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'Nenhum'}
 - Maior gasto isolado: ${statsGlobais.maiorGasto.descricao} (R$ ${statsGlobais.maiorGasto.valor.toFixed(2)})
 
-REGRA ESTRITA: Responda à pergunta do usuário cruzando os dados acima. Aja como um humano sênior.
-    `;
+REGRA ESTRITA: Responda à pergunta do usuário cruzando os dados acima. Aja como um humano sênior.`;
 
     const payload = { contents: [{ parts: [{ text: promptDeSistema + "\n\nPergunta: " + pergunta }] }] };
 
