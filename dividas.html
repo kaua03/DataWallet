@@ -14,8 +14,8 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <script src="layout.js" defer></script>
     <script src="config.js" defer></script>
+    <script src="layout.js" defer></script>
     <script src="dividas.js" defer></script>
     
     <style>
@@ -43,68 +43,11 @@
         .dark input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.7; }
         input::-webkit-calendar-picker-indicator:hover { opacity: 1; }
         select { -webkit-appearance: none; -moz-appearance: none; appearance: none; }
-
-        #sidebar { width: 5rem; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, background-color 0.3s; z-index: 50; }
-        #sidebar:hover { width: 16rem; box-shadow: 15px 0 30px rgba(0,0,0,0.05); }
-        .sidebar-link { width: 3rem; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s; overflow: hidden; }
-        #sidebar:hover .sidebar-link { width: 100%; }
-        .sidebar-text { opacity: 0; transform: translateX(-10px); visibility: hidden; transition: all 0.2s ease-in-out; white-space: nowrap; }
-        #sidebar:hover .sidebar-text { visibility: visible; opacity: 1; transform: translateX(0); transition-delay: 0.15s; }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 h-[100dvh] overflow-hidden flex relative fade-in transition-colors duration-300">
 
-    <aside id="sidebar" class="hidden md:flex flex-col justify-between h-full bg-white dark:bg-slate-900 border-r border-slate-200/60 dark:border-slate-800 p-4 shrink-0 select-none">
-        <div class="flex flex-col gap-6 w-full">
-            <div class="flex items-center gap-3.5 px-2 py-1 overflow-hidden">
-                <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-xl shrink-0 shadow-lg shadow-indigo-500/30">DW</div>
-                <div class="sidebar-text flex flex-col">
-                    <span class="font-black text-slate-900 dark:text-white text-base tracking-tight leading-none">DataWallet</span>
-                    <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mt-1">Enterprise</span>
-                </div>
-            </div>
-
-            <nav class="flex flex-col gap-2 w-full">
-                <a href="dashboard.html" class="sidebar-link flex items-center gap-3.5 p-2.5 rounded-2xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-indigo-600 transition font-bold text-sm">
-                    <div class="w-10 h-10 flex items-center justify-center shrink-0"><i class="fa-solid fa-chart-pie text-lg"></i></div>
-                    <span class="sidebar-text">Dashboard</span>
-                </a>
-                <a href="movimentacoes.html" class="sidebar-link flex items-center gap-3.5 p-2.5 rounded-2xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-indigo-600 transition font-bold text-sm">
-                    <div class="w-10 h-10 flex items-center justify-center shrink-0"><i class="fa-solid fa-money-bill-transfer text-lg"></i></div>
-                    <span class="sidebar-text">Movimentações</span>
-                </a>
-                <a href="dividas.html" class="sidebar-link flex items-center gap-3.5 p-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 transition font-bold text-sm shadow-sm">
-                    <div class="w-10 h-10 flex items-center justify-center shrink-0"><i class="fa-solid fa-file-invoice-dollar text-lg"></i></div>
-                    <span class="sidebar-text">Dívidas</span>
-                </a>
-                <a href="categorias.html" class="sidebar-link flex items-center gap-3.5 p-2.5 rounded-2xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-indigo-600 transition font-bold text-sm">
-                    <div class="w-10 h-10 flex items-center justify-center shrink-0"><i class="fa-solid fa-tags text-lg"></i></div>
-                    <span class="sidebar-text">Categorias</span>
-                </a>
-                <a href="planos.html" class="sidebar-link flex items-center gap-3.5 p-2.5 rounded-2xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-indigo-600 transition font-bold text-sm">
-                    <div class="w-10 h-10 flex items-center justify-center shrink-0"><i class="fa-solid fa-bullseye text-lg"></i></div>
-                    <span class="sidebar-text">Metas</span>
-                </a>
-                <a href="mercado.html" class="sidebar-link flex items-center gap-3.5 p-2.5 rounded-2xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-indigo-600 transition font-bold text-sm">
-                    <div class="w-10 h-10 flex items-center justify-center shrink-0"><i class="fa-solid fa-cart-shopping text-lg"></i></div>
-                    <span class="sidebar-text">Mercado</span>
-                </a>
-            </nav>
-        </div>
-
-        <div class="flex flex-col gap-2 w-full pt-4 border-t border-slate-200/60 dark:border-slate-800">
-            <button onclick="window.alternarTema && window.alternarTema()" class="sidebar-link flex items-center gap-3.5 p-2.5 rounded-2xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition font-bold text-sm">
-                <div class="w-10 h-10 flex items-center justify-center shrink-0"><i class="fa-solid fa-moon dark:hidden text-lg"></i><i class="fa-solid fa-sun hidden dark:block text-amber-400 text-lg"></i></div>
-                <span class="sidebar-text">Alternar Tema</span>
-            </button>
-            <button onclick="sairDoSistema()" class="sidebar-link flex items-center gap-3.5 p-2.5 rounded-2xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition font-bold text-sm">
-                <div class="w-10 h-10 flex items-center justify-center shrink-0"><i class="fa-solid fa-right-from-bracket text-lg"></i></div>
-                <span class="sidebar-text">Sair do Sistema</span>
-            </button>
-        </div>
-    </aside>
-
-    <main class="flex-1 h-full flex flex-col relative overflow-hidden">
+    <main class="flex-1 h-full flex flex-col relative overflow-hidden w-full">
         
         <header class="p-3 md:p-8 pb-2 shrink-0 w-full max-w-7xl mx-auto">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors relative overflow-hidden mb-4 md:mb-6">
@@ -147,28 +90,6 @@
             </div>
         </section>
     </main>
-
-    <div class="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14">
-        
-        <button onclick="window.abrirModalNovaDivida()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-2xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500/50">
-            <i class="fa-solid fa-plus pointer-events-none"></i>
-        </button>
-
-        <div id="fab-items" class="absolute bottom-16 right-1 w-10 flex flex-col items-center gap-2.5 transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none z-40">
-            <button onclick="sairDoSistema()" title="Sair" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-rose-500 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-right-from-bracket pointer-events-none"></i></button>
-            <button onclick="window.alternarTema && window.alternarTema()" title="Tema" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-amber-500 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-moon dark:hidden pointer-events-none"></i><i class="fa-solid fa-sun hidden dark:block text-amber-400 pointer-events-none"></i></button>
-            <a href="mercado.html" title="Mercado" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-cart-shopping pointer-events-none"></i></a>
-            <a href="planos.html" title="Metas" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-bullseye pointer-events-none"></i></a>
-            <a href="categorias.html" title="Categorias" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-tags pointer-events-none"></i></a>
-            <a href="dividas.html" title="Dívidas" class="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 shadow-lg flex items-center justify-center border border-indigo-100 dark:border-indigo-500/30 pointer-events-auto"><i class="fa-solid fa-file-invoice-dollar pointer-events-none"></i></a>
-            <a href="dashboard.html" title="Dashboard" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-chart-pie pointer-events-none"></i></a>
-            <a href="movimentacoes.html" title="Movimentações" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-money-bill-transfer pointer-events-none"></i></a>
-        </div>
-
-        <button onclick="window.toggleMobileMenu()" id="fab-menu" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-800 dark:bg-indigo-600 text-white shadow-[0_4px_20px_rgba(30,41,59,0.5)] dark:shadow-[0_4px_20px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 z-50 pointer-events-auto">
-            <i class="fa-solid fa-bars transition-all duration-300 pointer-events-none" id="fab-icon"></i>
-        </button>
-    </div>
 
     <button onclick="window.abrirModalNovaDivida()" class="hidden md:flex fixed bottom-10 right-10 w-16 h-16 bg-indigo-600 rounded-full shadow-[0_10px_25px_rgba(79,70,229,0.5)] items-center justify-center text-white text-2xl z-40 hover:scale-105 hover:bg-indigo-700 transition-transform border border-indigo-400 dark:border-indigo-500/50">
         <i class="fa-solid fa-plus"></i>
