@@ -7,15 +7,12 @@
     
     <meta name="view-transition" content="same-origin">
     
-    <!-- 1º: A BIBLIOTECA -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- 2º: A CONFIGURAÇÃO DE DARK MODE (Tem que ser DEPOIS para ele obedecer ao botão) -->
     <script>
-        tailwind.config = {
-            darkMode: 'class'
+        tailwind = {
+            config: { darkMode: 'class' }
         };
     </script>
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -30,8 +27,9 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
-        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        /* SOLUÇÃO SÊNIOR: Fade In apenas de opacidade para não quebrar elementos Fixed no Mobile */
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
         /* A FÍSICA DO WIGGLE (TREMOR) SÊNIOR */
         @keyframes wiggle {
@@ -158,11 +156,10 @@
         </div>
     </div>
 
-    <!-- MODAL DE LANÇAMENTO (Fechamento Blindado) -->
+    <!-- MODAL DE LANÇAMENTO -->
     <div id="modal-transacao" onclick="if(event.target === this) window.fecharModal()" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
         <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl p-6 md:p-8 relative border dark:border-slate-800 cursor-default fade-in">
             
-            <!-- HITBOX MILITAR: Área gigante de clique e fechamento garantido -->
             <button type="button" onclick="window.fecharModal()" class="absolute top-2 right-2 md:top-4 md:right-4 w-14 h-14 md:w-12 md:h-12 rounded-full text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center z-[999] active:scale-95 bg-transparent">
                 <i class="fa-solid fa-xmark text-2xl md:text-xl pointer-events-none"></i>
             </button>
@@ -211,7 +208,7 @@
 
     <!-- MODAL DO MICROFONE -->
     <div id="modal-microfone" class="hidden fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[60] flex flex-col items-center justify-center fade-in transition-all">
-        <button type="button" onclick="window.cancelarMicrofone()" class="absolute top-8 right-8 w-14 h-14 rounded-full bg-white/10 text-white hover:bg-rose-500 transition flex items-center justify-center">
+        <button type="button" onclick="window.cancelarMicrofone()" class="absolute top-8 right-8 w-14 h-14 rounded-full bg-white/10 text-white hover:bg-rose-500 transition flex items-center justify-center z-[999]">
             <i class="fa-solid fa-xmark text-2xl pointer-events-none"></i>
         </button>
         <div class="relative flex items-center justify-center w-32 h-32 mb-12">
