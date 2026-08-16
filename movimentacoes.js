@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - NLP INTELIGENTE, ANIMAÇÃO E MULTI-SELECT SÊNIOR
+// movimentacoes.js - IA BLINDADA, MULTI-SELECT E ANIMAÇÕES
 // ==========================================
 
 let usuarioLogado = null;
@@ -10,14 +10,17 @@ let categoriasGlobais = [];
 let isHistoricoExpandido = false; 
 let reconhecimentoDeVoz = null; 
 
+// VARIÁVEIS DE SELEÇÃO MÚLTIPLA (Long Press)
 let timerPressao;
 let modoSelecao = false;
 let selecionados = new Set();
 
 document.addEventListener('DOMContentLoaded', async () => {
     
+    // Tira o pulo do CSS no Mobile
     setTimeout(() => document.body.classList.remove('fade-in'), 500);
 
+    // Navegação suave SPA
     document.querySelectorAll('a').forEach(link => {
         if(link.hostname === window.location.hostname && link.target !== '_blank') {
             link.addEventListener('click', e => {
@@ -48,7 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// MOTOR DE SELEÇÃO MULTIPLA (LONG PRESS)
+// MOTOR DE SELEÇÃO MÚLTIPLA (O WIGGLE)
 // ==========================================
 window.iniciarPressao = function(id) {
     if (modoSelecao) return; 
@@ -75,8 +78,8 @@ window.clicarCard = function(event, id) {
 function ativarModoSelecao(idInicial) {
     modoSelecao = true;
     if (navigator.vibrate) navigator.vibrate(50); 
-    selecionados.add(idInicial);
     
+    selecionados.add(idInicial);
     const card = document.getElementById(`card-transacao-${idInicial}`);
     if(card) card.classList.add('wiggle-ativo');
     
@@ -193,7 +196,7 @@ function desmascararMoeda(str) {
 }
 
 // ==========================================
-// NÚCLEO DE DADOS E HISTÓRICO
+// NÚCLEO DE DADOS
 // ==========================================
 async function carregarDadosDoBanco() {
     try {
@@ -202,7 +205,11 @@ async function carregarDadosDoBanco() {
             supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id).order('nome', { ascending: true })
         ]);
 
-        transacoesGlobais = (resTrans.data || []).filter(t => t.tipo !== 'despesa' || t.pago === true);
+        transacoesGlobais = (resTrans.data || []).filter(t => {
+            if (t.tipo === 'despesa' && t.pago === false) return false; 
+            return true; 
+        });
+
         categoriasGlobais = resCat.data || [];
 
         const selectCat = document.getElementById('transacao-categoria');
@@ -211,19 +218,26 @@ async function carregarDadosDoBanco() {
 
         atualizarTopCards();
         window.mudarTipoFiltroHistorico(); 
-    } catch (e) { console.error("Erro ao puxar dados:", e.message); }
+
+    } catch (e) {
+        console.error("Erro ao puxar dados:", e.message);
+    }
 }
 
 function atualizarTopCards() {
     let saldo = 0, entradas = 0, saidas = 0;
-    const mesAtual = new Date().getMonth(); const anoAtual = new Date().getFullYear();
+    const mesAtual = new Date().getMonth();
+    const anoAtual = new Date().getFullYear();
 
     transacoesGlobais.forEach(t => {
-        if(t.tipo === 'receita') saldo += t.valor; else saldo -= t.valor;
+        if(t.tipo === 'receita') saldo += t.valor;
+        else saldo -= t.valor;
+
         if(t.data_vencimento) {
             const d = new Date(t.data_vencimento + 'T12:00:00Z');
             if(d.getMonth() === mesAtual && d.getFullYear() === anoAtual) {
-                if(t.tipo === 'receita') entradas += t.valor; else saidas += t.valor;
+                if(t.tipo === 'receita') entradas += t.valor;
+                else saidas += t.valor;
             }
         }
     });
@@ -233,17 +247,23 @@ function atualizarTopCards() {
     window.animarContador('saidas-mes', saidas, 'moeda', 1000);
 }
 
+// ==========================================
+// HISTÓRICO COM PESQUISA E FILTROS 
+// ==========================================
 window.mudarTipoFiltroHistorico = function() {
     const tipo = document.getElementById('filtro-periodo').value;
     document.getElementById('box-mes').classList.add('hidden');
     document.getElementById('box-personalizado').classList.add('hidden');
+
     if (tipo === 'por_mes') document.getElementById('box-mes').classList.remove('hidden');
     else if (tipo === 'personalizado') document.getElementById('box-personalizado').classList.remove('hidden');
+
     window.aplicarFiltrosHistorico();
 };
 
 window.aplicarFiltrosHistorico = function() {
     isHistoricoExpandido = false; 
+
     const termoBusca = removerAcentos(document.getElementById('busca-historico').value);
     const tipoFiltro = document.getElementById('filtro-periodo').value;
 
@@ -251,25 +271,41 @@ window.aplicarFiltrosHistorico = function() {
         let dataOk = true;
         if (t.data_vencimento) {
             const dStr = t.data_vencimento; 
+            
             if (tipoFiltro === 'essa_semana') {
-                const d = new Date(t.data_vencimento + 'T12:00:00Z'); d.setHours(0,0,0,0);
-                const dataHoje = new Date(); dataHoje.setHours(0,0,0,0);
-                const inicioSemana = new Date(dataHoje); inicioSemana.setDate(dataHoje.getDate() - dataHoje.getDay()); 
-                const fimSemana = new Date(inicioSemana); fimSemana.setDate(inicioSemana.getDate() + 6); fimSemana.setHours(23, 59, 59, 999);
+                const d = new Date(t.data_vencimento + 'T12:00:00Z');
+                d.setHours(0,0,0,0);
+                const dataHoje = new Date();
+                dataHoje.setHours(0,0,0,0);
+                
+                const inicioSemana = new Date(dataHoje);
+                inicioSemana.setDate(dataHoje.getDate() - dataHoje.getDay()); 
+                
+                const fimSemana = new Date(inicioSemana);
+                fimSemana.setDate(inicioSemana.getDate() + 6); 
+                fimSemana.setHours(23, 59, 59, 999);
+                
                 dataOk = (d >= inicioSemana && d <= fimSemana);
+
             } else if (tipoFiltro === 'por_mes') {
-                const val = document.getElementById('input-mes').value; if(val) dataOk = dStr.startsWith(val);
+                const val = document.getElementById('input-mes').value; 
+                if(val) dataOk = dStr.startsWith(val);
             } else if (tipoFiltro === 'personalizado') {
-                const dIni = document.getElementById('input-data-inicio').value; const dFim = document.getElementById('input-data-fim').value;
-                if (dIni) dataOk = dataOk && (dStr >= dIni); if (dFim) dataOk = dataOk && (dStr <= dFim);
+                const dIni = document.getElementById('input-data-inicio').value;
+                const dFim = document.getElementById('input-data-fim').value;
+                if (dIni) dataOk = dataOk && (dStr >= dIni);
+                if (dFim) dataOk = dataOk && (dStr <= dFim);
             }
         }
+
         let buscaOk = true;
         if (termoBusca) {
             const catNome = removerAcentos(categoriasGlobais.find(c => c.id === t.categoria_id)?.nome || '');
             const desc = removerAcentos(t.descricao);
-            buscaOk = desc.includes(termoBusca) || catNome.includes(termoBusca) || t.valor.toString().includes(termoBusca);
+            const valorStr = t.valor.toString();
+            buscaOk = desc.includes(termoBusca) || catNome.includes(termoBusca) || valorStr.includes(termoBusca);
         }
+
         return dataOk && buscaOk;
     });
 
@@ -279,7 +315,12 @@ window.aplicarFiltrosHistorico = function() {
 
 function renderizarMiniKPIs() {
     let qtdEntradas = 0, qtdSaidas = 0, somaEntradas = 0, somaSaidas = 0;
-    transacoesFiltradas.forEach(t => { if(t.tipo === 'receita') { qtdEntradas++; somaEntradas += t.valor; } else { qtdSaidas++; somaSaidas += t.valor; } });
+
+    transacoesFiltradas.forEach(t => {
+        if(t.tipo === 'receita') { qtdEntradas++; somaEntradas += t.valor; }
+        else { qtdSaidas++; somaSaidas += t.valor; }
+    });
+
     const balanco = somaEntradas - somaSaidas;
     const corBalanco = balanco >= 0 ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30' : 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/30';
     const sinalBalanco = balanco >= 0 ? '+' : '-';
@@ -295,8 +336,11 @@ function renderizarMiniKPIs() {
             Fluxo: ${sinalBalanco} <span id="kpi-mini-val-bal">R$ 0,00</span>
         </span>
     `;
-    window.animarContador('kpi-mini-qtd-ent', qtdEntradas, 'inteiro', 800); window.animarContador('kpi-mini-val-ent', somaEntradas, 'moeda', 800);
-    window.animarContador('kpi-mini-qtd-sai', qtdSaidas, 'inteiro', 800); window.animarContador('kpi-mini-val-sai', somaSaidas, 'moeda', 800);
+
+    window.animarContador('kpi-mini-qtd-ent', qtdEntradas, 'inteiro', 800);
+    window.animarContador('kpi-mini-val-ent', somaEntradas, 'moeda', 800);
+    window.animarContador('kpi-mini-qtd-sai', qtdSaidas, 'inteiro', 800);
+    window.animarContador('kpi-mini-val-sai', somaSaidas, 'moeda', 800);
     window.animarContador('kpi-mini-val-bal', Math.abs(balanco), 'moeda', 800);
 }
 
@@ -311,7 +355,8 @@ function renderizarListaHistorico() {
     
     if (transacoesFiltradas.length === 0) {
         container.innerHTML = `<div class="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-8 text-center border border-slate-200 dark:border-slate-700 border-dashed"><i class="fa-solid fa-magnifying-glass text-2xl text-slate-300 dark:text-slate-600 mb-2"></i><p class="text-xs font-bold text-slate-400 mt-2">Nenhum registro encontrado nesta visão.</p></div>`;
-        btnToggle.classList.add('hidden'); return;
+        btnToggle.classList.add('hidden');
+        return;
     }
 
     const transacoesExibidas = isHistoricoExpandido ? transacoesFiltradas : transacoesFiltradas.slice(0, 5);
@@ -319,6 +364,7 @@ function renderizarListaHistorico() {
     const htmlLista = transacoesExibidas.map(t => {
         const cat = categoriasGlobais.find(c => c.id === t.categoria_id) || { nome: 'Outros', icone: 'fa-tag', cor: 'text-gray-500' };
         const isReceita = t.tipo === 'receita';
+        
         const corBg = isReceita ? 'bg-emerald-50 dark:bg-emerald-500/10' : 'bg-rose-50 dark:bg-rose-500/10';
         const corTxt = isReceita ? 'text-emerald-500' : 'text-rose-500';
         const corValor = isReceita ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
@@ -341,7 +387,9 @@ function renderizarListaHistorico() {
                 </div>
                 <div class="min-w-0 flex-1">
                     <h4 class="font-bold text-sm text-slate-900 dark:text-white break-words whitespace-normal leading-tight">${t.descricao}</h4>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">${cat.nome} • <i class="fa-regular fa-calendar ml-0.5"></i> ${dataStr}</p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">
+                        ${cat.nome} • <i class="fa-regular fa-calendar ml-0.5"></i> ${dataStr}
+                    </p>
                 </div>
             </div>
             <div class="flex flex-row sm:flex-col md:flex-row items-center sm:items-end md:items-center justify-between sm:justify-center gap-3 w-full sm:w-auto shrink-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800 pt-3 sm:pt-0">
@@ -358,22 +406,59 @@ function renderizarListaHistorico() {
 
     if (transacoesFiltradas.length > 5) {
         btnToggle.classList.remove('hidden');
-        if (isHistoricoExpandido) btnToggle.innerHTML = '<i class="fa-solid fa-chevron-up"></i> Minimizar Lista';
-        else btnToggle.innerHTML = `<i class="fa-solid fa-chevron-down"></i> Mostrar mais ${transacoesFiltradas.length - 5} transações`;
-    } else btnToggle.classList.add('hidden');
+        if (isHistoricoExpandido) {
+            btnToggle.innerHTML = '<i class="fa-solid fa-chevron-up"></i> Minimizar Lista';
+        } else {
+            const restante = transacoesFiltradas.length - 5;
+            btnToggle.innerHTML = `<i class="fa-solid fa-chevron-down"></i> Mostrar mais ${restante} transações`;
+        }
+    } else {
+        btnToggle.classList.add('hidden');
+    }
 }
 
 // ==========================================
-// CÉREBRO NLP PIPELINE SÊNIOR (Bug do "52.000" e "Mil" resolvido)
+// CÉREBRO NLP PIPELINE SÊNIOR (Limpador de Lixo Absoluto)
 // ==========================================
 const dicionarioDeInteligencia = [
-    { pasta: 'alimentação', regras: [{ titulo: 'Delivery', palavras: ['ifood', 'delivery', 'rappi', 'zedelivery'] }, { titulo: 'Fast Food', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado', 'pastel', 'mequi'] }, { titulo: 'Mercado', palavras: ['mercado', 'supermercado', 'açougue', 'padaria', 'compra', 'compras'] }, { titulo: 'Restaurante', palavras: ['restaurante', 'almoço', 'jantar', 'comida', 'self service'] }]},
-    { pasta: 'veículo', regras: [{ titulo: 'Combustível', palavras: ['gasolina', 'álcool', 'alcool', 'etanol', 'diesel', 'posto', 'combustível', 'combustivel', 'abasteci'] }, { titulo: 'Peças / Manutenção', palavras: ['oficina', 'mecânico', 'peça', 'pneu', 'óleo', 'revisão', 'carro', 'moto'] }, { titulo: 'Serviços Auto', palavras: ['estacionamento', 'pedágio', 'lavagem', 'lava rápido'] }, { titulo: 'Transporte', palavras: ['uber', '99', 'ônibus', 'passagem', 'metrô', 'táxi', 'taxi'] }]},
-    { pasta: 'moradia', regras: [{ titulo: 'Aluguel', palavras: ['aluguel', 'condomínio'] }, { titulo: 'Conta de Luz', palavras: ['luz', 'energia', 'cpfl', 'cemig', 'enel'] }, { titulo: 'Conta de Água', palavras: ['água', 'sabesp', 'sanepar', 'copasa'] }, { titulo: 'Internet', palavras: ['internet', 'vivo', 'claro', 'tim', 'fibra'] }, { titulo: 'Reparos e Casa', palavras: ['reparo', 'faxina', 'limpeza', 'material de construção'] }]},
-    { pasta: 'estudo', regras: [{ titulo: 'Mensalidade', palavras: ['faculdade', 'escola', 'mensalidade'] }, { titulo: 'Cursos Extras', palavras: ['curso', 'certificado', 'prova', 'concurso'] }, { titulo: 'Material Didático', palavras: ['livro', 'caderno', 'material', 'papelaria'] }]},
-    { pasta: 'saúde', regras: [{ titulo: 'Remédios', palavras: ['farmácia', 'remédio', 'medicamento'] }, { titulo: 'Consultas Médicas', palavras: ['médico', 'consulta', 'exame', 'dentista', 'terapia', 'psicólogo'] }, { titulo: 'Imprevisto', palavras: ['imprevisto', 'acidente', 'pronto socorro', 'hospital'] }]},
-    { pasta: 'lazer', regras: [{ titulo: 'Jogos', palavras: ['jogo', 'steam', 'xbox', 'playstation', 'game'] }, { titulo: 'Passeio', palavras: ['cinema', 'festa', 'shopping', 'bar', 'show', 'viagem', 'ingresso'] }, { titulo: 'Compras Pessoais', palavras: ['roupa', 'presente', 'tênis', 'perfume', 'fone', 'celular', 'compras'] }]},
-    { pasta: 'assinaturas', regras: [{ titulo: 'Streaming', palavras: ['netflix', 'spotify', 'amazon', 'prime', 'disney', 'hbo'] }, { titulo: 'Serviços Recorrentes', palavras: ['assinatura', 'gympass', 'academia'] }]}
+    { pasta: 'alimentação', regras: [
+        { titulo: 'Delivery', palavras: ['ifood', 'delivery', 'rappi', 'zedelivery'] },
+        { titulo: 'Fast Food', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado', 'pastel', 'mequi'] },
+        { titulo: 'Mercado', palavras: ['mercado', 'supermercado', 'açougue', 'padaria', 'compra', 'compras'] },
+        { titulo: 'Restaurante', palavras: ['restaurante', 'almoço', 'jantar', 'comida', 'self service'] }
+    ]},
+    { pasta: 'veículo', regras: [
+        { titulo: 'Combustível', palavras: ['gasolina', 'álcool', 'alcool', 'etanol', 'diesel', 'posto', 'combustível', 'combustivel', 'abasteci'] },
+        { titulo: 'Peças / Manutenção', palavras: ['oficina', 'mecânico', 'peça', 'pneu', 'óleo', 'revisão', 'carro', 'moto'] },
+        { titulo: 'Serviços Auto', palavras: ['estacionamento', 'pedágio', 'lavagem', 'lava rápido'] },
+        { titulo: 'Transporte', palavras: ['uber', '99', 'ônibus', 'passagem', 'metrô', 'táxi', 'taxi'] }
+    ]},
+    { pasta: 'moradia', regras: [
+        { titulo: 'Aluguel', palavras: ['aluguel', 'condomínio'] },
+        { titulo: 'Conta de Luz', palavras: ['luz', 'energia', 'cpfl', 'cemig', 'enel'] },
+        { titulo: 'Conta de Água', palavras: ['água', 'sabesp', 'sanepar', 'copasa'] },
+        { titulo: 'Internet', palavras: ['internet', 'vivo', 'claro', 'tim', 'fibra'] },
+        { titulo: 'Reparos e Casa', palavras: ['reparo', 'faxina', 'limpeza', 'material de construção'] }
+    ]},
+    { pasta: 'estudo', regras: [
+        { titulo: 'Mensalidade', palavras: ['faculdade', 'escola', 'mensalidade'] },
+        { titulo: 'Cursos Extras', palavras: ['curso', 'certificado', 'prova', 'concurso'] },
+        { titulo: 'Material Didático', palavras: ['livro', 'caderno', 'material', 'papelaria'] }
+    ]},
+    { pasta: 'saúde', regras: [
+        { titulo: 'Remédios', palavras: ['farmácia', 'remédio', 'medicamento'] },
+        { titulo: 'Consultas Médicas', palavras: ['médico', 'consulta', 'exame', 'dentista', 'terapia', 'psicólogo'] },
+        { titulo: 'Imprevisto', palavras: ['imprevisto', 'acidente', 'pronto socorro', 'hospital'] }
+    ]},
+    { pasta: 'lazer', regras: [
+        { titulo: 'Jogos', palavras: ['jogo', 'steam', 'xbox', 'playstation', 'game'] },
+        { titulo: 'Passeio', palavras: ['cinema', 'festa', 'shopping', 'bar', 'show', 'viagem', 'ingresso'] },
+        { titulo: 'Compras Pessoais', palavras: ['roupa', 'presente', 'tênis', 'perfume', 'fone', 'celular', 'compras'] }
+    ]},
+    { pasta: 'assinaturas', regras: [
+        { titulo: 'Streaming', palavras: ['netflix', 'spotify', 'amazon', 'prime', 'disney', 'hbo'] },
+        { titulo: 'Serviços Recorrentes', palavras: ['assinatura', 'gympass', 'academia'] }
+    ]}
 ];
 
 function processarFraseNLP(fraseBruta) {
@@ -386,53 +471,65 @@ function processarFraseNLP(fraseBruta) {
         return;
     }
 
-    let texto = removerAcentos(fraseBruta.toLowerCase());
-    let dataCalculada = new Date(); dataCalculada.setHours(12,0,0,0);
+    let textoCru = fraseBruta.toLowerCase();
     
-    if (texto.includes('mes passado')) { dataCalculada.setMonth(dataCalculada.getMonth() - 1); texto = texto.replace(/do mes passado|no mes passado|mes passado/g, ''); }
-    if (texto.includes('anteontem')) { dataCalculada.setDate(dataCalculada.getDate() - 2); texto = texto.replace('anteontem', ''); }
-    else if (texto.includes('ontem')) { dataCalculada.setDate(dataCalculada.getDate() - 1); texto = texto.replace('ontem', ''); }
-    else if (texto.includes('hoje')) { texto = texto.replace('hoje', ''); }
+    // 1. DATA E TEMPO
+    let dataCalculada = new Date(); dataCalculada.setHours(12,0,0,0);
+    if (textoCru.includes('mes passado')) { dataCalculada.setMonth(dataCalculada.getMonth() - 1); textoCru = textoCru.replace(/do mes passado|no mes passado|mes passado/g, ''); }
+    if (textoCru.includes('anteontem')) { dataCalculada.setDate(dataCalculada.getDate() - 2); textoCru = textoCru.replace('anteontem', ''); }
+    else if (textoCru.includes('ontem')) { dataCalculada.setDate(dataCalculada.getDate() - 1); textoCru = textoCru.replace('ontem', ''); }
+    else if (textoCru.includes('hoje')) { textoCru = textoCru.replace('hoje', ''); }
 
-    const matchDataBarra = texto.match(/(?:dia\s*)?(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/i);
-    const matchDia = texto.match(/(?:no )?dia\s*(\d{1,2})/i);
+    const matchDataBarra = textoCru.match(/(?:dia\s*)?(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/i);
+    const matchDia = textoCru.match(/(?:no )?dia\s*(\d{1,2})/i);
 
     if (matchDataBarra) {
         dataCalculada.setDate(1); dataCalculada.setMonth(parseInt(matchDataBarra[2]) - 1); dataCalculada.setDate(parseInt(matchDataBarra[1]));
         if (matchDataBarra[3]) { let ano = parseInt(matchDataBarra[3]); if (ano < 100) ano += 2000; dataCalculada.setFullYear(ano); }
         else if (dataCalculada > new Date()) dataCalculada.setFullYear(dataCalculada.getFullYear() - 1);
-        texto = texto.replace(matchDataBarra[0], ''); 
+        textoCru = textoCru.replace(matchDataBarra[0], ''); 
     } else if (matchDia) {
-        dataCalculada.setDate(1); dataCalculada.setDate(parseInt(matchDia[1]));
-        texto = texto.replace(matchDia[0], ''); 
+        let diaNum = parseInt(matchDia[1]); const mesAtual = new Date().getMonth();
+        dataCalculada.setDate(1); 
+        if (diaNum > new Date().getDate()) dataCalculada.setMonth(mesAtual - 1);
+        dataCalculada.setDate(diaNum);
+        textoCru = textoCru.replace(matchDia[0], ''); 
     }
 
-    // 1. O HACK DE DEFESA CONTRA O CHROME SPEECH RECOGNITION (Que transforma "52 mil" em "52.000")
-    texto = texto.replace(/\./g, ''); 
-
-    // 2. A MÁGICA DA MULTIPLICAÇÃO DE MILHARES
-    texto = texto.replace(/\b(\d+(?:,\d+)?)\s*k\b/gi, '$1 mil'); 
-    texto = texto.replace(/\b(\d+(?:,\d+)?)\s*mil\b/gi, (match, numeroCru) => {
-        return (parseFloat(numeroCru.replace(',', '.')) * 1000).toString();
+    // 2. EXTRAÇÃO MILIMÉTRICA DE VALORES E MILHARES (Blindado contra Chrome Speech)
+    let textoValores = textoCru.replace(/\.(\d{3})/g, '$1'); // Limpa os pontos do Chrome: 52.000 -> 52000
+    textoValores = textoValores.replace(/\bum mil\b/g, '1000'); // "um mil" -> 1000
+    
+    // Multiplica "20 mil", "20k", "20,5 mil" por 1000
+    textoValores = textoValores.replace(/\b(\d+(?:,\d+)?)\s*(?:k|mil|milhares)\b/gi, (match, numero) => {
+        return (parseFloat(numero.replace(',', '.')) * 1000).toString();
     });
 
-    texto = texto.replace(/\br\$\b|\breais\b|\breal\b|\$/gi, ''); 
-    const nums = texto.match(/\d+(?:,\d+)?/g);
+    // Remove moedas do caminho e extrai
+    textoValores = textoValores.replace(/\br\$\b|\breais\b|\breal\b|\$|\bconto\b|\bcontos\b/gi, ''); 
+    const nums = textoValores.match(/\d+(?:,\d+)?/g);
     const valorExtraido = nums ? Math.max(...nums.map(n => parseFloat(n.replace(',', '.')))) : 0;
-    if(nums) nums.forEach(n => texto = texto.replace(n, '')); 
 
-    const palavrasReceita = ['recebi', 'ganhei', 'pix', 'salario', 'renda', 'vendi', 'deposito'];
-    const isReceita = palavrasReceita.some(p => texto.includes(p) || removerAcentos(fraseBruta.toLowerCase()).includes(p));
+    // 3. O LIMPADOR DE LIXO DA DESCRIÇÃO (Stop Words Implacáveis)
+    const palavrasReceita = ['recebi', 'ganhei', 'pix', 'salario', 'renda', 'vendi', 'deposito', 'entrou'];
+    const isReceita = palavrasReceita.some(p => textoCru.includes(p));
 
-    let catDetectada = null; let tituloFinal = '';
+    let catDetectada = null; 
+    let tituloFinal = '';
+
+    // Remove qualquer número ou moeda da string base
+    let descCrua = textoCru.replace(/\d+(?:[.,]\d+)?/g, '');
+    descCrua = descCrua.replace(/\br\$\b|\breais\b|\breal\b|\$|\bmil\b|\bk\b|\bconto\b|\bcontos\b/gi, '');
+    descCrua = removerAcentos(descCrua);
 
     if (isReceita) {
         catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('renda') || removerAcentos(c.nome.toLowerCase()).includes('salario'));
-        tituloFinal = removerAcentos(fraseBruta.toLowerCase()).includes('salario') ? 'Salário' : 'Recebimento';
+        if (descCrua.includes('salario')) tituloFinal = 'Salário';
+        else if (descCrua.includes('pix')) tituloFinal = 'Transferência Pix';
     } else {
         for (const d of dicionarioDeInteligencia) {
             for (const regra of d.regras) {
-                if (regra.palavras.some(p => texto.includes(removerAcentos(p)))) {
+                if (regra.palavras.some(p => descCrua.includes(removerAcentos(p)))) {
                     let busca = removerAcentos(d.pasta === 'saúde' ? 'imprevistos' : d.pasta);
                     catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes(busca));
                     tituloFinal = regra.titulo; break;
@@ -443,14 +540,29 @@ function processarFraseNLP(fraseBruta) {
     }
 
     if (!tituloFinal) {
-        let palavras = texto.split(' ');
-        const stopWords = ['eu', 'gastei', 'paguei', 'pague', 'botei', 'coloquei', 'um', 'uma', 'uns', 'umas', 'de', 'da', 'do', 'no', 'na', 'para', 'com', 'novo', 'nova', 'meu', 'minha', 'fui', 'o', 'a', 'os', 'as', 'em', 'por', 'pra', 'mil'];
-        palavras = palavras.filter(p => p.trim() !== '' && !stopWords.includes(p.trim()) && isNaN(p));
+        let palavras = descCrua.split(' ');
+        // Todas as palavras que o sistema DEVE ignorar e jogar fora
+        const stopWords = [
+            'eu', 'gastei', 'gasto', 'gastar', 'paguei', 'pago', 'pagar', 'pague', 
+            'botei', 'coloquei', 'comprei', 'comprar', 'compra', 'de', 'da', 'do', 
+            'no', 'na', 'para', 'com', 'novo', 'nova', 'meu', 'minha', 'fui', 
+            'o', 'a', 'os', 'as', 'em', 'por', 'pra', 'fiz', 'tive', 'que', 
+            'foi', 'deu', 'ficou', 'um', 'uma', 'uns', 'umas', 'recebi', 'ganhei', 'entrou'
+        ];
         
-        if (palavras.length > 0) tituloFinal = palavras[0].charAt(0).toUpperCase() + palavras[0].slice(1); 
-        else tituloFinal = isReceita ? 'Recebimento Indefinido' : 'Gasto Indefinido';
+        palavras = palavras.filter(p => p.trim() !== '' && !stopWords.includes(p.trim()));
         
-        if (!catDetectada) catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('lazer') || removerAcentos(c.nome.toLowerCase()).includes('outros'));
+        // Se sobrou algo na frase, é o nome do gasto (ex: "carro"). Se não sobrou NADA, é Indefinido.
+        if (palavras.length > 0) {
+            tituloFinal = palavras.join(' ');
+            tituloFinal = tituloFinal.charAt(0).toUpperCase() + tituloFinal.slice(1); 
+        } else {
+            tituloFinal = isReceita ? 'Recebimento Indefinido' : 'Gasto Indefinido';
+        }
+        
+        if (!catDetectada) {
+            catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('lazer') || removerAcentos(c.nome.toLowerCase()).includes('outros'));
+        }
     }
 
     document.getElementById('transacao-id').value = ''; 
@@ -474,7 +586,7 @@ function processarFraseNLP(fraseBruta) {
 window.abrirModalComTextoRapido = function() { processarFraseNLP(document.getElementById('input-rapido').value); };
 
 // ==========================================
-// MICROFONE E CRUD
+// MICROFONE REATIVO
 // ==========================================
 window.ativarMicrofone = function() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -495,6 +607,9 @@ window.ativarMicrofone = function() {
 };
 window.cancelarMicrofone = function() { if(reconhecimentoDeVoz) reconhecimentoDeVoz.abort(); document.getElementById('modal-microfone').classList.add('hidden'); };
 
+// ==========================================
+// FUNÇÕES DE CRUD
+// ==========================================
 window.abrirModalEdicao = function(id) {
     const t = transacoesGlobais.find(x => x.id === id); if(!t) return;
     document.getElementById('transacao-id').value = t.id; document.getElementById('modal-titulo').innerHTML = `<i class="fa-solid fa-pen-to-square text-indigo-600"></i> Editar Lançamento`;
@@ -503,11 +618,12 @@ window.abrirModalEdicao = function(id) {
     document.getElementById('transacao-valor').value = valorStr; document.getElementById('transacao-data').value = t.data_vencimento; document.getElementById('transacao-categoria').value = t.categoria_id; document.querySelector(`input[name="tipo"][value="${t.tipo}"]`).checked = true;
     document.getElementById('modal-transacao').classList.remove('hidden');
 };
+
 window.fecharModal = function() { document.getElementById('modal-transacao').classList.add('hidden'); };
 
 window.excluirTransacao = async function(id) {
-    if(modoSelecao) return; // Se for modo seleção, não exclui direto
-    const confirmacao = await Swal.fire({ title: 'Excluir Transação?', text: "Essa ação apagará este registro do seu fluxo.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8', confirmButtonText: 'Sim', cancelButtonText: 'Cancelar' });
+    if(modoSelecao) return; // Se for modo seleção, bloqueia exclusão individual
+    const confirmacao = await Swal.fire({ title: 'Excluir Transação?', text: "Essa ação apagará este registro do fluxo.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8', confirmButtonText: 'Sim, excluir', cancelButtonText: 'Cancelar' });
     if(!confirmacao.isConfirmed) return;
     try {
         await supabaseClient.from('transacoes').delete().eq('id', id).eq('usuario_id', usuarioLogado.id);
@@ -518,7 +634,7 @@ window.excluirTransacao = async function(id) {
 window.salvarTransacao = async function(event) {
     event.preventDefault();
     const id = document.getElementById('transacao-id').value; const desc = document.getElementById('transacao-desc').value.trim(); const val = desmascararMoeda(document.getElementById('transacao-valor').value); const dataV = document.getElementById('transacao-data').value; const catId = parseInt(document.getElementById('transacao-categoria').value); const tipo = document.querySelector('input[name="tipo"]:checked').value;
-    if(!desc || isNaN(val) || val <= 0 || !dataV) return Swal.fire('Aviso', 'Preencha a descrição, valor e a data corretamente.', 'warning');
+    if(!desc || isNaN(val) || val <= 0 || !dataV) return Swal.fire('Aviso', 'Preencha os dados corretamente.', 'warning');
     const payload = { usuario_id: usuarioLogado.id, descricao: desc, valor: val, data_vencimento: dataV, categoria_id: catId, tipo: tipo, pago: true };
     const btn = document.getElementById('btn-salvar-transacao'); const conteudoOriginal = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando...'; btn.disabled = true;
 
@@ -530,7 +646,7 @@ window.salvarTransacao = async function(event) {
         const isReceita = tipo === 'receita';
         const urlAnimacao = isReceita ? "https://lottie.host/85450f21-2b79-46bd-8e77-a0d7fc86ceaf/63OdW0EjZh.json" : "https://lottie.host/78d29cd2-20ba-42fa-89bb-5471e7c8353c/EglrVN8uNB.lottie";
 
-        // DOM INJECTOR SÊNIOR (Sem bugs de celular)
+        // INJEÇÃO DOM PURO (Centro perfeito do Celular e PC)
         const overlayLottie = document.createElement('div');
         overlayLottie.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 999999; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); transition: opacity 0.3s ease; opacity: 0;';
         overlayLottie.innerHTML = `<dotlottie-wc src="${urlAnimacao}" style="width: 280px; height: 280px;" autoplay></dotlottie-wc>`;
