@@ -1,5 +1,5 @@
 // ==========================================
-// layout.js - MOTOR DE COMPONENTIZAÇÃO E DARK MODE SÊNIOR
+// layout.js - MOTOR GLOBAL DE SIDEBAR, TEMA E AÇÕES MOBILE (L-SHAPE)
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -25,6 +25,7 @@ function injetarEstilosGlobais() {
 function inicializarLayout() {
     const paginaAtual = window.location.pathname.split('/').pop() || 'movimentacoes.html';
     const isDashboard = paginaAtual === 'dashboard.html';
+    const isPassivos = paginaAtual === 'dividas.html';
 
     const menuItems = [
         { nome: 'Movimentações', link: 'movimentacoes.html', icone: 'fa-money-bill-transfer', corBg: 'indigo-50', corTxt: 'indigo-700' },
@@ -82,16 +83,25 @@ function inicializarLayout() {
         `;
     }).join('');
 
-    // BOTÃO DE CHAT IA NO MOBILE (Aparece apenas no dashboard, abrindo para a esquerda em L-shape)
-    const btnIARotacionado = isDashboard ? `
-        <button onclick="toggleCoach()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-900 dark:bg-black text-indigo-400 shadow-lg flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-slate-700 dark:border-indigo-500/50">
-            <i class="fa-solid fa-robot pointer-events-none"></i>
-        </button>
-    ` : '';
+    // BOTÃO DE AÇÃO DINÂMICO NO MOBILE (Chat IA no Dashboard, Nova Dívida em Passivos)
+    let btnAcaoMobileHtml = '';
+    if (isDashboard) {
+        btnAcaoMobileHtml = `
+            <button onclick="toggleCoach()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-900 dark:bg-black text-indigo-400 shadow-lg flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-slate-700 dark:border-indigo-500/50">
+                <i class="fa-solid fa-robot pointer-events-none"></i>
+            </button>
+        `;
+    } else if (isPassivos) {
+        btnAcaoMobileHtml = `
+            <button onclick="window.abrirModalNovaDivida()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500/50">
+                <i class="fa-solid fa-plus pointer-events-none"></i>
+            </button>
+        `;
+    }
 
     const mobileMenuHtml = `
         <div class="md:hidden fixed bottom-6 right-6 z-[60] w-14 h-14">
-            ${btnIARotacionado}
+            ${btnAcaoMobileHtml}
             <div id="fab-items" class="absolute bottom-16 right-2 w-10 flex flex-col items-center gap-2.5 transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none z-40">
                 <button onclick="sairDoSistema()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-rose-500 border border-rose-100 dark:border-rose-900/50 shadow-lg flex items-center justify-center transition-transform hover:scale-110 pointer-events-auto">
                     <i class="fa-solid fa-right-from-bracket pointer-events-none"></i>
@@ -162,15 +172,16 @@ window.toggleDarkMode = function() {
     const htmlElement = document.documentElement;
     const isDark = htmlElement.classList.toggle('dark');
     localStorage.setItem('DataWallet_Tema', isDark ? 'escuro' : 'claro');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
     atualizarIconesDark(isDark);
 };
 
 function verificarDarkMode() {
-    const temaSalvo = localStorage.getItem('DataWallet_Tema');
+    const temaSalvo = localStorage.getItem('DataWallet_Tema') || localStorage.getItem('theme');
     const htmlElement = document.documentElement;
 
     let isDark = false;
-    if (temaSalvo === 'escuro') {
+    if (temaSalvo === 'escuro' || temaSalvo === 'dark') {
         htmlElement.classList.add('dark');
         isDark = true;
     } else {
