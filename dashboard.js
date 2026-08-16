@@ -1,5 +1,5 @@
 // ==========================================
-// dashboard.js - O CÉREBRO ORIGINAL RECUPERADO
+// dashboard.js - MOTOR DE BI COM FALSO 3D E DUAL-AXIS FAB 
 // ==========================================
 
 let usuarioLogado = null;
@@ -11,8 +11,7 @@ let grafPizza = null;
 let grafRadar = null;
 
 let statsGlobais = { receitas: 0, despesas: 0, saldo: 0, taxaPoupanca: 0, mediaDiaria: 0, maiorGasto: null, topCategoria: null, transacoesNoPeriodo: 0 };
-
-let menuMobileAberto = false; // Controle de abertura do menu no celular
+let inicializacaoCompleta = false; 
 
 const coresPorCategoria = {
     'Alimentação': { hex: '#3b82f6', tw: 'bg-blue-500' },          
@@ -49,6 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('input-mes').value = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
     
     // Inicia com "por_mes" ativado
+    document.getElementById('filtro-periodo').value = 'por_mes';
     mudarTipoFiltro();
 
     document.getElementById('input-coach').addEventListener('keypress', function(e) {
@@ -56,11 +56,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     await carregarDadosDoBanco();
+    inicializacaoCompleta = true; 
 
-    // O OLHO DE SAURON: Continua funcionando perfeitamente sem refresh
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
-            if (mutation.attributeName === 'class') {
+            if (mutation.attributeName === 'class' && inicializacaoCompleta) {
                 if (transacoesGlobais.length > 0) {
                     processarEAtualizarTudo(true); 
                 }
@@ -70,23 +70,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     observer.observe(document.documentElement, { attributes: true });
 });
 
-// A MÁGICA DA ESPINGARDA LATERAL (L-SHAPE) NO CELULAR
+// A MÁGICA DA EXPANSÃO EM DOIS EIXOS (L-Shape Mobile) - SEM CONFLITO DE LET
 window.toggleMobileMenu = function() {
     const items = document.getElementById('fab-items');
     const actionBtn = document.getElementById('fab-action');
     const icon = document.getElementById('fab-icon');
     const btn = document.getElementById('fab-menu');
     
-    menuMobileAberto = !menuMobileAberto;
+    // Usamos window para não dar SyntaxError com outras telas
+    window._menuMobileAberto = !window._menuMobileAberto;
 
-    if (menuMobileAberto) {
-        // Itens de navegação sobem (remove opacity-0 e translate-y-8)
-        if(items) {
+    if (window._menuMobileAberto) {
+        if (items) {
             items.classList.remove('opacity-0', 'translate-y-8', 'pointer-events-none');
             items.classList.add('opacity-100');
         }
         
-        // Botão da IA atira para a esquerda e gira
         if (actionBtn) {
             actionBtn.classList.remove('opacity-0', 'pointer-events-none');
             actionBtn.classList.add('opacity-100', 'pointer-events-auto');
@@ -96,13 +95,11 @@ window.toggleMobileMenu = function() {
         if(btn) btn.style.transform = 'rotate(180deg)';
         setTimeout(() => { if(icon) icon.classList.replace('fa-bars', 'fa-xmark'); }, 150);
     } else {
-        // Recolhe navegação
-        if(items) {
+        if (items) {
             items.classList.add('opacity-0', 'translate-y-8', 'pointer-events-none');
             items.classList.remove('opacity-100');
         }
 
-        // Recolhe botão da IA
         if (actionBtn) {
             actionBtn.classList.add('opacity-0', 'pointer-events-none');
             actionBtn.classList.remove('opacity-100', 'pointer-events-auto');
@@ -114,7 +111,6 @@ window.toggleMobileMenu = function() {
     }
 };
 
-// Helper de formatação instantânea
 function formatarMoedaLocal(valor) {
     let p = Math.abs(valor).toFixed(2).split('.');
     p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -164,13 +160,18 @@ async function carregarDadosDoBanco() {
 window.mudarTipoFiltro = function() {
     const tipo = document.getElementById('filtro-periodo').value;
     const boxMes = document.getElementById('box-mes');
+    const boxAno = document.getElementById('box-ano');
     const boxPers = document.getElementById('box-personalizado');
 
     if(boxMes) { boxMes.classList.add('hidden'); boxMes.classList.remove('flex'); }
+    if(boxAno) { boxAno.classList.add('hidden'); boxAno.classList.remove('flex'); }
     if(boxPers) { boxPers.classList.add('hidden'); boxPers.classList.remove('flex'); }
 
     if (tipo === 'por_mes' && boxMes) {
         boxMes.classList.remove('hidden'); boxMes.classList.add('flex');
+    }
+    else if (tipo === 'por_ano' && boxAno) {
+        boxAno.classList.remove('hidden'); boxAno.classList.add('flex');
     }
     else if (tipo === 'personalizado' && boxPers) {
         boxPers.classList.remove('hidden'); boxPers.classList.add('flex');
@@ -197,6 +198,10 @@ window.processarEAtualizarTudo = function(isThemeChange = false) {
             const val = document.getElementById('input-mes').value;
             if(!val) return true;
             return dStr.startsWith(val);
+        } else if (tipoFiltro === 'por_ano') {
+            const val = document.getElementById('input-ano') ? document.getElementById('input-ano').value : '';
+            if(!val) return true;
+            return d.getFullYear() === parseInt(val);
         } else if (tipoFiltro === 'personalizado') {
             const dIni = document.getElementById('input-data-inicio').value;
             const dFim = document.getElementById('input-data-fim').value;
@@ -215,7 +220,7 @@ window.processarEAtualizarTudo = function(isThemeChange = false) {
     let gastosPorDiaSemana = [0, 0, 0, 0, 0, 0, 0];
 
     let agruparPorMes = false;
-    if (tipoFiltro === 'tudo') {
+    if (tipoFiltro === 'tudo' || tipoFiltro === 'por_ano') {
         agruparPorMes = true;
     } else if (tipoFiltro === 'personalizado') {
         const dIni = document.getElementById('input-data-inicio').value;
@@ -290,7 +295,7 @@ window.processarEAtualizarTudo = function(isThemeChange = false) {
         
         barra.style.width = '0%';
         setTimeout(() => { barra.style.width = `${percentualBarra}%`; }, 50);
-        barra.className = `h-2 rounded-full transition-all duration-1000 shadow-sm ${corTaxa}`;
+        barra.className = `h-1.5 md:h-2 rounded-full transition-all duration-1000 shadow-sm ${corTaxa}`;
     } 
     else {
         document.getElementById('kpi-saldo').innerText = formatarMoedaLocal(totalReceitas - totalDespesas);
@@ -299,7 +304,7 @@ window.processarEAtualizarTudo = function(isThemeChange = false) {
         document.getElementById('kpi-taxa-texto').innerText = taxa.toFixed(1) + "%";
         
         barra.style.width = `${percentualBarra}%`;
-        barra.className = `h-2 rounded-full shadow-sm ${corTaxa}`; 
+        barra.className = `h-1.5 md:h-2 rounded-full shadow-sm ${corTaxa}`; 
     }
 
     renderizarListaCategorias(categoriasOrdenadas, gastosPorCategoria, totalDespesas, isThemeChange);
@@ -314,15 +319,15 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral, isThemeChange)
         
         return `
         <div>
-            <div class="flex justify-between items-end mb-2 gap-2">
-                <span class="text-xs font-bold text-slate-700 dark:text-slate-300 truncate flex-1">${cat}</span>
+            <div class="flex justify-between items-end mb-1.5 md:mb-2 gap-2">
+                <span class="text-[11px] md:text-xs font-bold text-slate-700 dark:text-slate-300 truncate flex-1">${cat}</span>
                 <div class="text-right flex items-center gap-2 shrink-0">
-                    <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500" id="cat-perc-${index}">${perc.toFixed(1)}%</span>
-                    <span class="text-sm font-black text-slate-900 dark:text-white whitespace-nowrap" id="cat-val-${index}">${formatarMoedaLocal(valor)}</span>
+                    <span class="text-[9px] md:text-[10px] font-bold text-slate-400 dark:text-slate-500" id="cat-perc-${index}">${perc.toFixed(1)}%</span>
+                    <span class="text-xs md:text-sm font-black text-slate-900 dark:text-white whitespace-nowrap" id="cat-val-${index}">${formatarMoedaLocal(valor)}</span>
                 </div>
             </div>
-            <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
-                <div id="bar-cat-${index}" class="${corBase} h-2 rounded-full ${isThemeChange ? '' : 'transition-all duration-1000'} shadow-sm" style="width: ${isThemeChange ? perc + '%' : '0%'}"></div>
+            <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 md:h-2">
+                <div id="bar-cat-${index}" class="${corBase} h-1.5 md:h-2 rounded-full ${isThemeChange ? '' : 'transition-all duration-1000 ease-out'} shadow-sm" style="width: ${isThemeChange ? perc + '%' : '0%'}"></div>
             </div>
         </div>
         `;
@@ -341,7 +346,7 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral, isThemeChange)
                 window.animarContador(`cat-val-${index}`, valor, 'moeda', 1000);
                 window.animarContador(`cat-perc-${index}`, perc, 'porcentagem', 1000);
             });
-        }, 50);
+        }, 150);
     }
 }
 
@@ -407,14 +412,15 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
         },
         options: {
             responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-            animation: isThemeChange ? false : { duration: 1500, easing: 'easeOutQuart' },
+            animation: isThemeChange ? false : { duration: 1200, easing: 'easeOutQuart' },
             plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${Math.abs(ctx.raw).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}` } } },
             scales: {
-                x: { stacked: true, grid: { display: false }, border: {display: false}, ticks: { font: { size: 10, weight: 'bold' } } },
+                x: { stacked: true, grid: { display: false }, border: {display: false}, ticks: { font: { size: 11, weight: 'bold' } } },
                 y: { 
-                    type: 'linear', position: 'left', stacked: true, border: { display: false },
+                    type: 'linear', position: 'left', stacked: true, 
+                    border: { display: false },
                     grid: { color: corGrid, lineWidth: 1, borderDash: [4, 4] }, 
-                    ticks: { font: { size: 9, weight: 'bold' }, callback: (value) => value >= 0 ? `R$ ${value}` : `-R$ ${Math.abs(value)}` } 
+                    ticks: { font: { size: 10, weight: 'bold' }, callback: (value) => value >= 0 ? `R$ ${value}` : `-R$ ${Math.abs(value)}` } 
                 },
                 y1: { type: 'linear', position: 'right', display: false, grid: { drawOnChartArea: false } }
             }
@@ -443,7 +449,9 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
     grafPizza = new Chart(ctxP, {
         type: 'doughnut',
         data: { labels: lblP, datasets: [{ data: datP, backgroundColor: coresP, borderWidth: 4, borderColor: corBordaRosca, hoverOffset: 10 }] },
-        options: { animation: isThemeChange ? false : { duration: 1500, easing: 'easeOutQuart' }, responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${categoriasOrdenadas.length === 0 ? 'R$ 0,00' : ctx.raw.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}` } } } }
+        options: { 
+            animation: isThemeChange ? false : { duration: 1200, easing: 'easeOutQuart' }, 
+            responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${categoriasOrdenadas.length === 0 ? 'R$ 0,00' : ctx.raw.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}` } } } }
     });
 
     const ctxR = document.getElementById('graficoRadar').getContext('2d');
@@ -458,11 +466,11 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
         data: {
             labels: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
             datasets: [{
-                label: 'Queima',
+                label: 'Queima de Caixa',
                 data: gastosPorDiaSemana,
                 backgroundColor: gradRadar,
                 borderColor: '#6366f1',
-                borderWidth: 2,
+                borderWidth: 3,
                 pointBackgroundColor: isDark ? '#0f172a' : '#ffffff',
                 pointBorderColor: '#6366f1',
                 pointBorderWidth: 2,
@@ -471,10 +479,15 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
             }]
         },
         options: {
-            animation: isThemeChange ? false : { duration: 1500, easing: 'easeOutQuart' },
+            animation: isThemeChange ? false : { duration: 1200, easing: 'easeOutQuart' },
             responsive: true, maintainAspectRatio: false,
             scales: {
-                r: { angleLines: { color: corGrid }, grid: { color: corGrid, circular: true }, pointLabels: { color: corTexto, font: { family: 'Inter', weight: 'bold', size: 10 } }, ticks: { display: false } }
+                r: {
+                    angleLines: { color: corGrid },
+                    grid: { color: corGrid, circular: true },
+                    pointLabels: { color: corTexto, font: { family: 'Inter', weight: 'bold', size: 11 } },
+                    ticks: { display: false }
+                }
             },
             plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` R$ ${ctx.raw.toLocaleString('pt-BR', {minimumFractionDigits: 2})}` } } }
         }
