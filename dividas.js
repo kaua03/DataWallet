@@ -1,5 +1,5 @@
 // ==========================================
-// dividas.js - ERP KANBAN OTIMIZADO E FLUIDO
+// dividas.js - ERP KANBAN BLINDADO E OTIMIZADO
 // ==========================================
 
 let usuarioLogado = null;
@@ -23,15 +23,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    usuarioLogado = await verificarSessaoSegura();
-    if (!usuarioLogado) return; 
+    try {
+        if (typeof verificarSessaoSegura === 'function') {
+            usuarioLogado = await verificarSessaoSegura();
+        } else if (window.supabaseClient) {
+            const { data: { session } } = await window.supabaseClient.auth.getSession();
+            usuarioLogado = session ? session.user : null;
+        }
 
-    document.getElementById('divida-data').value = new Date().toISOString().split('T')[0];
+        if (!usuarioLogado) {
+            const board = document.getElementById('board-dividas');
+            if (board) board.innerHTML = `<div class="w-full text-center mt-20 text-rose-500 font-bold"><i class="fa-solid fa-lock mr-2"></i> Sessão não encontrada. Faça login novamente.</div>`;
+            return;
+        }
+    } catch (err) {
+        console.error("Erro na verificação de sessão:", err);
+    }
+
+    const dataInput = document.getElementById('divida-data');
+    if (dataInput) dataInput.value = new Date().toISOString().split('T')[0];
+
     await carregarDadosDoBanco();
     iniciarDragToScroll(); 
 });
 
-// A MÁGICA DA ESPINGARDA LATERAL (L-Shape Mobile para Nova Dívida)
 window.toggleMobileMenu = function() {
     const items = document.getElementById('fab-items');
     const actionBtn = document.getElementById('fab-action');
@@ -145,14 +160,14 @@ function desmascararMoeda(str) {
 
 async function carregarDadosDoBanco() {
     try {
-        if (!usuarioLogado || !usuarioLogado.id) {
-            console.error("Sessão inválida para carregar dados.");
-            return;
+        const client = window.supabaseClient;
+        if (!client || !usuarioLogado || !usuarioLogado.id) {
+            throw new Error("Cliente Supabase ou usuário não inicializado.");
         }
 
         const [rTrans, rCat] = await Promise.all([
-            supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).eq('tipo', 'despesa').order('data_vencimento', { ascending: true }),
-            supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
+            client.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).eq('tipo', 'despesa').order('data_vencimento', { ascending: true }),
+            client.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
         ]);
 
         if (rTrans.error) throw rTrans.error;
@@ -172,7 +187,9 @@ async function carregarDadosDoBanco() {
     } catch (e) { 
         console.error("Erro ao puxar dados:", e.message);
         const board = document.getElementById('board-dividas');
-        if (board) board.innerHTML = `<div class="w-full text-center mt-20 text-rose-500 font-bold"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Erro ao carregar dados: ${e.message}</div>`;
+        if (board) {
+            board.innerHTML = `<div class="w-full text-center mt-20 text-rose-500 font-bold"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Erro ao carregar dados: ${e.message}</div>`;
+        }
     }
 }
 
@@ -285,7 +302,6 @@ function renderizarColunas(agrupamentos) {
                 const corData = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-500' : 'text-slate-400 dark:text-slate-500';
                 const corValor = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white';
 
-                // Otimizado: Transição estrita de cores (transition-colors) para evitar jank/flicker
                 const cardHtmlCru = `
                 <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-3 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-colors duration-200 group flex flex-col gap-3">
                     <div class="flex justify-between items-start gap-3 w-full">
@@ -354,7 +370,8 @@ window.toggleColuna = function(id) {
 
 window.alterarStatusPagamento = async function(idTransacao, novoStatusPago) {
     try {
-        const { error } = await supabaseClient.from('transacoes').update({ pago: novoStatusPago }).eq('id', idTransacao);
+        const client = window.supabaseClient;
+        const { error } = await client.from('transacoes').update({ pago: novoStatusPago }).eq('id', idTransacao);
         if (error) throw error;
         
         const idx = transacoesGlobais.findIndex(t => t.id == idTransacao);
@@ -423,7 +440,8 @@ window.excluirDivida = async function(idTransacao) {
     if(!confirmacao.isConfirmed) return;
 
     try {
-        const { error } = await supabaseClient.from('transacoes').delete().eq('id', idTransacao);
+        const client = window.supabaseClient;
+        const { error } = await client.from('transacoes').delete().eq('id', idTransacao);
         if (error) throw error;
         transacoesGlobais = transacoesGlobais.filter(t => t.id != idTransacao);
         processarEAtualizarKanban();
@@ -449,8 +467,9 @@ window.salvarDivida = async function(event) {
     }
 
     try {
+        const client = window.supabaseClient;
         if (idExistente) {
-            const { data, error } = await supabaseClient.from('transacoes').update({
+            const { data, error } = await client.from('transacoes').update({
                 descricao: descBase, valor: valorFloat, data_vencimento: dataInicialISO, categoria_id: catId
             }).eq('id', idExistente).select();
 
@@ -478,7 +497,7 @@ window.salvarDivida = async function(event) {
                 });
             }
 
-            const { data, error } = await supabaseClient.from('transacoes').insert(loteInsercao).select();
+            const { data, error } = await client.from('transacoes').insert(loteInsercao).select();
             if (error) throw error;
             if(data) {
                 transacoesGlobais.push(...data);
