@@ -1,5 +1,5 @@
 // ==========================================
-// dashboard.js - MOTOR DE BI COM FALSO 3D E SEM REFRESH FANTASMA
+// dashboard.js - MOTOR DE BI COM FALSO 3D E DUAL-AXIS FAB
 // ==========================================
 
 let usuarioLogado = null;
@@ -11,8 +11,8 @@ let grafPizza = null;
 let grafRadar = null;
 
 let statsGlobais = { receitas: 0, despesas: 0, saldo: 0, taxaPoupanca: 0, mediaDiaria: 0, maiorGasto: null, topCategoria: null, transacoesNoPeriodo: 0 };
-
-let menuMobileAberto = false; // Controle adicionado para o Menu Mobile
+let menuMobileAberto = false;
+let inicializacaoCompleta = false;
 
 const coresPorCategoria = {
     'Alimentação': { hex: '#3b82f6', tw: 'bg-blue-500' },          
@@ -47,8 +47,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const hoje = new Date();
     document.getElementById('input-mes').value = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+    if (document.getElementById('input-ano')) document.getElementById('input-ano').value = hoje.getFullYear();
     
-    // Inicia com "por_mes" ativado
+    document.getElementById('filtro-periodo').value = 'por_mes';
     mudarTipoFiltro();
 
     document.getElementById('input-coach').addEventListener('keypress', function(e) {
@@ -56,11 +57,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     await carregarDadosDoBanco();
+    inicializacaoCompleta = true; 
 
-    // O OLHO DE SAURON (MUTATION OBSERVER)
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
-            if (mutation.attributeName === 'class') {
+            if (mutation.attributeName === 'class' && inicializacaoCompleta) {
                 if (transacoesGlobais.length > 0) {
                     processarEAtualizarTudo(true); 
                 }
@@ -70,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     observer.observe(document.documentElement, { attributes: true });
 });
 
-// A MÁGICA DA EXPANSÃO EM DOIS EIXOS (L-Shape Mobile) INJETADA AQUI
+// A MÁGICA DO DUPLO EIXO (A IA atira para a esquerda)
 window.toggleMobileMenu = function() {
     const items = document.getElementById('fab-items');
     const actionBtn = document.getElementById('fab-action');
@@ -86,8 +87,7 @@ window.toggleMobileMenu = function() {
         if (actionBtn) {
             actionBtn.classList.remove('opacity-0', 'pointer-events-none');
             actionBtn.classList.add('opacity-100', 'pointer-events-auto');
-            actionBtn.style.left = '0px';
-            actionBtn.style.transform = 'rotate(-360deg)';
+            actionBtn.style.transform = 'translateX(-70px) rotate(-360deg)';
         }
 
         btn.style.transform = 'rotate(180deg)';
@@ -99,8 +99,7 @@ window.toggleMobileMenu = function() {
         if (actionBtn) {
             actionBtn.classList.add('opacity-0', 'pointer-events-none');
             actionBtn.classList.remove('opacity-100', 'pointer-events-auto');
-            actionBtn.style.left = 'calc(100% - 56px)';
-            actionBtn.style.transform = 'rotate(0deg)';
+            actionBtn.style.transform = 'translateX(0px) rotate(0deg)';
         }
 
         btn.style.transform = 'rotate(0deg)';
@@ -109,7 +108,7 @@ window.toggleMobileMenu = function() {
 };
 
 function formatarMoedaLocal(valor) {
-    let p = Math.abs(valor).toFixed(2).split('.');
+    let p = Math.abs(Number(valor) || 0).toFixed(2).split('.');
     p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     return (valor < 0 ? "- R$ " : "R$ ") + p.join(',');
 }
@@ -148,7 +147,7 @@ async function carregarDadosDoBanco() {
             supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id),
             supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
         ]);
-        transacoesGlobais = rTrans.data || [];
+        transacoesGlobais = (rTrans.data || []).filter(t => t.tipo !== 'despesa' || t.pago === true);
         categoriasGlobais = rCat.data || [];
         processarEAtualizarTudo();
     } catch (e) { console.error("Erro ao puxar dados:", e.message); }
@@ -157,16 +156,21 @@ async function carregarDadosDoBanco() {
 window.mudarTipoFiltro = function() {
     const tipo = document.getElementById('filtro-periodo').value;
     const boxMes = document.getElementById('box-mes');
+    const boxAno = document.getElementById('box-ano');
     const boxPers = document.getElementById('box-personalizado');
 
     if(boxMes) { boxMes.classList.add('hidden'); boxMes.classList.remove('flex'); }
+    if(boxAno) { boxAno.classList.add('hidden'); boxAno.classList.remove('flex'); }
     if(boxPers) { boxPers.classList.add('hidden'); boxPers.classList.remove('flex'); }
 
     if (tipo === 'por_mes' && boxMes) {
         boxMes.classList.remove('hidden'); boxMes.classList.add('flex');
     }
+    else if (tipo === 'por_ano' && boxAno) {
+        boxAno.classList.remove('hidden'); boxAno.classList.add('flex');
+    }
     else if (tipo === 'personalizado' && boxPers) {
-        boxPers.classList.remove('hidden'); boxPers.classList.add('flex'); // Agora usa flexbox compacto
+        boxPers.classList.remove('hidden'); boxPers.classList.add('flex');
     }
 
     processarEAtualizarTudo();
@@ -190,6 +194,10 @@ window.processarEAtualizarTudo = function(isThemeChange = false) {
             const val = document.getElementById('input-mes').value;
             if(!val) return true;
             return dStr.startsWith(val);
+        } else if (tipoFiltro === 'por_ano') {
+            const val = document.getElementById('input-ano') ? document.getElementById('input-ano').value : '';
+            if(!val) return true;
+            return d.getFullYear() === parseInt(val);
         } else if (tipoFiltro === 'personalizado') {
             const dIni = document.getElementById('input-data-inicio').value;
             const dFim = document.getElementById('input-data-fim').value;
@@ -208,7 +216,7 @@ window.processarEAtualizarTudo = function(isThemeChange = false) {
     let gastosPorDiaSemana = [0, 0, 0, 0, 0, 0, 0];
 
     let agruparPorMes = false;
-    if (tipoFiltro === 'tudo') {
+    if (tipoFiltro === 'tudo' || tipoFiltro === 'por_ano') {
         agruparPorMes = true;
     } else if (tipoFiltro === 'personalizado') {
         const dIni = document.getElementById('input-data-inicio').value;
@@ -224,6 +232,8 @@ window.processarEAtualizarTudo = function(isThemeChange = false) {
 
     transacoesFiltradas.forEach(t => { 
         let chaveTempo = 'S/D';
+        const valorNum = Number(t.valor) || 0;
+
         if (t.data_vencimento) {
             const dObjeto = new Date(t.data_vencimento + 'T12:00:00Z');
             const partes = t.data_vencimento.split('-'); 
@@ -235,7 +245,7 @@ window.processarEAtualizarTudo = function(isThemeChange = false) {
                 chaveTempo = `${partes[2]}/${partes[1]}`; 
             }
             
-            if(t.tipo === 'despesa') gastosPorDiaSemana[dObjeto.getDay()] += t.valor;
+            if(t.tipo === 'despesa') gastosPorDiaSemana[dObjeto.getDay()] += valorNum;
         }
         
         if(!agrupamentoTemporal[chaveTempo]) agrupamentoTemporal[chaveTempo] = { rec: 0, des: 0 };
@@ -248,15 +258,15 @@ window.processarEAtualizarTudo = function(isThemeChange = false) {
         if(catNomeBase.includes('Saúde')) catNomeCurto = 'Saúde & Imprevistos';
 
         if(t.tipo === 'despesa') {
-            totalDespesas += t.valor; 
-            agrupamentoTemporal[chaveTempo].des += t.valor;
+            totalDespesas += valorNum; 
+            agrupamentoTemporal[chaveTempo].des += valorNum;
             t.categoriaNome = catNomeCurto; 
             
-            if(t.valor > maiorGasto.valor) maiorGasto = { valor: t.valor, descricao: t.descricao, categoria: catNomeCurto };
-            gastosPorCategoria[catNomeCurto] = (gastosPorCategoria[catNomeCurto] || 0) + t.valor;
+            if(valorNum > maiorGasto.valor) maiorGasto = { valor: valorNum, descricao: t.descricao, categoria: catNomeCurto };
+            gastosPorCategoria[catNomeCurto] = (gastosPorCategoria[catNomeCurto] || 0) + valorNum;
         } else {
-            totalReceitas += t.valor;
-            agrupamentoTemporal[chaveTempo].rec += t.valor;
+            totalReceitas += valorNum;
+            agrupamentoTemporal[chaveTempo].rec += valorNum;
         }
     });
 
@@ -282,8 +292,8 @@ window.processarEAtualizarTudo = function(isThemeChange = false) {
         window.animarContador('kpi-taxa-texto', taxa, 'porcentagem', 1000);
         
         barra.style.width = '0%';
-        setTimeout(() => { barra.style.width = `${percentualBarra}%`; }, 50);
-        barra.className = `h-2 rounded-full transition-all duration-1000 shadow-sm ${corTaxa}`;
+        setTimeout(() => { barra.style.width = `${percentualBarra}%`; }, 100);
+        barra.className = `h-1.5 md:h-2 rounded-full transition-all duration-1000 ease-out shadow-sm ${corTaxa}`;
     } 
     else {
         document.getElementById('kpi-saldo').innerText = formatarMoedaLocal(totalReceitas - totalDespesas);
@@ -292,7 +302,7 @@ window.processarEAtualizarTudo = function(isThemeChange = false) {
         document.getElementById('kpi-taxa-texto').innerText = taxa.toFixed(1) + "%";
         
         barra.style.width = `${percentualBarra}%`;
-        barra.className = `h-2 rounded-full shadow-sm ${corTaxa}`; 
+        barra.className = `h-1.5 md:h-2 rounded-full shadow-sm ${corTaxa}`; 
     }
 
     renderizarListaCategorias(categoriasOrdenadas, gastosPorCategoria, totalDespesas, isThemeChange);
@@ -307,15 +317,15 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral, isThemeChange)
         
         return `
         <div>
-            <div class="flex justify-between items-end mb-2 gap-2">
-                <span class="text-xs font-bold text-slate-700 dark:text-slate-300 truncate flex-1">${cat}</span>
+            <div class="flex justify-between items-end mb-1.5 md:mb-2 gap-2">
+                <span class="text-[11px] md:text-xs font-bold text-slate-700 dark:text-slate-300 truncate flex-1">${cat}</span>
                 <div class="text-right flex items-center gap-2 shrink-0">
-                    <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500" id="cat-perc-${index}">${perc.toFixed(1)}%</span>
-                    <span class="text-sm font-black text-slate-900 dark:text-white whitespace-nowrap" id="cat-val-${index}">${formatarMoedaLocal(valor)}</span>
+                    <span class="text-[9px] md:text-[10px] font-bold text-slate-400 dark:text-slate-500" id="cat-perc-${index}">${perc.toFixed(1)}%</span>
+                    <span class="text-xs md:text-sm font-black text-slate-900 dark:text-white whitespace-nowrap" id="cat-val-${index}">${formatarMoedaLocal(valor)}</span>
                 </div>
             </div>
-            <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
-                <div id="bar-cat-${index}" class="${corBase} h-2 rounded-full ${isThemeChange ? '' : 'transition-all duration-1000'} shadow-sm" style="width: ${isThemeChange ? perc + '%' : '0%'}"></div>
+            <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 md:h-2">
+                <div id="bar-cat-${index}" class="${corBase} h-1.5 md:h-2 rounded-full ${isThemeChange ? '' : 'transition-all duration-1000 ease-out'} shadow-sm" style="width: ${isThemeChange ? perc + '%' : '0%'}"></div>
             </div>
         </div>
         `;
@@ -334,7 +344,7 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral, isThemeChange)
                 window.animarContador(`cat-val-${index}`, valor, 'moeda', 1000);
                 window.animarContador(`cat-perc-${index}`, perc, 'porcentagem', 1000);
             });
-        }, 50);
+        }, 150);
     }
 }
 
@@ -538,8 +548,7 @@ async function gerarRespostaIA(pergunta) {
         return adicionarMensagemNoChat("O algoritmo requer dados populados para gerar predições.", false);
     }
 
-    const promptDeSistema = `
-Você é o Consultor IA do DataWallet, um aplicativo financeiro corporativo de elite construído pelo Kauã.
+    const promptDeSistema = `Você é o Consultor IA do DataWallet, um aplicativo financeiro corporativo de elite construído pelo Kauã.
 Sua postura é profissional, direta, inteligente e analítica. Evite textos extremamente longos. Vá direto ao ponto.
 Sempre formate sua resposta em HTML limpo para exibir na tela web (use <b>, <i>, e <br>). NÃO use Markdown comum como ** ou *.
 
@@ -552,8 +561,7 @@ AQUI ESTÃO OS DADOS REAIS:
 - Top Categoria Gasto: ${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'Nenhum'}
 - Maior gasto isolado: ${statsGlobais.maiorGasto.descricao} (R$ ${statsGlobais.maiorGasto.valor.toFixed(2)})
 
-REGRA ESTRITA: Responda à pergunta do usuário cruzando os dados acima. Aja como um humano sênior.
-    `;
+REGRA ESTRITA: Responda à pergunta do usuário cruzando os dados acima. Aja como um humano sênior.`;
 
     const payload = { contents: [{ parts: [{ text: promptDeSistema + "\n\nPergunta: " + pergunta }] }] };
 
