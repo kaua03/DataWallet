@@ -14,7 +14,6 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- BIBLIOTECAS DE ELITE -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -60,12 +59,9 @@
 
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 h-[100dvh] overflow-hidden flex relative fade-in transition-colors duration-300">
 
-    <!-- O LAYOUT.JS INJETA A SIDEBAR AQUI -->
-
     <main class="flex-1 h-full overflow-y-auto relative pb-32 md:pb-8 p-3 md:p-8">
         <section class="max-w-7xl mx-auto space-y-4 md:space-y-6">
             
-            <!-- HEADER BLINDADO -->
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors relative overflow-hidden">
                 <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent pointer-events-none"></div>
                 <div class="relative z-10">
@@ -76,7 +72,6 @@
                 </div>
             </div>
 
-            <!-- FILTRO DE ELITE MOBILE-FIRST -->
             <div class="flex justify-end mb-4 md:mb-6">
                 <div class="flex flex-col sm:flex-row items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 md:p-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 transition-colors w-full sm:w-auto">
                     
@@ -104,18 +99,17 @@
 
                     <div id="box-personalizado" class="hidden flex items-center gap-1.5 w-full sm:w-auto">
                         <div class="relative flex-1 sm:w-32 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 h-10 transition-colors">
-                            <input type="date" id="input-data-inicio" onchange="processarEAtualizarTudo()" class="absolute inset-0 w-full h-full px-3 bg-transparent outline-none text-[12px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer" style="color-scheme: dark;">
+                            <input type="date" id="input-data-inicio" onchange="processarEAtualizarTudo()" class="absolute inset-0 w-full h-full px-2 bg-transparent outline-none text-[12px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer" style="color-scheme: dark;">
                         </div>
                         <span class="text-slate-400 text-xs font-bold mx-0.5"><i class="fa-solid fa-arrow-right"></i></span>
                         <div class="relative flex-1 sm:w-32 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 h-10 transition-colors">
-                            <input type="date" id="input-data-fim" onchange="processarEAtualizarTudo()" class="absolute inset-0 w-full h-full px-3 bg-transparent outline-none text-[12px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer" style="color-scheme: dark;">
+                            <input type="date" id="input-data-fim" onchange="processarEAtualizarTudo()" class="absolute inset-0 w-full h-full px-2 bg-transparent outline-none text-[12px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer" style="color-scheme: dark;">
                         </div>
                     </div>
 
                 </div>
             </div>
 
-            <!-- KPIs UNIFICADOS -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 <div class="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm flex flex-col justify-center transition-colors">
                     <p class="text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mb-1">Saldo Líquido</p>
@@ -140,7 +134,6 @@
                 </div>
             </div>
 
-            <!-- GRÁFICO PRINCIPAL RESPONSIVO -->
             <div class="bg-white dark:bg-slate-900 p-4 md:p-8 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors">
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-3">
                     <div>
@@ -158,7 +151,6 @@
                 </div>
             </div>
 
-            <!-- GRÁFICOS SECUNDÁRIOS -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
                 
                 <div class="lg:col-span-1 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors flex flex-col">
@@ -188,34 +180,32 @@
         </section>
     </main>
 
-    <!-- MENU MOBILE IDÊNTICO AO DE MOVIMENTAÇÕES (Expansão horizontal para a esquerda + IA integrada) -->
-    <div class="md:hidden fixed bottom-6 right-6 z-40 flex items-center gap-3 flex-row-reverse">
+    <div class="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14">
         
-        <!-- BOTÃO PRINCIPAL DO MENU -->
-        <button onclick="window.toggleMobileMenu()" id="fab-menu" class="w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_4px_20px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-500 z-50 hover:scale-105 pointer-events-auto">
-            <i class="fa-solid fa-bars transition-all duration-300" id="fab-icon"></i>
+        <button onclick="toggleCoach()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-900 dark:bg-black text-indigo-400 shadow-lg flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-30 border border-slate-700 dark:border-indigo-500/50">
+            <i class="fa-solid fa-robot pointer-events-none"></i>
         </button>
 
-        <!-- ITENS EXPANSÍVEIS (Movimentações, Dashboard, Dívidas, Categorias, Metas, Mercado, Tema, Sair e o Botão de Chat IA) -->
-        <div id="fab-items" class="flex items-center gap-3 transition-all duration-500 transform translate-x-12 opacity-0 pointer-events-none z-40">
-            <button onclick="sairDoSistema()" title="Sair" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-rose-500 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-right-from-bracket"></i></button>
-            <button onclick="window.alternarTema && window.alternarTema()" title="Tema" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-amber-500 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-moon dark:hidden"></i><i class="fa-solid fa-sun hidden dark:block text-amber-400"></i></button>
-            <button onclick="toggleCoach()" title="Consultor IA" class="w-10 h-10 rounded-full bg-slate-900 dark:bg-black text-indigo-400 shadow-lg flex items-center justify-center border border-slate-700 dark:border-indigo-500/50 pointer-events-auto"><i class="fa-solid fa-robot"></i></button>
-            <a href="mercado.html" title="Mercado" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-cart-shopping"></i></a>
-            <a href="planos.html" title="Metas" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-bullseye"></i></a>
-            <a href="categorias.html" title="Categorias" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-tags"></i></a>
-            <a href="dividas.html" title="Dívidas" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-file-invoice-dollar"></i></a>
-            <a href="dashboard.html" title="Dashboard" class="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 shadow-lg flex items-center justify-center border border-indigo-100 dark:border-indigo-500/30 pointer-events-auto"><i class="fa-solid fa-chart-pie"></i></a>
-            <a href="movimentacoes.html" title="Movimentações" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-money-bill-transfer"></i></a>
+        <div id="fab-items" class="absolute bottom-16 right-2 w-10 flex flex-col items-center gap-2.5 transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none z-30">
+            <button onclick="sairDoSistema()" title="Sair" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-rose-500 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-right-from-bracket pointer-events-none"></i></button>
+            <button onclick="window.alternarTema && window.alternarTema()" title="Tema" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-amber-500 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-moon dark:hidden pointer-events-none"></i><i class="fa-solid fa-sun hidden dark:block text-amber-400 pointer-events-none"></i></button>
+            <a href="mercado.html" title="Mercado" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-cart-shopping pointer-events-none"></i></a>
+            <a href="planos.html" title="Metas" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-bullseye pointer-events-none"></i></a>
+            <a href="categorias.html" title="Categorias" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-tags pointer-events-none"></i></a>
+            <a href="dividas.html" title="Dívidas" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-file-invoice-dollar pointer-events-none"></i></a>
+            <a href="dashboard.html" title="Dashboard" class="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 shadow-lg flex items-center justify-center border border-indigo-100 dark:border-indigo-500/30 pointer-events-auto"><i class="fa-solid fa-chart-pie pointer-events-none"></i></a>
+            <a href="movimentacoes.html" title="Movimentações" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700 pointer-events-auto"><i class="fa-solid fa-money-bill-transfer pointer-events-none"></i></a>
         </div>
+
+        <button onclick="window.toggleMobileMenu()" id="fab-menu" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-800 dark:bg-indigo-600 text-white shadow-[0_4px_20px_rgba(30,41,59,0.5)] dark:shadow-[0_4px_20px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 z-50 pointer-events-auto">
+            <i class="fa-solid fa-bars transition-all duration-300 pointer-events-none" id="fab-icon"></i>
+        </button>
     </div>
 
-    <!-- O BOTÃO DO CONSULTOR IA (Desktop Apenas) -->
     <button onclick="toggleCoach()" class="hidden md:flex fixed bottom-10 right-10 w-16 h-16 bg-slate-900 dark:bg-black rounded-full shadow-[0_10px_25px_rgba(15,23,42,0.4)] dark:shadow-[0_0_20px_rgba(99,102,241,0.3)] items-center justify-center text-white text-2xl z-40 hover:scale-105 transition-transform border border-slate-700 dark:border-indigo-500/30">
         <i class="fa-solid fa-robot text-indigo-400"></i>
     </button>
 
-    <!-- MODAL DO CHAT IA -->
     <div id="janela-coach" class="hidden fixed bottom-40 md:bottom-32 right-4 md:right-10 w-[calc(100%-2rem)] md:w-[420px] h-[600px] max-h-[70vh] bg-slate-900 rounded-3xl shadow-[0_30px_60px_rgba(0,0,0,0.6)] z-50 flex flex-col overflow-hidden border border-slate-700 slide-up-chat">
         <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-600 opacity-10 blur-3xl rounded-full pointer-events-none"></div>
         <div class="p-5 border-b border-slate-800 flex items-center justify-between z-10 bg-slate-900/90 backdrop-blur-md shrink-0">
