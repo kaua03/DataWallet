@@ -1,5 +1,5 @@
 // ==========================================
-// dashboard.js - MOTOR DE BI COM FALSO 3D E SEM ERRO DE MEMÓRIA
+// dashboard.js - MOTOR DE BI COM FALSO 3D E DUAL-AXIS FAB 
 // ==========================================
 
 let usuarioLogado = null;
@@ -12,8 +12,6 @@ let grafRadar = null;
 
 let statsGlobais = { receitas: 0, despesas: 0, saldo: 0, taxaPoupanca: 0, mediaDiaria: 0, maiorGasto: null, topCategoria: null, transacoesNoPeriodo: 0 };
 
-// CULPADO DO ERRO ELIMINADO: A variável let menuMobileAberto foi apagada daqui. 
-// Usaremos window._menuMobileAberto para não dar curto com o arquivo layout.js
 let inicializacaoCompleta = false; 
 
 const coresPorCategoria = {
@@ -72,30 +70,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     observer.observe(document.documentElement, { attributes: true });
 });
 
-// A MÁGICA DA ESPINGARDA LATERAL (L-Shape Blindado)
+// A MÁGICA DA ESPINGARDA LATERAL (A Quebra do Vidro Invisível)
 window.toggleMobileMenu = function() {
     const items = document.getElementById('fab-items');
     const actionBtn = document.getElementById('fab-action');
     const icon = document.getElementById('fab-icon');
     const btn = document.getElementById('fab-menu');
     
-    // Variável Global Segura para não quebrar a tela
     window._menuMobileAberto = !window._menuMobileAberto;
 
     if (window._menuMobileAberto) {
         if (items) {
+            // Remove o escudo invisível (pointer-events-none) e adiciona os eventos de auto!
             items.classList.remove('opacity-0', 'translate-y-8', 'pointer-events-none');
             items.classList.add('opacity-100', 'pointer-events-auto');
         }
         if (actionBtn) {
             actionBtn.classList.remove('opacity-0', 'pointer-events-none');
             actionBtn.classList.add('opacity-100', 'pointer-events-auto');
-            actionBtn.style.transform = 'translateX(-68px) rotate(-360deg)';
+            actionBtn.style.transform = 'translateX(-70px) rotate(-360deg)';
         }
         if(btn) btn.style.transform = 'rotate(180deg)';
         setTimeout(() => { if(icon) icon.classList.replace('fa-bars', 'fa-xmark'); }, 150);
     } else {
         if (items) {
+            // Coloca o escudo de volta
             items.classList.add('opacity-0', 'translate-y-8', 'pointer-events-none');
             items.classList.remove('opacity-100', 'pointer-events-auto');
         }
