@@ -23,13 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     try {
-        if (typeof verificarSessaoSegura === 'function') {
-            usuarioLogado = await verificarSessaoSegura();
-        } else if (window.supabaseClient) {
-            const { data: { session } } = await window.supabaseClient.auth.getSession();
-            usuarioLogado = session ? session.user : null;
-        }
-
+        usuarioLogado = await verificarSessaoSegura();
         if (!usuarioLogado) {
             const board = document.getElementById('board-dividas');
             if (board) board.innerHTML = `<div class="w-full text-center mt-20 text-rose-500 font-bold"><i class="fa-solid fa-lock mr-2"></i> Sessão não encontrada. Faça login novamente.</div>`;
@@ -118,14 +112,13 @@ function desmascararMoeda(str) {
 
 async function carregarDadosDoBanco() {
     try {
-        const client = window.supabaseClient;
-        if (!client || !usuarioLogado || !usuarioLogado.id) {
-            throw new Error("Cliente Supabase ou usuário não inicializado.");
+        if (!usuarioLogado || !usuarioLogado.id) {
+            throw new Error("Usuário não inicializado.");
         }
 
         const [rTrans, rCat] = await Promise.all([
-            client.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).eq('tipo', 'despesa').order('data_vencimento', { ascending: true }),
-            client.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
+            supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).eq('tipo', 'despesa').order('data_vencimento', { ascending: true }),
+            supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
         ]);
 
         if (rTrans.error) throw rTrans.error;
@@ -237,48 +230,47 @@ function renderizarColunas(agrupamentos) {
                 let htmlDivisor = '';
                 if ((nomeColuna === 'Próximos Meses' || nomeColuna === 'Histórico de Pagas') && mesAnoAtualDoCard !== mesAnoCorrente) {
                     htmlDivisor = `
-                    <div class="divisor-mes flex items-center gap-3 mt-6 mb-3 first:mt-1 cursor-default pointer-events-none">
-                        <div class="h-px bg-slate-200 dark:bg-slate-700 flex-1"></div>
-                        <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">${mesAnoAtualDoCard}</span>
-                        <div class="h-px bg-slate-200 dark:bg-slate-700 flex-1"></div>
+                    <div class="divisor-mes flex items-center gap-3 mt-6 mb-3 first:mt-1 cursor-default pointer-events-none transition-colors duration-200">
+                        <div class="h-px bg-slate-200 dark:bg-slate-700 flex-1 transition-colors duration-200"></div>
+                        <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors duration-200">${mesAnoAtualDoCard}</span>
+                        <div class="h-px bg-slate-200 dark:bg-slate-700 flex-1 transition-colors duration-200"></div>
                     </div>`;
                     mesAnoCorrente = mesAnoAtualDoCard;
                 }
                 
                 let badgeUrgencia = '';
                 if (!isPago) {
-                    if (d.diasDiff < 0) badgeUrgencia = `<span class="bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase">Atrasado ${Math.abs(d.diasDiff)}d</span>`;
-                    else if (d.diasDiff === 0) badgeUrgencia = `<span class="bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase">Vence Hoje</span>`;
-                    else if (d.diasDiff <= 7) badgeUrgencia = `<span class="bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase">Vence em ${d.diasDiff}d</span>`;
+                    if (d.diasDiff < 0) badgeUrgencia = `<span class="bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase transition-colors duration-200">Atrasado ${Math.abs(d.diasDiff)}d</span>`;
+                    else if (d.diasDiff === 0) badgeUrgencia = `<span class="bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase transition-colors duration-200">Vence Hoje</span>`;
+                    else if (d.diasDiff <= 7) badgeUrgencia = `<span class="bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase transition-colors duration-200">Vence em ${d.diasDiff}d</span>`;
                 }
 
                 const btnAcao = isPago 
-                    ? `<button onclick="window.alterarStatusPagamento(${d.id}, false)" title="Desfazer" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center shadow-sm shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-rotate-left"></i></button>`
-                    : `<button onclick="window.alterarStatusPagamento(${d.id}, true)" title="Quitar" class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition flex items-center justify-center shadow-sm shrink-0 border border-emerald-200 dark:border-emerald-500/30"><i class="fa-solid fa-check"></i></button>`;
+                    ? `<button onclick="window.alterarStatusPagamento(${d.id}, false)" title="Desfazer" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition-colors duration-200 flex items-center justify-center shadow-sm shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-rotate-left"></i></button>`
+                    : `<button onclick="window.alterarStatusPagamento(${d.id}, true)" title="Quitar" class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors duration-200 flex items-center justify-center shadow-sm shrink-0 border border-emerald-200 dark:border-emerald-500/30"><i class="fa-solid fa-check"></i></button>`;
 
                 const classeTraco = isPago ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200';
                 const corData = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-500' : 'text-slate-400 dark:text-slate-500';
                 const corValor = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white';
 
-                // Removidas as transições de cores excessivas, mantido apenas o hover limpo
                 const cardHtmlCru = `
-                <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-3 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition group flex flex-col gap-3">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-3 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-colors duration-200 group flex flex-col gap-3">
                     <div class="flex justify-between items-start gap-3 w-full">
-                        <h4 class="font-bold text-xs ${classeTraco} leading-tight break-words whitespace-normal mt-0.5 flex-1">${d.descricao}</h4>
-                        <span class="font-black text-sm ${corValor} whitespace-nowrap shrink-0">R$ ${d.valor.toFixed(2).replace('.', ',')}</span>
+                        <h4 class="font-bold text-xs ${classeTraco} leading-tight break-words whitespace-normal mt-0.5 flex-1 transition-colors duration-200">${d.descricao}</h4>
+                        <span class="font-black text-sm ${corValor} whitespace-nowrap shrink-0 transition-colors duration-200">R$ ${d.valor.toFixed(2).replace('.', ',')}</span>
                     </div>
                     <div class="flex items-center justify-between w-full">
-                        <div class="flex items-center gap-2 text-[11px] font-bold ${corData}">
+                        <div class="flex items-center gap-2 text-[11px] font-bold ${corData} transition-colors duration-200">
                             <div class="flex items-center gap-1.5"><i class="fa-regular fa-calendar"></i> <span>${dataStr}</span></div>
                             ${badgeUrgencia}
                         </div>
                         
                         <div class="flex items-center gap-1.5">
                             <div class="flex items-center gap-1.5 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick="window.abrirModalEdicao(${d.id})" title="Editar" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-indigo-500 hover:text-white transition flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-pen text-[10px]"></i></button>
-                                <button onclick="window.excluirDivida(${d.id})" title="Excluir" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                                <button onclick="window.abrirModalEdicao(${d.id})" title="Editar" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-indigo-500 hover:text-white transition-colors duration-200 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                                <button onclick="window.excluirDivida(${d.id})" title="Excluir" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition-colors duration-200 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-trash text-[10px]"></i></button>
                             </div>
-                            <div class="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5 hidden md:block"></div>
+                            <div class="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5 hidden md:block transition-colors duration-200"></div>
                             ${btnAcao}
                         </div>
                     </div>
@@ -289,20 +281,20 @@ function renderizarColunas(agrupamentos) {
         }
 
         html += `
-        <div id="${idColunaSanitizado}" class="w-[300px] md:w-[340px] shrink-0 bg-slate-100/50 dark:bg-slate-800/20 rounded-3xl ${config.borderColor} border flex flex-col max-h-full transition-colors duration-300 relative">
-            <div onclick="window.toggleColuna('${idColunaSanitizado}')" class="p-4 border-b border-slate-200/80 dark:border-slate-700/50 flex justify-between items-center bg-white dark:bg-slate-900 rounded-t-3xl shrink-0 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-300 relative z-10">
+        <div id="${idColunaSanitizado}" class="w-[300px] md:w-[340px] shrink-0 bg-slate-100/50 dark:bg-slate-800/20 rounded-3xl ${config.borderColor} border flex flex-col max-h-full transition-colors duration-200 relative">
+            <div onclick="window.toggleColuna('${idColunaSanitizado}')" class="p-4 border-b border-slate-200/80 dark:border-slate-700/50 flex justify-between items-center bg-white dark:bg-slate-900 rounded-t-3xl shrink-0 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-200 relative z-10">
                 <div class="esconder-no-min flex items-center gap-2">
                     <i class="fa-solid ${config.icon} ${config.titleColor}"></i>
                     <h3 class="font-bold ${config.titleColor} text-sm">${nomeColuna}</h3>
                 </div>
                 
                 <div class="hidden mostrar-no-min flex-col items-center justify-start w-full gap-3 pt-2">
-                    <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm">${transacoesDaColuna.length}</span>
-                    <h3 class="font-black text-slate-400 dark:text-slate-500 text-xs tracking-widest uppercase transform rotate-180" style="writing-mode: vertical-rl;">${nomeColuna}</h3>
+                    <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm transition-colors duration-200">${transacoesDaColuna.length}</span>
+                    <h3 class="font-black text-slate-400 dark:text-slate-500 text-xs tracking-widest uppercase transform rotate-180 transition-colors duration-200" style="writing-mode: vertical-rl;">${nomeColuna}</h3>
                 </div>
                 
                 <div class="esconder-no-min flex items-center gap-2">
-                    <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm">${transacoesDaColuna.length}</span>
+                    <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm transition-colors duration-200">${transacoesDaColuna.length}</span>
                     <i class="fa-solid fa-chevron-left text-slate-300 dark:text-slate-600 text-xs transition-transform transform -rotate-90"></i>
                 </div>
             </div>
@@ -329,8 +321,7 @@ window.toggleColuna = function(id) {
 
 window.alterarStatusPagamento = async function(idTransacao, novoStatusPago) {
     try {
-        const client = window.supabaseClient;
-        const { error } = await client.from('transacoes').update({ pago: novoStatusPago }).eq('id', idTransacao);
+        const { error } = await supabaseClient.from('transacoes').update({ pago: novoStatusPago }).eq('id', idTransacao);
         if (error) throw error;
         
         const idx = transacoesGlobais.findIndex(t => t.id == idTransacao);
@@ -399,8 +390,7 @@ window.excluirDivida = async function(idTransacao) {
     if(!confirmacao.isConfirmed) return;
 
     try {
-        const client = window.supabaseClient;
-        const { error } = await client.from('transacoes').delete().eq('id', idTransacao);
+        const { error } = await supabaseClient.from('transacoes').delete().eq('id', idTransacao);
         if (error) throw error;
         transacoesGlobais = transacoesGlobais.filter(t => t.id != idTransacao);
         processarEAtualizarKanban();
@@ -426,9 +416,8 @@ window.salvarDivida = async function(event) {
     }
 
     try {
-        const client = window.supabaseClient;
         if (idExistente) {
-            const { data, error } = await client.from('transacoes').update({
+            const { data, error } = await supabaseClient.from('transacoes').update({
                 descricao: descBase, valor: valorFloat, data_vencimento: dataInicialISO, categoria_id: catId
             }).eq('id', idExistente).select();
 
@@ -456,7 +445,7 @@ window.salvarDivida = async function(event) {
                 });
             }
 
-            const { data, error } = await client.from('transacoes').insert(loteInsercao).select();
+            const { data, error } = await supabaseClient.from('transacoes').insert(loteInsercao).select();
             if (error) throw error;
             if(data) {
                 transacoesGlobais.push(...data);
