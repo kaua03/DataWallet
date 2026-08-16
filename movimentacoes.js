@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - NLP INTELIGENTE E ANIMAÇÃO CENTRALIZADA
+// movimentacoes.js - IA BLINDADA, MULTI-SELECT E ANIMAÇÕES
 // ==========================================
 
 let usuarioLogado = null;
@@ -47,9 +47,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     await carregarDadosDoBanco();
 });
 
-// ==========================================
-// MOTOR DE SELEÇÃO MULTIPLA (LONG PRESS)
-// ==========================================
 window.iniciarPressao = function(id) {
     if (modoSelecao) return; 
     timerPressao = setTimeout(() => { ativarModoSelecao(id); }, 500); 
@@ -76,10 +73,8 @@ function ativarModoSelecao(idInicial) {
     modoSelecao = true;
     if (navigator.vibrate) navigator.vibrate(50); 
     selecionados.add(idInicial);
-    
     const card = document.getElementById(`card-transacao-${idInicial}`);
     if(card) card.classList.add('wiggle-ativo');
-    
     const barra = document.getElementById('barra-selecao');
     if(barra) barra.classList.replace('hidden', 'flex');
     atualizarBarraSelecao();
@@ -102,75 +97,43 @@ function atualizarBarraSelecao() {
 
 window.excluirSelecionados = async function() {
     if (selecionados.size === 0) return;
-
-    const confirmacao = await Swal.fire({
-        title: 'Excluir Registros?',
-        text: `Você está prestes a excluir ${selecionados.size} registros. Isso não pode ser desfeito.`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ef4444',
-        cancelButtonColor: '#94a3b8',
-        confirmButtonText: 'Sim, excluir todos',
-        cancelButtonText: 'Cancelar'
-    });
-
+    const confirmacao = await Swal.fire({ title: 'Excluir Registros?', text: `Você está prestes a excluir ${selecionados.size} registros. Isso não pode ser desfeito.`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8', confirmButtonText: 'Sim, excluir todos', cancelButtonText: 'Cancelar' });
     if (!confirmacao.isConfirmed) return;
-
     try {
         const idsArray = Array.from(selecionados);
         const { error } = await supabaseClient.from('transacoes').delete().in('id', idsArray).eq('usuario_id', usuarioLogado.id);
         if (error) throw error;
-        
         transacoesGlobais = transacoesGlobais.filter(t => !selecionados.has(t.id));
-        sairModoSelecao();
-        window.aplicarFiltrosHistorico();
-        atualizarTopCards();
-        
+        sairModoSelecao(); window.aplicarFiltrosHistorico(); atualizarTopCards();
         Swal.fire({ icon: 'success', title: 'Excluídos!', showConfirmButton: false, timer: 1500 });
-
-    } catch(e) { 
-        Swal.fire({ icon: 'error', title: 'Erro ao excluir', text: e.message });
-    }
+    } catch(e) { Swal.fire({ icon: 'error', title: 'Erro ao excluir', text: e.message }); }
 };
 
-// ==========================================
-// MOTOR DE ANIMAÇÃO DE CONTAGEM
-// ==========================================
 window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 1000) {
     const elemento = document.getElementById(id);
     if (!elemento) return;
-    
     const startTimestamp = performance.now();
     const step = (currentTimestamp) => {
         const progress = Math.min((currentTimestamp - startTimestamp) / duracao, 1);
         const easeProgress = 1 - Math.pow(1 - progress, 4); 
         const valorAtual = easeProgress * valorFinal;
-        
         if (formato === 'moeda') {
             let parts = Math.abs(valorAtual).toFixed(2).split('.');
             parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
             elemento.innerText = (valorAtual < 0 ? "- R$ " : "R$ ") + parts.join(',');
-        } else if (formato === 'inteiro') {
-            elemento.innerText = Math.round(valorAtual);
-        }
-        
+        } else if (formato === 'inteiro') { elemento.innerText = Math.round(valorAtual); }
         if (progress < 1) requestAnimationFrame(step);
         else {
             if (formato === 'moeda') {
                 let parts = Math.abs(valorFinal).toFixed(2).split('.');
                 parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
                 elemento.innerText = (valorFinal < 0 ? "- R$ " : "R$ ") + parts.join(',');
-            } else if (formato === 'inteiro') {
-                elemento.innerText = valorFinal;
-            }
+            } else if (formato === 'inteiro') { elemento.innerText = valorFinal; }
         }
     };
     requestAnimationFrame(step);
 };
 
-// ==========================================
-// UTILITÁRIOS
-// ==========================================
 function removerAcentos(texto) {
     if (!texto) return '';
     return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -192,32 +155,23 @@ function desmascararMoeda(str) {
     return parseFloat(str.replace(/\./g, '').replace(',', '.'));
 }
 
-// ==========================================
-// NÚCLEO DE DADOS E HISTÓRICO
-// ==========================================
 async function carregarDadosDoBanco() {
     try {
         const [resTrans, resCat] = await Promise.all([
             supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).order('data_vencimento', { ascending: false }).order('id', { ascending: false }),
             supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id).order('nome', { ascending: true })
         ]);
-
         transacoesGlobais = (resTrans.data || []).filter(t => t.tipo !== 'despesa' || t.pago === true);
         categoriasGlobais = resCat.data || [];
-
         const selectCat = document.getElementById('transacao-categoria');
-        selectCat.innerHTML = '<option value="" disabled selected>Selecione a Pasta...</option>' + 
-            categoriasGlobais.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
-
-        atualizarTopCards();
-        window.mudarTipoFiltroHistorico(); 
+        selectCat.innerHTML = '<option value="" disabled selected>Selecione a Pasta...</option>' + categoriasGlobais.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+        atualizarTopCards(); window.mudarTipoFiltroHistorico(); 
     } catch (e) { console.error("Erro ao puxar dados:", e.message); }
 }
 
 function atualizarTopCards() {
     let saldo = 0, entradas = 0, saidas = 0;
     const mesAtual = new Date().getMonth(); const anoAtual = new Date().getFullYear();
-
     transacoesGlobais.forEach(t => {
         if(t.tipo === 'receita') saldo += t.valor; else saldo -= t.valor;
         if(t.data_vencimento) {
@@ -227,7 +181,6 @@ function atualizarTopCards() {
             }
         }
     });
-
     window.animarContador('saldo-disponivel', saldo, 'moeda', 1000);
     window.animarContador('entradas-mes', entradas, 'moeda', 1000);
     window.animarContador('saidas-mes', saidas, 'moeda', 1000);
@@ -235,8 +188,7 @@ function atualizarTopCards() {
 
 window.mudarTipoFiltroHistorico = function() {
     const tipo = document.getElementById('filtro-periodo').value;
-    document.getElementById('box-mes').classList.add('hidden');
-    document.getElementById('box-personalizado').classList.add('hidden');
+    document.getElementById('box-mes').classList.add('hidden'); document.getElementById('box-personalizado').classList.add('hidden');
     if (tipo === 'por_mes') document.getElementById('box-mes').classList.remove('hidden');
     else if (tipo === 'personalizado') document.getElementById('box-personalizado').classList.remove('hidden');
     window.aplicarFiltrosHistorico();
@@ -246,7 +198,6 @@ window.aplicarFiltrosHistorico = function() {
     isHistoricoExpandido = false; 
     const termoBusca = removerAcentos(document.getElementById('busca-historico').value);
     const tipoFiltro = document.getElementById('filtro-periodo').value;
-
     transacoesFiltradas = transacoesGlobais.filter(t => {
         let dataOk = true;
         if (t.data_vencimento) {
@@ -272,9 +223,7 @@ window.aplicarFiltrosHistorico = function() {
         }
         return dataOk && buscaOk;
     });
-
-    renderizarMiniKPIs();
-    renderizarListaHistorico();
+    renderizarMiniKPIs(); renderizarListaHistorico();
 };
 
 function renderizarMiniKPIs() {
@@ -283,18 +232,10 @@ function renderizarMiniKPIs() {
     const balanco = somaEntradas - somaSaidas;
     const corBalanco = balanco >= 0 ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30' : 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/30';
     const sinalBalanco = balanco >= 0 ? '+' : '-';
-
     document.getElementById('mini-kpis-historico').innerHTML = `
-        <span class="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-emerald-200 dark:border-emerald-500/30">
-            <i class="fa-solid fa-arrow-trend-up"></i> <span id="kpi-mini-qtd-ent">0</span> Entradas • <span id="kpi-mini-val-ent">R$ 0,00</span>
-        </span>
-        <span class="bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-rose-200 dark:border-rose-500/30">
-            <i class="fa-solid fa-arrow-trend-down"></i> <span id="kpi-mini-qtd-sai">0</span> Saídas • <span id="kpi-mini-val-sai">R$ 0,00</span>
-        </span>
-        <span class="${corBalanco} text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border">
-            Fluxo: ${sinalBalanco} <span id="kpi-mini-val-bal">R$ 0,00</span>
-        </span>
-    `;
+        <span class="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-emerald-200 dark:border-emerald-500/30"><i class="fa-solid fa-arrow-trend-up"></i> <span id="kpi-mini-qtd-ent">0</span> Entradas • <span id="kpi-mini-val-ent">R$ 0,00</span></span>
+        <span class="bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border border-rose-200 dark:border-rose-500/30"><i class="fa-solid fa-arrow-trend-down"></i> <span id="kpi-mini-qtd-sai">0</span> Saídas • <span id="kpi-mini-val-sai">R$ 0,00</span></span>
+        <span class="${corBalanco} text-[10px] px-2.5 py-1.5 rounded-lg font-black shadow-sm flex items-center gap-1.5 border">Fluxo: ${sinalBalanco} <span id="kpi-mini-val-bal">R$ 0,00</span></span>`;
     window.animarContador('kpi-mini-qtd-ent', qtdEntradas, 'inteiro', 800); window.animarContador('kpi-mini-val-ent', somaEntradas, 'moeda', 800);
     window.animarContador('kpi-mini-qtd-sai', qtdSaidas, 'inteiro', 800); window.animarContador('kpi-mini-val-sai', somaSaidas, 'moeda', 800);
     window.animarContador('kpi-mini-val-bal', Math.abs(balanco), 'moeda', 800);
@@ -308,14 +249,11 @@ window.toggleExpandirHistorico = function() {
 function renderizarListaHistorico() {
     const container = document.getElementById('lista-transacoes');
     const btnToggle = document.getElementById('btn-toggle-historico');
-    
     if (transacoesFiltradas.length === 0) {
         container.innerHTML = `<div class="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-8 text-center border border-slate-200 dark:border-slate-700 border-dashed"><i class="fa-solid fa-magnifying-glass text-2xl text-slate-300 dark:text-slate-600 mb-2"></i><p class="text-xs font-bold text-slate-400 mt-2">Nenhum registro encontrado nesta visão.</p></div>`;
         btnToggle.classList.add('hidden'); return;
     }
-
     const transacoesExibidas = isHistoricoExpandido ? transacoesFiltradas : transacoesFiltradas.slice(0, 5);
-
     const htmlLista = transacoesExibidas.map(t => {
         const cat = categoriasGlobais.find(c => c.id === t.categoria_id) || { nome: 'Outros', icone: 'fa-tag', cor: 'text-gray-500' };
         const isReceita = t.tipo === 'receita';
@@ -355,7 +293,6 @@ function renderizarListaHistorico() {
     }).join('');
 
     container.innerHTML = htmlLista;
-
     if (transacoesFiltradas.length > 5) {
         btnToggle.classList.remove('hidden');
         if (isHistoricoExpandido) btnToggle.innerHTML = '<i class="fa-solid fa-chevron-up"></i> Minimizar Lista';
@@ -364,7 +301,7 @@ function renderizarListaHistorico() {
 }
 
 // ==========================================
-// CÉREBRO NLP PIPELINE SÊNIOR (Limpador Absoluto)
+// CÉREBRO NLP SÊNIOR: BLINDADO CONTRA BRL E LIXO DO CHROME
 // ==========================================
 const dicionarioDeInteligencia = [
     { pasta: 'alimentação', regras: [{ titulo: 'Delivery', palavras: ['ifood', 'delivery', 'rappi', 'zedelivery'] }, { titulo: 'Fast Food', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado', 'pastel', 'mequi'] }, { titulo: 'Mercado', palavras: ['mercado', 'supermercado', 'açougue', 'padaria', 'compra', 'compras'] }, { titulo: 'Restaurante', palavras: ['restaurante', 'almoço', 'jantar', 'comida', 'self service'] }]},
@@ -388,7 +325,7 @@ function processarFraseNLP(fraseBruta) {
 
     let textoCru = fraseBruta.toLowerCase();
     
-    // 1. DATA E TEMPO
+    // DATA E TEMPO
     let dataCalculada = new Date(); dataCalculada.setHours(12,0,0,0);
     if (textoCru.includes('mes passado')) { dataCalculada.setMonth(dataCalculada.getMonth() - 1); textoCru = textoCru.replace(/do mes passado|no mes passado|mes passado/g, ''); }
     if (textoCru.includes('anteontem')) { dataCalculada.setDate(dataCalculada.getDate() - 2); textoCru = textoCru.replace('anteontem', ''); }
@@ -411,37 +348,36 @@ function processarFraseNLP(fraseBruta) {
         textoCru = textoCru.replace(matchDia[0], ''); 
     }
 
-    // 2. EXTRAÇÃO DE VALORES E A REGRA DO "BRL" E CENTAVOS (O Bug do Chrome)
-    // Se o usuário fala "200 reais e 50 centavos", nós juntamos para "200,50"
-    let textoValores = textoCru.replace(/(\d+)\s*(?:reais|r\$|brl)?\s*e\s*(\d+)\s*(?:centavos)?/gi, "$1,$2");
+    // A MÁGICA DA FUSÃO DE CENTAVOS ("45 e 46" -> "45,46")
+    let textoValores = textoCru.replace(/\b(\d+)\s*(?:reais|r\$|brl)?\s*e\s*(\d{1,2})\s*(?:centavos|centavo|c)?\b/gi, "$1,$2");
     
-    // O Chrome Desktop transforma "reais" em "BRL" e coloca pontos de milhar ("52.000"). Vamos purificar:
-    textoValores = textoValores.replace(/\.(\d{3})/g, '$1'); 
+    // LIMPEZA DO BRL (Sotaque do Chrome PC)
+    textoValores = textoValores.replace(/\.(\d{3})/g, '$1'); // "52.000" vira "52000"
     textoValores = textoValores.replace(/\bum mil\b/g, '1000'); 
     
+    // MULTIPLICAÇÃO DE MILHARES
     textoValores = textoValores.replace(/\b(\d+(?:,\d+)?)\s*(?:k|mil|milhares)\b/gi, (match, numero) => {
         return (parseFloat(numero.replace(',', '.')) * 1000).toString();
     });
 
-    // Limpamos todas as moedas possíveis (incluindo o fantasma "brl")
-    textoValores = textoValores.replace(/\br\$\b|\breais\b|\breal\b|\$|\bconto\b|\bcontos\b|\bbrl\b/gi, ''); 
-    const nums = textoValores.match(/\d+(?:,\d+)?/g);
+    // Remove moedas da string de extração para capturar apenas o valor final puro
+    let extracaoString = textoValores.replace(/\br\$\b|\breais\b|\breal\b|\$|\bconto\b|\bcontos\b|\bcentavos\b|\bcentavo\b|\bbrl\b/gi, ''); 
+    const nums = extracaoString.match(/\d+(?:,\d+)?/g);
     const valorExtraido = nums ? Math.max(...nums.map(n => parseFloat(n.replace(',', '.')))) : 0;
 
-    // 3. A REGRA DA DESCRIÇÃO (Stop Words Absoluto)
     const palavrasReceita = ['recebi', 'ganhei', 'pix', 'salario', 'renda', 'vendi', 'deposito', 'entrou'];
     const isReceita = palavrasReceita.some(p => textoCru.includes(p));
 
+    // A MÁGICA DO LIXEIRO ABSOLUTO DA DESCRIÇÃO
+    let descCrua = textoCru;
+    if (nums) { nums.forEach(n => { descCrua = descCrua.replace(n, ' '); }); }
+    
+    descCrua = descCrua.replace(/\br\$\b|\breais\b|\breal\b|\$|\bmil\b|\bk\b|\bconto\b|\bcontos\b|\bbrl\b|\bcentavos\b|\bcentavo\b/gi, ' ');
+    descCrua = descCrua.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, " "); // Destrói pontos e vírgulas intrusos
+    descCrua = removerAcentos(descCrua);
+
     let catDetectada = null; 
     let tituloFinal = '';
-
-    // Remove qualquer número, vírgula, e moedas da descrição bruta
-    let descCrua = textoCru.replace(/\d+(?:[.,]\d+)?/g, '');
-    descCrua = descCrua.replace(/\br\$\b|\breais\b|\breal\b|\$|\bmil\b|\bk\b|\bconto\b|\bcontos\b|\bbrl\b/gi, '');
-    
-    // MATA A PONTUAÇÃO DO CHROME (O Bug do "brl.")
-    descCrua = descCrua.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, " "); 
-    descCrua = removerAcentos(descCrua);
 
     if (isReceita) {
         catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('renda') || removerAcentos(c.nome.toLowerCase()).includes('salario'));
@@ -461,15 +397,16 @@ function processarFraseNLP(fraseBruta) {
     }
 
     if (!tituloFinal) {
-        let palavras = descCrua.split(' ');
+        let palavras = descCrua.split(/\s+/);
         
-        // Exército de palavras para jogar no lixo e sobrar apenas a essência
+        // Exército expandido de Stop Words
         const stopWords = [
-            'eu', 'gastei', 'gasto', 'gastar', 'paguei', 'pago', 'pagar', 'pague', 
+            'eu', 'gastei', 'gasto', 'gastar', 'paguei', 'pago', 'pagar', 'pague', 'custou',
             'botei', 'coloquei', 'comprei', 'comprar', 'compra', 'de', 'da', 'do', 
             'no', 'na', 'para', 'com', 'novo', 'nova', 'meu', 'minha', 'fui', 
             'o', 'a', 'os', 'as', 'em', 'por', 'pra', 'fiz', 'tive', 'que', 
-            'foi', 'deu', 'ficou', 'um', 'uma', 'uns', 'umas', 'recebi', 'ganhei', 'entrou', 'brl'
+            'foi', 'deu', 'ficou', 'um', 'uma', 'uns', 'umas', 'recebi', 'ganhei', 'entrou', 'e',
+            'tem', 'tenho', 'ter', 'passei', 'passar', 'brl'
         ];
         
         palavras = palavras.filter(p => p.trim() !== '' && !stopWords.includes(p.trim()));
@@ -478,6 +415,7 @@ function processarFraseNLP(fraseBruta) {
             tituloFinal = palavras.join(' ');
             tituloFinal = tituloFinal.charAt(0).toUpperCase() + tituloFinal.slice(1); 
         } else {
+            // Se o lixeiro apagou tudo, é Indefinido absoluto.
             tituloFinal = isReceita ? 'Recebimento Indefinido' : 'Gasto Indefinido';
         }
         
@@ -556,7 +494,7 @@ window.ativarMicrofone = function() {
 
         let transcricaoAoVivo = textoFinal || textoTemporario;
         if (transcricaoAoVivo.length > 0) {
-            // MÁGICA VISUAL: Remove o BRL para não assustar o usuário
+            // Mágica Visual: Nunca exibe "BRL" para o usuário final, troca por R$
             transcricaoAoVivo = transcricaoAoVivo.replace(/\bbrl\b/gi, "R$");
             transcricaoAoVivo = transcricaoAoVivo.replace(/\br\$\b|\breais\b/gi, "R$");
             transcricaoAoVivo = transcricaoAoVivo.charAt(0).toUpperCase() + transcricaoAoVivo.slice(1);
@@ -564,7 +502,8 @@ window.ativarMicrofone = function() {
         }
 
         if (textoFinal && textoFinal.trim() !== '') {
-            let textoParaInput = textoFinal.replace(/\bbrl\b/gi, "reais");
+            let textoParaInput = textoFinal.replace(/\bbrl\b/gi, "R$");
+            textoParaInput = textoParaInput.replace(/\.\s*$/g, ""); // Tira ponto final nojento do Chrome
             document.getElementById('input-rapido').value = textoParaInput;
             
             setTimeout(() => { 
