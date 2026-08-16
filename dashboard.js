@@ -1,5 +1,5 @@
 // ==========================================
-// dashboard.js - MOTOR DE BI SÊNIOR (DUAL-AXIS FAB E SEM REFRESH FANTASMA)
+// dashboard.js - MOTOR DE BI COM FALSO 3D E SEM REFRESH FANTASMA
 // ==========================================
 
 let usuarioLogado = null;
@@ -11,8 +11,7 @@ let grafPizza = null;
 let grafRadar = null;
 
 let statsGlobais = { receitas: 0, despesas: 0, saldo: 0, taxaPoupanca: 0, mediaDiaria: 0, maiorGasto: null, topCategoria: null, transacoesNoPeriodo: 0 };
-let menuMobileAberto = false;
-let inicializacaoCompleta = false; // Trava de segurança para o Dark Mode não piscar ao abrir a tela
+let menuMobileAberto = false; // Controle do Menu
 
 const coresPorCategoria = {
     'Alimentação': { hex: '#3b82f6', tw: 'bg-blue-500' },          
@@ -30,7 +29,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     setTimeout(() => document.body.classList.remove('fade-in'), 500);
 
-    // Navegação Anti-Flicker SPA
     document.querySelectorAll('a').forEach(link => {
         if(link.hostname === window.location.hostname && link.target !== '_blank') {
             link.addEventListener('click', e => {
@@ -48,9 +46,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const hoje = new Date();
     document.getElementById('input-mes').value = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
-    document.getElementById('input-ano').value = hoje.getFullYear();
     
-    document.getElementById('filtro-periodo').value = 'por_mes';
+    // Inicia com "por_mes" ativado
     mudarTipoFiltro();
 
     document.getElementById('input-coach').addEventListener('keypress', function(e) {
@@ -58,12 +55,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     await carregarDadosDoBanco();
-    inicializacaoCompleta = true; // Libera a vigia do Dark Mode
 
     // O OLHO DE SAURON (MUTATION OBSERVER): Agora ele recebe o parâmetro 'true' (isThemeChange)
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
-            if (mutation.attributeName === 'class' && inicializacaoCompleta) {
+            if (mutation.attributeName === 'class') {
                 if (transacoesGlobais.length > 0) {
                     processarEAtualizarTudo(true); // O 'true' mata a ilusão de refresh da página!
                 }
@@ -73,52 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     observer.observe(document.documentElement, { attributes: true });
 });
 
-// ==========================================
-// A MÁGICA DA EXPANSÃO EM DOIS EIXOS (L-Shape Mobile)
-// ==========================================
-window.toggleMobileMenu = function() {
-    const items = document.getElementById('fab-items');
-    const actionBtn = document.getElementById('fab-action');
-    const icon = document.getElementById('fab-icon');
-    const btn = document.getElementById('fab-menu');
-    
-    menuMobileAberto = !menuMobileAberto;
-
-    if (menuMobileAberto) {
-        // Navegação sobe (Eixo Y)
-        items.classList.remove('opacity-0', 'translate-y-12', 'pointer-events-none');
-        items.classList.add('opacity-100');
-        
-        // Ação atira para a esquerda (Eixo X) com rotação
-        if (actionBtn) {
-            actionBtn.classList.remove('opacity-0', 'pointer-events-none');
-            actionBtn.classList.add('opacity-100', 'pointer-events-auto');
-            actionBtn.style.left = '0px';
-            actionBtn.style.transform = 'rotate(-360deg)';
-        }
-
-        btn.style.transform = 'rotate(180deg)';
-        setTimeout(() => { icon.classList.replace('fa-bars', 'fa-xmark'); }, 150);
-    } else {
-        // Retrai tudo
-        items.classList.add('opacity-0', 'translate-y-12', 'pointer-events-none');
-        items.classList.remove('opacity-100');
-
-        if (actionBtn) {
-            actionBtn.classList.add('opacity-0', 'pointer-events-none');
-            actionBtn.classList.remove('opacity-100', 'pointer-events-auto');
-            actionBtn.style.left = 'calc(100% - 56px)';
-            actionBtn.style.transform = 'rotate(0deg)';
-        }
-
-        btn.style.transform = 'rotate(0deg)';
-        setTimeout(() => { icon.classList.replace('fa-xmark', 'fa-bars'); }, 150);
-    }
-};
-
-// ==========================================
-// FORMATAÇÃO E ANIMAÇÃO DE NÚMEROS
-// ==========================================
+// Helper de formatação instantânea (Usado quando a animação está desativada)
 function formatarMoedaLocal(valor) {
     let p = Math.abs(valor).toFixed(2).split('.');
     p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -153,9 +104,6 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
     requestAnimationFrame(step);
 };
 
-// ==========================================
-// NÚCLEO DE DADOS E FILTROS
-// ==========================================
 async function carregarDadosDoBanco() {
     try {
         const [rTrans, rCat] = await Promise.all([
@@ -170,32 +118,20 @@ async function carregarDadosDoBanco() {
 
 window.mudarTipoFiltro = function() {
     const tipo = document.getElementById('filtro-periodo').value;
-    const boxMes = document.getElementById('box-mes');
-    const boxAno = document.getElementById('box-ano');
-    const boxPers = document.getElementById('box-personalizado');
+    document.getElementById('box-mes').classList.add('hidden');
+    document.getElementById('box-personalizado').classList.add('hidden');
 
-    if(boxMes) boxMes.classList.replace('flex', 'hidden');
-    if(boxAno) boxAno.classList.replace('flex', 'hidden');
-    if(boxPers) boxPers.classList.replace('flex', 'hidden');
-
-    if (tipo === 'por_mes' && boxMes) {
-        boxMes.classList.replace('hidden', 'flex');
-        document.getElementById('label-periodo').innerText = "Mês Específico";
+    if (tipo === 'por_mes') {
+        document.getElementById('box-mes').classList.remove('hidden');
     }
-    else if (tipo === 'por_ano' && boxAno) {
-        boxAno.classList.replace('hidden', 'flex');
-        document.getElementById('label-periodo').innerText = "Ano Específico";
-    }
-    else if (tipo === 'personalizado' && boxPers) {
-        boxPers.classList.replace('hidden', 'flex');
-        document.getElementById('label-periodo').innerText = "Período Livre";
-    } else {
-        document.getElementById('label-periodo').innerText = "Todo o Histórico";
+    else if (tipo === 'personalizado') {
+        document.getElementById('box-personalizado').classList.remove('hidden');
     }
 
     processarEAtualizarTudo();
 }
 
+// O parâmetro 'isThemeChange' evita que tudo zere e rode a roleta na hora do Dark Mode
 window.processarEAtualizarTudo = function(isThemeChange = false) {
     const tipoFiltro = document.getElementById('filtro-periodo').value;
 
@@ -214,10 +150,6 @@ window.processarEAtualizarTudo = function(isThemeChange = false) {
             const val = document.getElementById('input-mes').value;
             if(!val) return true;
             return dStr.startsWith(val);
-        } else if (tipoFiltro === 'por_ano') {
-            const val = document.getElementById('input-ano').value;
-            if(!val) return true;
-            return d.getFullYear() === parseInt(val);
         } else if (tipoFiltro === 'personalizado') {
             const dIni = document.getElementById('input-data-inicio').value;
             const dFim = document.getElementById('input-data-fim').value;
@@ -226,7 +158,7 @@ window.processarEAtualizarTudo = function(isThemeChange = false) {
             if (dFim) valid = valid && (dStr <= dFim);
             return valid;
         }
-        return true; 
+        return true; // "tudo" cai aqui
     });
 
     let totalDespesas = 0, totalReceitas = 0;
@@ -235,8 +167,9 @@ window.processarEAtualizarTudo = function(isThemeChange = false) {
     const agrupamentoTemporal = {}; 
     let gastosPorDiaSemana = [0, 0, 0, 0, 0, 0, 0];
 
+    // Se o filtro for Tudo ou um período Personalizado muito longo (> 40 dias), agrupa os gráficos por mês. Senão, por dia.
     let agruparPorMes = false;
-    if (tipoFiltro === 'tudo' || tipoFiltro === 'por_ano') {
+    if (tipoFiltro === 'tudo') {
         agruparPorMes = true;
     } else if (tipoFiltro === 'personalizado') {
         const dIni = document.getElementById('input-data-inicio').value;
@@ -311,10 +244,10 @@ window.processarEAtualizarTudo = function(isThemeChange = false) {
         window.animarContador('kpi-taxa-texto', taxa, 'porcentagem', 1000);
         
         barra.style.width = '0%';
-        setTimeout(() => { barra.style.width = `${percentualBarra}%`; }, 100);
-        barra.className = `h-1.5 md:h-2 rounded-full transition-all duration-1000 ease-out shadow-sm ${corTaxa}`;
+        setTimeout(() => { barra.style.width = `${percentualBarra}%`; }, 50);
+        barra.className = `h-2 rounded-full transition-all duration-1000 shadow-sm ${corTaxa}`;
     } 
-    // SE É APENAS TROCA DE TEMA: Altera os valores instataneamente sem rodar as animações
+    // SE É APENAS TROCA DE TEMA: Altera os valores instataneamente sem rodar as animações para não parecer Refresh
     else {
         document.getElementById('kpi-saldo').innerText = formatarMoedaLocal(totalReceitas - totalDespesas);
         document.getElementById('kpi-receitas').innerText = formatarMoedaLocal(totalReceitas);
@@ -322,7 +255,7 @@ window.processarEAtualizarTudo = function(isThemeChange = false) {
         document.getElementById('kpi-taxa-texto').innerText = taxa.toFixed(1) + "%";
         
         barra.style.width = `${percentualBarra}%`;
-        barra.className = `h-1.5 md:h-2 rounded-full shadow-sm ${corTaxa}`; // Sem a classe transition
+        barra.className = `h-2 rounded-full shadow-sm ${corTaxa}`; // Sem a classe transition
     }
 
     renderizarListaCategorias(categoriasOrdenadas, gastosPorCategoria, totalDespesas, isThemeChange);
@@ -330,7 +263,7 @@ window.processarEAtualizarTudo = function(isThemeChange = false) {
 }
 
 // ==========================================
-// RENDERIZAÇÃO DA UI (Listas em Cascata)
+// RENDERIZAÇÃO DA UI (Listas)
 // ==========================================
 function renderizarListaCategorias(ordenadas, gastos, totalGeral, isThemeChange) {
     const html = ordenadas.map((cat, index) => {
@@ -340,15 +273,15 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral, isThemeChange)
         
         return `
         <div>
-            <div class="flex justify-between items-end mb-1.5 md:mb-2 gap-2">
-                <span class="text-[11px] md:text-xs font-bold text-slate-700 dark:text-slate-300 truncate flex-1">${cat}</span>
+            <div class="flex justify-between items-end mb-2 gap-2">
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-300 truncate flex-1">${cat}</span>
                 <div class="text-right flex items-center gap-2 shrink-0">
-                    <span class="text-[9px] md:text-[10px] font-bold text-slate-400 dark:text-slate-500" id="cat-perc-${index}">${perc.toFixed(1)}%</span>
-                    <span class="text-xs md:text-sm font-black text-slate-900 dark:text-white whitespace-nowrap" id="cat-val-${index}">${formatarMoedaLocal(valor)}</span>
+                    <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500" id="cat-perc-${index}">${perc.toFixed(1)}%</span>
+                    <span class="text-sm font-black text-slate-900 dark:text-white whitespace-nowrap" id="cat-val-${index}">${formatarMoedaLocal(valor)}</span>
                 </div>
             </div>
-            <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 md:h-2">
-                <div id="bar-cat-${index}" class="${corBase} h-1.5 md:h-2 rounded-full ${isThemeChange ? '' : 'transition-all duration-1000 ease-out'} shadow-sm" style="width: ${isThemeChange ? perc + '%' : '0%'}"></div>
+            <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+                <div id="bar-cat-${index}" class="${corBase} h-2 rounded-full ${isThemeChange ? '' : 'transition-all duration-1000'} shadow-sm" style="width: ${isThemeChange ? perc + '%' : '0%'}"></div>
             </div>
         </div>
         `;
@@ -367,12 +300,12 @@ function renderizarListaCategorias(ordenadas, gastos, totalGeral, isThemeChange)
                 window.animarContador(`cat-val-${index}`, valor, 'moeda', 1000);
                 window.animarContador(`cat-perc-${index}`, perc, 'porcentagem', 1000);
             });
-        }, 150);
+        }, 50);
     }
 }
 
 // ==========================================
-// MOTOR DE GRÁFICOS (DUAL Y-AXIS SÊNIOR)
+// MOTOR DE GRÁFICOS (DUAL Y-AXIS SÊNIOR SEM REFRESH FANTASMA)
 // ==========================================
 function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasOrdenadas, gastosPorDiaSemana, isThemeChange) {
     
@@ -393,6 +326,9 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
         padding: 12, cornerRadius: 8, displayColors: true, boxPadding: 4 
     };
 
+    // ----------------------------------------------------
+    // GRÁFICO 1: FLUXO COMBO (DUAL Y-AXIS)
+    // ----------------------------------------------------
     const ctxC = document.getElementById('graficoCombo').getContext('2d');
     if (grafCombo) grafCombo.destroy();
 
@@ -436,20 +372,27 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
         },
         options: {
             responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+            // MATA A ANIMAÇÃO SE FOR APENAS TROCA DE TEMA PARA NÃO PARECER REFRESH DA PÁGINA
             animation: isThemeChange ? false : { duration: 1200, easing: 'easeOutQuart' },
             plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${Math.abs(ctx.raw).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}` } } },
             scales: {
                 x: { stacked: true, grid: { display: false }, border: {display: false}, ticks: { font: { size: 11, weight: 'bold' } } },
                 y: { 
-                    type: 'linear', position: 'left', stacked: true, border: { display: false },
+                    type: 'linear', position: 'left', stacked: true, 
+                    border: { display: false },
                     grid: { color: corGrid, lineWidth: 1, borderDash: [4, 4] }, 
                     ticks: { font: { size: 10, weight: 'bold' }, callback: (value) => value >= 0 ? `R$ ${value}` : `-R$ ${Math.abs(value)}` } 
                 },
-                y1: { type: 'linear', position: 'right', display: false, grid: { drawOnChartArea: false } }
+                y1: {
+                    type: 'linear', position: 'right', display: false, grid: { drawOnChartArea: false }
+                }
             }
         }
     });
 
+    // ----------------------------------------------------
+    // GRÁFICO 2: ROSCA MINIMALISTA
+    // ----------------------------------------------------
     const ctxP = document.getElementById('graficoPizza').getContext('2d');
     if (grafPizza) grafPizza.destroy();
 
@@ -472,9 +415,14 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
     grafPizza = new Chart(ctxP, {
         type: 'doughnut',
         data: { labels: lblP, datasets: [{ data: datP, backgroundColor: coresP, borderWidth: 4, borderColor: corBordaRosca, hoverOffset: 10 }] },
-        options: { animation: isThemeChange ? false : { duration: 1200, easing: 'easeOutQuart' }, responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${categoriasOrdenadas.length === 0 ? 'R$ 0,00' : ctx.raw.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}` } } } }
+        options: { 
+            animation: isThemeChange ? false : { duration: 1200, easing: 'easeOutQuart' }, 
+            responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` ${categoriasOrdenadas.length === 0 ? 'R$ 0,00' : ctx.raw.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}` } } } }
     });
 
+    // ----------------------------------------------------
+    // GRÁFICO 3: RADAR DE TERMÔMETRO SEMANAL
+    // ----------------------------------------------------
     const ctxR = document.getElementById('graficoRadar').getContext('2d');
     if (grafRadar) grafRadar.destroy();
 
@@ -503,7 +451,12 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
             animation: isThemeChange ? false : { duration: 1200, easing: 'easeOutQuart' },
             responsive: true, maintainAspectRatio: false,
             scales: {
-                r: { angleLines: { color: corGrid }, grid: { color: corGrid, circular: true }, pointLabels: { color: corTexto, font: { family: 'Inter', weight: 'bold', size: 11 } }, ticks: { display: false } }
+                r: {
+                    angleLines: { color: corGrid },
+                    grid: { color: corGrid, circular: true },
+                    pointLabels: { color: corTexto, font: { family: 'Inter', weight: 'bold', size: 11 } },
+                    ticks: { display: false }
+                }
             },
             plugins: { legend: { display: false }, tooltip: { ...tooltipPro, callbacks: { label: (ctx) => ` R$ ${ctx.raw.toLocaleString('pt-BR', {minimumFractionDigits: 2})}` } } }
         }
@@ -511,8 +464,45 @@ function renderizarGraficos(agrupamentoTemporal, gastosPorCategoria, categoriasO
 }
 
 // ==========================================
-// MÓDULO DA INTERFACE DO COACH (UI) E GEMINI
+// MÓDULO DA INTERFACE DO COACH E EXPANSÃO EM EIXO-DUPLO
 // ==========================================
+window.toggleMobileMenu = function() {
+    const items = document.getElementById('fab-items');
+    const actionBtn = document.getElementById('fab-action');
+    const icon = document.getElementById('fab-icon');
+    const btn = document.getElementById('fab-menu');
+    
+    menuMobileAberto = !menuMobileAberto;
+
+    if (menuMobileAberto) {
+        items.classList.remove('opacity-0', 'translate-y-12', 'pointer-events-none');
+        items.classList.add('opacity-100');
+        
+        if (actionBtn) {
+            actionBtn.classList.remove('opacity-0', 'pointer-events-none');
+            actionBtn.classList.add('opacity-100', 'pointer-events-auto');
+            actionBtn.style.left = '0px';
+            actionBtn.style.transform = 'rotate(-360deg)';
+        }
+
+        btn.style.transform = 'rotate(180deg)';
+        setTimeout(() => { icon.classList.replace('fa-bars', 'fa-xmark'); }, 150);
+    } else {
+        items.classList.add('opacity-0', 'translate-y-12', 'pointer-events-none');
+        items.classList.remove('opacity-100');
+
+        if (actionBtn) {
+            actionBtn.classList.add('opacity-0', 'pointer-events-none');
+            actionBtn.classList.remove('opacity-100', 'pointer-events-auto');
+            actionBtn.style.left = 'calc(100% - 56px)';
+            actionBtn.style.transform = 'rotate(0deg)';
+        }
+
+        btn.style.transform = 'rotate(0deg)';
+        setTimeout(() => { icon.classList.replace('fa-xmark', 'fa-bars'); }, 150);
+    }
+};
+
 window.toggleCoach = function() {
     const janela = document.getElementById('janela-coach');
     if (janela.classList.contains('hidden')) {
@@ -577,7 +567,7 @@ AQUI ESTÃO OS DADOS REAIS:
 - Total Queimado: R$ ${statsGlobais.despesas.toFixed(2)}
 - Saldo Líquido: R$ ${statsGlobais.saldo.toFixed(2)}
 - Retenção: ${statsGlobais.taxaPoupanca.toFixed(1)}%
-- Queima Média Diaria: R$ ${statsGlobais.mediaDiaria.toFixed(2)} / dia
+- Queima Média Diária: R$ ${statsGlobais.mediaDiaria.toFixed(2)} / dia
 - Top Categoria Gasto: ${statsGlobais.topCategoria ? statsGlobais.topCategoria.nome : 'Nenhum'}
 - Maior gasto isolado: ${statsGlobais.maiorGasto.descricao} (R$ ${statsGlobais.maiorGasto.valor.toFixed(2)})
 
