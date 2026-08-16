@@ -1,15 +1,27 @@
 // ==========================================
-// layout.js - MOTOR GLOBAL DE SIDEBAR, TEMA E AÇÕES MOBILE (L-SHAPE)
+// layout.js - MOTOR GLOBAL DE SIDEBAR, TEMA E AÇÕES MOBILE (ZERO FLICKER)
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Verifica o tema ANTES de injetar qualquer HTML para evitar piscar a tela
+    const temaSalvo = localStorage.getItem('DataWallet_Tema') || localStorage.getItem('theme');
+    const prefereDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = temaSalvo === 'escuro' || temaSalvo === 'dark' || (!temaSalvo && prefereDark);
+
+    if (isDark) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+
     injetarEstilosGlobais();
-    inicializarLayout();
-    verificarDarkMode();
+    inicializarLayout(isDark);
 });
 
 function injetarEstilosGlobais() {
+    if (document.getElementById('global-star-style')) return;
     const style = document.createElement('style');
+    style.id = 'global-star-style';
     style.innerHTML = `
         @keyframes starRise {
             0% { transform: translate(0, 0) scale(0.5) rotate(0deg); opacity: 0; }
@@ -22,7 +34,7 @@ function injetarEstilosGlobais() {
     document.head.appendChild(style);
 }
 
-function inicializarLayout() {
+function inicializarLayout(isDark) {
     const paginaAtual = window.location.pathname.split('/').pop() || 'movimentacoes.html';
     const isDashboard = paginaAtual === 'dashboard.html';
     const isPassivos = paginaAtual === 'dividas.html';
@@ -47,9 +59,13 @@ function inicializarLayout() {
         `;
     }).join('');
 
+    const textoTemaDesktop = isDark ? 'Tema Claro' : 'Tema Escuro';
+    const iconeTemaDesktop = isDark ? 'fa-solid fa-sun text-lg text-amber-400' : 'fa-solid fa-moon text-lg text-white';
+    const classeBotaoDesktop = isDark ? 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors w-full' : 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-slate-800 text-white hover:bg-slate-700 transition-colors w-full';
+
     const sidebarHtml = `
         <div class="hidden md:block w-20 shrink-0"></div>
-        <aside id="sidebar" class="hidden md:flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200/60 dark:border-slate-800 py-6 px-4 h-full z-40 fixed left-0 top-0 overflow-hidden shadow-sm">
+        <aside id="sidebar" class="hidden md:flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200/60 dark:border-slate-800 py-6 px-4 h-full z-40 fixed left-0 top-0 overflow-hidden shadow-sm transition-colors duration-300">
             <div class="flex items-center justify-start mb-10 h-12 px-1">
                 <div class="w-10 h-10 shrink-0 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-indigo-600/30">
                     <i class="fa-solid fa-wallet text-xl"></i>
@@ -58,12 +74,12 @@ function inicializarLayout() {
             </div>
             <nav class="flex-1 space-y-2 w-full">${navLinksHtml}</nav>
             <div class="mt-auto w-full space-y-2">
-                <button id="btn-dark-desktop" onclick="window.toggleDarkMode()" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold transition-colors w-full">
+                <button id="btn-dark-desktop" onclick="window.toggleDarkMode()" class="${classeBotaoDesktop}">
                     <div class="relative w-6 flex items-center justify-center shrink-0 overflow-visible">
-                        <i id="icone-dark-mode" class="fa-solid fa-moon text-lg transition-colors duration-300"></i>
+                        <i id="icone-dark-mode" class="${iconeTemaDesktop} transition-colors duration-300"></i>
                         <i id="star-desktop" class="fa-solid fa-star absolute text-[10px] text-white opacity-0 pointer-events-none z-50"></i>
                     </div>
-                    <span id="txt-dark-desktop" class="sidebar-text ml-3">Tema Escuro</span>
+                    <span id="txt-dark-desktop" class="sidebar-text ml-3">${textoTemaDesktop}</span>
                 </button>
                 <button onclick="sairDoSistema()" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors overflow-hidden w-full">
                     <div class="w-6 flex items-center justify-center shrink-0"><i class="fa-solid fa-right-from-bracket text-lg"></i></div>
@@ -98,6 +114,8 @@ function inicializarLayout() {
         `;
     }
 
+    const iconeTemaMobile = isDark ? 'fa-solid fa-sun text-xl text-amber-400' : 'fa-solid fa-moon text-xl text-white';
+
     const mobileMenuHtml = `
         <div class="md:hidden fixed bottom-6 right-6 z-[60] w-14 h-14">
             ${btnAcaoMobileHtml}
@@ -105,9 +123,8 @@ function inicializarLayout() {
                 <button onclick="sairDoSistema()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-rose-500 border border-rose-100 dark:border-rose-900/50 shadow-lg flex items-center justify-center transition-transform hover:scale-110 pointer-events-auto">
                     <i class="fa-solid fa-right-from-bracket pointer-events-none"></i>
                 </button>
-                <button id="btn-dark-mobile" onclick="window.toggleDarkMode()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-200 dark:border-slate-700 relative overflow-visible pointer-events-auto">
-                    <i id="icone-dark-mode-mobile" class="fa-solid fa-moon dark:hidden text-amber-500 pointer-events-none"></i>
-                    <i class="fa-solid fa-sun hidden dark:block text-amber-400 pointer-events-none"></i>
+                <button id="btn-dark-mobile" onclick="window.toggleDarkMode()" class="w-10 h-10 rounded-full bg-slate-800 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible pointer-events-auto">
+                    <i id="icone-dark-mode-mobile" class="${iconeTemaMobile} pointer-events-none"></i>
                     <i id="star-mobile" class="fa-solid fa-star absolute text-[12px] text-white opacity-0 pointer-events-none z-50"></i>
                 </button>
                 <div class="w-8 h-px bg-slate-200 dark:bg-slate-700 my-1"></div>
@@ -179,24 +196,11 @@ window.toggleDarkMode = function() {
 window.alternarTema = window.toggleDarkMode;
 window.mudarTema = window.toggleDarkMode;
 
-function verificarDarkMode() {
-    const temaSalvo = localStorage.getItem('DataWallet_Tema') || localStorage.getItem('theme');
-    const htmlElement = document.documentElement;
-
-    let isDark = false;
-    if (temaSalvo === 'escuro' || temaSalvo === 'dark') {
-        htmlElement.classList.add('dark');
-        isDark = true;
-    } else {
-        htmlElement.classList.remove('dark');
-    }
-    atualizarIconesDark(isDark);
-}
-
 function atualizarIconesDark(isDark) {
     const btnPc = document.getElementById('btn-dark-desktop');
     const txtPc = document.getElementById('txt-dark-desktop');
     const iconePc = document.getElementById('icone-dark-mode');
+    const iconeMobile = document.getElementById('icone-dark-mode-mobile');
     const starPc = document.getElementById('star-desktop');
     const starMobile = document.getElementById('star-mobile');
     
@@ -205,11 +209,17 @@ function atualizarIconesDark(isDark) {
     
     if (isDark) {
         if (iconePc) iconePc.className = 'fa-solid fa-sun text-lg text-amber-400 transition-colors duration-300';
-        if (btnPc) btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors w-full';
+        if (iconeMobile) iconeMobile.className = 'fa-solid fa-sun text-xl text-amber-400 transition-colors duration-300';
+        if (btnPc) {
+            btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors w-full';
+        }
         if (txtPc) txtPc.innerText = 'Tema Claro';
     } else {
         if (iconePc) iconePc.className = 'fa-solid fa-moon text-lg text-white transition-colors duration-300';
-        if (btnPc) btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-slate-800 text-white hover:bg-slate-700 transition-colors w-full';
+        if (iconeMobile) iconeMobile.className = 'fa-solid fa-moon text-xl text-white transition-colors duration-300';
+        if (btnPc) {
+            btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-slate-800 text-white hover:bg-slate-700 transition-colors w-full';
+        }
         if (txtPc) txtPc.innerText = 'Tema Escuro';
         
         if(starPc) starPc.classList.add('animate-star');
