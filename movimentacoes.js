@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// MOTOR DE SELEÇÃO MÚLTIPLA (O WIGGLE)
+// MOTOR DE SELEÇÃO MÚLTIPLA (O WIGGLE DO IPHONE)
 // ==========================================
 window.iniciarPressao = function(id) {
     if (modoSelecao) return; 
@@ -196,7 +196,7 @@ function desmascararMoeda(str) {
 }
 
 // ==========================================
-// NÚCLEO DE DADOS
+// NÚCLEO DE DADOS E HISTÓRICO
 // ==========================================
 async function carregarDadosDoBanco() {
     try {
@@ -205,11 +205,7 @@ async function carregarDadosDoBanco() {
             supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id).order('nome', { ascending: true })
         ]);
 
-        transacoesGlobais = (resTrans.data || []).filter(t => {
-            if (t.tipo === 'despesa' && t.pago === false) return false; 
-            return true; 
-        });
-
+        transacoesGlobais = (resTrans.data || []).filter(t => t.tipo !== 'despesa' || t.pago === true);
         categoriasGlobais = resCat.data || [];
 
         const selectCat = document.getElementById('transacao-categoria');
@@ -218,26 +214,19 @@ async function carregarDadosDoBanco() {
 
         atualizarTopCards();
         window.mudarTipoFiltroHistorico(); 
-
-    } catch (e) {
-        console.error("Erro ao puxar dados:", e.message);
-    }
+    } catch (e) { console.error("Erro ao puxar dados:", e.message); }
 }
 
 function atualizarTopCards() {
     let saldo = 0, entradas = 0, saidas = 0;
-    const mesAtual = new Date().getMonth();
-    const anoAtual = new Date().getFullYear();
+    const mesAtual = new Date().getMonth(); const anoAtual = new Date().getFullYear();
 
     transacoesGlobais.forEach(t => {
-        if(t.tipo === 'receita') saldo += t.valor;
-        else saldo -= t.valor;
-
+        if(t.tipo === 'receita') saldo += t.valor; else saldo -= t.valor;
         if(t.data_vencimento) {
             const d = new Date(t.data_vencimento + 'T12:00:00Z');
             if(d.getMonth() === mesAtual && d.getFullYear() === anoAtual) {
-                if(t.tipo === 'receita') entradas += t.valor;
-                else saidas += t.valor;
+                if(t.tipo === 'receita') entradas += t.valor; else saidas += t.valor;
             }
         }
     });
@@ -247,23 +236,17 @@ function atualizarTopCards() {
     window.animarContador('saidas-mes', saidas, 'moeda', 1000);
 }
 
-// ==========================================
-// HISTÓRICO COM PESQUISA E FILTROS 
-// ==========================================
 window.mudarTipoFiltroHistorico = function() {
     const tipo = document.getElementById('filtro-periodo').value;
     document.getElementById('box-mes').classList.add('hidden');
     document.getElementById('box-personalizado').classList.add('hidden');
-
     if (tipo === 'por_mes') document.getElementById('box-mes').classList.remove('hidden');
     else if (tipo === 'personalizado') document.getElementById('box-personalizado').classList.remove('hidden');
-
     window.aplicarFiltrosHistorico();
 };
 
 window.aplicarFiltrosHistorico = function() {
     isHistoricoExpandido = false; 
-
     const termoBusca = removerAcentos(document.getElementById('busca-historico').value);
     const tipoFiltro = document.getElementById('filtro-periodo').value;
 
@@ -271,41 +254,25 @@ window.aplicarFiltrosHistorico = function() {
         let dataOk = true;
         if (t.data_vencimento) {
             const dStr = t.data_vencimento; 
-            
             if (tipoFiltro === 'essa_semana') {
-                const d = new Date(t.data_vencimento + 'T12:00:00Z');
-                d.setHours(0,0,0,0);
-                const dataHoje = new Date();
-                dataHoje.setHours(0,0,0,0);
-                
-                const inicioSemana = new Date(dataHoje);
-                inicioSemana.setDate(dataHoje.getDate() - dataHoje.getDay()); 
-                
-                const fimSemana = new Date(inicioSemana);
-                fimSemana.setDate(inicioSemana.getDate() + 6); 
-                fimSemana.setHours(23, 59, 59, 999);
-                
+                const d = new Date(t.data_vencimento + 'T12:00:00Z'); d.setHours(0,0,0,0);
+                const dataHoje = new Date(); dataHoje.setHours(0,0,0,0);
+                const inicioSemana = new Date(dataHoje); inicioSemana.setDate(dataHoje.getDate() - dataHoje.getDay()); 
+                const fimSemana = new Date(inicioSemana); fimSemana.setDate(inicioSemana.getDate() + 6); fimSemana.setHours(23, 59, 59, 999);
                 dataOk = (d >= inicioSemana && d <= fimSemana);
-
             } else if (tipoFiltro === 'por_mes') {
-                const val = document.getElementById('input-mes').value; 
-                if(val) dataOk = dStr.startsWith(val);
+                const val = document.getElementById('input-mes').value; if(val) dataOk = dStr.startsWith(val);
             } else if (tipoFiltro === 'personalizado') {
-                const dIni = document.getElementById('input-data-inicio').value;
-                const dFim = document.getElementById('input-data-fim').value;
-                if (dIni) dataOk = dataOk && (dStr >= dIni);
-                if (dFim) dataOk = dataOk && (dStr <= dFim);
+                const dIni = document.getElementById('input-data-inicio').value; const dFim = document.getElementById('input-data-fim').value;
+                if (dIni) dataOk = dataOk && (dStr >= dIni); if (dFim) dataOk = dataOk && (dStr <= dFim);
             }
         }
-
         let buscaOk = true;
         if (termoBusca) {
             const catNome = removerAcentos(categoriasGlobais.find(c => c.id === t.categoria_id)?.nome || '');
             const desc = removerAcentos(t.descricao);
-            const valorStr = t.valor.toString();
-            buscaOk = desc.includes(termoBusca) || catNome.includes(termoBusca) || valorStr.includes(termoBusca);
+            buscaOk = desc.includes(termoBusca) || catNome.includes(termoBusca) || t.valor.toString().includes(termoBusca);
         }
-
         return dataOk && buscaOk;
     });
 
@@ -315,12 +282,7 @@ window.aplicarFiltrosHistorico = function() {
 
 function renderizarMiniKPIs() {
     let qtdEntradas = 0, qtdSaidas = 0, somaEntradas = 0, somaSaidas = 0;
-
-    transacoesFiltradas.forEach(t => {
-        if(t.tipo === 'receita') { qtdEntradas++; somaEntradas += t.valor; }
-        else { qtdSaidas++; somaSaidas += t.valor; }
-    });
-
+    transacoesFiltradas.forEach(t => { if(t.tipo === 'receita') { qtdEntradas++; somaEntradas += t.valor; } else { qtdSaidas++; somaSaidas += t.valor; } });
     const balanco = somaEntradas - somaSaidas;
     const corBalanco = balanco >= 0 ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30' : 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/30';
     const sinalBalanco = balanco >= 0 ? '+' : '-';
@@ -336,11 +298,8 @@ function renderizarMiniKPIs() {
             Fluxo: ${sinalBalanco} <span id="kpi-mini-val-bal">R$ 0,00</span>
         </span>
     `;
-
-    window.animarContador('kpi-mini-qtd-ent', qtdEntradas, 'inteiro', 800);
-    window.animarContador('kpi-mini-val-ent', somaEntradas, 'moeda', 800);
-    window.animarContador('kpi-mini-qtd-sai', qtdSaidas, 'inteiro', 800);
-    window.animarContador('kpi-mini-val-sai', somaSaidas, 'moeda', 800);
+    window.animarContador('kpi-mini-qtd-ent', qtdEntradas, 'inteiro', 800); window.animarContador('kpi-mini-val-ent', somaEntradas, 'moeda', 800);
+    window.animarContador('kpi-mini-qtd-sai', qtdSaidas, 'inteiro', 800); window.animarContador('kpi-mini-val-sai', somaSaidas, 'moeda', 800);
     window.animarContador('kpi-mini-val-bal', Math.abs(balanco), 'moeda', 800);
 }
 
@@ -355,8 +314,7 @@ function renderizarListaHistorico() {
     
     if (transacoesFiltradas.length === 0) {
         container.innerHTML = `<div class="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-8 text-center border border-slate-200 dark:border-slate-700 border-dashed"><i class="fa-solid fa-magnifying-glass text-2xl text-slate-300 dark:text-slate-600 mb-2"></i><p class="text-xs font-bold text-slate-400 mt-2">Nenhum registro encontrado nesta visão.</p></div>`;
-        btnToggle.classList.add('hidden');
-        return;
+        btnToggle.classList.add('hidden'); return;
     }
 
     const transacoesExibidas = isHistoricoExpandido ? transacoesFiltradas : transacoesFiltradas.slice(0, 5);
@@ -364,7 +322,6 @@ function renderizarListaHistorico() {
     const htmlLista = transacoesExibidas.map(t => {
         const cat = categoriasGlobais.find(c => c.id === t.categoria_id) || { nome: 'Outros', icone: 'fa-tag', cor: 'text-gray-500' };
         const isReceita = t.tipo === 'receita';
-        
         const corBg = isReceita ? 'bg-emerald-50 dark:bg-emerald-500/10' : 'bg-rose-50 dark:bg-rose-500/10';
         const corTxt = isReceita ? 'text-emerald-500' : 'text-rose-500';
         const corValor = isReceita ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
@@ -387,9 +344,7 @@ function renderizarListaHistorico() {
                 </div>
                 <div class="min-w-0 flex-1">
                     <h4 class="font-bold text-sm text-slate-900 dark:text-white break-words whitespace-normal leading-tight">${t.descricao}</h4>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">
-                        ${cat.nome} • <i class="fa-regular fa-calendar ml-0.5"></i> ${dataStr}
-                    </p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">${cat.nome} • <i class="fa-regular fa-calendar ml-0.5"></i> ${dataStr}</p>
                 </div>
             </div>
             <div class="flex flex-row sm:flex-col md:flex-row items-center sm:items-end md:items-center justify-between sm:justify-center gap-3 w-full sm:w-auto shrink-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800 pt-3 sm:pt-0">
@@ -406,59 +361,22 @@ function renderizarListaHistorico() {
 
     if (transacoesFiltradas.length > 5) {
         btnToggle.classList.remove('hidden');
-        if (isHistoricoExpandido) {
-            btnToggle.innerHTML = '<i class="fa-solid fa-chevron-up"></i> Minimizar Lista';
-        } else {
-            const restante = transacoesFiltradas.length - 5;
-            btnToggle.innerHTML = `<i class="fa-solid fa-chevron-down"></i> Mostrar mais ${restante} transações`;
-        }
-    } else {
-        btnToggle.classList.add('hidden');
-    }
+        if (isHistoricoExpandido) btnToggle.innerHTML = '<i class="fa-solid fa-chevron-up"></i> Minimizar Lista';
+        else btnToggle.innerHTML = `<i class="fa-solid fa-chevron-down"></i> Mostrar mais ${transacoesFiltradas.length - 5} transações`;
+    } else btnToggle.classList.add('hidden');
 }
 
 // ==========================================
-// CÉREBRO NLP PIPELINE SÊNIOR (Limpador de Lixo Absoluto)
+// CÉREBRO NLP PIPELINE SÊNIOR
 // ==========================================
 const dicionarioDeInteligencia = [
-    { pasta: 'alimentação', regras: [
-        { titulo: 'Delivery', palavras: ['ifood', 'delivery', 'rappi', 'zedelivery'] },
-        { titulo: 'Fast Food', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado', 'pastel', 'mequi'] },
-        { titulo: 'Mercado', palavras: ['mercado', 'supermercado', 'açougue', 'padaria', 'compra', 'compras'] },
-        { titulo: 'Restaurante', palavras: ['restaurante', 'almoço', 'jantar', 'comida', 'self service'] }
-    ]},
-    { pasta: 'veículo', regras: [
-        { titulo: 'Combustível', palavras: ['gasolina', 'álcool', 'alcool', 'etanol', 'diesel', 'posto', 'combustível', 'combustivel', 'abasteci'] },
-        { titulo: 'Peças / Manutenção', palavras: ['oficina', 'mecânico', 'peça', 'pneu', 'óleo', 'revisão', 'carro', 'moto'] },
-        { titulo: 'Serviços Auto', palavras: ['estacionamento', 'pedágio', 'lavagem', 'lava rápido'] },
-        { titulo: 'Transporte', palavras: ['uber', '99', 'ônibus', 'passagem', 'metrô', 'táxi', 'taxi'] }
-    ]},
-    { pasta: 'moradia', regras: [
-        { titulo: 'Aluguel', palavras: ['aluguel', 'condomínio'] },
-        { titulo: 'Conta de Luz', palavras: ['luz', 'energia', 'cpfl', 'cemig', 'enel'] },
-        { titulo: 'Conta de Água', palavras: ['água', 'sabesp', 'sanepar', 'copasa'] },
-        { titulo: 'Internet', palavras: ['internet', 'vivo', 'claro', 'tim', 'fibra'] },
-        { titulo: 'Reparos e Casa', palavras: ['reparo', 'faxina', 'limpeza', 'material de construção'] }
-    ]},
-    { pasta: 'estudo', regras: [
-        { titulo: 'Mensalidade', palavras: ['faculdade', 'escola', 'mensalidade'] },
-        { titulo: 'Cursos Extras', palavras: ['curso', 'certificado', 'prova', 'concurso'] },
-        { titulo: 'Material Didático', palavras: ['livro', 'caderno', 'material', 'papelaria'] }
-    ]},
-    { pasta: 'saúde', regras: [
-        { titulo: 'Remédios', palavras: ['farmácia', 'remédio', 'medicamento'] },
-        { titulo: 'Consultas Médicas', palavras: ['médico', 'consulta', 'exame', 'dentista', 'terapia', 'psicólogo'] },
-        { titulo: 'Imprevisto', palavras: ['imprevisto', 'acidente', 'pronto socorro', 'hospital'] }
-    ]},
-    { pasta: 'lazer', regras: [
-        { titulo: 'Jogos', palavras: ['jogo', 'steam', 'xbox', 'playstation', 'game'] },
-        { titulo: 'Passeio', palavras: ['cinema', 'festa', 'shopping', 'bar', 'show', 'viagem', 'ingresso'] },
-        { titulo: 'Compras Pessoais', palavras: ['roupa', 'presente', 'tênis', 'perfume', 'fone', 'celular', 'compras'] }
-    ]},
-    { pasta: 'assinaturas', regras: [
-        { titulo: 'Streaming', palavras: ['netflix', 'spotify', 'amazon', 'prime', 'disney', 'hbo'] },
-        { titulo: 'Serviços Recorrentes', palavras: ['assinatura', 'gympass', 'academia'] }
-    ]}
+    { pasta: 'alimentação', regras: [{ titulo: 'Delivery', palavras: ['ifood', 'delivery', 'rappi', 'zedelivery'] }, { titulo: 'Fast Food', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado', 'pastel', 'mequi'] }, { titulo: 'Mercado', palavras: ['mercado', 'supermercado', 'açougue', 'padaria', 'compra', 'compras'] }, { titulo: 'Restaurante', palavras: ['restaurante', 'almoço', 'jantar', 'comida', 'self service'] }]},
+    { pasta: 'veículo', regras: [{ titulo: 'Combustível', palavras: ['gasolina', 'álcool', 'alcool', 'etanol', 'diesel', 'posto', 'combustível', 'combustivel', 'abasteci'] }, { titulo: 'Peças / Manutenção', palavras: ['oficina', 'mecânico', 'peça', 'pneu', 'óleo', 'revisão', 'carro', 'moto'] }, { titulo: 'Serviços Auto', palavras: ['estacionamento', 'pedágio', 'lavagem', 'lava rápido'] }, { titulo: 'Transporte', palavras: ['uber', '99', 'ônibus', 'passagem', 'metrô', 'táxi', 'taxi'] }]},
+    { pasta: 'moradia', regras: [{ titulo: 'Aluguel', palavras: ['aluguel', 'condomínio'] }, { titulo: 'Conta de Luz', palavras: ['luz', 'energia', 'cpfl', 'cemig', 'enel'] }, { titulo: 'Conta de Água', palavras: ['água', 'sabesp', 'sanepar', 'copasa'] }, { titulo: 'Internet', palavras: ['internet', 'vivo', 'claro', 'tim', 'fibra'] }, { titulo: 'Reparos e Casa', palavras: ['reparo', 'faxina', 'limpeza', 'material de construção'] }]},
+    { pasta: 'estudo', regras: [{ titulo: 'Mensalidade', palavras: ['faculdade', 'escola', 'mensalidade'] }, { titulo: 'Cursos Extras', palavras: ['curso', 'certificado', 'prova', 'concurso'] }, { titulo: 'Material Didático', palavras: ['livro', 'caderno', 'material', 'papelaria'] }]},
+    { pasta: 'saúde', regras: [{ titulo: 'Remédios', palavras: ['farmácia', 'remédio', 'medicamento'] }, { titulo: 'Consultas Médicas', palavras: ['médico', 'consulta', 'exame', 'dentista', 'terapia', 'psicólogo'] }, { titulo: 'Imprevisto', palavras: ['imprevisto', 'acidente', 'pronto socorro', 'hospital'] }]},
+    { pasta: 'lazer', regras: [{ titulo: 'Jogos', palavras: ['jogo', 'steam', 'xbox', 'playstation', 'game'] }, { titulo: 'Passeio', palavras: ['cinema', 'festa', 'shopping', 'bar', 'show', 'viagem', 'ingresso'] }, { titulo: 'Compras Pessoais', palavras: ['roupa', 'presente', 'tênis', 'perfume', 'fone', 'celular', 'compras'] }]},
+    { pasta: 'assinaturas', regras: [{ titulo: 'Streaming', palavras: ['netflix', 'spotify', 'amazon', 'prime', 'disney', 'hbo'] }, { titulo: 'Serviços Recorrentes', palavras: ['assinatura', 'gympass', 'academia'] }]}
 ];
 
 function processarFraseNLP(fraseBruta) {
@@ -586,26 +504,102 @@ function processarFraseNLP(fraseBruta) {
 window.abrirModalComTextoRapido = function() { processarFraseNLP(document.getElementById('input-rapido').value); };
 
 // ==========================================
-// MICROFONE REATIVO
+// MICROFONE REATIVO (RESTAURADO E COMPLETO)
 // ==========================================
 window.ativarMicrofone = function() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return Swal.fire('Ops!', 'Seu navegador não suporta microfone nativo. Use o Chrome.', 'error');
-    reconhecimentoDeVoz = new SpeechRecognition(); reconhecimentoDeVoz.lang = 'pt-BR'; reconhecimentoDeVoz.interimResults = true; reconhecimentoDeVoz.continuous = false; 
-    document.getElementById('modal-microfone').classList.remove('hidden');
-    document.getElementById('texto-interim').innerText = "Fale agora...";
+    
+    reconhecimentoDeVoz = new SpeechRecognition(); 
+    reconhecimentoDeVoz.lang = 'pt-BR'; 
+    reconhecimentoDeVoz.interimResults = true; 
+    reconhecimentoDeVoz.continuous = false; 
+    
+    const modalMic = document.getElementById('modal-microfone');
+    const textoInterim = document.getElementById('texto-interim');
+    const wave1 = document.getElementById('mic-wave-1');
+    const wave2 = document.getElementById('mic-wave-2');
+
+    modalMic.classList.remove('hidden');
+    textoInterim.innerText = "Fale agora...";
+
+    if(wave1 && wave2) {
+        wave1.style.transform = 'scale(1.1)';
+        wave2.style.transform = 'scale(1.05)';
+    }
+
     reconhecimentoDeVoz.onresult = (event) => {
+        let textoTemporario = '';
         let textoFinal = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) { if (event.results[i].isFinal) textoFinal += event.results[i][0].transcript; }
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) { 
+            if (event.results[i].isFinal) {
+                textoFinal += event.results[i][0].transcript; 
+            } else {
+                textoTemporario += event.results[i][0].transcript;
+            }
+        }
+        
+        if(wave1 && wave2) {
+            let fatorVolumeFake = 1.1 + (textoTemporario.length % 5) * 0.15; 
+            wave1.style.transform = `scale(${fatorVolumeFake * 1.3})`;
+            wave2.style.transform = `scale(${fatorVolumeFake * 1.1})`;
+            
+            setTimeout(() => {
+                wave1.style.transform = 'scale(1.1)';
+                wave2.style.transform = 'scale(1.05)';
+            }, 150);
+        }
+
+        let transcricaoAoVivo = textoFinal || textoTemporario;
+        if (transcricaoAoVivo.length > 0) {
+            transcricaoAoVivo = transcricaoAoVivo.replace(/\br\$\b|\breais\b/gi, "R$");
+            transcricaoAoVivo = transcricaoAoVivo.charAt(0).toUpperCase() + transcricaoAoVivo.slice(1);
+            textoInterim.innerText = transcricaoAoVivo;
+        }
+
         if (textoFinal && textoFinal.trim() !== '') {
             document.getElementById('input-rapido').value = textoFinal;
-            setTimeout(() => { window.cancelarMicrofone(); processarFraseNLP(textoFinal); }, 750);
+            setTimeout(() => { 
+                window.cancelarMicrofone(); 
+                processarFraseNLP(textoFinal); 
+            }, 750);
         }
     };
-    reconhecimentoDeVoz.onerror = () => window.cancelarMicrofone();
+
+    reconhecimentoDeVoz.onerror = (e) => { 
+        window.cancelarMicrofone(); 
+        if (e.error === 'not-allowed') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Microfone Bloqueado',
+                text: 'Libere a permissão de microfone no cadeado do navegador.',
+                confirmButtonColor: '#4f46e5'
+            });
+        }
+    };
+    
+    reconhecimentoDeVoz.onend = () => { 
+        setTimeout(() => {
+            if(!modalMic.classList.contains('hidden') && (textoInterim.innerText === "Fale agora..." || textoInterim.innerText === '')) {
+                window.cancelarMicrofone();
+            }
+        }, 1200);
+    };
+
     reconhecimentoDeVoz.start();
 };
-window.cancelarMicrofone = function() { if(reconhecimentoDeVoz) reconhecimentoDeVoz.abort(); document.getElementById('modal-microfone').classList.add('hidden'); };
+
+window.cancelarMicrofone = function() { 
+    if(reconhecimentoDeVoz) {
+        reconhecimentoDeVoz.onresult = null;
+        reconhecimentoDeVoz.onerror = null;
+        reconhecimentoDeVoz.onend = null;
+        reconhecimentoDeVoz.abort();
+    }
+    reconhecimentoDeVoz = null; 
+    document.getElementById('modal-microfone').classList.add('hidden'); 
+};
 
 // ==========================================
 // FUNÇÕES DE CRUD
@@ -623,7 +617,7 @@ window.fecharModal = function() { document.getElementById('modal-transacao').cla
 
 window.excluirTransacao = async function(id) {
     if(modoSelecao) return; // Se for modo seleção, bloqueia exclusão individual
-    const confirmacao = await Swal.fire({ title: 'Excluir Transação?', text: "Essa ação apagará este registro do fluxo.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8', confirmButtonText: 'Sim, excluir', cancelButtonText: 'Cancelar' });
+    const confirmacao = await Swal.fire({ title: 'Excluir Transação?', text: "Essa ação apagará este registro do fluxo.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8', confirmButtonText: 'Sim', cancelButtonText: 'Cancelar' });
     if(!confirmacao.isConfirmed) return;
     try {
         await supabaseClient.from('transacoes').delete().eq('id', id).eq('usuario_id', usuarioLogado.id);
@@ -646,7 +640,7 @@ window.salvarTransacao = async function(event) {
         const isReceita = tipo === 'receita';
         const urlAnimacao = isReceita ? "https://lottie.host/85450f21-2b79-46bd-8e77-a0d7fc86ceaf/63OdW0EjZh.json" : "https://lottie.host/78d29cd2-20ba-42fa-89bb-5471e7c8353c/EglrVN8uNB.lottie";
 
-        // INJEÇÃO DOM PURO (Centro perfeito do Celular e PC)
+        // DOM INJECTOR SÊNIOR (Sem bugs de celular)
         const overlayLottie = document.createElement('div');
         overlayLottie.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 999999; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); transition: opacity 0.3s ease; opacity: 0;';
         overlayLottie.innerHTML = `<dotlottie-wc src="${urlAnimacao}" style="width: 280px; height: 280px;" autoplay></dotlottie-wc>`;
