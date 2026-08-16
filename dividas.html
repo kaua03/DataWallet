@@ -7,19 +7,23 @@
     
     <meta name="view-transition" content="same-origin">
     
-    <!-- 1. Carrega o Tailwind CDN primeiro -->
-    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // Restaura o tema instantaneamente antes de renderizar para evitar flash
+        // Restaura o tema instantaneamente antes de renderizar para evitar flash inicial
         if (localStorage.getItem('DataWallet_Tema') === 'escuro' || localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         } else {
             document.documentElement.classList.remove('dark');
         }
 
-        // Configuração do Tailwind após o carregamento do script
-        tailwind.config = { darkMode: 'class' };
+        // Configuração prévia obrigatória do Tailwind CDN para evitar re-compilação e flicker
+        window.tailwind = {
+            config: {
+                darkMode: 'class'
+            }
+        };
     </script>
+    <!-- Carrega a CDN do Tailwind após a configuração -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
