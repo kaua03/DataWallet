@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - IA BLINDADA, MULTI-SELECT E ANIMAÇÕES
+// movimentacoes.js - NLP IA SÊNIOR (Limpador de Lixo "BRL" e Hover Trap fix)
 // ==========================================
 
 let usuarioLogado = null;
@@ -10,17 +10,14 @@ let categoriasGlobais = [];
 let isHistoricoExpandido = false; 
 let reconhecimentoDeVoz = null; 
 
-// VARIÁVEIS DE SELEÇÃO MÚLTIPLA (Long Press)
 let timerPressao;
 let modoSelecao = false;
 let selecionados = new Set();
 
 document.addEventListener('DOMContentLoaded', async () => {
     
-    // Tira o pulo do CSS no Mobile
     setTimeout(() => document.body.classList.remove('fade-in'), 500);
 
-    // Navegação suave SPA
     document.querySelectorAll('a').forEach(link => {
         if(link.hostname === window.location.hostname && link.target !== '_blank') {
             link.addEventListener('click', e => {
@@ -51,7 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// MOTOR DE SELEÇÃO MÚLTIPLA (O WIGGLE DO IPHONE)
+// MOTOR DE SELEÇÃO MÚLTIPLA (LONG PRESS)
 // ==========================================
 window.iniciarPressao = function(id) {
     if (modoSelecao) return; 
@@ -78,8 +75,8 @@ window.clicarCard = function(event, id) {
 function ativarModoSelecao(idInicial) {
     modoSelecao = true;
     if (navigator.vibrate) navigator.vibrate(50); 
-    
     selecionados.add(idInicial);
+    
     const card = document.getElementById(`card-transacao-${idInicial}`);
     if(card) card.classList.add('wiggle-ativo');
     
@@ -367,7 +364,7 @@ function renderizarListaHistorico() {
 }
 
 // ==========================================
-// CÉREBRO NLP PIPELINE SÊNIOR
+// CÉREBRO NLP PIPELINE SÊNIOR (Limpador Absoluto)
 // ==========================================
 const dicionarioDeInteligencia = [
     { pasta: 'alimentação', regras: [{ titulo: 'Delivery', palavras: ['ifood', 'delivery', 'rappi', 'zedelivery'] }, { titulo: 'Fast Food', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado', 'pastel', 'mequi'] }, { titulo: 'Mercado', palavras: ['mercado', 'supermercado', 'açougue', 'padaria', 'compra', 'compras'] }, { titulo: 'Restaurante', palavras: ['restaurante', 'almoço', 'jantar', 'comida', 'self service'] }]},
@@ -414,30 +411,30 @@ function processarFraseNLP(fraseBruta) {
         textoCru = textoCru.replace(matchDia[0], ''); 
     }
 
-    // 2. EXTRAÇÃO MILIMÉTRICA DE VALORES E MILHARES (Blindado contra Chrome Speech)
-    let textoValores = textoCru.replace(/\.(\d{3})/g, '$1'); // Limpa os pontos do Chrome: 52.000 -> 52000
-    textoValores = textoValores.replace(/\bum mil\b/g, '1000'); // "um mil" -> 1000
+    // 2. EXTRAÇÃO DE VALORES E A REGRA DO "BRL" (Bug do Chrome Desktop)
+    // O Chrome Desktop transforma "reais" em "BRL" e coloca pontos. Vamos purificar isso.
+    let textoValores = textoCru.replace(/\.(\d{3})/g, '$1'); 
+    textoValores = textoValores.replace(/\bum mil\b/g, '1000'); 
     
-    // Multiplica "20 mil", "20k", "20,5 mil" por 1000
     textoValores = textoValores.replace(/\b(\d+(?:,\d+)?)\s*(?:k|mil|milhares)\b/gi, (match, numero) => {
         return (parseFloat(numero.replace(',', '.')) * 1000).toString();
     });
 
-    // Remove moedas do caminho e extrai
-    textoValores = textoValores.replace(/\br\$\b|\breais\b|\breal\b|\$|\bconto\b|\bcontos\b/gi, ''); 
+    // Limpamos todas as moedas possíveis (incluindo o fantasma "brl")
+    textoValores = textoValores.replace(/\br\$\b|\breais\b|\breal\b|\$|\bconto\b|\bcontos\b|\bbrl\b/gi, ''); 
     const nums = textoValores.match(/\d+(?:,\d+)?/g);
     const valorExtraido = nums ? Math.max(...nums.map(n => parseFloat(n.replace(',', '.')))) : 0;
 
-    // 3. O LIMPADOR DE LIXO DA DESCRIÇÃO (Stop Words Implacáveis)
+    // 3. A REGRA DA DESCRIÇÃO (Stop Words Absoluto)
     const palavrasReceita = ['recebi', 'ganhei', 'pix', 'salario', 'renda', 'vendi', 'deposito', 'entrou'];
     const isReceita = palavrasReceita.some(p => textoCru.includes(p));
 
     let catDetectada = null; 
     let tituloFinal = '';
 
-    // Remove qualquer número ou moeda da string base
+    // Remove qualquer número, vírgula, e moedas da descrição bruta
     let descCrua = textoCru.replace(/\d+(?:[.,]\d+)?/g, '');
-    descCrua = descCrua.replace(/\br\$\b|\breais\b|\breal\b|\$|\bmil\b|\bk\b|\bconto\b|\bcontos\b/gi, '');
+    descCrua = descCrua.replace(/\br\$\b|\breais\b|\breal\b|\$|\bmil\b|\bk\b|\bconto\b|\bcontos\b|\bbrl\b/gi, '');
     descCrua = removerAcentos(descCrua);
 
     if (isReceita) {
@@ -459,18 +456,18 @@ function processarFraseNLP(fraseBruta) {
 
     if (!tituloFinal) {
         let palavras = descCrua.split(' ');
-        // Todas as palavras que o sistema DEVE ignorar e jogar fora
+        
+        // Exército de palavras para jogar no lixo e sobrar apenas a essência
         const stopWords = [
             'eu', 'gastei', 'gasto', 'gastar', 'paguei', 'pago', 'pagar', 'pague', 
             'botei', 'coloquei', 'comprei', 'comprar', 'compra', 'de', 'da', 'do', 
             'no', 'na', 'para', 'com', 'novo', 'nova', 'meu', 'minha', 'fui', 
             'o', 'a', 'os', 'as', 'em', 'por', 'pra', 'fiz', 'tive', 'que', 
-            'foi', 'deu', 'ficou', 'um', 'uma', 'uns', 'umas', 'recebi', 'ganhei', 'entrou'
+            'foi', 'deu', 'ficou', 'um', 'uma', 'uns', 'umas', 'recebi', 'ganhei', 'entrou', 'brl'
         ];
         
         palavras = palavras.filter(p => p.trim() !== '' && !stopWords.includes(p.trim()));
         
-        // Se sobrou algo na frase, é o nome do gasto (ex: "carro"). Se não sobrou NADA, é Indefinido.
         if (palavras.length > 0) {
             tituloFinal = palavras.join(' ');
             tituloFinal = tituloFinal.charAt(0).toUpperCase() + tituloFinal.slice(1); 
@@ -504,7 +501,7 @@ function processarFraseNLP(fraseBruta) {
 window.abrirModalComTextoRapido = function() { processarFraseNLP(document.getElementById('input-rapido').value); };
 
 // ==========================================
-// MICROFONE REATIVO (RESTAURADO E COMPLETO)
+// MICROFONE REATIVO
 // ==========================================
 window.ativarMicrofone = function() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -570,12 +567,7 @@ window.ativarMicrofone = function() {
     reconhecimentoDeVoz.onerror = (e) => { 
         window.cancelarMicrofone(); 
         if (e.error === 'not-allowed') {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Microfone Bloqueado',
-                text: 'Libere a permissão de microfone no cadeado do navegador.',
-                confirmButtonColor: '#4f46e5'
-            });
+            Swal.fire({ icon: 'warning', title: 'Microfone Bloqueado', text: 'Libere a permissão de microfone.', confirmButtonColor: '#4f46e5' });
         }
     };
     
@@ -602,7 +594,7 @@ window.cancelarMicrofone = function() {
 };
 
 // ==========================================
-// FUNÇÕES DE CRUD
+// FUNÇÕES DE CRUD E INJEÇÃO DOM
 // ==========================================
 window.abrirModalEdicao = function(id) {
     const t = transacoesGlobais.find(x => x.id === id); if(!t) return;
@@ -616,7 +608,7 @@ window.abrirModalEdicao = function(id) {
 window.fecharModal = function() { document.getElementById('modal-transacao').classList.add('hidden'); };
 
 window.excluirTransacao = async function(id) {
-    if(modoSelecao) return; // Se for modo seleção, bloqueia exclusão individual
+    if(modoSelecao) return; 
     const confirmacao = await Swal.fire({ title: 'Excluir Transação?', text: "Essa ação apagará este registro do fluxo.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8', confirmButtonText: 'Sim', cancelButtonText: 'Cancelar' });
     if(!confirmacao.isConfirmed) return;
     try {
@@ -640,7 +632,6 @@ window.salvarTransacao = async function(event) {
         const isReceita = tipo === 'receita';
         const urlAnimacao = isReceita ? "https://lottie.host/85450f21-2b79-46bd-8e77-a0d7fc86ceaf/63OdW0EjZh.json" : "https://lottie.host/78d29cd2-20ba-42fa-89bb-5471e7c8353c/EglrVN8uNB.lottie";
 
-        // DOM INJECTOR SÊNIOR (Sem bugs de celular)
         const overlayLottie = document.createElement('div');
         overlayLottie.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 999999; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); transition: opacity 0.3s ease; opacity: 0;';
         overlayLottie.innerHTML = `<dotlottie-wc src="${urlAnimacao}" style="width: 280px; height: 280px;" autoplay></dotlottie-wc>`;
