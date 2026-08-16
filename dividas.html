@@ -8,20 +8,22 @@
     <meta name="view-transition" content="same-origin">
     
     <script>
-        // Restaura o tema instantaneamente antes de renderizar para evitar flash
-        if (localStorage.getItem('DataWallet_Tema') === 'escuro' || localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        // 1. Restaura o tema instantaneamente antes de renderizar (Zero Flash)
+        const temaSalvo = localStorage.getItem('DataWallet_Tema') || localStorage.getItem('theme');
+        if (temaSalvo === 'escuro' || temaSalvo === 'dark' || (!temaSalvo && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         } else {
             document.documentElement.classList.remove('dark');
         }
-    </script>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class'
+
+        // 2. Configura o Tailwind ANTES do script para evitar re-compilação e flicadas
+        window.tailwind = {
+            config: { darkMode: 'class' }
         };
     </script>
+    
+    <!-- 3. Carrega a CDN do Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -49,7 +51,7 @@
         .cursor-grab { cursor: grab; }
         .cursor-grabbing { cursor: grabbing; }
 
-        .coluna-minimizada { width: 64px !important; min-width: 64px !important; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .coluna-minimizada { width: 64px !important; min-width: 64px !important; cursor: pointer; transition: all 0.3s ease; }
         .coluna-minimizada .esconder-no-min { display: none !important; }
         .coluna-minimizada .mostrar-no-min { display: flex !important; }
 
@@ -118,36 +120,36 @@
             
             <button type="button" onclick="window.fecharModalNovaDivida()" class="absolute top-3 right-3 w-12 h-12 rounded-full text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center z-[999] bg-transparent active:scale-95"><i class="fa-solid fa-xmark text-xl pointer-events-none"></i></button>
             
-            <h3 id="modal-titulo" class="text-xl font-black text-slate-900 dark:text-white mb-1 pr-10"><i class="fa-solid fa-file-signature text-indigo-500"></i> Lançar Contas</h3>
-            <p id="modal-subtitulo" class="text-xs text-slate-500 dark:text-slate-400 mb-6 font-medium">Contas ou parcelamentos entram como "Pendentes".</p>
+            <h3 id="modal-titulo" class="text-xl font-black text-slate-900 dark:text-white mb-1 pr-10 transition-colors duration-300"><i class="fa-solid fa-file-signature text-indigo-500"></i> Lançar Contas</h3>
+            <p id="modal-subtitulo" class="text-xs text-slate-500 dark:text-slate-400 mb-6 font-medium transition-colors duration-300">Contas ou parcelamentos entram como "Pendentes".</p>
             
             <form id="form-divida" onsubmit="window.salvarDivida(event)" class="space-y-4">
                 <input type="hidden" id="divida-id">
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Descrição / Nome</label>
-                    <input type="text" id="divida-desc" required placeholder="Ex: Financiamento Veículo" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 outline-none focus:border-indigo-500 font-medium transition-colors">
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 transition-colors duration-300">Descrição / Nome</label>
+                    <input type="text" id="divida-desc" required placeholder="Ex: Financiamento Veículo" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 outline-none focus:border-indigo-500 font-medium transition-colors duration-300">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Valor da Parcela</label>
-                        <input type="text" id="divida-valor" inputmode="numeric" oninput="aplicarMascaraMoeda(this)" required placeholder="0,00" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 outline-none focus:border-indigo-500 font-black transition-colors">
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 transition-colors duration-300">Valor da Parcela</label>
+                        <input type="text" id="divida-valor" inputmode="numeric" oninput="aplicarMascaraMoeda(this)" required placeholder="0,00" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 outline-none focus:border-indigo-500 font-black transition-colors duration-300">
                     </div>
                     <div class="relative">
-                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Vencimento</label>
-                        <input type="date" id="divida-data" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 outline-none focus:border-indigo-500 font-medium cursor-pointer transition-colors" style="color-scheme: dark;">
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 transition-colors duration-300">Vencimento</label>
+                        <input type="date" id="divida-data" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 outline-none focus:border-indigo-500 font-medium cursor-pointer transition-colors duration-300" style="color-scheme: dark;">
                     </div>
                 </div>
                 <div class="grid grid-cols-3 gap-4">
                     <div id="wrapper-categoria" class="col-span-2 relative">
-                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Centro de Custo</label>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 transition-colors duration-300">Centro de Custo</label>
                         <i class="fa-solid fa-chevron-down absolute right-3 top-[38px] text-slate-400 text-[10px] pointer-events-none"></i>
-                        <select id="divida-categoria" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl pl-4 pr-8 py-3 outline-none focus:border-indigo-500 font-medium cursor-pointer transition-colors appearance-none">
+                        <select id="divida-categoria" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl pl-4 pr-8 py-3 outline-none focus:border-indigo-500 font-medium cursor-pointer transition-colors duration-300 appearance-none">
                             <option value="">Carregando pastas...</option>
                         </select>
                     </div>
                     <div id="wrapper-parcelas">
-                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1" title="Quantidade de meses">Parcelas</label>
-                        <input type="number" id="divida-parcelas" min="1" max="360" value="1" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 outline-none focus:border-indigo-500 font-black text-center transition-colors">
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 transition-colors duration-300" title="Quantidade de meses">Parcelas</label>
+                        <input type="number" id="divida-parcelas" min="1" max="360" value="1" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 outline-none focus:border-indigo-500 font-black text-center transition-colors duration-300">
                     </div>
                 </div>
                 <button type="submit" id="btn-salvar-divida" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3.5 rounded-xl transition shadow-lg shadow-indigo-500/30 mt-4 flex justify-center items-center gap-2">
