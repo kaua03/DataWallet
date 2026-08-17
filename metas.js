@@ -1,5 +1,5 @@
 // ==========================================
-// metas.js - MOTOR DE INTELIGÊNCIA, APORTES E HISTÓRICO POR META
+// metas.js - MOTOR DE INTELIGÊNCIA, APORTES E HISTÓRICO FLEXÍVEL
 // ==========================================
 
 let usuarioLogado = null;
@@ -261,7 +261,7 @@ function renderizarMetas() {
 }
 
 // ---------------------------------------------------------
-// EXIBIR HISTÓRICO DE APORTES DA META
+// EXIBIR HISTÓRICO DE APORTES DA META (BUSCA FLEXÍVEL)
 // ---------------------------------------------------------
 function abrirHistoricoMeta(metaId) {
     const meta = metasGlobais.find(m => m.id == metaId);
@@ -269,11 +269,10 @@ function abrirHistoricoMeta(metaId) {
 
     document.getElementById('hist-meta-titulo').innerText = meta.titulo;
     
-    // Filtra as transações correspondentes aos aportes desta meta
-    const aportes = transacoesGlobais.filter(t => t.descricao === `Aporte: ${meta.titulo}` && t.tipo === 'despesa');
+    const aportes = transacoesGlobais.filter(t => t.tipo === 'despesa' && t.descricao && t.descricao.startsWith('Aporte:'));
 
     const container = document.getElementById('hist-meta-lista');
-    let somaTotal = 0;
+    let somaAportesListados = 0;
 
     if (aportes.length === 0) {
         container.innerHTML = `
@@ -283,7 +282,7 @@ function abrirHistoricoMeta(metaId) {
             </div>`;
     } else {
         container.innerHTML = aportes.map(a => {
-            somaTotal += a.valor;
+            somaAportesListados += a.valor;
             let dataStr = a.data_vencimento ? a.data_vencimento.split('-').reverse().join('/') : '--/--/----';
             return `
             <div class="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-700 flex items-center justify-between">
@@ -292,7 +291,7 @@ function abrirHistoricoMeta(metaId) {
                         <i class="fa-solid fa-arrow-down"></i>
                     </div>
                     <div>
-                        <p class="font-bold text-sm text-slate-900 dark:text-white">Depósito realizado</p>
+                        <p class="font-bold text-sm text-slate-900 dark:text-white">${a.descricao}</p>
                         <p class="text-[10px] font-bold text-slate-400"><i class="fa-regular fa-calendar mr-1"></i> ${dataStr}</p>
                     </div>
                 </div>
@@ -301,7 +300,7 @@ function abrirHistoricoMeta(metaId) {
         }).join('');
     }
 
-    document.getElementById('hist-meta-total').innerText = formatarMoedaLocal(meta.valor_atual || somaTotal);
+    document.getElementById('hist-meta-total').innerText = formatarMoedaLocal(meta.valor_atual || 0);
     document.getElementById('modal-historico-meta').classList.remove('hidden');
 }
 
