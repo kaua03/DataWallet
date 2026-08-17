@@ -25,9 +25,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         if (typeof verificarSessaoSegura === 'function') {
             usuarioLogado = await verificarSessaoSegura();
-        } else if (typeof window.supabaseClient !== 'undefined') {
-            const { data: { session } } = await window.supabaseClient.auth.getSession();
-            usuarioLogado = session ? session.user : null;
+        } else {
+            const client = window.supabaseClient || supabaseClient;
+            if (client) {
+                const { data: { session } } = await client.auth.getSession();
+                usuarioLogado = session ? session.user : null;
+            }
         }
 
         if (!usuarioLogado) {
@@ -118,7 +121,7 @@ function desmascararMoeda(str) {
 
 async function carregarDadosDoBanco() {
     try {
-        const client = window.supabaseClient;
+        const client = window.supabaseClient || supabaseClient;
         if (!client || !usuarioLogado || !usuarioLogado.id) {
             throw new Error("Cliente Supabase ou usuário não inicializado.");
         }
