@@ -1,5 +1,5 @@
 // ==========================================
-// metas.js - MOTOR DE INTELIGÊNCIA DE POUPANÇA E METAS (SEM AUTO-FECHAMENTO)
+// metas.js - MOTOR DE INTELIGÊNCIA E ANIMAÇÃO LOTTIE IMERSIVA
 // ==========================================
 
 let usuarioLogado = null;
@@ -285,7 +285,7 @@ async function salvarMeta(event) {
         }
 
         fecharModalMeta();
-        dispararCelebracao("Meta Criada com Sucesso! 🎯", "O primeiro passo para realizar seus sonhos foi dado. Agora é manter o foco e fazer os aportes!");
+        dispararOverlayLottie("Meta Criada com Sucesso! 🎯");
 
     } catch (e) {
         Swal.fire('Erro', e.message, 'error');
@@ -316,15 +316,8 @@ async function efetivarGuardar(event) {
         renderizarMetas();
         fecharModalGuardar();
 
-        const elogios = [
-            "Você é imparável! Cada centavo guardado é um tijolo na sua muralha financeira.",
-            "Sensacional! O seu eu do futuro está orgulhoso da disciplina que você demonstrou agora.",
-            "Brilhante! Enquanto muitos gastam, você constrói patrimônio. Rumo ao topo!",
-            "Excelente aporte! Sua consistência financeira é o passaporte direto para a liberdade."
-        ];
-        const elogioAleatorio = elogios[Math.floor(Math.random() * elogios.length)];
-
-        dispararCelebracao("Depósito Realizado com Sucesso! 💰", `${elogioAleatorio}<br><br><b>+ ${formatarMoedaLocal(valorGuardado)}</b> adicionados a "${meta.titulo}".`);
+        // Dispara o overlay Lottie idêntico ao de movimentações
+        dispararOverlayLottie(`+ ${formatarMoedaLocal(valorGuardado)} adicionados a "${meta.titulo}"`);
 
     } catch (e) {
         Swal.fire('Erro', e.message, 'error');
@@ -361,14 +354,24 @@ async function excluirMeta(metaId) {
 }
 
 // ---------------------------------------------------------
-// CELEBRAÇÃO (PERMANECE ATÉ O USUÁRIO CLICAR EM CONTINUAR)
+// ANIMAÇÃO LOTTIE FLUTUANTE EM TELA CHEIA (Igual a Movimentações)
 // ---------------------------------------------------------
-function dispararCelebracao(titulo, mensagem) {
-    document.getElementById('cel-titulo').innerText = titulo;
-    document.getElementById('cel-mensagem').innerHTML = mensagem;
-    document.getElementById('modal-celebracao').classList.remove('hidden');
-}
+function dispararOverlayLottie(subtexto = "Depósito Realizado com Sucesso!") {
+    const urlAnimacao = "https://lottie.host/37a482be-32f8-445a-a036-7cd45d5f53d2/KQUtDBoH81.lottie";
 
-function fecharCelebracao() {
-    document.getElementById('modal-celebracao').classList.add('hidden');
+    const overlayLottie = document.createElement('div');
+    overlayLottie.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(6px); transition: opacity 0.3s ease; opacity: 0;';
+    
+    overlayLottie.innerHTML = `
+        <dotlottie-wc src="${urlAnimacao}" style="width: 280px; height: 280px;" autoplay></dotlottie-wc>
+        <p style="color: #ffffff; font-family: 'Inter', sans-serif; font-weight: 900; font-size: 1.25rem; margin-top: 1rem; text-align: center; padding: 0 1rem; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">${subtexto}</p>
+    `;
+    
+    document.documentElement.appendChild(overlayLottie);
+    
+    requestAnimationFrame(() => overlayLottie.style.opacity = '1');
+    setTimeout(() => { 
+        overlayLottie.style.opacity = '0'; 
+        setTimeout(() => overlayLottie.remove(), 300); 
+    }, 2600);
 }
