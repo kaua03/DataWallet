@@ -1,5 +1,5 @@
 // ==========================================
-// metas.js - MOTOR DE INTELIGÊNCIA, APORTES E VALIDAÇÃO DE CAIXA
+// metas.js - MOTOR DE INTELIGÊNCIA, APORTES E CONTADORES ANIMADOS
 // ==========================================
 
 let usuarioLogado = null;
@@ -54,6 +54,36 @@ function formatarMoedaLocal(valor) {
     return (valor < 0 ? "- R$ " : "R$ ") + p.join(',');
 }
 
+// ANIMAÇÃO DE CONTADOR IDÊNTICA ÀS OUTRAS TELAS
+window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 1000) {
+    const elemento = document.getElementById(id);
+    if (!elemento) return;
+    const startTimestamp = performance.now();
+    const step = (currentTimestamp) => {
+        const progress = Math.min((currentTimestamp - startTimestamp) / duracao, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 4); 
+        const valorAtual = easeProgress * valorFinal;
+        if (formato === 'moeda') {
+            let parts = Math.abs(valorAtual).toFixed(2).split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            elemento.innerText = (valorAtual < 0 ? "- R$ " : "R$ ") + parts.join(',');
+        } else if (formato === 'inteiro') { 
+            elemento.innerText = Math.round(valorAtual); 
+        }
+        if (progress < 1) requestAnimationFrame(step);
+        else {
+            if (formato === 'moeda') {
+                let parts = Math.abs(valorFinal).toFixed(2).split('.');
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                elemento.innerText = (valorFinal < 0 ? "- R$ " : "R$ ") + parts.join(',');
+            } else if (formato === 'inteiro') { 
+                elemento.innerText = valorFinal; 
+            }
+        }
+    };
+    requestAnimationFrame(step);
+};
+
 function aplicarMascaraMoeda(input) {
     let valor = input.value.replace(/\D/g, ''); 
     if (valor === '') { input.value = ''; return; }
@@ -105,7 +135,7 @@ async function carregarDadosDoBanco() {
 }
 
 // ---------------------------------------------------------
-// INTELIGÊNCIA FINANCEIRA: ANÁLISE DE CAIXA E CAPACIDADE DE POUPANÇA
+// INTELIGÊNCIA FINANCEIRA COM CONTADORES ANIMADOS
 // ---------------------------------------------------------
 function processarAnaliseInteligente() {
     const hoje = new Date();
@@ -137,9 +167,10 @@ function processarAnaliseInteligente() {
     let capacidadeMaximaSegura = saldoEstimado - (dividasPendentesTotal * 0.5); 
     if (capacidadeMaximaSegura < 0) capacidadeMaximaSegura = 0;
 
-    document.getElementById('analise-receitas').innerText = formatarMoedaLocal(receitasMes);
-    document.getElementById('analise-dividas').innerText = formatarMoedaLocal(dividasPendentesTotal);
-    document.getElementById('analise-sugestao').innerText = formatarMoedaLocal(capacidadeMaximaSegura);
+    // Dispara a animação fluida nos contadores do painel
+    window.animarContador('analise-receitas', receitasMes, 'moeda', 800);
+    window.animarContador('analise-dividas', dividasPendentesTotal, 'moeda', 800);
+    window.animarContador('analise-sugestao', capacidadeMaximaSegura, 'moeda', 800);
 
     const txtAnalise = document.getElementById('texto-analise-inteligente');
     const badgeStatus = document.getElementById('status-carteira-badge');
@@ -167,7 +198,7 @@ function processarAnaliseInteligente() {
 }
 
 // ---------------------------------------------------------
-// RENDERIZAÇÃO DAS METAS (COM BOTÕES DE EDITAR E EXCLUIR)
+// RENDERIZAÇÃO DAS METAS
 // ---------------------------------------------------------
 function renderizarMetas() {
     const grid = document.getElementById('grid-metas');
@@ -233,7 +264,7 @@ function renderizarMetas() {
 }
 
 // ---------------------------------------------------------
-// MODAIS E AÇÕES DE GRAVAÇÃO (CRIAR E EDITAR)
+// MODAIS E AÇÕES DE GRAVAÇÃO
 // ---------------------------------------------------------
 function abrirModalNovaMeta() {
     document.getElementById('form-meta').reset();
@@ -289,7 +320,6 @@ async function salvarMeta(event) {
         const client = window.supabaseClient || supabaseClient;
 
         if (idExistente) {
-            // Edição de Meta Existente
             const { error } = await client.from('metas').update({
                 titulo: titulo,
                 valor_alvo: alvo,
@@ -310,7 +340,6 @@ async function salvarMeta(event) {
             Swal.fire({ icon: 'success', title: 'Meta Atualizada!', showConfirmButton: false, timer: 1500 });
 
         } else {
-            // Criação de Nova Meta
             const novaMeta = {
                 usuario_id: usuarioLogado.id,
                 titulo: titulo,
@@ -371,7 +400,7 @@ async function efetivarGuardar(event) {
         const meta = metasGlobais.find(m => m.id == metaId);
         if (!meta) throw new Error("Meta não encontrada.");
 
-        // 1. Registra o aporte como uma despesa no fluxo para abater do saldo líquido
+        // 1. Registra o aporte como despesa no banco para abater do saldo líquido e recalcular o caixa
         const novaDespesaAporte = {
             usuario_id: usuarioLogado.id,
             tipo: 'despesa',
@@ -391,10 +420,12 @@ async function efetivarGuardar(event) {
         if (errMeta) throw errMeta;
 
         meta.valor_atual = novoValorAtual;
+        
+        // 3. Re processa a análise inteligente para atualizar e animar o "Máximo Seguro" na tela
+        processarAnaliseInteligente();
         renderizarMetas();
         fecharModalGuardar();
 
-        // Dispara o overlay Lottie com a nova animação de 6 segundos
         dispararOverlayLottie(`+ ${formatarMoedaLocal(valorGuardado)} adicionados a "${meta.titulo}"`);
 
     } catch (e) {
@@ -432,7 +463,7 @@ async function excluirMeta(metaId) {
 }
 
 // ---------------------------------------------------------
-// ANIMAÇÃO LOTTIE COM URL NOVA E 6 SEGUNDOS DE DURAÇÃO
+// ANIMAÇÃO LOTTIE COM 6 SEGUNDOS DE DURAÇÃO
 // ---------------------------------------------------------
 function dispararOverlayLottie(subtexto = "Depósito Realizado com Sucesso!") {
     const urlAnimacao = "https://lottie.host/896876fe-ed06-4076-a17b-5d6704174739/9BiS4WTolI.lottie";
@@ -454,7 +485,6 @@ function dispararOverlayLottie(subtexto = "Depósito Realizado com Sucesso!") {
     
     requestAnimationFrame(() => overlayLottie.style.opacity = '1');
     
-    // Duração estendida para 6 segundos para a animação rodar totalmente
     setTimeout(() => { 
         if (document.body.contains(overlayLottie) || document.documentElement.contains(overlayLottie)) {
             overlayLottie.style.opacity = '0'; 
