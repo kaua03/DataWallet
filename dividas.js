@@ -1,12 +1,10 @@
 // ==========================================
-// dividas.js - ERP KANBAN DEFINITIVO (DADOS + ZERO CONFLITOS + FLUIDEZ)
+// dividas.js - ERP KANBAN DEFINITIVO (DADOS EXATOS + ZERO ERROS)
 // ==========================================
 
 let usuarioLogado = null;
 let transacoesGlobais = [];
 let categoriasGlobais = [];
-// A variável 'menuMobileAberto' e a função 'toggleMobileMenu' foram 
-// removidas daqui porque o 'layout.js' já gerencia isso perfeitamente.
 
 document.addEventListener('DOMContentLoaded', async () => {
     
@@ -27,8 +25,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         if (typeof verificarSessaoSegura === 'function') {
             usuarioLogado = await verificarSessaoSegura();
-        } else if (typeof supabaseClient !== 'undefined') {
-            const { data: { session } } = await supabaseClient.auth.getSession();
+        } else if (typeof window.supabaseClient !== 'undefined') {
+            const { data: { session } } = await window.supabaseClient.auth.getSession();
             usuarioLogado = session ? session.user : null;
         }
 
@@ -48,12 +46,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     iniciarDragToScroll(); 
 });
 
-function formatarMoedaLocal(valor) {
-    let p = Math.abs(valor).toFixed(2).split('.');
-    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    return (valor < 0 ? "- R$ " : "R$ ") + p.join(',');
-}
-
 window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 1000) {
     const elemento = document.getElementById(id);
     if (!elemento) return;
@@ -65,7 +57,9 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
         const valorAtual = easeProgress * valorFinal;
         
         if (formato === 'moeda') {
-            elemento.innerText = formatarMoedaLocal(valorAtual);
+            let parts = Math.abs(valorAtual).toFixed(2).split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            elemento.innerText = (valorAtual < 0 ? "- R$ " : "R$ ") + parts.join(',');
         } else if (formato === 'porcentagem') {
             elemento.innerText = valorAtual.toFixed(1) + "%";
         }
@@ -73,7 +67,9 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
         if (progress < 1) requestAnimationFrame(step);
         else {
             if (formato === 'moeda') {
-                elemento.innerText = formatarMoedaLocal(valorFinal);
+                let parts = Math.abs(valorFinal).toFixed(2).split('.');
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                elemento.innerText = (valorFinal < 0 ? "- R$ " : "R$ ") + parts.join(',');
             } else if (formato === 'porcentagem') {
                 elemento.innerText = valorFinal.toFixed(1) + "%";
             }
@@ -122,13 +118,14 @@ function desmascararMoeda(str) {
 
 async function carregarDadosDoBanco() {
     try {
-        if (typeof supabaseClient === 'undefined' || !usuarioLogado || !usuarioLogado.id) {
+        const client = window.supabaseClient;
+        if (!client || !usuarioLogado || !usuarioLogado.id) {
             throw new Error("Cliente Supabase ou usuário não inicializado.");
         }
 
         const [rTrans, rCat] = await Promise.all([
-            supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).eq('tipo', 'despesa').order('data_vencimento', { ascending: true }),
-            supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
+            client.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).eq('tipo', 'despesa').order('data_vencimento', { ascending: true }),
+            client.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
         ]);
 
         if (rTrans.error) throw rTrans.error;
@@ -149,7 +146,6 @@ async function carregarDadosDoBanco() {
         console.error("Erro ao puxar dados:", e.message);
         const board = document.getElementById('board-dividas');
         
-        // Mantém a segurança impecável contra falha de JWT temporal
         if (e.message && e.message.includes('JWT issued at future')) {
             if (board) {
                 board.innerHTML = `
@@ -282,8 +278,6 @@ function renderizarColunas(agrupamentos) {
                 const corData = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-500' : 'text-slate-400 dark:text-slate-500';
                 const corValor = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white';
 
-                // O SEGREDO MANTIDO: O card usa apenas transition-transform no JS.
-                // O HTML/CSS pai (dividas.html) cuidará da fluidez sem flicar
                 const cardHtmlCru = `
                 <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-3 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md group flex flex-col gap-3 transition-transform duration-200">
                     <div class="flex justify-between items-start gap-3 w-full">
@@ -449,7 +443,6 @@ window.salvarDivida = async function(event) {
     }
 
     try {
-        // Blindagem Sênior: Garante que usa o cliente global independentemente do escopo
         const client = window.supabaseClient || supabaseClient;
         if (!client) throw new Error("Cliente Supabase não inicializado.");
 
@@ -489,23 +482,6 @@ window.salvarDivida = async function(event) {
                 transacoesGlobais.sort((a,b) => new Date(a.data_vencimento) - new Date(b.data_vencimento));
             }
         }
-        
-        window.fecharModalNovaDivida();
-        processarEAtualizarKanban();
-
-        const isDark = document.documentElement.classList.contains('dark');
-        const Toast = Swal.mixin({
-            toast: true, position: 'top-end', showConfirmButton: false, timer: 2000, timerProgressBar: true, background: isDark ? '#1e293b' : '#fff', color: isDark ? '#fff' : '#1e293b'
-        });
-        Toast.fire({ icon: 'success', title: 'Registro guardado!' });
-
-    } catch (e) {
-        Swal.fire('Erro', e.message, 'error');
-    } finally {
-        btn.innerHTML = conteudoOriginal;
-        btn.disabled = false;
-    }
-};
         
         window.fecharModalNovaDivida();
         processarEAtualizarKanban();
