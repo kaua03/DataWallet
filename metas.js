@@ -1,5 +1,5 @@
 // ==========================================
-// metas.js - MOTOR DE INTELIGÊNCIA E ANIMAÇÃO LOTTIE IMERSIVA
+// metas.js - MOTOR DE INTELIGÊNCIA E ANIMAÇÃO LOTTIE COM TEMPO ESTENDIDO
 // ==========================================
 
 let usuarioLogado = null;
@@ -316,7 +316,6 @@ async function efetivarGuardar(event) {
         renderizarMetas();
         fecharModalGuardar();
 
-        // Dispara o overlay Lottie idêntico ao de movimentações
         dispararOverlayLottie(`+ ${formatarMoedaLocal(valorGuardado)} adicionados a "${meta.titulo}"`);
 
     } catch (e) {
@@ -354,24 +353,34 @@ async function excluirMeta(metaId) {
 }
 
 // ---------------------------------------------------------
-// ANIMAÇÃO LOTTIE FLUTUANTE EM TELA CHEIA (Igual a Movimentações)
+// ANIMAÇÃO LOTTIE COM TEMPO ESTENDIDO (4.5 SEGUNDOS) E CLIQUE PARA FECHAR
 // ---------------------------------------------------------
 function dispararOverlayLottie(subtexto = "Depósito Realizado com Sucesso!") {
     const urlAnimacao = "https://lottie.host/37a482be-32f8-445a-a036-7cd45d5f53d2/KQUtDBoH81.lottie";
 
     const overlayLottie = document.createElement('div');
-    overlayLottie.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(6px); transition: opacity 0.3s ease; opacity: 0;';
+    overlayLottie.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(6px); transition: opacity 0.3s ease; opacity: 0; cursor: pointer;';
     
     overlayLottie.innerHTML = `
         <dotlottie-wc src="${urlAnimacao}" style="width: 280px; height: 280px;" autoplay></dotlottie-wc>
         <p style="color: #ffffff; font-family: 'Inter', sans-serif; font-weight: 900; font-size: 1.25rem; margin-top: 1rem; text-align: center; padding: 0 1rem; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">${subtexto}</p>
     `;
     
+    // Fecha ao clicar em qualquer lugar da tela
+    overlayLottie.onclick = () => {
+        overlayLottie.style.opacity = '0';
+        setTimeout(() => overlayLottie.remove(), 300);
+    };
+    
     document.documentElement.appendChild(overlayLottie);
     
     requestAnimationFrame(() => overlayLottie.style.opacity = '1');
+    
+    // Tempo estendido para 4.5 segundos para a animação completar com folga
     setTimeout(() => { 
-        overlayLottie.style.opacity = '0'; 
-        setTimeout(() => overlayLottie.remove(), 300); 
-    }, 2600);
+        if (document.body.contains(overlayLottie) || document.documentElement.contains(overlayLottie)) {
+            overlayLottie.style.opacity = '0'; 
+            setTimeout(() => overlayLottie.remove(), 300); 
+        }
+    }, 4500);
 }
