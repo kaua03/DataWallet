@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - IA ESTRITA E INVERSOR DE MOEDA
+// movimentacoes.js - IA ESTRITA E SINCRONIZAÇÃO DE METAS
 // ==========================================
 
 let usuarioLogado = null;
@@ -94,20 +94,6 @@ function atualizarBarraSelecao() {
     if(contador) contador.innerText = qtd;
     if (qtd === 0) sairModoSelecao();
 }
-
-window.excluirSelecionados = async function() {
-    if (selecionados.size === 0) return;
-    const confirmacao = await Swal.fire({ title: 'Excluir Registros?', text: `Você está prestes a excluir ${selecionados.size} registros. Isso não pode ser desfeito.`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8', confirmButtonText: 'Sim, excluir todos', cancelButtonText: 'Cancelar' });
-    if (!confirmacao.isConfirmed) return;
-    try {
-        const idsArray = Array.from(selecionados);
-        const { error } = await supabaseClient.from('transacoes').delete().in('id', idsArray).eq('usuario_id', usuarioLogado.id);
-        if (error) throw error;
-        transacoesGlobais = transacoesGlobais.filter(t => !selecionados.has(t.id));
-        sairModoSelecao(); window.aplicarFiltrosHistorico(); atualizarTopCards();
-        Swal.fire({ icon: 'success', title: 'Excluídos!', showConfirmButton: false, timer: 1500 });
-    } catch(e) { Swal.fire({ icon: 'error', title: 'Erro ao excluir', text: e.message }); }
-};
 
 window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 1000) {
     const elemento = document.getElementById(id);
@@ -301,7 +287,7 @@ function renderizarListaHistorico() {
 }
 
 // ==========================================
-// CÉREBRO NLP SÊNIOR
+// CÉREBRO NLP SÊNIOR E PROCESSAMENTO RÁPIDO
 // ==========================================
 const dicionarioDeInteligencia = [
     { pasta: 'alimentação', regras: [{ titulo: 'Delivery', palavras: ['ifood', 'delivery', 'rappi', 'zedelivery', 'marmita', 'quentinha'] }, { titulo: 'Fast Food', palavras: ['pizza', 'hamburguer', 'lanche', 'mcdonalds', 'bk', 'coxinha', 'salgado', 'pastel', 'mequi', 'doce', 'chocolate', 'sorvete', 'acai', 'açaí'] }, { titulo: 'Mercado', palavras: ['mercado', 'supermercado', 'açougue', 'padaria', 'compra', 'compras', 'mercadinho', 'mercearia', 'hortifruti', 'feira', 'atacadao', 'atacadão'] }, { titulo: 'Restaurante', palavras: ['restaurante', 'almoço', 'jantar', 'comida', 'self service'] }]},
@@ -379,7 +365,7 @@ function processarFraseNLP(fraseBruta) {
     let catDetectada = null; 
     let tituloFinal = '';
     
-    // 3. A REGRA ESTRITA (Sem Adivinhações de Sobras)
+    // 3. A REGRA ESTRITA
     let descCrua = removerAcentos(textoCru);
     descCrua = descCrua.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, " "); 
 
@@ -401,7 +387,6 @@ function processarFraseNLP(fraseBruta) {
         }
     }
 
-    // A PUNIÇÃO DA ADIVINHAÇÃO: Se não achou palavra exata no dicionário, crava Indefinido
     if (!tituloFinal) {
         tituloFinal = isReceita ? 'Recebimento Indefinido' : 'Gasto Indefinido';
         catDetectada = categoriasGlobais.find(c => removerAcentos(c.nome.toLowerCase()).includes('lazer') || removerAcentos(c.nome.toLowerCase()).includes('outros'));
@@ -425,23 +410,12 @@ function processarFraseNLP(fraseBruta) {
     document.getElementById('modal-transacao').classList.remove('hidden');
 }
 
-// ==========================================
-// FORMATADOR VISUAL AO VIVO (A Mágica do R$)
-// ==========================================
 function formatarTextoAoVivo(texto) {
     let t = texto.toLowerCase();
-    
-    // Padroniza as moedas
     t = t.replace(/\b(?:brl|reais|real)\b/g, "r$");
-    
-    // Inversor Matemático: O que estiver atrás do número vai para frente
     t = t.replace(/(\d+(?:[.,]\d+)?)\s*r\$/g, "r$ $1");
-    
-    // Limpa excesso de R$ no começo da frase
     t = t.replace(/(r\$)\s*(r\$)+/g, "r$");
     t = t.replace(/r\$\s*/g, "R$ ");
-    
-    // Coloca a primeira letra maiúscula
     return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
@@ -501,7 +475,7 @@ window.ativarMicrofone = function() {
 
         if (textoFinal && textoFinal.trim() !== '') {
             let tFormatado = formatarTextoAoVivo(textoFinal);
-            tFormatado = tFormatado.replace(/\.\s*$/g, ""); // Remove o ponto final indesejado
+            tFormatado = tFormatado.replace(/\.\s*$/g, ""); 
             
             document.getElementById('input-rapido').value = tFormatado;
             
@@ -542,10 +516,44 @@ window.cancelarMicrofone = function() {
 };
 
 // ==========================================
-// FUNÇÕES DE CRUD
+// FUNÇÕES DE INTEGRIDADE E ESTORNO DE METAS (BLINDAGEM)
 // ==========================================
+async function estornarAporteSeExistir(transacao) {
+    if (transacao && transacao.tipo === 'despesa' && transacao.descricao && transacao.descricao.startsWith('Aporte:')) {
+        const tituloMeta = transacao.descricao.replace('Aporte:', '').trim();
+        const client = window.supabaseClient || supabaseClient;
+        
+        try {
+            const { data: metaData } = await client.from('metas')
+                .select('*')
+                .eq('usuario_id', usuarioLogado.id)
+                .eq('titulo', tituloMeta)
+                .limit(1);
+                
+            if (metaData && metaData.length > 0) {
+                const meta = metaData[0];
+                const novoValorAtual = Math.max(0, (meta.valor_atual || 0) - transacao.valor);
+                await client.from('metas').update({ valor_atual: novoValorAtual }).eq('id', meta.id);
+            }
+        } catch(e) {
+            console.error("Erro ao estornar aporte da meta:", e);
+        }
+    }
+}
+
 window.abrirModalEdicao = function(id) {
     const t = transacoesGlobais.find(x => x.id === id); if(!t) return;
+    
+    if (t.tipo === 'despesa' && t.descricao && t.descricao.startsWith('Aporte:')) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Ação Protegida',
+            text: 'Este é um depósito de Meta. Para alterar o valor, exclua este registro e faça um novo aporte diretamente na tela de Metas para manter seu saldo sincronizado.',
+            confirmButtonColor: '#4f46e5'
+        });
+        return;
+    }
+
     document.getElementById('transacao-id').value = t.id; document.getElementById('modal-titulo').innerHTML = `<i class="fa-solid fa-pen-to-square text-indigo-600"></i> Editar Lançamento`;
     document.getElementById('transacao-desc').value = t.descricao;
     let valorStr = t.valor.toFixed(2).replace('.', ','); valorStr = valorStr.replace(/(\d)(\d{3})(\d{3}),/g, "$1.$2.$3,"); valorStr = valorStr.replace(/(\d)(\d{3}),/g, "$1.$2,");
@@ -556,13 +564,36 @@ window.abrirModalEdicao = function(id) {
 window.fecharModal = function() { document.getElementById('modal-transacao').classList.add('hidden'); };
 
 window.excluirTransacao = async function(id) {
-    if(modoSelecao) return; // Se for modo seleção, bloqueia exclusão individual
+    if(modoSelecao) return; 
     const confirmacao = await Swal.fire({ title: 'Excluir Transação?', text: "Essa ação apagará este registro do fluxo.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8', confirmButtonText: 'Sim', cancelButtonText: 'Cancelar' });
     if(!confirmacao.isConfirmed) return;
     try {
+        const transacaoAlvo = transacoesGlobais.find(t => t.id == id);
+        if (transacaoAlvo) await estornarAporteSeExistir(transacaoAlvo);
+
         await supabaseClient.from('transacoes').delete().eq('id', id).eq('usuario_id', usuarioLogado.id);
         await carregarDadosDoBanco(); Swal.fire({ icon: 'success', title: 'Excluído!', showConfirmButton: false, timer: 1500 });
     } catch(e) { Swal.fire('Erro', e.message, 'error'); }
+};
+
+window.excluirSelecionados = async function() {
+    if (selecionados.size === 0) return;
+    const confirmacao = await Swal.fire({ title: 'Excluir Registros?', text: `Você está prestes a excluir ${selecionados.size} registros. Isso não pode ser desfeito.`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8', confirmButtonText: 'Sim, excluir todos', cancelButtonText: 'Cancelar' });
+    if (!confirmacao.isConfirmed) return;
+    try {
+        const idsArray = Array.from(selecionados);
+        const transacoesAlvo = transacoesGlobais.filter(t => selecionados.has(t.id));
+        
+        for (const t of transacoesAlvo) {
+            await estornarAporteSeExistir(t);
+        }
+
+        const { error } = await supabaseClient.from('transacoes').delete().in('id', idsArray).eq('usuario_id', usuarioLogado.id);
+        if (error) throw error;
+        transacoesGlobais = transacoesGlobais.filter(t => !selecionados.has(t.id));
+        sairModoSelecao(); window.aplicarFiltrosHistorico(); atualizarTopCards();
+        Swal.fire({ icon: 'success', title: 'Excluídos!', showConfirmButton: false, timer: 1500 });
+    } catch(e) { Swal.fire({ icon: 'error', title: 'Erro ao excluir', text: e.message }); }
 };
 
 window.salvarTransacao = async function(event) {
@@ -580,8 +611,15 @@ window.salvarTransacao = async function(event) {
         const isReceita = tipo === 'receita';
         const urlAnimacao = isReceita ? "https://lottie.host/85450f21-2b79-46bd-8e77-a0d7fc86ceaf/63OdW0EjZh.json" : "https://lottie.host/78d29cd2-20ba-42fa-89bb-5471e7c8353c/EglrVN8uNB.lottie";
 
+        if (!customElements.get('dotlottie-wc')) {
+            const scriptLottie = document.createElement('script');
+            scriptLottie.src = "https://unpkg.com/@lottiefiles/dotlottie-wc@0.3.0/dist/dotlottie-wc.js";
+            scriptLottie.type = "module";
+            document.head.appendChild(scriptLottie);
+        }
+
         const overlayLottie = document.createElement('div');
-        overlayLottie.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 999999; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); transition: opacity 0.3s ease; opacity: 0;';
+        overlayLottie.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 999999; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); transition: opacity 0.3s ease; opacity: 0; pointer-events: none;';
         overlayLottie.innerHTML = `<dotlottie-wc src="${urlAnimacao}" style="width: 280px; height: 280px;" autoplay></dotlottie-wc>`;
         document.documentElement.appendChild(overlayLottie);
         
