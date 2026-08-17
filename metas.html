@@ -26,8 +26,7 @@
     
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Player Lottie Clássico (Robusto e compatível com modais ocultos) -->
-    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+    <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.4/dist/dotlottie-wc.js" type="module"></script>
     
     <script src="config.js" defer></script>
     <script src="layout.js" defer></script>
@@ -61,7 +60,7 @@
                         Planejamento de caixa: Guarde com segurança sem desprover suas obrigações.
                     </p>
                 </div>
-                <!-- BOTÃO SÓ APARECE NO COMPUTADOR (hidden md:flex) -->
+                <!-- BOTÃO SÓ APARECE NO COMPUTADOR -->
                 <button onclick="abrirModalNovaMeta()" class="hidden md:flex bg-indigo-600 hover:bg-indigo-700 text-white font-black px-5 py-3 rounded-2xl shadow-lg shadow-indigo-500/30 text-sm transition-all items-center gap-2 shrink-0 active:scale-95">
                     <i class="fa-solid fa-plus"></i> Nova Meta
                 </button>
@@ -188,22 +187,6 @@
                     <i class="fa-solid fa-vault"></i> Depositar na Meta
                 </button>
             </form>
-        </div>
-    </div>
-
-    <!-- MODAL DE CELEBRAÇÃO COM LOTTIE PLAYER ROBUSTO -->
-    <div id="modal-celebracao" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] flex flex-col items-center justify-center p-4 fade-in">
-        <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl p-8 text-center border border-slate-200 dark:border-slate-800 relative">
-            <div class="flex justify-center -mt-16 mb-2">
-                <lottie-player src="https://lottie.host/37a482be-32f8-445a-a036-7cd45d5f53d2/KQUtDBoH81.lottie" background="transparent" speed="1" style="width: 200px; height: 200px;" autoplay loop></lottie-player>
-            </div>
-            <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-2" id="cel-titulo">Incrível! 🚀</h3>
-            <p class="text-sm font-medium text-slate-600 dark:text-slate-300 mb-6 leading-relaxed" id="cel-mensagem">
-                Você deu mais um passo sólido rumo à sua liberdade financeira.
-            </p>
-            <button onclick="fecharCelebracao()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3.5 rounded-2xl shadow-lg shadow-indigo-500/30 transition active:scale-95">
-                Continuar Conquistando
-            </button>
         </div>
     </div>
 
