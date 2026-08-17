@@ -1,5 +1,5 @@
 // ==========================================
-// categorias.js - MOTOR DE ORGANIZAÇÃO, EXTRATO E TRANSIÇÃO SUAVE
+// categorias.js - MOTOR DE ORGANIZAÇÃO, EXTRATO E FILTROS ADEQUADOS
 // ==========================================
 
 let usuarioLogado = null;
@@ -8,11 +8,8 @@ let transacoesGlobais = [];
 let categoriaAtivaModal = null; 
 
 document.addEventListener('DOMContentLoaded', async () => {
-    
-    // 1. Transição suave de entrada (Fade In) idêntica às outras telas
     setTimeout(() => document.body.classList.remove('fade-in'), 500);
 
-    // 2. Intercepta os cliques nos links para dar o Fade Out suave antes de trocar de página
     document.querySelectorAll('a').forEach(link => {
         if(link.hostname === window.location.hostname && link.target !== '_blank') {
             link.addEventListener('click', e => {
@@ -171,7 +168,6 @@ function abrirExtrato(idCategoria, nome, cor, icone) {
     const ano = hoje.getFullYear();
     const mes = String(hoje.getMonth() + 1).padStart(2, '0');
     document.getElementById('input-mes-especifico').value = `${ano}-${mes}`;
-    document.getElementById('input-ano-especifico').value = ano;
     
     aplicarFiltroExtrato();
     document.getElementById('modal-extrato').classList.remove('hidden');
@@ -184,18 +180,14 @@ function aplicarFiltroExtrato() {
     
     const divDatas = document.getElementById('filtro-extrato-datas');
     const divMes = document.getElementById('filtro-extrato-mes');
-    const divAno = document.getElementById('filtro-extrato-ano');
 
     divDatas.classList.add('hidden');
     divMes.classList.add('hidden');
-    divAno.classList.add('hidden');
 
     if (tipoFiltro === 'personalizado') {
         divDatas.classList.remove('hidden');
     } else if (tipoFiltro === 'por_mes') {
         divMes.classList.remove('hidden');
-    } else if (tipoFiltro === 'por_ano') {
-        divAno.classList.remove('hidden');
     }
 
     let historico = transacoesGlobais.filter(t => t.categoria_id === categoriaAtivaModal.id);
@@ -203,17 +195,23 @@ function aplicarFiltroExtrato() {
     historico = historico.filter(t => {
         if (!t.data_vencimento) return true; 
         const dTransacao = new Date(t.data_vencimento + 'T12:00:00Z');
+        dTransacao.setHours(0,0,0,0);
 
-        if (tipoFiltro === 'por_mes') {
+        if (tipoFiltro === 'essa_semana') {
+            const dataHoje = new Date(); 
+            dataHoje.setHours(0,0,0,0);
+            const inicioSemana = new Date(dataHoje); 
+            inicioSemana.setDate(dataHoje.getDate() - dataHoje.getDay()); 
+            const fimSemana = new Date(inicioSemana); 
+            fimSemana.setDate(inicioSemana.getDate() + 6); 
+            fimSemana.setHours(23, 59, 59, 999);
+            return (dTransacao >= inicioSemana && dTransacao <= fimSemana);
+            
+        } else if (tipoFiltro === 'por_mes') {
             const valorMes = document.getElementById('input-mes-especifico').value;
             if (!valorMes) return true; 
             const [anoFiltro, mesFiltro] = valorMes.split('-');
             return dTransacao.getMonth() === (parseInt(mesFiltro) - 1) && dTransacao.getFullYear() === parseInt(anoFiltro);
-            
-        } else if (tipoFiltro === 'por_ano') {
-            const valorAno = document.getElementById('input-ano-especifico').value;
-            if (!valorAno) return true;
-            return dTransacao.getFullYear() === parseInt(valorAno);
             
         } else if (tipoFiltro === 'personalizado') {
             const dataInicio = document.getElementById('extrato-data-inicio').value;
@@ -223,7 +221,7 @@ function aplicarFiltroExtrato() {
             if (dataFim) valid = valid && dTransacao <= new Date(dataFim + 'T12:00:00Z');
             return valid;
         }
-        return true; 
+        return true; // 'tudo'
     });
 
     let somaPasta = 0;
