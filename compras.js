@@ -1,22 +1,25 @@
 // ==========================================
-// compras.js - MOTOR DE CÂMERA, API DE PRODUTOS, CARRINHO E HISTÓRICO
+// compras.js - MOTOR DE CÂMERA, API DE PRODUTOS E AUTOCOMPLETE ONLINE
 // ==========================================
 
 let usuarioLogado = null;
 let carrinho = [];
 let historicoPrecos = []; 
-let historicoAgrupadoRecibos = []; // Para a aba de Histórico
+let historicoAgrupadoRecibos = [];
 let precoReferenciaHistorico = 0; 
-let html5QrCode = null; // Instância da Câmera
+let html5QrCode = null; 
+let debounceBuscaTimeout = null;
 
+// Dicionário offline inteligente + Barcodes salvos para Fallback rápido
 const produtosComuns = [
+    { ean: "7896098900123", nome: "Sabão em Barra Ypê Verde", icone: "fa-soap", cor: "text-emerald-500" }, // O SABÃO DA FOTO!
     { nome: "Arroz Branco 5kg", icone: "fa-bowl-rice", cor: "text-amber-500" },
     { nome: "Feijão Carioca 1kg", icone: "fa-seedling", cor: "text-amber-700" },
     { nome: "Óleo de Soja 900ml", icone: "fa-bottle-droplet", cor: "text-yellow-500" },
     { nome: "Açúcar Refinado 1kg", icone: "fa-cubes-stacked", cor: "text-slate-300" },
     { nome: "Café Torrado 500g", icone: "fa-mug-hot", cor: "text-stone-800" },
     { nome: "Leite Integral 1L", icone: "fa-cow", cor: "text-slate-400" },
-    { nome: "Macarrão Espaguete 500g", icone: "fa-plate-wheat", cor: "text-amber-400" },
+    { nome: "Macarrão Espaguete", icone: "fa-plate-wheat", cor: "text-amber-400" },
     { nome: "Papel Higiênico", icone: "fa-toilet-paper", cor: "text-slate-300" },
     { nome: "Sabão em Pó", icone: "fa-box", cor: "text-blue-500" },
     { nome: "Detergente", icone: "fa-bottle-water", cor: "text-lime-500" },
@@ -47,8 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function formatarMoedaLocal(valor) {
-    let p = Math.abs(valor).toFixed(2).split('.');
-    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    let p = Math.abs(valor).toFixed(2).split('.'); p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     return (valor < 0 ? "- R$ " : "R$ ") + p.join(',');
 }
 
@@ -56,9 +58,7 @@ function aplicarMascaraMoeda(input) {
     let valor = input.value.replace(/\D/g, ''); 
     if (valor === '') { input.value = ''; return; }
     valor = (parseInt(valor) / 100).toFixed(2) + '';
-    valor = valor.replace(".", ",");
-    valor = valor.replace(/(\d)(\d{3})(\d{3}),/g, "$1.$2.$3,");
-    valor = valor.replace(/(\d)(\d{3}),/g, "$1.$2,");
+    valor = valor.replace(".", ","); valor = valor.replace(/(\d)(\d{3})(\d{3}),/g, "$1.$2.$3,"); valor = valor.replace(/(\d)(\d{3}),/g, "$1.$2,");
     input.value = valor;
 }
 
@@ -71,9 +71,6 @@ function removerAcentos(texto) {
     return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
 
-// ---------------------------------------------------------
-// GESTÃO DAS ABAS (CARRINHO VS HISTÓRICO)
-// ---------------------------------------------------------
 function mudarAba(aba) {
     const btnCar = document.getElementById('tab-carrinho');
     const btnHist = document.getElementById('tab-historico');
@@ -86,14 +83,12 @@ function mudarAba(aba) {
     if (aba === 'carrinho') {
         btnHist.classList.remove(...classeAtiva); btnHist.classList.add(...classeInativa);
         btnCar.classList.remove(...classeInativa); btnCar.classList.add(...classeAtiva);
-        viewHist.classList.add('hidden');
-        viewCar.classList.remove('hidden');
+        viewHist.classList.add('hidden'); viewCar.classList.remove('hidden');
     } else {
         btnCar.classList.remove(...classeAtiva); btnCar.classList.add(...classeInativa);
         btnHist.classList.remove(...classeInativa); btnHist.classList.add(...classeAtiva);
-        viewCar.classList.add('hidden');
-        viewHist.classList.remove('hidden');
-        renderizarListaDeRecibos(); // Carrega a visualização do histórico
+        viewCar.classList.add('hidden'); viewHist.classList.remove('hidden');
+        renderizarListaDeRecibos(); 
     }
 }
 
@@ -105,13 +100,10 @@ function tocarBipSucesso() {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = ctx.createOscillator();
         const gainNode = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(1000, ctx.currentTime); 
+        osc.type = 'sine'; osc.frequency.setValueAtTime(1000, ctx.currentTime); 
         gainNode.gain.setValueAtTime(0.5, ctx.currentTime);
-        osc.connect(gainNode);
-        gainNode.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.15); // Bip rápido
+        osc.connect(gainNode); gainNode.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.15); 
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
     } catch(e) {}
 }
@@ -124,37 +116,42 @@ function abrirLeitorCamera() {
     
     html5QrCode.start({ facingMode: "environment" }, config, 
         async (decodedText) => {
-            // Sucesso na leitura do código de barras
             tocarBipSucesso();
             await fecharLeitorCamera();
             
-            // Exibe carregamento enquanto busca o produto online
             Swal.fire({ title: 'Buscando Produto...', html: `Código: ${decodedText}`, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
             
+            // 1. Tenta achar no banco local de emergência (ex: Sabão Ypê 7896098900123)
+            const achouLocal = produtosComuns.find(p => p.ean === decodedText);
+            if (achouLocal) {
+                Swal.close();
+                abrirModalProduto(achouLocal.nome, achouLocal.icone, achouLocal.cor, -1, null, decodedText);
+                return;
+            }
+
             try {
-                // API Aberta Mundial de Alimentos (Gratuita e sem Autenticação)
+                // 2. Tenta achar na API Mundial
                 const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${decodedText}.json`);
                 const json = await res.json();
-                
                 Swal.close();
                 
                 if (json.status === 1 && json.product) {
-                    const nomeProduto = json.product.product_name_pt || json.product.product_name || `Produto ${decodedText}`;
+                    const nomeProduto = json.product.product_name_pt || json.product.product_name || '';
                     const imagemUrl = json.product.image_front_url || null;
-                    abrirModalProduto(nomeProduto, 'fa-barcode', 'text-indigo-500', -1, imagemUrl);
+                    abrirModalProduto(nomeProduto, 'fa-barcode', 'text-indigo-500', -1, imagemUrl, decodedText);
                 } else {
-                    // Produto não encontrado na API, abre modal limpo com o código
-                    abrirModalProduto(`Código ${decodedText}`, 'fa-barcode', 'text-slate-500');
+                    // Produto não encontrado, abre modal vazio para a mãe digitar!
+                    abrirModalProduto('', 'fa-barcode', 'text-slate-500', -1, null, decodedText);
                 }
             } catch (e) {
                 Swal.close();
-                abrirModalProduto(`Código ${decodedText}`, 'fa-barcode', 'text-slate-500');
+                abrirModalProduto('', 'fa-barcode', 'text-slate-500', -1, null, decodedText);
             }
         },
-        (errorMessage) => { /* ignora erros contínuos de enquadramento da câmera */ }
+        (errorMessage) => { }
     ).catch((err) => {
         fecharLeitorCamera();
-        Swal.fire('Erro na Câmera', 'Não foi possível acessar a câmera do celular. Verifique as permissões do navegador.', 'error');
+        Swal.fire('Erro na Câmera', 'Não foi possível acessar a câmera.', 'error');
     });
 }
 
@@ -167,31 +164,68 @@ async function fecharLeitorCamera() {
 }
 
 // ---------------------------------------------------------
-// BUSCA E AUTOCOMPLETE LOCAL 
+// BUSCA E AUTOCOMPLETE LOCAL + ONLINE EM TEMPO REAL
 // ---------------------------------------------------------
 function buscarProdutosAutocompletar() {
-    const termo = removerAcentos(document.getElementById('input-busca-produto').value);
+    const inputStr = document.getElementById('input-busca-produto').value;
+    const termo = removerAcentos(inputStr);
     const box = document.getElementById('box-autocomplete');
     const btnLimpar = document.getElementById('btn-limpar-busca');
 
-    if (termo.length === 0) {
-        box.classList.add('hidden'); btnLimpar.classList.add('hidden'); return;
-    }
+    if (termo.length === 0) { box.classList.add('hidden'); btnLimpar.classList.add('hidden'); return; }
 
     btnLimpar.classList.remove('hidden');
-    let resultados = produtosComuns.filter(p => removerAcentos(p.nome).includes(termo));
-
-    if (!resultados.some(r => removerAcentos(r.nome) === termo)) {
-        resultados.unshift({ nome: document.getElementById('input-busca-produto').value, icone: 'fa-barcode', cor: 'text-indigo-500' });
-    }
-
-    box.innerHTML = resultados.slice(0, 6).map(p => `
+    
+    // 1. Pesquisa rápida no Dicionário Offline
+    let resultadosHTML = produtosComuns.filter(p => removerAcentos(p.nome).includes(termo)).slice(0, 4).map(p => `
         <div onclick="abrirModalProduto('${p.nome.replace(/'/g, "\\'")}', '${p.icone}', '${p.cor}')" class="autocomplete-item p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 cursor-pointer">
             <div class="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-lg ${p.cor}"><i class="fa-solid ${p.icone}"></i></div>
             <span class="font-bold text-slate-900 dark:text-white">${p.nome}</span>
         </div>
     `).join('');
+
+    // 2. Sempre mostra a opção de "Adicionar o que ela digitou" como genérico
+    resultadosHTML = `
+        <div onclick="abrirModalProduto('${inputStr.replace(/'/g, "\\'")}', 'fa-box', 'text-indigo-500')" class="autocomplete-item p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 cursor-pointer bg-indigo-50/50 dark:bg-indigo-900/10">
+            <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center text-lg text-indigo-600 dark:text-indigo-300"><i class="fa-solid fa-plus"></i></div>
+            <span class="font-black text-indigo-700 dark:text-indigo-300">Adicionar "${inputStr}"</span>
+        </div>
+    ` + resultadosHTML;
+
+    // Coloca spinner embaixo enquanto busca na API Online
+    box.innerHTML = resultadosHTML + `<div id="spinner-api-busca" class="p-3 text-center text-slate-400 text-xs font-bold"><i class="fa-solid fa-spinner fa-spin"></i> Buscando online...</div>`;
     box.classList.remove('hidden');
+
+    // 3. Debounce para a API Externa (Busca Online Real-time)
+    clearTimeout(debounceBuscaTimeout);
+    if (termo.length >= 3) {
+        debounceBuscaTimeout = setTimeout(async () => {
+            try {
+                const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${termo}&search_simple=1&action=process&json=1&page_size=3`);
+                const json = await res.json();
+                
+                const spinner = document.getElementById('spinner-api-busca');
+                if(spinner) spinner.remove();
+
+                if (json.products && json.products.length > 0) {
+                    const apiHTML = json.products.map(p => {
+                        const nomeP = (p.product_name_pt || p.product_name || 'Produto').replace(/'/g, "");
+                        const imgP = p.image_front_small_url || '';
+                        const imgTag = imgP ? `<img src="${imgP}" class="w-full h-full object-cover rounded-full">` : `<i class="fa-solid fa-barcode"></i>`;
+                        return `
+                        <div onclick="abrirModalProduto('${nomeP}', 'fa-barcode', 'text-slate-400', -1, '${imgP}')" class="autocomplete-item p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 cursor-pointer">
+                            <div class="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-lg text-slate-400 border border-slate-200 dark:border-slate-700 overflow-hidden">${imgTag}</div>
+                            <span class="font-bold text-slate-900 dark:text-white line-clamp-1">${nomeP}</span>
+                        </div>`;
+                    }).join('');
+                    box.innerHTML += apiHTML;
+                }
+            } catch (e) {}
+        }, 800);
+    } else {
+        const spinner = document.getElementById('spinner-api-busca');
+        if(spinner) spinner.remove();
+    }
 }
 
 function limparBusca() {
@@ -200,9 +234,9 @@ function limparBusca() {
 }
 
 // ---------------------------------------------------------
-// MODAL DE PRODUTO & INTELIGÊNCIA DE PREÇO
+// MODAL DE PRODUTO & INTELIGÊNCIA DE PREÇO (MINIGAME)
 // ---------------------------------------------------------
-function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-indigo-500', idxEdit = -1, imagemUrl = null) {
+function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-indigo-500', idxEdit = -1, imagemUrl = null, codigoBarras = null) {
     document.getElementById('box-autocomplete').classList.add('hidden');
     document.getElementById('input-busca-produto').value = '';
     document.getElementById('btn-limpar-busca').classList.add('hidden');
@@ -210,18 +244,18 @@ function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-indigo
     const form = document.getElementById('form-produto');
     form.reset();
     
-    document.getElementById('modal-produto-titulo').innerText = nomeProduto;
-    document.getElementById('prod-nome').value = nomeProduto;
+    const inputNome = document.getElementById('prod-nome');
+    inputNome.value = nomeProduto;
     document.getElementById('prod-img-hidden').value = imagemUrl || '';
+    document.getElementById('prod-codigo-barras').value = codigoBarras || '';
     
-    // Mostra a foto real do produto (da API) ou o ícone padrão
     const imgContainer = document.getElementById('prod-img-container');
     if (imagemUrl) {
         imgContainer.innerHTML = `<img src="${imagemUrl}" class="w-full h-full object-cover">`;
-        imgContainer.className = "w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden bg-white";
+        imgContainer.className = "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden bg-white";
     } else {
         imgContainer.innerHTML = `<i class="fa-solid ${icone}"></i>`;
-        imgContainer.className = `w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 shadow-sm overflow-hidden bg-slate-50 dark:bg-slate-800 ${cor}`;
+        imgContainer.className = `w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-sm overflow-hidden bg-slate-50 dark:bg-slate-800 ${cor}`;
     }
     
     analisarPrecoHistoricoInicial(nomeProduto);
@@ -240,7 +274,15 @@ function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-indigo
     }
 
     document.getElementById('modal-produto').classList.remove('hidden');
-    setTimeout(() => { document.getElementById('prod-preco').focus(); }, 150);
+    
+    // Foca inteligentemente: se o nome estiver vazio (api falhou no bip), foca no nome. Se tiver nome, foca no preço.
+    setTimeout(() => { 
+        if(nomeProduto.trim() === '') {
+            inputNome.focus();
+        } else {
+            document.getElementById('prod-preco').focus(); 
+        }
+    }, 150);
 }
 
 function fecharModalProduto() {
@@ -262,13 +304,15 @@ function analisarPrecoHistoricoInicial(nomeProduto) {
     const texto = document.getElementById('texto-inteligencia');
 
     const nomeNormalizado = removerAcentos(nomeProduto);
+    if (!nomeNormalizado) { box.classList.add('hidden'); precoReferenciaHistorico = 0; return; }
+
     const historicoItem = historicoPrecos.find(h => removerAcentos(h.nome) === nomeNormalizado);
     
     if (historicoItem) {
         precoReferenciaHistorico = parseFloat(historicoItem.preco_unitario);
         box.classList.remove('hidden');
-        box.className = "mb-6 p-3 rounded-xl border flex items-center gap-3 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50 transition-colors";
-        icone.className = "w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400";
+        box.className = "mb-4 p-2.5 rounded-xl border flex items-center gap-2.5 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50 transition-colors";
+        icone.className = "w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400";
         icone.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i>';
         texto.innerHTML = `Última vez pago: <b>${formatarMoedaLocal(precoReferenciaHistorico)}</b>. Digite o preço atual.`;
     } else {
@@ -291,18 +335,18 @@ function calcularTotalItemModal() {
         const percentual = Math.abs((diferenca / precoReferenciaHistorico) * 100).toFixed(1);
 
         if (diferenca > 0.01) {
-            box.className = "mb-6 p-3 rounded-xl border flex items-center gap-3 bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30 transition-colors";
-            icone.className = "w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400";
+            box.className = "mb-4 p-2.5 rounded-xl border flex items-center gap-2.5 bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30 transition-colors";
+            icone.className = "w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400";
             icone.innerHTML = '<i class="fa-solid fa-arrow-trend-up"></i>';
             texto.innerHTML = `Atenção: <b class="text-rose-600 dark:text-rose-400">${formatarMoedaLocal(Math.abs(diferenca))} mais caro</b> (+${percentual}%) que a última vez.`;
         } else if (diferenca < -0.01) {
-            box.className = "mb-6 p-3 rounded-xl border flex items-center gap-3 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 transition-colors";
-            icone.className = "w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400";
+            box.className = "mb-4 p-2.5 rounded-xl border flex items-center gap-2.5 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 transition-colors";
+            icone.className = "w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400";
             icone.innerHTML = '<i class="fa-solid fa-arrow-trend-down"></i>';
             texto.innerHTML = `Ótimo! <b class="text-emerald-600 dark:text-emerald-400">${formatarMoedaLocal(Math.abs(diferenca))} mais barato</b> (-${percentual}%) que a última vez.`;
         } else {
-            box.className = "mb-6 p-3 rounded-xl border flex items-center gap-3 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50 transition-colors";
-            icone.className = "w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400";
+            box.className = "mb-4 p-2.5 rounded-xl border flex items-center gap-2.5 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50 transition-colors";
+            icone.className = "w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400";
             icone.innerHTML = '<i class="fa-solid fa-equals"></i>';
             texto.innerHTML = `O preço se manteve exatamente o mesmo da última vez.`;
         }
@@ -315,7 +359,9 @@ function calcularTotalItemModal() {
 function salvarItemCarrinho(event) {
     event.preventDefault();
     const idx = parseInt(document.getElementById('prod-id').value);
-    const nome = document.getElementById('prod-nome').value;
+    let nome = document.getElementById('prod-nome').value.trim();
+    if (!nome) nome = "Produto Genérico";
+    
     const imgUrl = document.getElementById('prod-img-hidden').value;
     const preco = desmascararMoeda(document.getElementById('prod-preco').value);
     const qtd = parseInt(document.getElementById('prod-qtd').value);
@@ -325,7 +371,7 @@ function salvarItemCarrinho(event) {
     const dic = produtosComuns.find(p => removerAcentos(p.nome) === removerAcentos(nome));
     const obj = {
         nome: nome, preco: preco, quantidade: qtd, imgUrl: imgUrl,
-        icone: dic ? dic.icone : 'fa-barcode', cor: dic ? dic.cor : 'text-slate-500'
+        icone: dic ? dic.icone : 'fa-box', cor: dic ? dic.cor : 'text-slate-500'
     };
 
     if (idx === -1) carrinho.unshift(obj); else carrinho[idx] = obj;
@@ -353,14 +399,14 @@ function renderizarCarrinho() {
         container.innerHTML = `
             <div class="flex flex-col items-center justify-center py-20 opacity-60">
                 <dotlottie-wc src="https://lottie.host/7e008fa9-2de6-455b-baf5-0e1ce8b8fcfa/R8B5B1bN9C.json" style="width: 150px; height: 150px;" autoplay loop></dotlottie-wc>
-                <p class="text-sm font-bold text-slate-500 dark:text-slate-400 mt-2 text-center max-w-[250px]">O carrinho está vazio.<br>Bipe o código de barras de um produto para começar.</p>
+                <p class="text-sm font-bold text-slate-500 dark:text-slate-400 mt-2 text-center max-w-[250px]">O carrinho está vazio.<br>Bipe ou digite o nome de um produto.</p>
             </div>`;
         totalEl.innerText = "R$ 0,00"; qtdEl.innerText = "0";
         boxFinalizar.classList.add('hidden'); btnFinalizarTopo.classList.add('hidden');
         return;
     }
 
-    boxFinalizar.classList.remove('hidden'); btnFinalizarTopo.classList.remove('hidden'); btnFinalizarTopo.classList.add('md:flex');
+    boxFinalizar.classList.remove('hidden'); btnFinalizarTopo.classList.remove('hidden'); btnFinalizarTopo.classList.add('sm:flex');
 
     const html = carrinho.map((item, index) => {
         const sub = item.preco * item.quantidade;
@@ -456,6 +502,9 @@ async function efetivarCompra(event) {
 
 function dispararOverlayLottie(subtexto) {
     const urlAnimacao = "https://lottie.host/78d29cd2-20ba-42fa-89bb-5471e7c8353c/EglrVN8uNB.lottie"; 
+    if (!customElements.get('dotlottie-wc')) {
+        const scriptLottie = document.createElement('script'); scriptLottie.src = "https://unpkg.com/@lottiefiles/dotlottie-wc@0.3.0/dist/dotlottie-wc.js"; scriptLottie.type = "module"; document.head.appendChild(scriptLottie);
+    }
     const overlayLottie = document.createElement('div');
     overlayLottie.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(8px); transition: opacity 0.3s ease; opacity: 0; cursor: pointer;';
     overlayLottie.innerHTML = `<div style="width: 250px; height: 250px; display: flex; align-items: center; justify-content: center;"><dotlottie-wc src="${urlAnimacao}" autoplay style="width: 100%; height: 100%;"></dotlottie-wc></div><p style="color: #ffffff; font-family: 'Inter', sans-serif; font-weight: 900; font-size: 1.35rem; margin-top: 1rem; text-align: center; padding: 0 1.5rem; text-shadow: 0 2px 10px rgba(0,0,0,0.6);">${subtexto}</p>`;
@@ -470,16 +519,12 @@ function dispararOverlayLottie(subtexto) {
 async function carregarHistoricoPrecos() {
     try {
         const client = window.supabaseClient;
-        
-        // Puxa o histórico bruto de itens para a inteligência artificial de preços
         const { data: itensDB } = await client.from('mercado_itens').select('*').eq('usuario_id', usuarioLogado.id).order('criado_em', { ascending: false });
         if (itensDB) historicoPrecos = itensDB;
 
-        // Monta os Recibos agrupados para a Aba 2
         const { data: transacoesMercado } = await client.from('transacoes').select('id, descricao, data_vencimento').eq('usuario_id', usuarioLogado.id).order('data_vencimento', { ascending: false });
         
         if (itensDB && transacoesMercado) {
-            // Agrupa os itens pela transacao_id
             let recibosMap = {};
             itensDB.forEach(item => {
                 if(item.transacao_id) {
@@ -493,17 +538,14 @@ async function carregarHistoricoPrecos() {
             });
             historicoAgrupadoRecibos = Object.values(recibosMap).sort((a,b) => new Date(b.data) - new Date(a.data));
         }
-    } catch (e) { console.error("Erro ao puxar histórico:", e); }
+    } catch (e) {}
 }
 
 function renderizarListaDeRecibos() {
     const container = document.getElementById('lista-historico-recibos');
-    
     if (historicoAgrupadoRecibos.length === 0) {
-        container.innerHTML = `<div class="text-center py-10 text-slate-400"><i class="fa-solid fa-receipt text-3xl mb-2 opacity-50"></i><p class="text-xs font-bold uppercase">Nenhum recibo salvo.</p></div>`;
-        return;
+        container.innerHTML = `<div class="text-center py-10 text-slate-400"><i class="fa-solid fa-receipt text-3xl mb-2 opacity-50"></i><p class="text-xs font-bold uppercase">Nenhum recibo salvo.</p></div>`; return;
     }
-
     container.innerHTML = historicoAgrupadoRecibos.map(recibo => {
         let dStr = recibo.data.split('-').reverse().join('/');
         return `
@@ -523,11 +565,9 @@ function renderizarListaDeRecibos() {
 function abrirReciboHistorico(transacaoId) {
     const recibo = historicoAgrupadoRecibos.find(r => r.id === transacaoId);
     if(!recibo) return;
-
     document.getElementById('recibo-titulo').innerText = recibo.descricao;
     document.getElementById('recibo-data').innerText = recibo.data.split('-').reverse().join('/');
     document.getElementById('recibo-total').innerText = formatarMoedaLocal(recibo.total);
-
     const lista = document.getElementById('lista-itens-recibo');
     lista.innerHTML = recibo.itens.map(item => `
         <div class="flex justify-between items-center py-2 border-b border-slate-50 dark:border-slate-800/50 last:border-0">
@@ -538,10 +578,7 @@ function abrirReciboHistorico(transacaoId) {
             <span class="text-sm font-black text-slate-900 dark:text-white">${formatarMoedaLocal(item.quantidade * item.preco_unitario)}</span>
         </div>
     `).join('');
-
     document.getElementById('modal-recibo').classList.remove('hidden');
 }
 
-function fecharModalRecibo() {
-    document.getElementById('modal-recibo').classList.add('hidden');
-}
+function fecharModalRecibo() { document.getElementById('modal-recibo').classList.add('hidden'); }
