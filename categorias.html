@@ -1,118 +1,141 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Categorias - DataWallet</title>
     
+    <meta name="view-transition" content="same-origin">
+    
+    <!-- 1. Restaura o tema e PINTA O FUNDO instantaneamente (Zero Flash Absoluto) -->
+    <script>
+        const temaSalvo = localStorage.getItem('DataWallet_Tema') || localStorage.getItem('theme');
+        if (temaSalvo === 'escuro' || temaSalvo === 'dark' || (!temaSalvo && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+            document.documentElement.style.backgroundColor = '#020617'; // Cor exata do bg-slate-950
+        } else {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.style.backgroundColor = '#f8fafc'; // Cor exata do bg-slate-50
+        }
+    </script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    <script> tailwind.config = { darkMode: 'class' }; </script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- O layout.js injeta automaticamente a sidebar auto-minimizável e o menu L-Shape mobile -->
     <script src="config.js" defer></script>
+    <script src="layout.js" defer></script>
     <script src="categorias.js" defer></script>
     
     <style>
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
         .slide-right { animation: slideRight 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
         ::-webkit-scrollbar { width: 6px; display: none; }
+
+        input[type="month"]::-webkit-calendar-picker-indicator,
+        input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.5; transition: 0.2s; }
+        .dark input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.7; }
+        input::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+        select { -webkit-appearance: none; -moz-appearance: none; appearance: none; }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans h-screen overflow-hidden flex relative fade-in">
 
-    <!-- MENU LATERAL (PC) -->
-    <aside class="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 p-6 h-full shadow-lg z-20">
-        <div class="flex items-center gap-3 mb-10">
-            <i class="fa-solid fa-wallet text-blue-600 text-3xl"></i>
-            <h2 class="text-2xl font-black text-gray-900 tracking-tight">DataWallet</h2>
-        </div>
-        
-        <nav class="flex-1 space-y-2">
-            <a href="movimentacoes.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 hover:text-blue-600 transition"><i class="fa-solid fa-money-bill-transfer w-5"></i> Movimentações</a>
-            <a href="dashboard.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 hover:text-blue-600 transition"><i class="fa-solid fa-chart-pie w-5"></i> Dashboard</a>
-            <a href="dividas.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 hover:text-blue-600 transition"><i class="fa-solid fa-file-invoice-dollar w-5"></i> Dívidas</a>
-            <a href="categorias.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold bg-blue-50 text-blue-600 transition"><i class="fa-solid fa-tags w-5"></i> Categorias</a>
-            <a href="planos.html" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 hover:text-blue-600 transition"><i class="fa-solid fa-bullseye w-5"></i> Metas</a>
-        </nav>
-        <button onclick="sairDoSistema()" class="flex items-center gap-3 p-3 rounded-xl font-bold text-red-500 hover:bg-red-50 transition mt-auto"><i class="fa-solid fa-right-from-bracket w-5"></i> Sair</button>
-    </aside>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 h-[100dvh] overflow-hidden flex relative fade-in transition-colors duration-300">
 
     <!-- ÁREA CENTRAL -->
-    <main class="flex-1 h-full overflow-y-auto bg-gray-50 relative pb-24 md:pb-0 p-4 md:p-8">
-        <section class="max-w-5xl mx-auto">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2"><i class="fa-solid fa-tags text-blue-600"></i> Gestão de Categorias</h2>
-            </div>
-            <p class="text-sm text-gray-500 mb-8 font-medium">Suas despesas são organizadas e analisadas automaticamente. <strong class="text-blue-600 cursor-pointer">Clique em uma pasta para ver o extrato.</strong></p>
+    <main class="flex-1 h-full overflow-y-auto relative pb-28 md:pb-8 p-4 md:p-8">
+        <section class="max-w-6xl mx-auto space-y-6">
             
-            <div id="grid-categorias" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                <p class="text-gray-400 text-sm font-bold"><i class="fa-solid fa-spinner fa-spin"></i> Processando inteligência...</p>
+            <!-- CABEÇALHO -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm transition-colors relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent pointer-events-none"></div>
+                <div class="relative z-10">
+                    <h2 class="text-xl md:text-3xl font-black text-slate-900 dark:text-white flex items-center gap-3">
+                        <i class="fa-solid fa-tags text-indigo-600 dark:text-indigo-400"></i> Gestão de Categorias
+                    </h2>
+                    <p class="text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
+                        Suas despesas são organizadas e analisadas automaticamente. <strong class="text-indigo-600 dark:text-indigo-400 cursor-pointer">Clique em uma pasta para ver o extrato.</strong>
+                    </p>
+                </div>
+            </div>
+            
+            <!-- GRID DE CATEGORIAS -->
+            <div id="grid-categorias" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+                <div class="col-span-full text-center py-20 text-slate-400 dark:text-slate-500">
+                    <i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i>
+                    <p class="text-xs font-bold uppercase tracking-wider">Processando inteligência...</p>
+                </div>
             </div>
         </section>
     </main>
 
-    <!-- MENU INFERIOR (Celular) -->
-    <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t border-gray-200 px-4 py-2 flex justify-between items-center z-20">
-        <a href="movimentacoes.html" class="flex flex-col items-center text-gray-400 hover:text-blue-600 transition p-2"><i class="fa-solid fa-money-bill-transfer text-lg mb-1"></i><span class="text-[10px] font-bold">Movimentar</span></a>
-        <a href="dashboard.html" class="flex flex-col items-center text-gray-400 hover:text-blue-600 transition p-2"><i class="fa-solid fa-chart-pie text-lg mb-1"></i><span class="text-[10px] font-bold">Dashboard</span></a>
-        <a href="dividas.html" class="flex flex-col items-center text-gray-400 hover:text-blue-600 transition p-2"><i class="fa-solid fa-file-invoice-dollar text-lg mb-1"></i><span class="text-[10px] font-bold">Dívidas</span></a>
-        <a href="categorias.html" class="flex flex-col items-center text-blue-600 transition p-2"><i class="fa-solid fa-tags text-lg mb-1"></i><span class="text-[10px] font-bold">Categorias</span></a>
-        <a href="planos.html" class="flex flex-col items-center text-gray-400 hover:text-blue-600 transition p-2"><i class="fa-solid fa-bullseye text-lg mb-1"></i><span class="text-[10px] font-bold">Metas</span></a>
-    </nav>
-
     <!-- MODAL DE EXTRATO COM FILTRO DE DATAS AVANÇADO -->
-    <div id="modal-extrato" class="hidden fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex justify-end fade-in">
-        <div class="bg-white w-full md:w-[450px] h-full shadow-2xl relative slide-right flex flex-col">
+    <div id="modal-extrato" onclick="if(event.target === this) fecharExtrato()" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex justify-end fade-in cursor-pointer">
+        <div class="bg-white dark:bg-slate-900 w-full md:w-[450px] h-full shadow-2xl relative slide-right flex flex-col border-l border-slate-200 dark:border-slate-800 transition-colors cursor-default">
             
-            <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
+            <!-- TOPO DO EXTRATO -->
+            <div class="p-6 border-b border-slate-200/80 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950 shrink-0 transition-colors">
                 <div class="flex items-center gap-4">
-                    <div id="extrato-icone" class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl bg-white shadow-sm"></div>
+                    <div id="extrato-icone" class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm"></div>
                     <div>
-                        <h3 class="text-lg font-black text-gray-900 leading-tight" id="extrato-titulo">Categoria</h3>
-                        <p class="text-xs text-gray-500 font-bold uppercase mt-0.5">Extrato Detalhado</p>
+                        <h3 class="text-lg font-black text-slate-900 dark:text-white leading-tight" id="extrato-titulo">Categoria</h3>
+                        <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mt-0.5">Extrato Detalhado</p>
                     </div>
                 </div>
-                <button onclick="fecharExtrato()" class="w-8 h-8 bg-gray-200 text-gray-600 rounded-full hover:bg-red-500 hover:text-white transition flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+                <button onclick="fecharExtrato()" class="w-9 h-9 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full hover:bg-rose-500 hover:text-white transition flex items-center justify-center active:scale-95">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
 
             <!-- FILTRO DE PERÍODO -->
-            <div class="px-6 pt-4 pb-4 bg-gray-50 border-b border-gray-100 flex flex-col gap-3 shrink-0">
+            <div class="px-6 pt-4 pb-4 bg-slate-50/50 dark:bg-slate-950/50 border-b border-slate-200/80 dark:border-slate-800 flex flex-col gap-3 shrink-0 transition-colors">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-gray-500 uppercase"><i class="fa-solid fa-filter"></i> Filtrar por Período</span>
-                    <select id="filtro-extrato-periodo" onchange="aplicarFiltroExtrato()" class="bg-white border border-gray-200 text-gray-700 text-sm rounded-lg outline-none px-3 py-1.5 font-bold shadow-sm cursor-pointer">
+                    <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest"><i class="fa-solid fa-filter mr-1"></i> Período</span>
+                    <select id="filtro-extrato-periodo" onchange="aplicarFiltroExtrato()" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 text-xs rounded-xl outline-none px-3 py-2 font-bold shadow-sm cursor-pointer">
                         <option value="tudo">Todo o Histórico</option>
-                        <option value="por_mes">Por Mês</option>
+                        <option value="por_mes" selected>Por Mês</option>
                         <option value="por_ano">Por Ano</option>
                         <option value="personalizado">Personalizado</option>
                     </select>
                 </div>
                 
-                <!-- Input: Mês Específico (Escondido por padrão) -->
+                <!-- Input: Mês Específico -->
                 <div id="filtro-extrato-mes" class="hidden flex items-center gap-2 mt-1">
-                    <input type="month" id="input-mes-especifico" onchange="aplicarFiltroExtrato()" class="w-full bg-white border border-gray-200 text-gray-700 text-sm rounded-lg px-3 py-2 outline-none font-bold shadow-inner cursor-pointer">
+                    <input type="month" id="input-mes-especifico" onchange="aplicarFiltroExtrato()" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 text-xs rounded-xl px-3 py-2.5 outline-none font-bold shadow-inner cursor-pointer" style="color-scheme: dark;">
                 </div>
 
-                <!-- Input: Ano Específico (Escondido por padrão) -->
+                <!-- Input: Ano Específico -->
                 <div id="filtro-extrato-ano" class="hidden flex items-center gap-2 mt-1">
-                    <input type="number" id="input-ano-especifico" onchange="aplicarFiltroExtrato()" min="2000" max="2100" step="1" class="w-full bg-white border border-gray-200 text-gray-700 text-sm rounded-lg px-3 py-2 outline-none font-bold shadow-inner cursor-pointer" placeholder="Ex: 2026">
+                    <input type="number" id="input-ano-especifico" onchange="aplicarFiltroExtrato()" min="2000" max="2100" step="1" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 text-xs rounded-xl px-3 py-2.5 outline-none font-bold shadow-inner cursor-pointer" placeholder="Ex: 2026">
                 </div>
 
-                <!-- Inputs: Datas Específicas (Escondidas por padrão) -->
+                <!-- Inputs: Datas Específicas -->
                 <div id="filtro-extrato-datas" class="hidden flex items-center gap-2 mt-1">
-                    <input type="date" id="extrato-data-inicio" onchange="aplicarFiltroExtrato()" class="flex-1 bg-white border border-gray-200 text-gray-700 text-xs rounded-lg px-2 py-2 outline-none font-bold">
-                    <span class="text-gray-400 text-xs font-bold">até</span>
-                    <input type="date" id="extrato-data-fim" onchange="aplicarFiltroExtrato()" class="flex-1 bg-white border border-gray-200 text-gray-700 text-xs rounded-lg px-2 py-2 outline-none font-bold">
+                    <input type="date" id="extrato-data-inicio" onchange="aplicarFiltroExtrato()" class="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 text-xs rounded-xl px-3 py-2.5 outline-none font-bold cursor-pointer" style="color-scheme: dark;">
+                    <span class="text-slate-400 text-xs font-bold">até</span>
+                    <input type="date" id="extrato-data-fim" onchange="aplicarFiltroExtrato()" class="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 text-xs rounded-xl px-3 py-2.5 outline-none font-bold cursor-pointer" style="color-scheme: dark;">
                 </div>
             </div>
             
-            <div class="flex-1 overflow-y-auto p-6 space-y-4 pb-24" id="extrato-lista" style="scrollbar-width: none;"></div>
+            <!-- LISTA DE TRANSAÇÕES DO EXTRATO -->
+            <div class="flex-1 overflow-y-auto p-6 space-y-3 pb-28" id="extrato-lista" style="scrollbar-width: none;"></div>
             
-            <div class="absolute bottom-0 w-full p-6 border-t border-gray-100 bg-white shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
+            <!-- RODAPÉ FIXO DO EXTRATO -->
+            <div class="absolute bottom-0 w-full p-6 border-t border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] transition-colors">
                 <div class="flex justify-between items-center">
-                    <span class="text-sm font-bold text-gray-500 uppercase">Total no Período</span>
-                    <span class="text-2xl font-black text-gray-900" id="extrato-total">R$ 0,00</span>
+                    <span class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total no Período</span>
+                    <span class="text-2xl font-black text-slate-900 dark:text-white" id="extrato-total">R$ 0,00</span>
                 </div>
             </div>
         </div>
