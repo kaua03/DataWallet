@@ -1,5 +1,5 @@
 // ==========================================
-// metas.js - MOTOR DE INTELIGÊNCIA, APORTES E HISTÓRICO FLEXÍVEL
+// metas.js - MOTOR DE INTELIGÊNCIA, APORTES E ESTORNO AUTOMÁTICO DE CAIXA
 // ==========================================
 
 let usuarioLogado = null;
@@ -195,7 +195,7 @@ function processarAnaliseInteligente() {
 }
 
 // ---------------------------------------------------------
-// RENDERIZAÇÃO DAS METAS (COM CLIQUE PARA HISTÓRICO)
+// RENDERIZAÇÃO DAS METAS
 // ---------------------------------------------------------
 function renderizarMetas() {
     const grid = document.getElementById('grid-metas');
@@ -261,16 +261,22 @@ function renderizarMetas() {
 }
 
 // ---------------------------------------------------------
-// EXIBIR HISTÓRICO DE APORTES DA META (BUSCA FLEXÍVEL)
+// EXIBIR HISTÓRICO DE APORTES COM OPÇÃO DE EXCLUIR APORTE (ESTORNO)
 // ---------------------------------------------------------
+let metaAtualHistoricoId = null;
+
 function abrirHistoricoMeta(metaId) {
+    metaAtualHistoricoId = metaId;
     const meta = metasGlobais.find(m => m.id == metaId);
     if (!meta) return;
 
     document.getElementById('hist-meta-titulo').innerText = meta.titulo;
-    
-    const aportes = transacoesGlobais.filter(t => t.tipo === 'despesa' && t.descricao && t.descricao.startsWith('Aporte:'));
+    renderizarListaAportesModal(meta);
+    document.getElementById('modal-historico-meta').classList.remove('hidden');
+}
 
+function renderizarListaAportesModal(meta) {
+    const aportes = transacoesGlobais.filter(t => t.tipo === 'despesa' && t.descricao === `Aporte: ${meta.titulo}`);
     const container = document.getElementById('hist-meta-lista');
     let somaAportesListados = 0;
 
@@ -295,17 +301,71 @@ function abrirHistoricoMeta(metaId) {
                         <p class="text-[10px] font-bold text-slate-400"><i class="fa-regular fa-calendar mr-1"></i> ${dataStr}</p>
                     </div>
                 </div>
-                <span class="font-black text-emerald-600 dark:text-emerald-400 text-sm">+ ${formatarMoedaLocal(a.valor)}</span>
+                <div class="flex items-center gap-3">
+                    <span class="font-black text-emerald-600 dark:text-emerald-400 text-sm">+ ${formatarMoedaLocal(a.valor)}</span>
+                    <button onclick="excluirAporte('${a.id}', '${meta.id}')" title="Retirar da caixinha (Estornar)" class="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center">
+                        <i class="fa-solid fa-rotate-left text-xs"></i>
+                    </button>
+                </div>
             </div>`;
         }).join('');
     }
 
-    document.getElementById('hist-meta-total').innerText = formatarMoedaLocal(meta.valor_atual || 0);
-    document.getElementById('modal-historico-meta').classList.remove('hidden');
+    document.getElementById('hist-meta-total').innerText = formatarMoedaLocal(meta.valor_atual || somaAportesListados);
+}
+
+// Estorna o valor do aporte para o saldo livre ao excluir o lançamento
+async function excluirAporte(transacaoId, metaId) {
+    const isDark = document.documentElement.classList.contains('dark');
+    const confirmacao = await Swal.fire({
+        title: 'Retirar dinheiro da caixinha?',
+        text: "O valor deste aporte retornará para o seu saldo disponível.",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'Sim, retirar',
+        background: isDark ? '#1e293b' : '#fff',
+        color: isDark ? '#fff' : '#1e293b'
+    });
+
+    if (!confirmacao.isConfirmed) return;
+
+    try {
+        const client = window.supabaseClient || supabaseClient;
+        
+        // 1. Encontra a transação de aporte para saber o valor exato
+        const transacao = transacoesGlobais.find(t => t.id == transacaoId);
+        if (!transacao) throw new Error("Aporte não encontrado.");
+
+        // 2. Apaga a transação de despesa do banco (devolvendo o dinheiro para o caixa)
+        const { error: errTrans } = await client.from('transacoes').delete().eq('id', transacaoId);
+        if (errTrans) throw errTrans;
+
+        transacoesGlobais = transacoesGlobais.filter(t => t.id != transacaoId);
+
+        // 3. Atualiza o valor guardado na meta
+        const meta = metasGlobais.find(m => m.id == metaId);
+        if (meta) {
+            meta.valor_atual = Math.max(0, (meta.valor_atual || 0) - transacao.valor);
+            await client.from('metas').update({ valor_atual: meta.valor_atual }).eq('id', metaId);
+        }
+
+        // Recarrega as análises e atualiza a lista no modal
+        processarAnaliseInteligente();
+        renderizarMetas();
+        renderizarListaAportesModal(meta);
+
+        Swal.fire({ icon: 'success', title: 'Valor estornado com sucesso!', showConfirmButton: false, timer: 1500 });
+
+    } catch (e) {
+        Swal.fire('Erro', e.message, 'error');
+    }
 }
 
 function fecharHistoricoMeta() {
     document.getElementById('modal-historico-meta').classList.add('hidden');
+    metaAtualHistoricoId = null;
 }
 
 // ---------------------------------------------------------
@@ -474,16 +534,19 @@ async function efetivarGuardar(event) {
     }
 }
 
+// AO EXCLUIR A META INTEIRA, ESTORNA TODOS OS APORTES VINCULADOS PARA O CAIXA
 async function excluirMeta(metaId) {
+    const meta = metasGlobais.find(m => m.id == metaId);
     const isDark = document.documentElement.classList.contains('dark');
+    
     const confirmacao = await Swal.fire({
         title: 'Excluir Meta?',
-        text: "Essa ação removerá o planejamento permanentemente.",
+        text: "Essa ação removerá o planejamento e estornará todo o valor guardado para o seu saldo livre.",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
         cancelButtonColor: '#94a3b8',
-        confirmButtonText: 'Sim, excluir',
+        confirmButtonText: 'Sim, excluir e estornar',
         background: isDark ? '#1e293b' : '#fff',
         color: isDark ? '#fff' : '#1e293b'
     });
@@ -492,11 +555,27 @@ async function excluirMeta(metaId) {
 
     try {
         const client = window.supabaseClient || supabaseClient;
+
+        if (meta) {
+            // Apaga todas as transações de aporte associadas a esta meta
+            const { error: errTrans } = await client.from('transacoes').delete().eq('usuario_id', usuarioLogado.id).eq('descricao', `Aporte: ${meta.titulo}`);
+            if (errTrans) throw errTrans;
+
+            // Remove da lista local
+            transacoesGlobais = transacoesGlobais.filter(t => t.descricao !== `Aporte: ${meta.titulo}`);
+        }
+
+        // Apaga a meta do banco
         const { error } = await client.from('metas').delete().eq('id', metaId);
         if (error) throw error;
 
         metasGlobais = metasGlobais.filter(m => m.id != metaId);
+        
+        processarAnaliseInteligente();
         renderizarMetas();
+        fecharHistoricoMeta();
+
+        Swal.fire({ icon: 'success', title: 'Meta excluída e valores estornados!', showConfirmButton: false, timer: 1500 });
 
     } catch (e) {
         Swal.fire('Erro', e.message, 'error');
@@ -513,7 +592,7 @@ function dispararOverlayLottie(subtexto = "Depósito Realizado com Sucesso!") {
     overlayLottie.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(6px); transition: opacity 0.3s ease; opacity: 0; cursor: pointer;';
     
     overlayLottie.innerHTML = `
-        <dotlottie-wc src="${urlAnimacao}" style="width: 300px; height: 300px;" autoplay></dotlottie-wc>
+        <dotlottie-wc src="${urlAnimacao}" style="width: 300px; height: 300px;" autoplay loop></dotlottie-wc>
         <p style="color: #ffffff; font-family: 'Inter', sans-serif; font-weight: 900; font-size: 1.25rem; margin-top: 1rem; text-align: center; padding: 0 1rem; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">${subtexto}</p>
     `;
     
