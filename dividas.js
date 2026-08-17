@@ -1,10 +1,11 @@
 // ==========================================
-// dividas.js - ERP KANBAN DEFINITIVO (DADOS + FLUIDEZ MÁXIMA)
+// dividas.js - ERP KANBAN PADRÃO DASHBOARD (OBSERVER + DEBOUNCE)
 // ==========================================
 
 let usuarioLogado = null;
 let transacoesGlobais = [];
 let categoriasGlobais = [];
+let inicializacaoCompleta = false; // Flag idêntica ao dashboard.js
 
 document.addEventListener('DOMContentLoaded', async () => {
     
@@ -44,7 +45,33 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await carregarDadosDoBanco();
     iniciarDragToScroll(); 
+    
+    inicializacaoCompleta = true;
+
+    // O SUPERPODER: DEBOUNCE NA TRANSIÇÃO DE TEMA (Idêntico ao Dashboard)
+    let timeoutTema;
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.attributeName === 'class' && inicializacaoCompleta) {
+                clearTimeout(timeoutTema);
+                // Aguarda a transição fluida do Tailwind (300ms) antes de recalcular o JS
+                timeoutTema = setTimeout(() => {
+                    if (transacoesGlobais.length > 0) {
+                        processarEAtualizarKanban(true); 
+                    }
+                }, 300); 
+            }
+        });
+    });
+    observer.observe(document.documentElement, { attributes: true });
 });
+
+// Helper de moeda idêntico ao Dashboard para manter a estrutura padrão
+function formatarMoedaLocal(valor) {
+    let p = Math.abs(valor).toFixed(2).split('.');
+    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return (valor < 0 ? "- R$ " : "R$ ") + p.join(',');
+}
 
 window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 1000) {
     const elemento = document.getElementById(id);
@@ -57,9 +84,7 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
         const valorAtual = easeProgress * valorFinal;
         
         if (formato === 'moeda') {
-            let parts = Math.abs(valorAtual).toFixed(2).split('.');
-            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-            elemento.innerText = (valorAtual < 0 ? "- R$ " : "R$ ") + parts.join(',');
+            elemento.innerText = formatarMoedaLocal(valorAtual);
         } else if (formato === 'porcentagem') {
             elemento.innerText = valorAtual.toFixed(1) + "%";
         }
@@ -67,9 +92,7 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
         if (progress < 1) requestAnimationFrame(step);
         else {
             if (formato === 'moeda') {
-                let parts = Math.abs(valorFinal).toFixed(2).split('.');
-                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-                elemento.innerText = (valorFinal < 0 ? "- R$ " : "R$ ") + parts.join(',');
+                elemento.innerText = formatarMoedaLocal(valorFinal);
             } else if (formato === 'porcentagem') {
                 elemento.innerText = valorFinal.toFixed(1) + "%";
             }
@@ -150,7 +173,8 @@ async function carregarDadosDoBanco() {
     }
 }
 
-function processarEAtualizarKanban() {
+// isThemeChange = false para animações normais, true para snap instantâneo do tema
+function processarEAtualizarKanban(isThemeChange = false) {
     const hojeData = new Date();
     hojeData.setHours(0, 0, 0, 0); 
     const mesAtual = hojeData.getMonth(); const anoAtual = hojeData.getFullYear();
@@ -195,15 +219,23 @@ function processarEAtualizarKanban() {
         }
     });
 
-    window.animarContador('kpi-atrasadas', totAtrasadas, 'moeda', 800);
-    window.animarContador('kpi-risco', totRisco7Dias, 'moeda', 800);
-    window.animarContador('kpi-aberto', totEmAberto, 'moeda', 800);
-    window.animarContador('kpi-pagas', totPagas, 'moeda', 800);
+    // Se for apenas troca de tema, seta direto os valores. Se não, faz a animação inicial.
+    if (!isThemeChange) {
+        window.animarContador('kpi-atrasadas', totAtrasadas, 'moeda', 800);
+        window.animarContador('kpi-risco', totRisco7Dias, 'moeda', 800);
+        window.animarContador('kpi-aberto', totEmAberto, 'moeda', 800);
+        window.animarContador('kpi-pagas', totPagas, 'moeda', 800);
+    } else {
+        document.getElementById('kpi-atrasadas').innerText = formatarMoedaLocal(totAtrasadas);
+        document.getElementById('kpi-risco').innerText = formatarMoedaLocal(totRisco7Dias);
+        document.getElementById('kpi-aberto').innerText = formatarMoedaLocal(totEmAberto);
+        document.getElementById('kpi-pagas').innerText = formatarMoedaLocal(totPagas);
+    }
 
-    renderizarColunas(agrupamentos);
+    renderizarColunas(agrupamentos, isThemeChange);
 }
 
-function renderizarColunas(agrupamentos) {
+function renderizarColunas(agrupamentos, isThemeChange) {
     const board = document.getElementById('board-dividas');
     if (!board) return;
     let html = '';
@@ -259,9 +291,9 @@ function renderizarColunas(agrupamentos) {
                 const corData = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-500' : 'text-slate-400 dark:text-slate-500';
                 const corValor = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white';
 
-                // Aplicação da otimização: Apenas transição limpa para background do card (Sem transition-all)
+                // Otimização: Apenas transition-transform (hover scale), ZERO CSS colors transitions aqui dentro
                 const cardHtmlCru = `
-                <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-3 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition duration-200 group flex flex-col gap-3">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-3 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-transform duration-200 group flex flex-col gap-3">
                     <div class="flex justify-between items-start gap-3 w-full">
                         <h4 class="font-bold text-xs ${classeTraco} leading-tight break-words whitespace-normal mt-0.5 flex-1">${d.descricao}</h4>
                         <span class="font-black text-sm ${corValor} whitespace-nowrap shrink-0">R$ ${d.valor.toFixed(2).replace('.', ',')}</span>
@@ -288,8 +320,8 @@ function renderizarColunas(agrupamentos) {
         }
 
         html += `
-        <div id="${idColunaSanitizado}" class="w-[300px] md:w-[340px] shrink-0 bg-slate-100/50 dark:bg-slate-800/20 rounded-3xl ${config.borderColor} border flex flex-col max-h-full transition-colors duration-200 relative">
-            <div onclick="window.toggleColuna('${idColunaSanitizado}')" class="p-4 border-b border-slate-200/80 dark:border-slate-700/50 flex justify-between items-center bg-white dark:bg-slate-900 rounded-t-3xl shrink-0 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-200 relative z-10">
+        <div id="${idColunaSanitizado}" class="w-[300px] md:w-[340px] shrink-0 bg-slate-100/50 dark:bg-slate-800/20 rounded-3xl ${config.borderColor} border flex flex-col max-h-full transition-colors duration-300 relative">
+            <div onclick="window.toggleColuna('${idColunaSanitizado}')" class="p-4 border-b border-slate-200/80 dark:border-slate-700/50 flex justify-between items-center bg-white dark:bg-slate-900 rounded-t-3xl shrink-0 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-300 relative z-10">
                 <div class="esconder-no-min flex items-center gap-2">
                     <i class="fa-solid ${config.icon} ${config.titleColor}"></i>
                     <h3 class="font-bold ${config.titleColor} text-sm">${nomeColuna}</h3>
