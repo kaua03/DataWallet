@@ -449,7 +449,10 @@ window.salvarDivida = async function(event) {
     }
 
     try {
-        const client = window.supabaseClient;
+        // Blindagem Sênior: Garante que usa o cliente global independentemente do escopo
+        const client = window.supabaseClient || supabaseClient;
+        if (!client) throw new Error("Cliente Supabase não inicializado.");
+
         if (idExistente) {
             const { data, error } = await client.from('transacoes').update({
                 descricao: descBase, valor: valorFloat, data_vencimento: dataInicialISO, categoria_id: catId
@@ -486,6 +489,23 @@ window.salvarDivida = async function(event) {
                 transacoesGlobais.sort((a,b) => new Date(a.data_vencimento) - new Date(b.data_vencimento));
             }
         }
+        
+        window.fecharModalNovaDivida();
+        processarEAtualizarKanban();
+
+        const isDark = document.documentElement.classList.contains('dark');
+        const Toast = Swal.mixin({
+            toast: true, position: 'top-end', showConfirmButton: false, timer: 2000, timerProgressBar: true, background: isDark ? '#1e293b' : '#fff', color: isDark ? '#fff' : '#1e293b'
+        });
+        Toast.fire({ icon: 'success', title: 'Registro guardado!' });
+
+    } catch (e) {
+        Swal.fire('Erro', e.message, 'error');
+    } finally {
+        btn.innerHTML = conteudoOriginal;
+        btn.disabled = false;
+    }
+};
         
         window.fecharModalNovaDivida();
         processarEAtualizarKanban();
