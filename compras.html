@@ -23,6 +23,7 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Bibliotecas: Supabase, Lottie e Leitor de Código de Barras -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.4/dist/dotlottie-wc.js" type="module"></script>
@@ -44,7 +45,6 @@
         .autocomplete-item:active { background-color: #e2e8f0; }
         .dark .autocomplete-item:active { background-color: #334155; }
         
-        /* Ajuste do leitor da câmera */
         #reader video { border-radius: 1rem; object-fit: cover; }
         #reader { border: none !important; }
     </style>
@@ -54,6 +54,7 @@
 
     <main class="flex-1 h-full flex flex-col relative">
         
+        <!-- HEADER E ABAS DE NAVEGAÇÃO -->
         <header class="bg-indigo-600 dark:bg-indigo-900 text-white p-5 md:p-8 rounded-b-3xl md:rounded-b-[3rem] shadow-lg shadow-indigo-600/20 relative z-20 shrink-0 mx-0 md:mx-4 md:mt-4 transition-colors">
             <div class="max-w-4xl mx-auto">
                 <div class="flex justify-between items-center mb-6">
@@ -64,7 +65,8 @@
                         <h1 class="text-4xl md:text-5xl font-black tracking-tighter" id="total-carrinho">R$ 0,00</h1>
                         <p class="text-xs text-indigo-200 mt-1 font-medium"><span id="qtd-itens-carrinho">0</span> itens no carrinho</p>
                     </div>
-                    <button onclick="abrirModalCheckout()" id="btn-finalizar-topo" class="hidden md:flex bg-emerald-500 hover:bg-emerald-400 text-white font-black px-6 py-4 rounded-2xl shadow-lg transition-transform active:scale-95 items-center gap-2">
+                    <!-- ESTE BOTÃO SÓ APARECE EM TELAS GRANDES (PC/TABLET) -->
+                    <button onclick="abrirModalCheckout()" id="btn-finalizar-topo" class="hidden sm:flex bg-emerald-500 hover:bg-emerald-400 text-white font-black px-6 py-4 rounded-2xl shadow-lg transition-transform active:scale-95 items-center gap-2">
                         Finalizar <i class="fa-solid fa-check"></i>
                     </button>
                 </div>
@@ -76,6 +78,7 @@
             </div>
         </header>
 
+        <!-- ================= ABA 1: CARRINHO ATUAL ================= -->
         <div id="view-carrinho" class="flex-1 flex flex-col overflow-hidden fade-in relative">
             <section class="max-w-4xl mx-auto w-full px-4 pt-6 pb-2 shrink-0 relative z-10">
                 <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10 transition-all flex items-center p-2">
@@ -94,19 +97,21 @@
                 <div id="box-autocomplete" class="hidden absolute top-[85px] left-4 right-4 bg-white dark:bg-slate-900 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-slate-200 dark:border-slate-800 overflow-hidden z-30 max-h-64 overflow-y-auto"></div>
             </section>
 
-            <section class="flex-1 overflow-y-auto px-4 pb-32 md:pb-8 pt-2" style="scrollbar-width: none;">
+            <section class="flex-1 overflow-y-auto px-4 pb-28 md:pb-8 pt-2" style="scrollbar-width: none;">
                 <div class="max-w-4xl mx-auto">
                     <div id="lista-carrinho" class="space-y-3"></div>
                 </div>
             </section>
 
-            <div id="box-finalizar-mobile" class="md:hidden fixed bottom-6 left-4 right-4 z-40 hidden fade-in">
+            <!-- ESTE BOTÃO SÓ APARECE EM CELULARES (MOBILE FIXO) -->
+            <div id="box-finalizar-mobile" class="sm:hidden fixed bottom-6 left-4 right-4 z-40 hidden fade-in">
                 <button onclick="abrirModalCheckout()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-[0_10px_25px_rgba(16,185,129,0.4)] flex justify-center items-center gap-2 text-lg active:scale-95 transition-transform border border-emerald-400">
                     <i class="fa-solid fa-cash-register"></i> Finalizar Compra
                 </button>
             </div>
         </div>
 
+        <!-- ================= ABA 2: HISTÓRICO DE COMPRAS ================= -->
         <div id="view-historico" class="flex-1 overflow-y-auto hidden fade-in px-4 pt-6 pb-24" style="scrollbar-width: none;">
             <div class="max-w-4xl mx-auto">
                 <div class="flex items-center gap-3 mb-6">
@@ -123,12 +128,13 @@
         </div>
     </main>
 
+    <!-- MODAL DO LEITOR DE CÂMERA -->
     <div id="modal-camera" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[100] flex flex-col items-center justify-center fade-in">
         <button onclick="fecharLeitorCamera()" class="absolute top-8 right-8 w-12 h-12 rounded-full bg-white/10 text-white hover:bg-rose-500 transition flex items-center justify-center z-[101] active:scale-95">
             <i class="fa-solid fa-xmark text-xl"></i>
         </button>
         <h3 class="text-white font-black text-2xl mb-2 text-center">Aponte a Câmera</h3>
-        <p class="text-slate-400 font-medium text-sm mb-8 text-center max-w-xs">Posicione o código de barras no centro da área abaixo para bipar automaticamente.</p>
+        <p class="text-slate-400 font-medium text-sm mb-8 text-center max-w-xs">Posicione o código de barras no centro para bipar automaticamente.</p>
         
         <div class="relative w-[300px] h-[300px] rounded-3xl overflow-hidden bg-black shadow-[0_0_50px_rgba(79,70,229,0.3)] border-2 border-indigo-500 flex items-center justify-center">
             <div id="reader" class="w-full h-full"></div>
@@ -137,64 +143,64 @@
     </div>
     <style>@keyframes scan { 0% { transform: translateY(0); } 50% { transform: translateY(300px); } 100% { transform: translateY(0); } }</style>
 
-    <div id="modal-produto" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4 fade-in">
-        <div class="bg-white dark:bg-slate-900 w-full md:max-w-md rounded-t-3xl md:rounded-3xl shadow-2xl relative border-t md:border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh]">
-            <div class="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-3 mb-2 md:hidden"></div>
+    <!-- MODAL DE ADICIONAR / EDITAR PRODUTO (CENTRALIZADO E MENOR) -->
+    <div id="modal-produto" class="hidden fixed inset-0 bg-slate-900/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 fade-in">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl relative border border-slate-200 dark:border-slate-800 flex flex-col p-5">
             
-            <div class="p-6 overflow-y-auto" style="scrollbar-width: none;">
-                <button type="button" onclick="fecharModalProduto()" class="absolute top-5 right-5 w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center active:scale-95 z-10">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-                
-                <div class="flex items-center gap-4 mb-4 pr-10">
-                    <div id="prod-img-container" class="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-2xl text-indigo-500 shrink-0 shadow-sm border border-indigo-100 dark:border-indigo-500/20 overflow-hidden">
-                        </div>
-                    <h3 id="modal-produto-titulo" class="text-xl font-black text-slate-900 dark:text-white leading-tight break-words">Nome do Produto</h3>
-                </div>
-                
-                <div id="box-inteligencia-preco" class="hidden mb-6 p-3 rounded-xl border flex items-center gap-3">
-                    <div id="icone-inteligencia" class="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0"></div>
-                    <div>
-                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Análise de Preço</p>
-                        <p id="texto-inteligencia" class="text-xs font-black"></p>
-                    </div>
-                </div>
-
-                <form id="form-produto" onsubmit="salvarItemCarrinho(event)" class="space-y-5">
-                    <input type="hidden" id="prod-id">
-                    <input type="hidden" id="prod-nome">
-                    <input type="hidden" id="prod-img-hidden">
-                    
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Preço Unitário (R$)</label>
-                        <div class="relative">
-                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xl">R$</span>
-                            <input type="text" id="prod-preco" inputmode="numeric" oninput="aplicarMascaraMoeda(this); calcularTotalItemModal();" required placeholder="0,00" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-2xl pl-12 pr-4 py-4 outline-none focus:border-indigo-500 font-black text-3xl">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Quantidade</label>
-                        <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-2">
-                            <button type="button" onclick="ajustarQtd(-1)" class="w-14 h-14 rounded-xl bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 shadow-sm flex items-center justify-center text-2xl active:bg-slate-200 dark:active:bg-slate-800 transition-colors"><i class="fa-solid fa-minus"></i></button>
-                            <input type="number" id="prod-qtd" value="1" min="1" step="1" inputmode="numeric" oninput="calcularTotalItemModal()" class="w-20 bg-transparent text-center font-black text-3xl text-slate-900 dark:text-white outline-none">
-                            <button type="button" onclick="ajustarQtd(1)" class="w-14 h-14 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 shadow-sm flex items-center justify-center text-2xl active:bg-indigo-200 dark:active:bg-indigo-500/30 transition-colors"><i class="fa-solid fa-plus"></i></button>
-                        </div>
-                    </div>
-
-                    <div class="pt-4 flex justify-between items-center border-t border-slate-100 dark:border-slate-800">
-                        <span class="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Subtotal</span>
-                        <span class="text-2xl font-black text-indigo-600 dark:text-indigo-400" id="prod-subtotal">R$ 0,00</span>
-                    </div>
-
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl shadow-lg shadow-indigo-500/30 mt-2 flex justify-center items-center gap-2 active:scale-95 transition-transform text-lg">
-                        Adicionar ao Carrinho <i class="fa-solid fa-cart-plus"></i>
-                    </button>
-                </form>
+            <button type="button" onclick="fecharModalProduto()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center active:scale-95 z-10">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <div class="flex items-center gap-3 mb-4 pr-6">
+                <div id="prod-img-container" class="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-xl text-indigo-500 shrink-0 shadow-sm border border-indigo-100 dark:border-indigo-500/20 overflow-hidden"></div>
+                <!-- TÍTULO EDITÁVEL: SE A API NÃO ACHAR, ELA DIGITA AQUI! -->
+                <input type="text" id="prod-nome" class="flex-1 text-lg font-black text-slate-900 dark:text-white bg-transparent outline-none border-b border-dashed border-slate-300 dark:border-slate-700 focus:border-indigo-500 pb-0.5" placeholder="Nome do Produto">
             </div>
+            
+            <div id="box-inteligencia-preco" class="hidden mb-4 p-2.5 rounded-xl border flex items-center gap-2.5">
+                <div id="icone-inteligencia" class="w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0"></div>
+                <div>
+                    <p class="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Análise de Preço</p>
+                    <p id="texto-inteligencia" class="text-[11px] font-black leading-tight"></p>
+                </div>
+            </div>
+
+            <form id="form-produto" onsubmit="salvarItemCarrinho(event)" class="space-y-4">
+                <input type="hidden" id="prod-id">
+                <input type="hidden" id="prod-img-hidden">
+                <input type="hidden" id="prod-codigo-barras">
+                
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Preço Unitário (R$)</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">R$</span>
+                        <input type="text" id="prod-preco" inputmode="numeric" oninput="aplicarMascaraMoeda(this); calcularTotalItemModal();" required placeholder="0,00" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-2xl pl-10 pr-4 py-3 outline-none focus:border-indigo-500 font-black text-2xl">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Quantidade</label>
+                    <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5">
+                        <button type="button" onclick="ajustarQtd(-1)" class="w-12 h-12 rounded-xl bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 shadow-sm flex items-center justify-center text-xl active:bg-slate-200 transition-colors"><i class="fa-solid fa-minus"></i></button>
+                        <input type="number" id="prod-qtd" value="1" min="1" step="1" inputmode="numeric" oninput="calcularTotalItemModal()" class="w-16 bg-transparent text-center font-black text-2xl text-slate-900 dark:text-white outline-none">
+                        <button type="button" onclick="ajustarQtd(1)" class="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 shadow-sm flex items-center justify-center text-xl active:bg-indigo-200 transition-colors"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                </div>
+
+                <div class="pt-3 flex justify-between items-center border-t border-slate-100 dark:border-slate-800">
+                    <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Subtotal</span>
+                    <span class="text-xl font-black text-indigo-600 dark:text-indigo-400" id="prod-subtotal">R$ 0,00</span>
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3.5 rounded-2xl shadow-lg mt-1 flex justify-center items-center gap-2 active:scale-95 transition-transform">
+                    Adicionar <i class="fa-solid fa-cart-plus"></i>
+                </button>
+            </form>
         </div>
     </div>
 
+    <!-- MODAIS DE CHECKOUT E RECIBO MANTIDOS (OCULTOS DO CÓDIGO AQUI PARA BREVIDADE, MAS SÃO OS MESMOS) -->
+    <!-- MODAL DE CHECKOUT -->
     <div id="modal-checkout" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 fade-in">
         <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl relative border border-slate-200 dark:border-slate-800 flex flex-col p-6 md:p-8">
             <button type="button" onclick="fecharModalCheckout()" class="absolute top-5 right-5 w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center active:scale-95">
@@ -225,14 +231,11 @@
                         </label>
                     </div>
                 </div>
-
                 <div id="box-parcelas" class="hidden grid-cols-2 gap-3">
                     <div>
                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Parcelas</label>
                         <select id="checkout-parcelas" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-3 py-3 outline-none font-bold">
-                            <option value="1">1x (Venc. p/ Mês que vem)</option>
-                            <option value="2">2x</option>
-                            <option value="3">3x</option>
+                            <option value="1">1x (Venc. p/ Mês que vem)</option><option value="2">2x</option><option value="3">3x</option>
                         </select>
                     </div>
                     <div>
@@ -240,12 +243,10 @@
                         <input type="date" id="checkout-data" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-3 py-2.5 outline-none font-bold" style="color-scheme: dark;">
                     </div>
                 </div>
-
                 <div>
                     <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Nome do Supermercado</label>
                     <input type="text" id="checkout-desc" required placeholder="Ex: Mart Minas, Carrefour..." value="Compra no Mercado" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 outline-none focus:border-indigo-500 font-medium">
                 </div>
-
                 <button type="submit" id="btn-processar-compra" class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black py-4 rounded-xl shadow-lg mt-4 flex justify-center items-center gap-2 active:scale-95 transition-transform text-lg">
                     Confirmar Compra
                 </button>
@@ -253,27 +254,23 @@
         </div>
     </div>
 
+    <!-- MODAL DE RECIBO -->
     <div id="modal-recibo" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 fade-in cursor-pointer" onclick="if(event.target === this) fecharModalRecibo()">
         <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl relative border border-slate-200 dark:border-slate-800 flex flex-col p-6 max-h-[85vh] cursor-default">
             <button type="button" onclick="fecharModalRecibo()" class="absolute top-5 right-5 w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center active:scale-95">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-            
             <div class="text-center mb-6 pt-2">
                 <div class="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-3xl mx-auto mb-3 shadow-inner"><i class="fa-solid fa-receipt"></i></div>
                 <h3 class="text-2xl font-black text-slate-900 dark:text-white leading-tight" id="recibo-titulo">Mercado</h3>
                 <p class="text-xs font-bold text-slate-400 mt-1" id="recibo-data">15/08/2026</p>
             </div>
-
-            <div class="flex-1 overflow-y-auto space-y-2 pr-1 mb-6 border-y border-slate-100 dark:border-slate-800 py-4" id="lista-itens-recibo" style="scrollbar-width: none;">
-                </div>
-
+            <div class="flex-1 overflow-y-auto space-y-2 pr-1 mb-6 border-y border-slate-100 dark:border-slate-800 py-4" id="lista-itens-recibo" style="scrollbar-width: none;"></div>
             <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
                 <span class="text-xs font-black text-slate-400 uppercase tracking-wider">Total Pago</span>
                 <span class="text-2xl font-black text-emerald-600 dark:text-emerald-400" id="recibo-total">R$ 0,00</span>
             </div>
         </div>
     </div>
-
 </body>
 </html>
