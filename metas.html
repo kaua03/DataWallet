@@ -7,7 +7,7 @@
     
     <meta name="view-transition" content="same-origin">
     
-    <!-- 1. Restaura o tema e PINTA O FUNDO instantaneamente (Zero Flash Absoluto) -->
+    <!-- Restaura o tema e PINTA O FUNDO instantaneamente (Zero Flash Absoluto) -->
     <script>
         const temaSalvo = localStorage.getItem('DataWallet_Tema') || localStorage.getItem('theme');
         if (temaSalvo === 'escuro' || temaSalvo === 'dark' || (!temaSalvo && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -46,7 +46,7 @@
 
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 h-[100dvh] overflow-hidden flex relative fade-in transition-colors duration-300">
 
-    <main class="flex-1 h-full overflow-y-auto relative pb-32 md:pb-8 p-4 md:p-8">
+    <main class="flex-1 h-full overflow-y-auto relative pb-32 md:pb-8 p-4 md:p-6 lg:p-8">
         <section class="max-w-6xl mx-auto space-y-6">
             
             <!-- CABEÇALHO -->
@@ -54,13 +54,14 @@
                 <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent pointer-events-none"></div>
                 <div class="relative z-10">
                     <h2 class="text-xl md:text-3xl font-black text-slate-900 dark:text-white flex items-center gap-3">
-                        <i class="fa-solid fa-bullseye text-indigo-600 dark:text-indigo-400"></i> Metas & Cofrinho Inteligente
+                        <i class="fa-solid fa-bullseye text-indigo-600 dark:text-indigo-400"></i> Metas & Cofrinho
                     </h2>
                     <p class="text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
-                        Análise preditiva de caixa: Guarde com segurança sem desprover suas obrigações.
+                        Planejamento de caixa: Guarde com segurança sem desprover suas obrigações.
                     </p>
                 </div>
-                <button onclick="abrirModalNovaMeta()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-black px-5 py-3 rounded-2xl shadow-lg shadow-indigo-500/30 text-sm transition-all flex items-center gap-2 shrink-0 active:scale-95">
+                <!-- BOTÃO SÓ APARECE NO COMPUTADOR (hidden md:flex) -->
+                <button onclick="abrirModalNovaMeta()" class="hidden md:flex bg-indigo-600 hover:bg-indigo-700 text-white font-black px-5 py-3 rounded-2xl shadow-lg shadow-indigo-500/30 text-sm transition-all items-center gap-2 shrink-0 active:scale-95">
                     <i class="fa-solid fa-plus"></i> Nova Meta
                 </button>
             </div>
@@ -69,49 +70,47 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
                 
                 <!-- Card Inteligente de Capacidade de Poupança -->
-                <div class="lg:col-span-2 bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white p-6 md:p-8 rounded-3xl shadow-xl relative overflow-hidden flex flex-col justify-between">
-                    <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
-                    
+                <div class="lg:col-span-2 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 md:p-8 rounded-3xl shadow-xl relative overflow-hidden flex flex-col justify-between border border-indigo-500/20">
                     <div class="relative z-10">
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="bg-indigo-500/30 text-indigo-300 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-indigo-400/20">
-                                <i class="fa-solid fa-brain mr-1"></i> Inteligência Financeira Ativa
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
+                            <span class="text-[10px] font-black text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-3 py-1 rounded-lg border border-indigo-500/20">
+                                <i class="fa-solid fa-chart-pie mr-1"></i> Capacidade de Caixa
                             </span>
-                            <span class="text-xs text-indigo-200/70 font-bold" id="mes-referencia-analise">Mês Atual</span>
+                            <span class="text-xs text-slate-300 font-bold" id="mes-referencia-analise">Mês Atual</span>
                         </div>
-                        <h3 class="text-lg md:text-xl font-black tracking-tight mb-2">Capacidade Segura de Poupança</h3>
-                        <p class="text-xs md:text-sm text-indigo-200/80 font-medium leading-relaxed mb-6" id="texto-analise-inteligente">
+                        <h3 class="text-lg md:text-xl font-black tracking-tight mb-2">Margem Segura para Aportes</h3>
+                        <p class="text-xs md:text-sm text-slate-300 font-medium leading-relaxed mb-6" id="texto-analise-inteligente">
                             Cruzando suas entradas previstas, despesas essenciais e dívidas pendentes...
                         </p>
                     </div>
 
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 relative z-10 pt-4 border-t border-white/10">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10 pt-4 border-t border-slate-700/60">
                         <div>
-                            <p class="text-[10px] uppercase font-bold text-indigo-300">Receitas Previstas</p>
+                            <p class="text-[10px] uppercase font-bold text-slate-400">Receitas Previstas</p>
                             <p class="text-lg md:text-xl font-black text-white" id="analise-receitas">R$ 0,00</p>
                         </div>
                         <div>
-                            <p class="text-[10px] uppercase font-bold text-rose-300">Compromissos / Dívidas</p>
+                            <p class="text-[10px] uppercase font-bold text-slate-400">Compromissos</p>
                             <p class="text-lg md:text-xl font-black text-rose-400" id="analise-dividas">R$ 0,00</p>
                         </div>
-                        <div class="col-span-2 sm:col-span-1">
-                            <p class="text-[10px] uppercase font-bold text-emerald-300">Máximo Seguro</p>
+                        <div>
+                            <p class="text-[10px] uppercase font-bold text-slate-400">Máximo Seguro</p>
                             <p class="text-xl md:text-2xl font-black text-emerald-400" id="analise-sugestao">R$ 0,00</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Dica de Ouro do Coach -->
+                <!-- Dica do Analista -->
                 <div class="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm flex flex-col justify-between transition-colors">
                     <div>
-                        <div class="flex items-center gap-2.5 text-amber-500 mb-3">
-                            <div class="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-lg shadow-inner">
+                        <div class="flex items-center gap-2.5 text-indigo-600 dark:text-indigo-400 mb-3">
+                            <div class="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-lg shadow-inner">
                                 <i class="fa-solid fa-lightbulb"></i>
                             </div>
-                            <h4 class="font-black text-slate-900 dark:text-white text-sm uppercase tracking-wide">Dica do Analista</h4>
+                            <h4 class="font-black text-slate-900 dark:text-white text-sm uppercase tracking-wide">Diretriz</h4>
                         </div>
                         <p class="text-xs md:text-sm text-slate-600 dark:text-slate-300 font-medium leading-relaxed" id="dica-coach-texto">
-                            Defina metas claras. O segredo da riqueza não é quanto você ganha, mas quanto você retém e faz trabalhar a seu favor.
+                            Defina metas claras. O segredo do patrimônio sólido é a constância nos aportes programados.
                         </p>
                     </div>
                     <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-slate-400">
@@ -193,13 +192,13 @@
 
     <!-- MODAL DE CELEBRAÇÃO LOTTIE -->
     <div id="modal-celebracao" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] flex flex-col items-center justify-center p-4 fade-in">
-        <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[2.5pX] rounded-3xl shadow-2xl p-8 text-center border border-slate-200 dark:border-slate-800 relative">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl p-8 text-center border border-slate-200 dark:border-slate-800 relative">
             <div class="flex justify-center -mt-16 mb-2">
                 <dotlottie-wc src="https://lottie.host/37a482be-32f8-445a-a036-7cd45d5f53d2/KQUtDBoH81.lottie" style="width: 220px; height: 220px;" autoplay></dotlottie-wc>
             </div>
             <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-2" id="cel-titulo">Incrível! 🚀</h3>
             <p class="text-sm font-medium text-slate-600 dark:text-slate-300 mb-6 leading-relaxed" id="cel-mensagem">
-                Você deu mais um passo sólido rumo à sua liberdade financeira. Seu futuro eu agradece!
+                Você deu mais um passo sólido rumo à sua liberdade financeira.
             </p>
             <button onclick="fecharCelebracao()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3.5 rounded-2xl shadow-lg shadow-indigo-500/30 transition active:scale-95">
                 Continuar Conquistando
