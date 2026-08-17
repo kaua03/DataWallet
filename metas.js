@@ -1,5 +1,5 @@
 // ==========================================
-// metas.js - MOTOR DE INTELIGÊNCIA E ANIMAÇÃO LOTTIE COM TEMPO ESTENDIDO
+// metas.js - MOTOR DE INTELIGÊNCIA, APORTES E VALIDAÇÃO DE CAIXA
 // ==========================================
 
 let usuarioLogado = null;
@@ -167,7 +167,7 @@ function processarAnaliseInteligente() {
 }
 
 // ---------------------------------------------------------
-// RENDERIZAÇÃO DAS METAS
+// RENDERIZAÇÃO DAS METAS (COM BOTÕES DE EDITAR E EXCLUIR)
 // ---------------------------------------------------------
 function renderizarMetas() {
     const grid = document.getElementById('grid-metas');
@@ -218,6 +218,9 @@ function renderizarMetas() {
                 <button onclick="abrirModalGuardar('${m.id}', '${m.titulo.replace(/'/g, "\\'")}')" class="flex-1 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-500 hover:text-white text-emerald-600 dark:text-emerald-400 font-bold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-1.5 border border-emerald-200 dark:border-emerald-500/30">
                     <i class="fa-solid fa-piggy-bank"></i> Guardar
                 </button>
+                <button onclick="abrirModalEdicaoMeta('${m.id}')" title="Editar Meta" class="w-9 h-9 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-indigo-500 hover:text-white transition flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                    <i class="fa-solid fa-pen text-xs"></i>
+                </button>
                 <button onclick="excluirMeta('${m.id}')" title="Excluir Meta" class="w-9 h-9 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center border border-slate-200 dark:border-slate-700">
                     <i class="fa-solid fa-trash text-xs"></i>
                 </button>
@@ -230,12 +233,28 @@ function renderizarMetas() {
 }
 
 // ---------------------------------------------------------
-// MODAIS E AÇÕES DE GRAVAÇÃO
+// MODAIS E AÇÕES DE GRAVAÇÃO (CRIAR E EDITAR)
 // ---------------------------------------------------------
 function abrirModalNovaMeta() {
     document.getElementById('form-meta').reset();
     document.getElementById('meta-id').value = '';
     document.getElementById('modal-meta-titulo').innerHTML = '<i class="fa-solid fa-bullseye text-indigo-500 mr-2"></i> Nova Meta';
+    document.getElementById('modal-meta').classList.remove('hidden');
+}
+
+function abrirModalEdicaoMeta(id) {
+    const m = metasGlobais.find(x => x.id == id);
+    if (!m) return;
+    document.getElementById('meta-id').value = m.id;
+    document.getElementById('meta-titulo').value = m.titulo;
+    
+    let valorStr = m.valor_alvo.toFixed(2).replace('.', ',');
+    valorStr = valorStr.replace(/(\d)(\d{3})(\d{3}),/g, "$1.$2.$3,");
+    valorStr = valorStr.replace(/(\d)(\d{3}),/g, "$1.$2,");
+    document.getElementById('meta-alvo').value = valorStr;
+    
+    document.getElementById('meta-prazo').value = m.prazo || '';
+    document.getElementById('modal-meta-titulo').innerHTML = '<i class="fa-solid fa-pen text-indigo-500 mr-2"></i> Editar Meta';
     document.getElementById('modal-meta').classList.remove('hidden');
 }
 
@@ -256,6 +275,7 @@ function fecharModalGuardar() {
 
 async function salvarMeta(event) {
     event.preventDefault();
+    const idExistente = document.getElementById('meta-id').value;
     const titulo = document.getElementById('meta-titulo').value;
     const alvo = desmascararMoeda(document.getElementById('meta-alvo').value);
     const prazo = document.getElementById('meta-prazo').value;
@@ -267,25 +287,50 @@ async function salvarMeta(event) {
 
     try {
         const client = window.supabaseClient || supabaseClient;
-        const novaMeta = {
-            usuario_id: usuarioLogado.id,
-            titulo: titulo,
-            valor_alvo: alvo,
-            valor_atual: 0.00,
-            prazo: prazo,
-            criado_em: new Date().toISOString()
-        };
 
-        const { data, error } = await client.from('metas').insert([novaMeta]).select();
-        if (error) throw error;
+        if (idExistente) {
+            // Edição de Meta Existente
+            const { error } = await client.from('metas').update({
+                titulo: titulo,
+                valor_alvo: alvo,
+                prazo: prazo
+            }).eq('id', idExistente);
 
-        if (data) {
-            metasGlobais.unshift(data[0]);
+            if (error) throw error;
+
+            const idx = metasGlobais.findIndex(m => m.id == idExistente);
+            if (idx !== -1) {
+                metasGlobais[idx].titulo = titulo;
+                metasGlobais[idx].valor_alvo = alvo;
+                metasGlobais[idx].prazo = prazo;
+            }
+
+            fecharModalMeta();
             renderizarMetas();
-        }
+            Swal.fire({ icon: 'success', title: 'Meta Atualizada!', showConfirmButton: false, timer: 1500 });
 
-        fecharModalMeta();
-        dispararOverlayLottie("Meta Criada com Sucesso! 🎯");
+        } else {
+            // Criação de Nova Meta
+            const novaMeta = {
+                usuario_id: usuarioLogado.id,
+                titulo: titulo,
+                valor_alvo: alvo,
+                valor_atual: 0.00,
+                prazo: prazo,
+                criado_em: new Date().toISOString()
+            };
+
+            const { data, error } = await client.from('metas').insert([novaMeta]).select();
+            if (error) throw error;
+
+            if (data) {
+                metasGlobais.unshift(data[0]);
+                renderizarMetas();
+            }
+
+            fecharModalMeta();
+            dispararOverlayLottie("Meta Criada com Sucesso! 🎯");
+        }
 
     } catch (e) {
         Swal.fire('Erro', e.message, 'error');
@@ -303,19 +348,53 @@ async function efetivarGuardar(event) {
     }
 
     try {
+        // Validação de Saldo Disponível em Caixa
+        let totalReceitas = 0;
+        let totalDespesas = 0;
+        transacoesGlobais.forEach(t => {
+            if (t.tipo === 'receita') totalReceitas += t.valor;
+            else if (t.tipo === 'despesa') totalDespesas += t.valor;
+        });
+        const saldoDisponivel = totalReceitas - totalDespesas;
+
+        if (valorGuardado > saldoDisponivel) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Saldo Insuficiente',
+                text: `Você está tentando guardar ${formatarMoedaLocal(valorGuardado)}, mas seu saldo disponível atual é de ${formatarMoedaLocal(saldoDisponivel)}.`,
+                confirmButtonColor: '#4f46e5'
+            });
+            return;
+        }
+
         const client = window.supabaseClient || supabaseClient;
         const meta = metasGlobais.find(m => m.id == metaId);
         if (!meta) throw new Error("Meta não encontrada.");
 
-        const novoValorAtual = (meta.valor_atual || 0) + valorGuardado;
+        // 1. Registra o aporte como uma despesa no fluxo para abater do saldo líquido
+        const novaDespesaAporte = {
+            usuario_id: usuarioLogado.id,
+            tipo: 'despesa',
+            descricao: `Aporte: ${meta.titulo}`,
+            valor: valorGuardado,
+            data_vencimento: new Date().toISOString().split('T')[0],
+            pago: true
+        };
 
-        const { error } = await client.from('metas').update({ valor_atual: novoValorAtual }).eq('id', metaId);
-        if (error) throw error;
+        const { data: transData, error: errTrans } = await client.from('transacoes').insert([novaDespesaAporte]).select();
+        if (errTrans) throw errTrans;
+        if (transData) transacoesGlobais.unshift(transData[0]);
+
+        // 2. Atualiza o valor guardado na meta
+        const novoValorAtual = (meta.valor_atual || 0) + valorGuardado;
+        const { error: errMeta } = await client.from('metas').update({ valor_atual: novoValorAtual }).eq('id', metaId);
+        if (errMeta) throw errMeta;
 
         meta.valor_atual = novoValorAtual;
         renderizarMetas();
         fecharModalGuardar();
 
+        // Dispara o overlay Lottie com a nova animação de 6 segundos
         dispararOverlayLottie(`+ ${formatarMoedaLocal(valorGuardado)} adicionados a "${meta.titulo}"`);
 
     } catch (e) {
@@ -353,20 +432,19 @@ async function excluirMeta(metaId) {
 }
 
 // ---------------------------------------------------------
-// ANIMAÇÃO LOTTIE COM TEMPO ESTENDIDO (4.5 SEGUNDOS) E CLIQUE PARA FECHAR
+// ANIMAÇÃO LOTTIE COM URL NOVA E 6 SEGUNDOS DE DURAÇÃO
 // ---------------------------------------------------------
 function dispararOverlayLottie(subtexto = "Depósito Realizado com Sucesso!") {
-    const urlAnimacao = "https://lottie.host/37a482be-32f8-445a-a036-7cd45d5f53d2/KQUtDBoH81.lottie";
+    const urlAnimacao = "https://lottie.host/896876fe-ed06-4076-a17b-5d6704174739/9BiS4WTolI.lottie";
 
     const overlayLottie = document.createElement('div');
     overlayLottie.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(6px); transition: opacity 0.3s ease; opacity: 0; cursor: pointer;';
     
     overlayLottie.innerHTML = `
-        <dotlottie-wc src="${urlAnimacao}" style="width: 280px; height: 280px;" autoplay></dotlottie-wc>
+        <dotlottie-wc src="${urlAnimacao}" style="width: 300px; height: 300px;" autoplay></dotlottie-wc>
         <p style="color: #ffffff; font-family: 'Inter', sans-serif; font-weight: 900; font-size: 1.25rem; margin-top: 1rem; text-align: center; padding: 0 1rem; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">${subtexto}</p>
     `;
     
-    // Fecha ao clicar em qualquer lugar da tela
     overlayLottie.onclick = () => {
         overlayLottie.style.opacity = '0';
         setTimeout(() => overlayLottie.remove(), 300);
@@ -376,11 +454,11 @@ function dispararOverlayLottie(subtexto = "Depósito Realizado com Sucesso!") {
     
     requestAnimationFrame(() => overlayLottie.style.opacity = '1');
     
-    // Tempo estendido para 4.5 segundos para a animação completar com folga
+    // Duração estendida para 6 segundos para a animação rodar totalmente
     setTimeout(() => { 
         if (document.body.contains(overlayLottie) || document.documentElement.contains(overlayLottie)) {
             overlayLottie.style.opacity = '0'; 
             setTimeout(() => overlayLottie.remove(), 300); 
         }
-    }, 4500);
+    }, 6000);
 }
