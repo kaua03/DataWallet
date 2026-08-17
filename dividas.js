@@ -1,10 +1,11 @@
 // ==========================================
-// dividas.js - ERP KANBAN DEFINITIVO (DADOS EXATOS + FLUIDEZ NATIVA)
+// dividas.js - ERP KANBAN PURO (DADOS EXATOS + ZERO LAG DE RENDER)
 // ==========================================
 
 let usuarioLogado = null;
 let transacoesGlobais = [];
 let categoriasGlobais = [];
+let menuMobileAberto = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
     
@@ -25,8 +26,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         if (typeof verificarSessaoSegura === 'function') {
             usuarioLogado = await verificarSessaoSegura();
-        } else if (typeof supabaseClient !== 'undefined') {
-            const { data: { session } } = await supabaseClient.auth.getSession();
+        } else if (typeof window.supabaseClient !== 'undefined') {
+            const { data: { session } } = await window.supabaseClient.auth.getSession();
             usuarioLogado = session ? session.user : null;
         }
 
@@ -44,23 +45,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await carregarDadosDoBanco();
     iniciarDragToScroll(); 
-    
-    // NOTA TÉCNICA: O MutationObserver foi removido cirurgicamente daqui.
-    // O CSS/Tailwind do Kanban tem capacidade nativa de transição.
-    // Recriar o DOM no JS causava o flicker. Agora a fluidez é de 60FPS.
 });
 
-// A MÁGICA DA ESPINGARDA LATERAL (L-Shape Mobile para Nova Dívida)
 window.toggleMobileMenu = function() {
     const items = document.getElementById('fab-items');
     const actionBtn = document.getElementById('fab-action');
     const icon = document.getElementById('fab-icon');
     const btn = document.getElementById('fab-menu');
     
-    // Variável global em window para evitar erros de redeclaração
-    window._menuMobileAberto = !window._menuMobileAberto;
+    menuMobileAberto = !menuMobileAberto;
 
-    if (window._menuMobileAberto) {
+    if (menuMobileAberto) {
         if (items) {
             items.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
             items.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
@@ -165,13 +160,14 @@ function desmascararMoeda(str) {
 
 async function carregarDadosDoBanco() {
     try {
-        if (typeof supabaseClient === 'undefined' || !usuarioLogado || !usuarioLogado.id) {
+        const client = window.supabaseClient;
+        if (!client || !usuarioLogado || !usuarioLogado.id) {
             throw new Error("Cliente Supabase ou usuário não inicializado.");
         }
 
         const [rTrans, rCat] = await Promise.all([
-            supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).eq('tipo', 'despesa').order('data_vencimento', { ascending: true }),
-            supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
+            client.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).eq('tipo', 'despesa').order('data_vencimento', { ascending: true }),
+            client.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
         ]);
 
         if (rTrans.error) throw rTrans.error;
@@ -192,7 +188,7 @@ async function carregarDadosDoBanco() {
         console.error("Erro ao puxar dados:", e.message);
         const board = document.getElementById('board-dividas');
         
-        // Blindagem contra erro de relógio no futuro mantida
+        // Mantém a segurança impecável contra falha de JWT temporal
         if (e.message && e.message.includes('JWT issued at future')) {
             if (board) {
                 board.innerHTML = `
@@ -201,8 +197,8 @@ async function carregarDadosDoBanco() {
                         <i class="fa-solid fa-clock-rotate-left"></i>
                     </div>
                     <h3 class="text-lg font-black text-slate-900 dark:text-white mb-2">Erro de Sincronização Temporal</h3>
-                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-6">O relógio do seu dispositivo está no futuro ou desincronizado. Para a sua segurança, o servidor bloqueou o acesso.<br><br><b>Por favor, ajuste o relógio do seu sistema para a data/hora automática e faça login novamente.</b></p>
-                    <button onclick="if(typeof sairDoSistema === 'function') sairDoSistema(); else window.location.href='index.html';" class="px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl shadow-lg shadow-rose-500/30 font-bold transition flex items-center gap-2">
+                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-6">O relógio do seu dispositivo está no futuro. Ajuste a hora automática do sistema.</p>
+                    <button onclick="if(typeof sairDoSistema === 'function') sairDoSistema(); else window.location.href='index.html';" class="px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold flex items-center gap-2">
                         <i class="fa-solid fa-right-from-bracket"></i> Limpar Sessão
                     </button>
                 </div>`;
@@ -317,33 +313,35 @@ function renderizarColunas(agrupamentos) {
                     else if (d.diasDiff <= 7) badgeUrgencia = `<span class="bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase">Vence em ${d.diasDiff}d</span>`;
                 }
 
+                // REMOVIDO os transitions de cores desnecessários dos botões menores
                 const btnAcao = isPago 
-                    ? `<button onclick="window.alterarStatusPagamento(${d.id}, false)" title="Desfazer" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition-colors duration-200 flex items-center justify-center shadow-sm shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-rotate-left"></i></button>`
-                    : `<button onclick="window.alterarStatusPagamento(${d.id}, true)" title="Quitar" class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors duration-200 flex items-center justify-center shadow-sm shrink-0 border border-emerald-200 dark:border-emerald-500/30"><i class="fa-solid fa-check"></i></button>`;
+                    ? `<button onclick="window.alterarStatusPagamento(${d.id}, false)" title="Desfazer" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white flex items-center justify-center shadow-sm shrink-0 border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform"><i class="fa-solid fa-rotate-left"></i></button>`
+                    : `<button onclick="window.alterarStatusPagamento(${d.id}, true)" title="Quitar" class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white flex items-center justify-center shadow-sm shrink-0 border border-emerald-200 dark:border-emerald-500/30 active:scale-95 transition-transform"><i class="fa-solid fa-check"></i></button>`;
 
                 const classeTraco = isPago ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200';
                 const corData = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-500' : 'text-slate-400 dark:text-slate-500';
                 const corValor = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white';
 
-                // Aplicação da otimização: Apenas transition-colors clean, SEM transition-all engasgando a CPU
+                // O SEGREDO: O Card usa APENAS transition-transform para o pulinho do mouse.
+                // Ao remover o 'transition-colors' de dentro das strings de JS, a GPU processa instantaneamente
                 const cardHtmlCru = `
-                <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-3 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-colors duration-200 group flex flex-col gap-3">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-3 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md group flex flex-col gap-3 transition-transform duration-200">
                     <div class="flex justify-between items-start gap-3 w-full">
-                        <h4 class="font-bold text-xs ${classeTraco} leading-tight break-words whitespace-normal mt-0.5 flex-1 transition-colors duration-200">${d.descricao}</h4>
-                        <span class="font-black text-sm ${corValor} whitespace-nowrap shrink-0 transition-colors duration-200">R$ ${d.valor.toFixed(2).replace('.', ',')}</span>
+                        <h4 class="font-bold text-xs ${classeTraco} leading-tight break-words whitespace-normal mt-0.5 flex-1">${d.descricao}</h4>
+                        <span class="font-black text-sm ${corValor} whitespace-nowrap shrink-0">R$ ${d.valor.toFixed(2).replace('.', ',')}</span>
                     </div>
                     <div class="flex items-center justify-between w-full">
-                        <div class="flex items-center gap-2 text-[11px] font-bold ${corData} transition-colors duration-200">
+                        <div class="flex items-center gap-2 text-[11px] font-bold ${corData}">
                             <div class="flex items-center gap-1.5"><i class="fa-regular fa-calendar"></i> <span>${dataStr}</span></div>
                             ${badgeUrgencia}
                         </div>
                         
                         <div class="flex items-center gap-1.5">
                             <div class="flex items-center gap-1.5 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick="window.abrirModalEdicao(${d.id})" title="Editar" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-indigo-500 hover:text-white transition-colors duration-200 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-pen text-[10px]"></i></button>
-                                <button onclick="window.excluirDivida(${d.id})" title="Excluir" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition-colors duration-200 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                                <button onclick="window.abrirModalEdicao(${d.id})" title="Editar" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-indigo-500 hover:text-white flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                                <button onclick="window.excluirDivida(${d.id})" title="Excluir" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform"><i class="fa-solid fa-trash text-[10px]"></i></button>
                             </div>
-                            <div class="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5 hidden md:block transition-colors duration-200"></div>
+                            <div class="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5 hidden md:block"></div>
                             ${btnAcao}
                         </div>
                     </div>
@@ -354,20 +352,20 @@ function renderizarColunas(agrupamentos) {
         }
 
         html += `
-        <div id="${idColunaSanitizado}" class="w-[300px] md:w-[340px] shrink-0 bg-slate-100/50 dark:bg-slate-800/20 rounded-3xl ${config.borderColor} border flex flex-col max-h-full transition-colors duration-200 relative">
-            <div onclick="window.toggleColuna('${idColunaSanitizado}')" class="p-4 border-b border-slate-200/80 dark:border-slate-700/50 flex justify-between items-center bg-white dark:bg-slate-900 rounded-t-3xl shrink-0 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-200 relative z-10">
+        <div id="${idColunaSanitizado}" class="w-[300px] md:w-[340px] shrink-0 bg-slate-100/50 dark:bg-slate-800/20 rounded-3xl ${config.borderColor} border flex flex-col max-h-full transition-colors duration-300 relative">
+            <div onclick="window.toggleColuna('${idColunaSanitizado}')" class="p-4 border-b border-slate-200/80 dark:border-slate-700/50 flex justify-between items-center bg-white dark:bg-slate-900 rounded-t-3xl shrink-0 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-300 relative z-10">
                 <div class="esconder-no-min flex items-center gap-2">
                     <i class="fa-solid ${config.icon} ${config.titleColor}"></i>
                     <h3 class="font-bold ${config.titleColor} text-sm">${nomeColuna}</h3>
                 </div>
                 
                 <div class="hidden mostrar-no-min flex-col items-center justify-start w-full gap-3 pt-2">
-                    <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm transition-colors duration-200">${transacoesDaColuna.length}</span>
-                    <h3 class="font-black text-slate-400 dark:text-slate-500 text-xs tracking-widest uppercase transform rotate-180 transition-colors duration-200" style="writing-mode: vertical-rl;">${nomeColuna}</h3>
+                    <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm">${transacoesDaColuna.length}</span>
+                    <h3 class="font-black text-slate-400 dark:text-slate-500 text-xs tracking-widest uppercase transform rotate-180" style="writing-mode: vertical-rl;">${nomeColuna}</h3>
                 </div>
                 
                 <div class="esconder-no-min flex items-center gap-2">
-                    <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm transition-colors duration-200">${transacoesDaColuna.length}</span>
+                    <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm">${transacoesDaColuna.length}</span>
                     <i class="fa-solid fa-chevron-left text-slate-300 dark:text-slate-600 text-xs transition-transform transform -rotate-90"></i>
                 </div>
             </div>
@@ -394,7 +392,8 @@ window.toggleColuna = function(id) {
 
 window.alterarStatusPagamento = async function(idTransacao, novoStatusPago) {
     try {
-        const { error } = await supabaseClient.from('transacoes').update({ pago: novoStatusPago }).eq('id', idTransacao);
+        const client = window.supabaseClient;
+        const { error } = await client.from('transacoes').update({ pago: novoStatusPago }).eq('id', idTransacao);
         if (error) throw error;
         
         const idx = transacoesGlobais.findIndex(t => t.id == idTransacao);
@@ -463,7 +462,8 @@ window.excluirDivida = async function(idTransacao) {
     if(!confirmacao.isConfirmed) return;
 
     try {
-        const { error } = await supabaseClient.from('transacoes').delete().eq('id', idTransacao);
+        const client = window.supabaseClient;
+        const { error } = await client.from('transacoes').delete().eq('id', idTransacao);
         if (error) throw error;
         transacoesGlobais = transacoesGlobais.filter(t => t.id != idTransacao);
         processarEAtualizarKanban();
@@ -489,8 +489,9 @@ window.salvarDivida = async function(event) {
     }
 
     try {
+        const client = window.supabaseClient;
         if (idExistente) {
-            const { data, error } = await supabaseClient.from('transacoes').update({
+            const { data, error } = await client.from('transacoes').update({
                 descricao: descBase, valor: valorFloat, data_vencimento: dataInicialISO, categoria_id: catId
             }).eq('id', idExistente).select();
 
@@ -518,7 +519,7 @@ window.salvarDivida = async function(event) {
                 });
             }
 
-            const { data, error } = await supabaseClient.from('transacoes').insert(loteInsercao).select();
+            const { data, error } = await client.from('transacoes').insert(loteInsercao).select();
             if (error) throw error;
             if(data) {
                 transacoesGlobais.push(...data);
