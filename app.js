@@ -6,7 +6,7 @@ let usuarioLogado = null;
 let transacoesGlobais = [];
 let categoriasGlobais = [];
 let dividasGlobais = [];
-let planosGlobais = [];
+let metasGlobais = [];
 
 // Escudo Protetor (Guarda-Costas)
 document.addEventListener('DOMContentLoaded', async () => {
@@ -64,19 +64,19 @@ async function atualizarTudo() {
             supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).order('id', { ascending: false }),
             supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id),
             supabaseClient.from('dividas').select('*').eq('usuario_id', usuarioLogado.id),
-            supabaseClient.from('planos').select('*').eq('usuario_id', usuarioLogado.id)
+            supabaseClient.from('metas').select('*').eq('usuario_id', usuarioLogado.id)
         ]);
 
         transacoesGlobais = rTrans.data || [];
         categoriasGlobais = rCat.data || [];
         dividasGlobais = rDiv.data || [];
-        planosGlobais = rPlan.data || [];
+        metasGlobais = rPlan.data || [];
 
         renderizarInicio();
         renderizarDashboard();
         renderizarDividas();
         renderizarCategorias();
-        renderizarPlanos();
+        renderizarmetas();
     } catch (erro) { 
         console.error("Erro Crítico ao carregar dados:", erro); 
     }
@@ -136,8 +136,8 @@ function renderizarCategorias() {
     `).join('');
 }
 
-function renderizarPlanos() {
-    document.getElementById('grid-planos').innerHTML = planosGlobais.map(p => {
+function renderizarmetas() {
+    document.getElementById('grid-metas').innerHTML = metasGlobais.map(p => {
         const perc = Math.min((p.valor_atual / p.valor_meta) * 100, 100);
         return `<div class="bg-white p-6 rounded-3xl border border-gray-100"><h3 class="font-black text-lg mb-2">${p.nome}</h3><div class="w-full bg-gray-100 rounded-full h-4 mb-2"><div class="bg-blue-500 h-4 rounded-full" style="width: ${perc}%"></div></div><div class="flex justify-between text-sm font-bold text-gray-500"><span>Atual: ${formatarMoeda(p.valor_atual)}</span><span>Meta: ${formatarMoeda(p.valor_meta)}</span></div></div>`;
     }).join('');
