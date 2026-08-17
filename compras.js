@@ -1,5 +1,5 @@
 // ==========================================
-// compras.js - MOTOR DE CÂMERA, API DE PRODUTOS E AUTOCOMPLETE ONLINE
+// compras.js - MOTOR DE CÂMERA, API DE PRODUTOS E GOOGLE FALLBACK
 // ==========================================
 
 let usuarioLogado = null;
@@ -9,10 +9,10 @@ let historicoAgrupadoRecibos = [];
 let precoReferenciaHistorico = 0; 
 let html5QrCode = null; 
 let debounceBuscaTimeout = null;
+let scanOriginadoDoModal = false;
 
-// Dicionário offline inteligente + Barcodes salvos para Fallback rápido
 const produtosComuns = [
-    { ean: "7896098900123", nome: "Sabão em Barra Ypê Verde", icone: "fa-soap", cor: "text-emerald-500" }, // O SABÃO DA FOTO!
+    { ean: "7896098900123", nome: "Sabão em Barra Ypê Verde", icone: "fa-soap", cor: "text-emerald-500" },
     { nome: "Arroz Branco 5kg", icone: "fa-bowl-rice", cor: "text-amber-500" },
     { nome: "Feijão Carioca 1kg", icone: "fa-seedling", cor: "text-amber-700" },
     { nome: "Óleo de Soja 900ml", icone: "fa-bottle-droplet", cor: "text-yellow-500" },
@@ -92,9 +92,24 @@ function mudarAba(aba) {
     }
 }
 
-// ---------------------------------------------------------
-// CÂMERA, BIP SONORO E OPEN FOOD FACTS (API DE PRODUTOS)
-// ---------------------------------------------------------
+function setVisibilidadeMenuGlobal(mostrar) {
+    const fabItems = document.getElementById('fab-items');
+    if (fabItems) {
+        const fabContainer = fabItems.parentElement;
+        if (fabContainer) {
+            fabContainer.style.display = mostrar ? 'block' : 'none';
+        }
+    }
+    const boxMobile = document.getElementById('box-finalizar-mobile');
+    if (boxMobile) {
+        if (!mostrar) {
+            boxMobile.classList.add('hidden');
+        } else if (carrinho.length > 0 && !document.getElementById('view-carrinho').classList.contains('hidden')) {
+            boxMobile.classList.remove('hidden');
+        }
+    }
+}
+
 function tocarBipSucesso() {
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -108,7 +123,18 @@ function tocarBipSucesso() {
     } catch(e) {}
 }
 
-function abrirLeitorCamera() {
+async function abrirLeitorCamera(fromModal = false) {
+    scanOriginadoDoModal = fromModal;
+    
+    try {
+        const devices = await Html5Qrcode.getCameras();
+        if (!devices || devices.length === 0) {
+            return Swal.fire('Aviso', 'Nenhuma câmera encontrada neste dispositivo.', 'info');
+        }
+    } catch (err) {
+        return Swal.fire('Erro na Câmera', 'Permissão de câmera negada ou indisponível.', 'error');
+    }
+
     document.getElementById('modal-camera').classList.remove('hidden');
     
     html5QrCode = new Html5Qrcode("reader");
@@ -118,35 +144,7 @@ function abrirLeitorCamera() {
         async (decodedText) => {
             tocarBipSucesso();
             await fecharLeitorCamera();
-            
-            Swal.fire({ title: 'Buscando Produto...', html: `Código: ${decodedText}`, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-            
-            // 1. Tenta achar no banco local de emergência (ex: Sabão Ypê 7896098900123)
-            const achouLocal = produtosComuns.find(p => p.ean === decodedText);
-            if (achouLocal) {
-                Swal.close();
-                abrirModalProduto(achouLocal.nome, achouLocal.icone, achouLocal.cor, -1, null, decodedText);
-                return;
-            }
-
-            try {
-                // 2. Tenta achar na API Mundial
-                const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${decodedText}.json`);
-                const json = await res.json();
-                Swal.close();
-                
-                if (json.status === 1 && json.product) {
-                    const nomeProduto = json.product.product_name_pt || json.product.product_name || '';
-                    const imagemUrl = json.product.image_front_url || null;
-                    abrirModalProduto(nomeProduto, 'fa-barcode', 'text-indigo-500', -1, imagemUrl, decodedText);
-                } else {
-                    // Produto não encontrado, abre modal vazio para a mãe digitar!
-                    abrirModalProduto('', 'fa-barcode', 'text-slate-500', -1, null, decodedText);
-                }
-            } catch (e) {
-                Swal.close();
-                abrirModalProduto('', 'fa-barcode', 'text-slate-500', -1, null, decodedText);
-            }
+            processarCodigoDeBarras(decodedText, scanOriginadoDoModal);
         },
         (errorMessage) => { }
     ).catch((err) => {
@@ -164,8 +162,82 @@ async function fecharLeitorCamera() {
 }
 
 // ---------------------------------------------------------
-// BUSCA E AUTOCOMPLETE LOCAL + ONLINE EM TEMPO REAL
+// INTELIGÊNCIA DE BUSCA GLOBAL (CÓDIGO DE BARRAS)
 // ---------------------------------------------------------
+async function processarCodigoDeBarras(codigo, isUpdate = false) {
+    if (isUpdate) document.getElementById('prod-codigo-barras').value = codigo;
+
+    Swal.fire({ title: 'Buscando Produto...', html: `Código: ${codigo}`, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    // 1. Banco Offline
+    const achouLocal = produtosComuns.find(p => p.ean === codigo);
+    if (achouLocal) {
+        Swal.close();
+        if (isUpdate) atualizarCamposModalProduto(achouLocal.nome, achouLocal.icone, achouLocal.cor, null, codigo);
+        else abrirModalProduto(achouLocal.nome, achouLocal.icone, achouLocal.cor, -1, null, codigo);
+        return;
+    }
+
+    // 2. API Global (Open Food Facts)
+    try {
+        const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${codigo}.json`);
+        const json = await res.json();
+        Swal.close();
+
+        if (json.status === 1 && json.product) {
+            const nomeProduto = json.product.product_name_pt || json.product.product_name || '';
+            const imagemUrl = json.product.image_front_url || null;
+
+            if (isUpdate) atualizarCamposModalProduto(nomeProduto, 'fa-barcode', 'text-indigo-500', imagemUrl, codigo);
+            else abrirModalProduto(nomeProduto, 'fa-barcode', 'text-indigo-500', -1, imagemUrl, codigo);
+        } else {
+            // Falhou a API: Deixa vazio e MOSTRA o botão do Google
+            if (isUpdate) atualizarCamposModalProduto('', 'fa-barcode', 'text-slate-500', null, codigo);
+            else abrirModalProduto('', 'fa-barcode', 'text-slate-500', -1, null, codigo);
+        }
+    } catch (e) {
+        Swal.close();
+        if (isUpdate) atualizarCamposModalProduto('', 'fa-barcode', 'text-slate-500', null, codigo);
+        else abrirModalProduto('', 'fa-barcode', 'text-slate-500', -1, null, codigo);
+    }
+}
+
+function atualizarCamposModalProduto(nome, icone, cor, imgUrl, codigo) {
+    const inputNome = document.getElementById('prod-nome');
+    if (nome) inputNome.value = nome;
+    
+    document.getElementById('prod-img-hidden').value = imgUrl || '';
+    document.getElementById('prod-codigo-barras').value = codigo || '';
+    
+    const imgContainer = document.getElementById('prod-img-container');
+    if (imgUrl) {
+        imgContainer.innerHTML = `<img src="${imgUrl}" class="w-full h-full object-cover">`;
+        imgContainer.className = "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden bg-white";
+    } else {
+        imgContainer.innerHTML = `<i class="fa-solid ${icone}"></i>`;
+        imgContainer.className = `w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-sm overflow-hidden bg-slate-50 dark:bg-slate-800 ${cor}`;
+    }
+
+    // A MÁGICA: Mostra o botão do Google só se tiver código mas NÃO achou nome na API
+    const btnGoogle = document.getElementById('btn-google-fallback');
+    if ((!nome || nome.trim() === '') && codigo) {
+        btnGoogle.href = `https://www.google.com/search?q=${codigo}`;
+        btnGoogle.classList.remove('hidden');
+        btnGoogle.classList.add('block');
+    } else {
+        btnGoogle.classList.add('hidden');
+        btnGoogle.classList.remove('block');
+    }
+
+    if (nome) analisarPrecoHistoricoInicial(nome);
+
+    if (!nome || nome.trim() === '') {
+        inputNome.focus();
+    } else {
+        document.getElementById('prod-preco').focus();
+    }
+}
+
 function buscarProdutosAutocompletar() {
     const inputStr = document.getElementById('input-busca-produto').value;
     const termo = removerAcentos(inputStr);
@@ -176,7 +248,6 @@ function buscarProdutosAutocompletar() {
 
     btnLimpar.classList.remove('hidden');
     
-    // 1. Pesquisa rápida no Dicionário Offline
     let resultadosHTML = produtosComuns.filter(p => removerAcentos(p.nome).includes(termo)).slice(0, 4).map(p => `
         <div onclick="abrirModalProduto('${p.nome.replace(/'/g, "\\'")}', '${p.icone}', '${p.cor}')" class="autocomplete-item p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 cursor-pointer">
             <div class="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-lg ${p.cor}"><i class="fa-solid ${p.icone}"></i></div>
@@ -184,7 +255,6 @@ function buscarProdutosAutocompletar() {
         </div>
     `).join('');
 
-    // 2. Sempre mostra a opção de "Adicionar o que ela digitou" como genérico
     resultadosHTML = `
         <div onclick="abrirModalProduto('${inputStr.replace(/'/g, "\\'")}', 'fa-box', 'text-indigo-500')" class="autocomplete-item p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 cursor-pointer bg-indigo-50/50 dark:bg-indigo-900/10">
             <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center text-lg text-indigo-600 dark:text-indigo-300"><i class="fa-solid fa-plus"></i></div>
@@ -192,11 +262,9 @@ function buscarProdutosAutocompletar() {
         </div>
     ` + resultadosHTML;
 
-    // Coloca spinner embaixo enquanto busca na API Online
     box.innerHTML = resultadosHTML + `<div id="spinner-api-busca" class="p-3 text-center text-slate-400 text-xs font-bold"><i class="fa-solid fa-spinner fa-spin"></i> Buscando online...</div>`;
     box.classList.remove('hidden');
 
-    // 3. Debounce para a API Externa (Busca Online Real-time)
     clearTimeout(debounceBuscaTimeout);
     if (termo.length >= 3) {
         debounceBuscaTimeout = setTimeout(async () => {
@@ -233,32 +301,17 @@ function limparBusca() {
     input.value = ''; buscarProdutosAutocompletar(); input.focus();
 }
 
-// ---------------------------------------------------------
-// MODAL DE PRODUTO & INTELIGÊNCIA DE PREÇO (MINIGAME)
-// ---------------------------------------------------------
 function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-indigo-500', idxEdit = -1, imagemUrl = null, codigoBarras = null) {
     document.getElementById('box-autocomplete').classList.add('hidden');
     document.getElementById('input-busca-produto').value = '';
     document.getElementById('btn-limpar-busca').classList.add('hidden');
+    
+    setVisibilidadeMenuGlobal(false);
 
     const form = document.getElementById('form-produto');
     form.reset();
     
-    const inputNome = document.getElementById('prod-nome');
-    inputNome.value = nomeProduto;
-    document.getElementById('prod-img-hidden').value = imagemUrl || '';
-    document.getElementById('prod-codigo-barras').value = codigoBarras || '';
-    
-    const imgContainer = document.getElementById('prod-img-container');
-    if (imagemUrl) {
-        imgContainer.innerHTML = `<img src="${imagemUrl}" class="w-full h-full object-cover">`;
-        imgContainer.className = "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden bg-white";
-    } else {
-        imgContainer.innerHTML = `<i class="fa-solid ${icone}"></i>`;
-        imgContainer.className = `w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-sm overflow-hidden bg-slate-50 dark:bg-slate-800 ${cor}`;
-    }
-    
-    analisarPrecoHistoricoInicial(nomeProduto);
+    atualizarCamposModalProduto(nomeProduto, icone, cor, imagemUrl, codigoBarras);
 
     if (idxEdit >= 0) {
         const item = carrinho[idxEdit];
@@ -274,19 +327,11 @@ function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-indigo
     }
 
     document.getElementById('modal-produto').classList.remove('hidden');
-    
-    // Foca inteligentemente: se o nome estiver vazio (api falhou no bip), foca no nome. Se tiver nome, foca no preço.
-    setTimeout(() => { 
-        if(nomeProduto.trim() === '') {
-            inputNome.focus();
-        } else {
-            document.getElementById('prod-preco').focus(); 
-        }
-    }, 150);
 }
 
 function fecharModalProduto() {
     document.getElementById('modal-produto').classList.add('hidden');
+    setVisibilidadeMenuGlobal(true);
 }
 
 function ajustarQtd(delta) {
