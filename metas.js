@@ -1,5 +1,5 @@
 // ==========================================
-// metas.js - MOTOR DE INTELIGÊNCIA, APORTES E CONTADORES ANIMADOS
+// metas.js - MOTOR DE INTELIGÊNCIA, APORTES E HISTÓRICO POR META
 // ==========================================
 
 let usuarioLogado = null;
@@ -9,7 +9,6 @@ let metasGlobais = [];
 document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(() => document.body.classList.remove('fade-in'), 500);
 
-    // Transição suave entre telas
     document.querySelectorAll('a').forEach(link => {
         if(link.hostname === window.location.hostname && link.target !== '_blank') {
             link.addEventListener('click', e => {
@@ -54,7 +53,6 @@ function formatarMoedaLocal(valor) {
     return (valor < 0 ? "- R$ " : "R$ ") + p.join(',');
 }
 
-// ANIMAÇÃO DE CONTADOR IDÊNTICA ÀS OUTRAS TELAS
 window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 1000) {
     const elemento = document.getElementById(id);
     if (!elemento) return;
@@ -167,7 +165,6 @@ function processarAnaliseInteligente() {
     let capacidadeMaximaSegura = saldoEstimado - (dividasPendentesTotal * 0.5); 
     if (capacidadeMaximaSegura < 0) capacidadeMaximaSegura = 0;
 
-    // Dispara a animação fluida nos contadores do painel
     window.animarContador('analise-receitas', receitasMes, 'moeda', 800);
     window.animarContador('analise-dividas', dividasPendentesTotal, 'moeda', 800);
     window.animarContador('analise-sugestao', capacidadeMaximaSegura, 'moeda', 800);
@@ -198,7 +195,7 @@ function processarAnaliseInteligente() {
 }
 
 // ---------------------------------------------------------
-// RENDERIZAÇÃO DAS METAS
+// RENDERIZAÇÃO DAS METAS (COM CLIQUE PARA HISTÓRICO)
 // ---------------------------------------------------------
 function renderizarMetas() {
     const grid = document.getElementById('grid-metas');
@@ -224,7 +221,7 @@ function renderizarMetas() {
         let prazoStr = m.prazo ? m.prazo.split('-').reverse().join('/') : 'Sem prazo';
 
         return `
-        <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm flex flex-col justify-between relative overflow-hidden group">
+        <div onclick="abrirHistoricoMeta('${m.id}')" class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-500/50 transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden group">
             <div>
                 <div class="flex justify-between items-start gap-3 mb-4">
                     <div>
@@ -245,7 +242,7 @@ function renderizarMetas() {
                 </div>
             </div>
 
-            <div class="flex items-center gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <div class="flex items-center gap-2 pt-4 border-t border-slate-100 dark:border-slate-800" onclick="event.stopPropagation()">
                 <button onclick="abrirModalGuardar('${m.id}', '${m.titulo.replace(/'/g, "\\'")}')" class="flex-1 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-500 hover:text-white text-emerald-600 dark:text-emerald-400 font-bold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-1.5 border border-emerald-200 dark:border-emerald-500/30">
                     <i class="fa-solid fa-piggy-bank"></i> Guardar
                 </button>
@@ -261,6 +258,55 @@ function renderizarMetas() {
     }).join('');
 
     grid.innerHTML = html;
+}
+
+// ---------------------------------------------------------
+// EXIBIR HISTÓRICO DE APORTES DA META
+// ---------------------------------------------------------
+function abrirHistoricoMeta(metaId) {
+    const meta = metasGlobais.find(m => m.id == metaId);
+    if (!meta) return;
+
+    document.getElementById('hist-meta-titulo').innerText = meta.titulo;
+    
+    // Filtra as transações correspondentes aos aportes desta meta
+    const aportes = transacoesGlobais.filter(t => t.descricao === `Aporte: ${meta.titulo}` && t.tipo === 'despesa');
+
+    const container = document.getElementById('hist-meta-lista');
+    let somaTotal = 0;
+
+    if (aportes.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-10 text-slate-400">
+                <i class="fa-solid fa-piggy-bank text-3xl mb-2 opacity-50"></i>
+                <p class="text-xs font-bold uppercase">Nenhum aporte registrado ainda.</p>
+            </div>`;
+    } else {
+        container.innerHTML = aportes.map(a => {
+            somaTotal += a.valor;
+            let dataStr = a.data_vencimento ? a.data_vencimento.split('-').reverse().join('/') : '--/--/----';
+            return `
+            <div class="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-700 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-arrow-down"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold text-sm text-slate-900 dark:text-white">Depósito realizado</p>
+                        <p class="text-[10px] font-bold text-slate-400"><i class="fa-regular fa-calendar mr-1"></i> ${dataStr}</p>
+                    </div>
+                </div>
+                <span class="font-black text-emerald-600 dark:text-emerald-400 text-sm">+ ${formatarMoedaLocal(a.valor)}</span>
+            </div>`;
+        }).join('');
+    }
+
+    document.getElementById('hist-meta-total').innerText = formatarMoedaLocal(meta.valor_atual || somaTotal);
+    document.getElementById('modal-historico-meta').classList.remove('hidden');
+}
+
+function fecharHistoricoMeta() {
+    document.getElementById('modal-historico-meta').classList.add('hidden');
 }
 
 // ---------------------------------------------------------
@@ -377,7 +423,6 @@ async function efetivarGuardar(event) {
     }
 
     try {
-        // Validação de Saldo Disponível em Caixa
         let totalReceitas = 0;
         let totalDespesas = 0;
         transacoesGlobais.forEach(t => {
@@ -400,7 +445,6 @@ async function efetivarGuardar(event) {
         const meta = metasGlobais.find(m => m.id == metaId);
         if (!meta) throw new Error("Meta não encontrada.");
 
-        // 1. Registra o aporte como despesa no banco para abater do saldo líquido e recalcular o caixa
         const novaDespesaAporte = {
             usuario_id: usuarioLogado.id,
             tipo: 'despesa',
@@ -414,14 +458,12 @@ async function efetivarGuardar(event) {
         if (errTrans) throw errTrans;
         if (transData) transacoesGlobais.unshift(transData[0]);
 
-        // 2. Atualiza o valor guardado na meta
         const novoValorAtual = (meta.valor_atual || 0) + valorGuardado;
         const { error: errMeta } = await client.from('metas').update({ valor_atual: novoValorAtual }).eq('id', metaId);
         if (errMeta) throw errMeta;
 
         meta.valor_atual = novoValorAtual;
         
-        // 3. Re processa a análise inteligente para atualizar e animar o "Máximo Seguro" na tela
         processarAnaliseInteligente();
         renderizarMetas();
         fecharModalGuardar();
