@@ -10,8 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (isDark) {
         document.documentElement.classList.add('dark');
+        document.documentElement.style.backgroundColor = '#020617';
     } else {
         document.documentElement.classList.remove('dark');
+        document.documentElement.style.backgroundColor = '#f8fafc';
     }
 
     injetarEstilosGlobais();
@@ -24,8 +26,8 @@ function injetarEstilosGlobais() {
     style.id = 'global-star-style';
     style.innerHTML = `
         /* 1. CORREÇÃO DA PISCADA BRANCA: Pinta o fundo absoluto do navegador */
-        html { background-color: #f8fafc; } /* Cor exata do bg-slate-50 */
-        html.dark { background-color: #020617; } /* Cor exata do bg-slate-950 */
+        html { background-color: #f8fafc; }
+        html.dark { background-color: #020617; }
 
         /* 2. ANIMAÇÃO DA ESTRELINHA */
         @keyframes starRise {
@@ -52,13 +54,14 @@ function inicializarLayout(isDark) {
     const paginaAtual = window.location.pathname.split('/').pop() || 'movimentacoes.html';
     const isDashboard = paginaAtual === 'dashboard.html';
     const isPassivos = paginaAtual === 'dividas.html';
+    const isMetas = paginaAtual === 'metas.html' || paginaAtual === 'planos.html';
 
     const menuItems = [
         { nome: 'Movimentações', link: 'movimentacoes.html', icone: 'fa-money-bill-transfer', corBg: 'indigo-50', corTxt: 'indigo-700' },
         { nome: 'Dashboard', link: 'dashboard.html', icone: 'fa-chart-pie', corBg: 'indigo-50', corTxt: 'indigo-700' },
         { nome: 'Dívidas', link: 'dividas.html', icone: 'fa-file-invoice-dollar', corBg: 'indigo-50', corTxt: 'indigo-700' },
         { nome: 'Categorias', link: 'categorias.html', icone: 'fa-tags', corBg: 'indigo-50', corTxt: 'indigo-700' },
-        { nome: 'Metas', link: 'planos.html', icone: 'fa-bullseye', corBg: 'indigo-50', corTxt: 'indigo-700' },
+        { nome: 'Metas', link: 'metas.html', icone: 'fa-bullseye', corBg: 'indigo-50', corTxt: 'indigo-700' },
         { nome: 'Mercado', link: 'compras.html', icone: 'fa-cart-shopping', corBg: 'indigo-50', corTxt: 'indigo-700' }
     ];
 
@@ -126,6 +129,12 @@ function inicializarLayout(isDark) {
                 <i class="fa-solid fa-plus pointer-events-none"></i>
             </button>
         `;
+    } else if (isMetas) {
+        btnAcaoMobileHtml = `
+            <button onclick="window.abrirModalNovaMeta()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500/50">
+                <i class="fa-solid fa-plus pointer-events-none"></i>
+            </button>
+        `;
     }
 
     const iconeTemaMobile = isDark ? 'fa-solid fa-sun text-xl text-amber-400' : 'fa-solid fa-moon text-xl text-white';
@@ -155,7 +164,6 @@ function inicializarLayout(isDark) {
     document.body.insertAdjacentHTML('beforeend', mobileMenuHtml);
 }
 
-// RESTAURANDO A LÓGICA DO MENU MOBILE PARA O LAYOUT GLOBAL
 window._menuMobileAberto = false;
 window.toggleMobileMenu = function() {
     const items = document.getElementById('fab-items');
@@ -205,6 +213,11 @@ window.toggleDarkMode = function() {
     const isDark = htmlElement.classList.toggle('dark');
     localStorage.setItem('DataWallet_Tema', isDark ? 'escuro' : 'claro');
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    if (isDark) {
+        document.documentElement.style.backgroundColor = '#020617';
+    } else {
+        document.documentElement.style.backgroundColor = '#f8fafc';
+    }
     atualizarIconesDark(isDark);
 };
 
