@@ -1,11 +1,12 @@
 // ==========================================
-// dividas.js - ERP KANBAN PURO (DADOS EXATOS + ZERO LAG DE RENDER)
+// dividas.js - ERP KANBAN DEFINITIVO (DADOS + ZERO CONFLITOS + FLUIDEZ)
 // ==========================================
 
 let usuarioLogado = null;
 let transacoesGlobais = [];
 let categoriasGlobais = [];
-let menuMobileAberto = false;
+// A variável 'menuMobileAberto' e a função 'toggleMobileMenu' foram 
+// removidas daqui porque o 'layout.js' já gerencia isso perfeitamente.
 
 document.addEventListener('DOMContentLoaded', async () => {
     
@@ -26,8 +27,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         if (typeof verificarSessaoSegura === 'function') {
             usuarioLogado = await verificarSessaoSegura();
-        } else if (typeof window.supabaseClient !== 'undefined') {
-            const { data: { session } } = await window.supabaseClient.auth.getSession();
+        } else if (typeof supabaseClient !== 'undefined') {
+            const { data: { session } } = await supabaseClient.auth.getSession();
             usuarioLogado = session ? session.user : null;
         }
 
@@ -47,46 +48,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     iniciarDragToScroll(); 
 });
 
-window.toggleMobileMenu = function() {
-    const items = document.getElementById('fab-items');
-    const actionBtn = document.getElementById('fab-action');
-    const icon = document.getElementById('fab-icon');
-    const btn = document.getElementById('fab-menu');
-    
-    menuMobileAberto = !menuMobileAberto;
-
-    if (menuMobileAberto) {
-        if (items) {
-            items.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
-            items.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
-        }
-        if (actionBtn) {
-            actionBtn.classList.remove('opacity-0', 'pointer-events-none');
-            actionBtn.classList.add('opacity-100', 'pointer-events-auto');
-            actionBtn.style.transform = 'translateX(-70px) rotate(-360deg)';
-        }
-        if(btn) {
-            btn.style.transform = 'rotate(180deg)';
-            btn.classList.replace('bg-indigo-600', 'bg-slate-800');
-        }
-        setTimeout(() => { if(icon) icon.classList.replace('fa-bars', 'fa-xmark'); }, 150);
-    } else {
-        if (items) {
-            items.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
-            items.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
-        }
-        if (actionBtn) {
-            actionBtn.classList.add('opacity-0', 'pointer-events-none');
-            actionBtn.classList.remove('opacity-100', 'pointer-events-auto');
-            actionBtn.style.transform = 'translateX(0px) rotate(0deg)';
-        }
-        if(btn) {
-            btn.style.transform = 'rotate(0deg)';
-            btn.classList.replace('bg-slate-800', 'bg-indigo-600');
-        }
-        setTimeout(() => { if(icon) icon.classList.replace('fa-xmark', 'fa-bars'); }, 150);
-    }
-};
+function formatarMoedaLocal(valor) {
+    let p = Math.abs(valor).toFixed(2).split('.');
+    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return (valor < 0 ? "- R$ " : "R$ ") + p.join(',');
+}
 
 window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 1000) {
     const elemento = document.getElementById(id);
@@ -99,9 +65,7 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
         const valorAtual = easeProgress * valorFinal;
         
         if (formato === 'moeda') {
-            let parts = Math.abs(valorAtual).toFixed(2).split('.');
-            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-            elemento.innerText = (valorAtual < 0 ? "- R$ " : "R$ ") + parts.join(',');
+            elemento.innerText = formatarMoedaLocal(valorAtual);
         } else if (formato === 'porcentagem') {
             elemento.innerText = valorAtual.toFixed(1) + "%";
         }
@@ -109,9 +73,7 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
         if (progress < 1) requestAnimationFrame(step);
         else {
             if (formato === 'moeda') {
-                let parts = Math.abs(valorFinal).toFixed(2).split('.');
-                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-                elemento.innerText = (valorFinal < 0 ? "- R$ " : "R$ ") + parts.join(',');
+                elemento.innerText = formatarMoedaLocal(valorFinal);
             } else if (formato === 'porcentagem') {
                 elemento.innerText = valorFinal.toFixed(1) + "%";
             }
@@ -160,14 +122,13 @@ function desmascararMoeda(str) {
 
 async function carregarDadosDoBanco() {
     try {
-        const client = window.supabaseClient;
-        if (!client || !usuarioLogado || !usuarioLogado.id) {
+        if (typeof supabaseClient === 'undefined' || !usuarioLogado || !usuarioLogado.id) {
             throw new Error("Cliente Supabase ou usuário não inicializado.");
         }
 
         const [rTrans, rCat] = await Promise.all([
-            client.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).eq('tipo', 'despesa').order('data_vencimento', { ascending: true }),
-            client.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
+            supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).eq('tipo', 'despesa').order('data_vencimento', { ascending: true }),
+            supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
         ]);
 
         if (rTrans.error) throw rTrans.error;
@@ -313,17 +274,16 @@ function renderizarColunas(agrupamentos) {
                     else if (d.diasDiff <= 7) badgeUrgencia = `<span class="bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase">Vence em ${d.diasDiff}d</span>`;
                 }
 
-                // REMOVIDO os transitions de cores desnecessários dos botões menores
                 const btnAcao = isPago 
-                    ? `<button onclick="window.alterarStatusPagamento(${d.id}, false)" title="Desfazer" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white flex items-center justify-center shadow-sm shrink-0 border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform"><i class="fa-solid fa-rotate-left"></i></button>`
-                    : `<button onclick="window.alterarStatusPagamento(${d.id}, true)" title="Quitar" class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white flex items-center justify-center shadow-sm shrink-0 border border-emerald-200 dark:border-emerald-500/30 active:scale-95 transition-transform"><i class="fa-solid fa-check"></i></button>`;
+                    ? `<button onclick="window.alterarStatusPagamento(${d.id}, false)" title="Desfazer" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white flex items-center justify-center shadow-sm shrink-0 border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform"><i class="fa-solid fa-rotate-left pointer-events-none"></i></button>`
+                    : `<button onclick="window.alterarStatusPagamento(${d.id}, true)" title="Quitar" class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white flex items-center justify-center shadow-sm shrink-0 border border-emerald-200 dark:border-emerald-500/30 active:scale-95 transition-transform"><i class="fa-solid fa-check pointer-events-none"></i></button>`;
 
                 const classeTraco = isPago ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200';
                 const corData = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-500' : 'text-slate-400 dark:text-slate-500';
                 const corValor = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white';
 
-                // O SEGREDO: O Card usa APENAS transition-transform para o pulinho do mouse.
-                // Ao remover o 'transition-colors' de dentro das strings de JS, a GPU processa instantaneamente
+                // O SEGREDO MANTIDO: O card usa apenas transition-transform no JS.
+                // O HTML/CSS pai (dividas.html) cuidará da fluidez sem flicar
                 const cardHtmlCru = `
                 <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-3 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md group flex flex-col gap-3 transition-transform duration-200">
                     <div class="flex justify-between items-start gap-3 w-full">
@@ -338,8 +298,8 @@ function renderizarColunas(agrupamentos) {
                         
                         <div class="flex items-center gap-1.5">
                             <div class="flex items-center gap-1.5 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick="window.abrirModalEdicao(${d.id})" title="Editar" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-indigo-500 hover:text-white flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform"><i class="fa-solid fa-pen text-[10px]"></i></button>
-                                <button onclick="window.excluirDivida(${d.id})" title="Excluir" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                                <button onclick="window.abrirModalEdicao(${d.id})" title="Editar" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-indigo-500 hover:text-white flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform"><i class="fa-solid fa-pen text-[10px] pointer-events-none"></i></button>
+                                <button onclick="window.excluirDivida(${d.id})" title="Excluir" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform"><i class="fa-solid fa-trash text-[10px] pointer-events-none"></i></button>
                             </div>
                             <div class="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5 hidden md:block"></div>
                             ${btnAcao}
@@ -352,8 +312,8 @@ function renderizarColunas(agrupamentos) {
         }
 
         html += `
-        <div id="${idColunaSanitizado}" class="w-[300px] md:w-[340px] shrink-0 bg-slate-100/50 dark:bg-slate-800/20 rounded-3xl ${config.borderColor} border flex flex-col max-h-full transition-colors duration-300 relative">
-            <div onclick="window.toggleColuna('${idColunaSanitizado}')" class="p-4 border-b border-slate-200/80 dark:border-slate-700/50 flex justify-between items-center bg-white dark:bg-slate-900 rounded-t-3xl shrink-0 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-300 relative z-10">
+        <div id="${idColunaSanitizado}" class="w-[300px] md:w-[340px] shrink-0 bg-slate-100/50 dark:bg-slate-800/20 rounded-3xl ${config.borderColor} border flex flex-col max-h-full relative">
+            <div onclick="window.toggleColuna('${idColunaSanitizado}')" class="p-4 border-b border-slate-200/80 dark:border-slate-700/50 flex justify-between items-center bg-white dark:bg-slate-900 rounded-t-3xl shrink-0 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 relative z-10 transition-colors duration-200">
                 <div class="esconder-no-min flex items-center gap-2">
                     <i class="fa-solid ${config.icon} ${config.titleColor}"></i>
                     <h3 class="font-bold ${config.titleColor} text-sm">${nomeColuna}</h3>
