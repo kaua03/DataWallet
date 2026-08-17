@@ -53,6 +53,7 @@
 
     <main class="flex-1 h-full flex flex-col relative">
         
+        <!-- HEADER E ABAS -->
         <header class="bg-indigo-600 dark:bg-indigo-900 text-white p-5 md:p-8 rounded-b-3xl md:rounded-b-[3rem] shadow-lg shadow-indigo-600/20 relative z-20 shrink-0 mx-0 md:mx-4 md:mt-4 transition-colors">
             <div class="max-w-4xl mx-auto">
                 <div class="flex justify-between items-center mb-6">
@@ -63,7 +64,8 @@
                         <h1 class="text-4xl md:text-5xl font-black tracking-tighter" id="total-carrinho">R$ 0,00</h1>
                         <p class="text-xs text-indigo-200 mt-1 font-medium"><span id="qtd-itens-carrinho">0</span> itens no carrinho</p>
                     </div>
-                    <button onclick="abrirModalCheckout()" id="btn-finalizar-topo" class="hidden sm:flex bg-emerald-500 hover:bg-emerald-400 text-white font-black px-6 py-4 rounded-2xl shadow-lg transition-transform active:scale-95 items-center gap-2">
+                    <!-- SÓ APARECE EM TELAS GRANDES (md:flex) -->
+                    <button onclick="abrirModalCheckout()" id="btn-finalizar-topo" class="hidden md:flex bg-emerald-500 hover:bg-emerald-400 text-white font-black px-6 py-4 rounded-2xl shadow-lg transition-transform active:scale-95 items-center gap-2">
                         Finalizar <i class="fa-solid fa-check"></i>
                     </button>
                 </div>
@@ -75,6 +77,7 @@
             </div>
         </header>
 
+        <!-- ABA 1: CARRINHO ATUAL -->
         <div id="view-carrinho" class="flex-1 flex flex-col overflow-hidden fade-in relative">
             <section class="max-w-4xl mx-auto w-full px-4 pt-6 pb-2 shrink-0 relative z-10">
                 <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10 transition-all flex items-center p-2">
@@ -99,13 +102,15 @@
                 </div>
             </section>
 
-            <div id="box-finalizar-mobile" class="sm:hidden fixed bottom-6 left-4 right-4 z-40 hidden fade-in">
-                <button onclick="abrirModalCheckout()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-[0_10px_25px_rgba(16,185,129,0.4)] flex justify-center items-center gap-2 text-lg active:scale-95 transition-transform border border-emerald-400">
+            <!-- SÓ APARECE EM CELULARES (md:hidden) E RESPEITA O BOTÃO DO MENU (right-20) -->
+            <div id="box-finalizar-mobile" class="md:hidden fixed bottom-6 left-4 right-20 z-40 hidden fade-in">
+                <button onclick="abrirModalCheckout()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-[0_10px_25px_rgba(16,185,129,0.4)] flex justify-center items-center gap-2 text-base active:scale-95 transition-transform border border-emerald-400">
                     <i class="fa-solid fa-cash-register"></i> Finalizar Compra
                 </button>
             </div>
         </div>
 
+        <!-- ABA 2: HISTÓRICO DE COMPRAS -->
         <div id="view-historico" class="flex-1 overflow-y-auto hidden fade-in px-4 pt-6 pb-24" style="scrollbar-width: none;">
             <div class="max-w-4xl mx-auto">
                 <div class="flex items-center gap-3 mb-6">
@@ -122,6 +127,7 @@
         </div>
     </main>
 
+    <!-- MODAL DO LEITOR DE CÂMERA -->
     <div id="modal-camera" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[110] flex flex-col items-center justify-center fade-in">
         <button onclick="fecharLeitorCamera()" class="absolute top-8 right-8 w-12 h-12 rounded-full bg-white/10 text-white hover:bg-rose-500 transition flex items-center justify-center z-[111] active:scale-95">
             <i class="fa-solid fa-xmark text-xl"></i>
@@ -136,6 +142,7 @@
     </div>
     <style>@keyframes scan { 0% { transform: translateY(0); } 50% { transform: translateY(300px); } 100% { transform: translateY(0); } }</style>
 
+    <!-- MODAL DE ADICIONAR / EDITAR PRODUTO -->
     <div id="modal-produto" class="hidden fixed inset-0 bg-slate-900/85 backdrop-blur-sm z-[100] flex items-center justify-center p-4 fade-in">
         <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl relative border border-slate-200 dark:border-slate-800 flex flex-col p-5">
             
@@ -145,6 +152,7 @@
             
             <div class="flex items-center gap-3 mb-4 pr-6">
                 <div id="prod-img-container" class="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-xl text-indigo-500 shrink-0 shadow-sm border border-indigo-100 dark:border-indigo-500/20 overflow-hidden"></div>
+                <!-- TÍTULO EDITÁVEL -->
                 <input type="text" id="prod-nome" oninput="analisarPrecoHistoricoInicial(this.value)" class="flex-1 text-lg font-black text-slate-900 dark:text-white bg-transparent outline-none border-b border-dashed border-slate-300 dark:border-slate-700 focus:border-indigo-500 pb-0.5" placeholder="Nome do Produto">
             </div>
             
@@ -160,12 +168,14 @@
                 <input type="hidden" id="prod-id">
                 <input type="hidden" id="prod-img-hidden">
                 
+                <!-- CÓDIGO DE BARRAS RE-BIPÁVEL -->
                 <div>
                     <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Código de Barras</label>
                     <div class="flex items-center gap-2">
                         <input type="text" id="prod-codigo-barras" onchange="if(this.value) processarCodigoDeBarras(this.value, true)" placeholder="Digite ou bipe o código..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-2xl px-4 py-3 outline-none focus:border-indigo-500 font-medium">
                         <button type="button" onclick="abrirLeitorCamera(true)" class="w-12 h-12 shrink-0 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center text-xl transition-colors active:scale-95 shadow-sm"><i class="fa-solid fa-camera"></i></button>
                     </div>
+                    <!-- BOTÃO SALVA VIDAS -->
                     <a id="btn-google-fallback" href="#" target="_blank" class="hidden w-full bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-bold py-2 rounded-xl text-center text-xs mt-2 border border-slate-200 dark:border-slate-700 transition hover:bg-slate-200 dark:hover:bg-slate-700">
                         <i class="fa-brands fa-google mr-1"></i> Procurar na Web
                     </a>
@@ -200,6 +210,7 @@
         </div>
     </div>
 
+    <!-- MODAL DE CHECKOUT -->
     <div id="modal-checkout" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 fade-in">
         <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl relative border border-slate-200 dark:border-slate-800 flex flex-col p-6 md:p-8">
             <button type="button" onclick="fecharModalCheckout()" class="absolute top-5 right-5 w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center active:scale-95">
@@ -253,6 +264,7 @@
         </div>
     </div>
 
+    <!-- MODAL DE RECIBO -->
     <div id="modal-recibo" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 fade-in cursor-pointer" onclick="if(event.target === this) fecharModalRecibo()">
         <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl relative border border-slate-200 dark:border-slate-800 flex flex-col p-6 max-h-[85vh] cursor-default">
             <button type="button" onclick="fecharModalRecibo()" class="absolute top-5 right-5 w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center active:scale-95">
