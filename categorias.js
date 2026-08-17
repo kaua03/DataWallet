@@ -1,5 +1,5 @@
 // ==========================================
-// categorias.js - MOTOR DE ORGANIZAÇÃO E EXTRATO BLINDADO
+// categorias.js - MOTOR DE ORGANIZAÇÃO, EXTRATO E TRANSIÇÃO SUAVE
 // ==========================================
 
 let usuarioLogado = null;
@@ -8,6 +8,23 @@ let transacoesGlobais = [];
 let categoriaAtivaModal = null; 
 
 document.addEventListener('DOMContentLoaded', async () => {
+    
+    // 1. Transição suave de entrada (Fade In) idêntica às outras telas
+    setTimeout(() => document.body.classList.remove('fade-in'), 500);
+
+    // 2. Intercepta os cliques nos links para dar o Fade Out suave antes de trocar de página
+    document.querySelectorAll('a').forEach(link => {
+        if(link.hostname === window.location.hostname && link.target !== '_blank') {
+            link.addEventListener('click', e => {
+                e.preventDefault();
+                const href = link.getAttribute('href');
+                document.body.style.opacity = 0;
+                document.body.style.transition = 'opacity 0.2s ease-in-out';
+                setTimeout(() => window.location.href = href, 200);
+            });
+        }
+    });
+
     try {
         if (typeof verificarSessaoSegura === 'function') {
             usuarioLogado = await verificarSessaoSegura();
