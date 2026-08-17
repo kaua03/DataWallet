@@ -1,5 +1,5 @@
 // ==========================================
-// dividas.js - ERP KANBAN PURO (ZERO RE-RENDER, FLUIDEZ DE GPU)
+// dividas.js - ERP KANBAN DEFINITIVO (DADOS EXATOS + FLUIDEZ NATIVA)
 // ==========================================
 
 let usuarioLogado = null;
@@ -44,13 +44,54 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await carregarDadosDoBanco();
     iniciarDragToScroll(); 
+    
+    // NOTA TÉCNICA: O MutationObserver foi removido cirurgicamente daqui.
+    // O CSS/Tailwind do Kanban tem capacidade nativa de transição.
+    // Recriar o DOM no JS causava o flicker. Agora a fluidez é de 60FPS.
 });
 
-function formatarMoedaLocal(valor) {
-    let p = Math.abs(valor).toFixed(2).split('.');
-    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    return (valor < 0 ? "- R$ " : "R$ ") + p.join(',');
-}
+// A MÁGICA DA ESPINGARDA LATERAL (L-Shape Mobile para Nova Dívida)
+window.toggleMobileMenu = function() {
+    const items = document.getElementById('fab-items');
+    const actionBtn = document.getElementById('fab-action');
+    const icon = document.getElementById('fab-icon');
+    const btn = document.getElementById('fab-menu');
+    
+    // Variável global em window para evitar erros de redeclaração
+    window._menuMobileAberto = !window._menuMobileAberto;
+
+    if (window._menuMobileAberto) {
+        if (items) {
+            items.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
+            items.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
+        }
+        if (actionBtn) {
+            actionBtn.classList.remove('opacity-0', 'pointer-events-none');
+            actionBtn.classList.add('opacity-100', 'pointer-events-auto');
+            actionBtn.style.transform = 'translateX(-70px) rotate(-360deg)';
+        }
+        if(btn) {
+            btn.style.transform = 'rotate(180deg)';
+            btn.classList.replace('bg-indigo-600', 'bg-slate-800');
+        }
+        setTimeout(() => { if(icon) icon.classList.replace('fa-bars', 'fa-xmark'); }, 150);
+    } else {
+        if (items) {
+            items.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
+            items.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+        }
+        if (actionBtn) {
+            actionBtn.classList.add('opacity-0', 'pointer-events-none');
+            actionBtn.classList.remove('opacity-100', 'pointer-events-auto');
+            actionBtn.style.transform = 'translateX(0px) rotate(0deg)';
+        }
+        if(btn) {
+            btn.style.transform = 'rotate(0deg)';
+            btn.classList.replace('bg-slate-800', 'bg-indigo-600');
+        }
+        setTimeout(() => { if(icon) icon.classList.replace('fa-xmark', 'fa-bars'); }, 150);
+    }
+};
 
 window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 1000) {
     const elemento = document.getElementById(id);
@@ -63,7 +104,9 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
         const valorAtual = easeProgress * valorFinal;
         
         if (formato === 'moeda') {
-            elemento.innerText = formatarMoedaLocal(valorAtual);
+            let parts = Math.abs(valorAtual).toFixed(2).split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            elemento.innerText = (valorAtual < 0 ? "- R$ " : "R$ ") + parts.join(',');
         } else if (formato === 'porcentagem') {
             elemento.innerText = valorAtual.toFixed(1) + "%";
         }
@@ -71,7 +114,9 @@ window.animarContador = function(id, valorFinal, formato = 'moeda', duracao = 10
         if (progress < 1) requestAnimationFrame(step);
         else {
             if (formato === 'moeda') {
-                elemento.innerText = formatarMoedaLocal(valorFinal);
+                let parts = Math.abs(valorFinal).toFixed(2).split('.');
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                elemento.innerText = (valorFinal < 0 ? "- R$ " : "R$ ") + parts.join(',');
             } else if (formato === 'porcentagem') {
                 elemento.innerText = valorFinal.toFixed(1) + "%";
             }
@@ -146,6 +191,25 @@ async function carregarDadosDoBanco() {
     } catch (e) { 
         console.error("Erro ao puxar dados:", e.message);
         const board = document.getElementById('board-dividas');
+        
+        // Blindagem contra erro de relógio no futuro mantida
+        if (e.message && e.message.includes('JWT issued at future')) {
+            if (board) {
+                board.innerHTML = `
+                <div class="w-full text-center mt-12 flex flex-col items-center justify-center p-6 bg-white dark:bg-slate-900 rounded-3xl border border-rose-200 dark:border-rose-900/30 max-w-lg mx-auto shadow-sm">
+                    <div class="w-16 h-16 bg-rose-100 dark:bg-rose-500/20 text-rose-500 rounded-full flex items-center justify-center text-3xl mb-4">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <h3 class="text-lg font-black text-slate-900 dark:text-white mb-2">Erro de Sincronização Temporal</h3>
+                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-6">O relógio do seu dispositivo está no futuro ou desincronizado. Para a sua segurança, o servidor bloqueou o acesso.<br><br><b>Por favor, ajuste o relógio do seu sistema para a data/hora automática e faça login novamente.</b></p>
+                    <button onclick="if(typeof sairDoSistema === 'function') sairDoSistema(); else window.location.href='index.html';" class="px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl shadow-lg shadow-rose-500/30 font-bold transition flex items-center gap-2">
+                        <i class="fa-solid fa-right-from-bracket"></i> Limpar Sessão
+                    </button>
+                </div>`;
+            }
+            return;
+        }
+
         if (board) {
             board.innerHTML = `<div class="w-full text-center mt-20 text-rose-500 font-bold"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Erro ao carregar dados: ${e.message}</div>`;
         }
@@ -226,7 +290,7 @@ function renderizarColunas(agrupamentos) {
 
         let cardsHtml = '';
         if (transacoesDaColuna.length === 0) {
-            cardsHtml = `<div class="text-center py-8 opacity-50"><i class="fa-solid fa-wind text-2xl text-slate-300 dark:text-slate-600 mb-2 transition-colors duration-300"></i><p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase transition-colors duration-300">Tudo Limpo</p></div>`;
+            cardsHtml = `<div class="text-center py-8 opacity-50"><i class="fa-solid fa-wind text-2xl text-slate-300 dark:text-slate-600 mb-2"></i><p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tudo Limpo</p></div>`;
         } else {
             let mesAnoCorrente = ''; 
             cardsHtml = transacoesDaColuna.map(d => {
@@ -239,47 +303,47 @@ function renderizarColunas(agrupamentos) {
                 if ((nomeColuna === 'Próximos Meses' || nomeColuna === 'Histórico de Pagas') && mesAnoAtualDoCard !== mesAnoCorrente) {
                     htmlDivisor = `
                     <div class="divisor-mes flex items-center gap-3 mt-6 mb-3 first:mt-1 cursor-default pointer-events-none">
-                        <div class="h-px bg-slate-200 dark:bg-slate-700 flex-1 transition-colors duration-300"></div>
-                        <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors duration-300">${mesAnoAtualDoCard}</span>
-                        <div class="h-px bg-slate-200 dark:bg-slate-700 flex-1 transition-colors duration-300"></div>
+                        <div class="h-px bg-slate-200 dark:bg-slate-700 flex-1"></div>
+                        <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">${mesAnoAtualDoCard}</span>
+                        <div class="h-px bg-slate-200 dark:bg-slate-700 flex-1"></div>
                     </div>`;
                     mesAnoCorrente = mesAnoAtualDoCard;
                 }
                 
                 let badgeUrgencia = '';
                 if (!isPago) {
-                    if (d.diasDiff < 0) badgeUrgencia = `<span class="bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase transition-colors duration-300">Atrasado ${Math.abs(d.diasDiff)}d</span>`;
-                    else if (d.diasDiff === 0) badgeUrgencia = `<span class="bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase transition-colors duration-300">Vence Hoje</span>`;
-                    else if (d.diasDiff <= 7) badgeUrgencia = `<span class="bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase transition-colors duration-300">Vence em ${d.diasDiff}d</span>`;
+                    if (d.diasDiff < 0) badgeUrgencia = `<span class="bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase">Atrasado ${Math.abs(d.diasDiff)}d</span>`;
+                    else if (d.diasDiff === 0) badgeUrgencia = `<span class="bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase">Vence Hoje</span>`;
+                    else if (d.diasDiff <= 7) badgeUrgencia = `<span class="bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase">Vence em ${d.diasDiff}d</span>`;
                 }
 
                 const btnAcao = isPago 
-                    ? `<button onclick="window.alterarStatusPagamento(${d.id}, false)" title="Desfazer" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition-colors duration-200 flex items-center justify-center shadow-sm shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-rotate-left pointer-events-none"></i></button>`
-                    : `<button onclick="window.alterarStatusPagamento(${d.id}, true)" title="Quitar" class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors duration-200 flex items-center justify-center shadow-sm shrink-0 border border-emerald-200 dark:border-emerald-500/30"><i class="fa-solid fa-check pointer-events-none"></i></button>`;
+                    ? `<button onclick="window.alterarStatusPagamento(${d.id}, false)" title="Desfazer" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition-colors duration-200 flex items-center justify-center shadow-sm shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-rotate-left"></i></button>`
+                    : `<button onclick="window.alterarStatusPagamento(${d.id}, true)" title="Quitar" class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors duration-200 flex items-center justify-center shadow-sm shrink-0 border border-emerald-200 dark:border-emerald-500/30"><i class="fa-solid fa-check"></i></button>`;
 
                 const classeTraco = isPago ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200';
                 const corData = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-500' : 'text-slate-400 dark:text-slate-500';
                 const corValor = nomeColuna === 'Atrasadas' && !isPago ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white';
 
-                // Aplicação focada na performance: O transition-colors fica na DIV pai, permitindo a GPU fazer o trabalho liso sem repintura
+                // Aplicação da otimização: Apenas transition-colors clean, SEM transition-all engasgando a CPU
                 const cardHtmlCru = `
-                <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-3 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 group flex flex-col gap-3">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-3 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 hover:shadow-md transition-colors duration-200 group flex flex-col gap-3">
                     <div class="flex justify-between items-start gap-3 w-full">
-                        <h4 class="font-bold text-xs ${classeTraco} leading-tight break-words whitespace-normal mt-0.5 flex-1 transition-colors duration-300">${d.descricao}</h4>
-                        <span class="font-black text-sm ${corValor} whitespace-nowrap shrink-0 transition-colors duration-300">R$ ${d.valor.toFixed(2).replace('.', ',')}</span>
+                        <h4 class="font-bold text-xs ${classeTraco} leading-tight break-words whitespace-normal mt-0.5 flex-1 transition-colors duration-200">${d.descricao}</h4>
+                        <span class="font-black text-sm ${corValor} whitespace-nowrap shrink-0 transition-colors duration-200">R$ ${d.valor.toFixed(2).replace('.', ',')}</span>
                     </div>
                     <div class="flex items-center justify-between w-full">
-                        <div class="flex items-center gap-2 text-[11px] font-bold ${corData} transition-colors duration-300">
+                        <div class="flex items-center gap-2 text-[11px] font-bold ${corData} transition-colors duration-200">
                             <div class="flex items-center gap-1.5"><i class="fa-regular fa-calendar"></i> <span>${dataStr}</span></div>
                             ${badgeUrgencia}
                         </div>
                         
                         <div class="flex items-center gap-1.5">
-                            <div class="flex items-center gap-1.5 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                <button onclick="window.abrirModalEdicao(${d.id})" title="Editar" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-indigo-500 hover:text-white transition-colors duration-200 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-pen text-[10px] pointer-events-none"></i></button>
-                                <button onclick="window.excluirDivida(${d.id})" title="Excluir" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition-colors duration-200 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-trash text-[10px] pointer-events-none"></i></button>
+                            <div class="flex items-center gap-1.5 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="window.abrirModalEdicao(${d.id})" title="Editar" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-indigo-500 hover:text-white transition-colors duration-200 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                                <button onclick="window.excluirDivida(${d.id})" title="Excluir" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition-colors duration-200 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-trash text-[10px]"></i></button>
                             </div>
-                            <div class="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5 hidden md:block transition-colors duration-300"></div>
+                            <div class="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5 hidden md:block transition-colors duration-200"></div>
                             ${btnAcao}
                         </div>
                     </div>
@@ -290,20 +354,20 @@ function renderizarColunas(agrupamentos) {
         }
 
         html += `
-        <div id="${idColunaSanitizado}" class="w-[300px] md:w-[340px] shrink-0 bg-slate-100/50 dark:bg-slate-800/20 rounded-3xl ${config.borderColor} border flex flex-col max-h-full transition-colors duration-300 relative">
-            <div onclick="window.toggleColuna('${idColunaSanitizado}')" class="p-4 border-b border-slate-200/80 dark:border-slate-700/50 flex justify-between items-center bg-white dark:bg-slate-900 rounded-t-3xl shrink-0 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-300 relative z-10">
+        <div id="${idColunaSanitizado}" class="w-[300px] md:w-[340px] shrink-0 bg-slate-100/50 dark:bg-slate-800/20 rounded-3xl ${config.borderColor} border flex flex-col max-h-full transition-colors duration-200 relative">
+            <div onclick="window.toggleColuna('${idColunaSanitizado}')" class="p-4 border-b border-slate-200/80 dark:border-slate-700/50 flex justify-between items-center bg-white dark:bg-slate-900 rounded-t-3xl shrink-0 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-200 relative z-10">
                 <div class="esconder-no-min flex items-center gap-2">
-                    <i class="fa-solid ${config.icon} ${config.titleColor} transition-colors duration-300"></i>
-                    <h3 class="font-bold ${config.titleColor} text-sm transition-colors duration-300">${nomeColuna}</h3>
+                    <i class="fa-solid ${config.icon} ${config.titleColor}"></i>
+                    <h3 class="font-bold ${config.titleColor} text-sm">${nomeColuna}</h3>
                 </div>
                 
                 <div class="hidden mostrar-no-min flex-col items-center justify-start w-full gap-3 pt-2">
-                    <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm transition-colors duration-300">${transacoesDaColuna.length}</span>
-                    <h3 class="font-black text-slate-400 dark:text-slate-500 text-xs tracking-widest uppercase transform rotate-180 transition-colors duration-300" style="writing-mode: vertical-rl;">${nomeColuna}</h3>
+                    <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm transition-colors duration-200">${transacoesDaColuna.length}</span>
+                    <h3 class="font-black text-slate-400 dark:text-slate-500 text-xs tracking-widest uppercase transform rotate-180 transition-colors duration-200" style="writing-mode: vertical-rl;">${nomeColuna}</h3>
                 </div>
                 
                 <div class="esconder-no-min flex items-center gap-2">
-                    <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm transition-colors duration-300">${transacoesDaColuna.length}</span>
+                    <span class="${config.badgeColor} text-[10px] font-black px-2 py-1 rounded-md shadow-sm transition-colors duration-200">${transacoesDaColuna.length}</span>
                     <i class="fa-solid fa-chevron-left text-slate-300 dark:text-slate-600 text-xs transition-transform transform -rotate-90"></i>
                 </div>
             </div>
