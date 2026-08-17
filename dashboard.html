@@ -7,6 +7,18 @@
     
     <meta name="view-transition" content="same-origin">
     
+    <!-- 1. Restaura o tema e PINTA O FUNDO instantaneamente (Zero Flash Absoluto) -->
+    <script>
+        const temaSalvo = localStorage.getItem('DataWallet_Tema') || localStorage.getItem('theme');
+        if (temaSalvo === 'escuro' || temaSalvo === 'dark' || (!temaSalvo && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+            document.documentElement.style.backgroundColor = '#020617'; // Cor exata do bg-slate-950
+        } else {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.style.backgroundColor = '#f8fafc'; // Cor exata do bg-slate-50
+        }
+    </script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script> tailwind.config = { darkMode: 'class' }; </script>
 
