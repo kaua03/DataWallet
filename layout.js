@@ -23,6 +23,11 @@ function injetarEstilosGlobais() {
     const style = document.createElement('style');
     style.id = 'global-star-style';
     style.innerHTML = `
+        /* 1. CORREÇÃO DA PISCADA BRANCA: Pinta o fundo absoluto do navegador */
+        html { background-color: #f8fafc; } /* Cor exata do bg-slate-50 */
+        html.dark { background-color: #020617; } /* Cor exata do bg-slate-950 */
+
+        /* 2. ANIMAÇÃO DA ESTRELINHA */
         @keyframes starRise {
             0% { transform: translate(0, 0) scale(0.5) rotate(0deg); opacity: 0; }
             30% { opacity: 1; }
@@ -30,6 +35,15 @@ function injetarEstilosGlobais() {
             100% { transform: translate(10px, -15px) scale(0) rotate(90deg); opacity: 0; }
         }
         .animate-star { animation: starRise 1s ease-out forwards; }
+        
+        /* 3. A "ROUPA" DA SIDEBAR: Regras de minimização e expansão restauradas */
+        #sidebar { width: 5rem; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, background-color 0.3s; z-index: 50; }
+        #sidebar:hover { width: 16rem; box-shadow: 15px 0 30px rgba(0,0,0,0.05); }
+        .dark #sidebar:hover { box-shadow: 15px 0 30px rgba(0,0,0,0.4); }
+        .sidebar-link { width: 3rem; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s; overflow: hidden; }
+        #sidebar:hover .sidebar-link { width: 100%; }
+        .sidebar-text { opacity: 0; transform: translateX(-10px); visibility: hidden; transition: all 0.2s ease-in-out; white-space: nowrap; }
+        #sidebar:hover .sidebar-text { visibility: visible; opacity: 1; transform: translateX(0); transition-delay: 0.15s; }
     `;
     document.head.appendChild(style);
 }
@@ -141,16 +155,17 @@ function inicializarLayout(isDark) {
     document.body.insertAdjacentHTML('beforeend', mobileMenuHtml);
 }
 
-let menuMobileAberto = false;
+// RESTAURANDO A LÓGICA DO MENU MOBILE PARA O LAYOUT GLOBAL
+window._menuMobileAberto = false;
 window.toggleMobileMenu = function() {
     const items = document.getElementById('fab-items');
     const actionBtn = document.getElementById('fab-action');
     const icon = document.getElementById('fab-icon');
     const btn = document.getElementById('fab-menu');
     
-    menuMobileAberto = !menuMobileAberto;
+    window._menuMobileAberto = !window._menuMobileAberto;
 
-    if (menuMobileAberto) {
+    if (window._menuMobileAberto) {
         if (items) {
             items.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
             items.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
