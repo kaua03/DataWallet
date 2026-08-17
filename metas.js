@@ -1,5 +1,5 @@
 // ==========================================
-// metas.js - MOTOR DE INTELIGÊNCIA, APORTES E ESTORNO AUTOMÁTICO DE CAIXA
+// metas.js - MOTOR DE INTELIGÊNCIA, APORTES E VALIDAÇÃO DE CAIXA PRECISA
 // ==========================================
 
 let usuarioLogado = null;
@@ -133,6 +133,26 @@ async function carregarDadosDoBanco() {
 }
 
 // ---------------------------------------------------------
+// CÁLCULO DE SALDO REAL DISPONÍVEL (UNIFICADO COM O PAINEL)
+// ---------------------------------------------------------
+function calcularSaldoRealDisponivel() {
+    let totalReceitas = 0;
+    let totalDespesasPagas = 0;
+    
+    transacoesGlobais.forEach(t => {
+        if (t.tipo === 'receita') {
+            totalReceitas += (t.valor || 0);
+        } else if (t.tipo === 'despesa') {
+            if (t.pago === true) {
+                totalDespesasPagas += (t.valor || 0);
+            }
+        }
+    });
+
+    return totalReceitas - totalDespesasPagas;
+}
+
+// ---------------------------------------------------------
 // INTELIGÊNCIA FINANCEIRA COM CONTADORES ANIMADOS
 // ---------------------------------------------------------
 function processarAnaliseInteligente() {
@@ -150,19 +170,21 @@ function processarAnaliseInteligente() {
         const isMes = d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
 
         if (t.tipo === 'receita' && isMes) {
-            receitasMes += t.valor;
+            receitasMes += (t.valor || 0);
         } else if (t.tipo === 'despesa') {
             if (isMes && t.pago === true) {
-                despesasPagasMes += t.valor;
+                despesasPagasMes += (t.valor || 0);
             }
             if (t.pago !== true) {
-                dividasPendentesTotal += t.valor;
+                dividasPendentesTotal += (t.valor || 0);
             }
         }
     });
 
-    const saldoEstimado = receitasMes - despesasPagasMes;
-    let capacidadeMaximaSegura = saldoEstimado - (dividasPendentesTotal * 0.5); 
+    const saldoRealCaixa = calcularSaldoRealDisponivel();
+    const saldoMesEstimado = receitasMes - despesasPagasMes;
+    
+    let capacidadeMaximaSegura = Math.min(saldoRealCaixa, saldoMesEstimado - (dividasPendentesTotal * 0.5)); 
     if (capacidadeMaximaSegura < 0) capacidadeMaximaSegura = 0;
 
     window.animarContador('analise-receitas', receitasMes, 'moeda', 800);
@@ -184,8 +206,8 @@ function processarAnaliseInteligente() {
     } else if (capacidadeMaximaSegura > 0) {
         badgeStatus.innerText = "Saudável e Lucrativa 🚀";
         badgeStatus.className = "text-emerald-400 font-black";
-        txtAnalise.innerHTML = `Parabéns! Suas finanças estão equilibradas. Você tem margem para guardar até <b>${formatarMoedaLocal(capacidadeMaximaSegura)}</b> este mês sem faltar nada para suas contas básicas.`;
-        txtDica.innerText = `O hábito vence a genialidade. Guarde o dinheiro da meta assim que o salário cair na conta, antes de começar a gastar!`;
+        txtAnalise.innerHTML = `Parabéns! Suas finanças estão equilibradas. Seu saldo real disponível em caixa é de <b>${formatarMoedaLocal(saldoRealCaixa)}</b>, com margem segura de até <b>${formatarMoedaLocal(capacidadeMaximaSegura)}</b> para alocar em metas.`;
+        txtDica.innerText = `O hábito vence a genialidade. Guarde o dinheiro da meta assim que o salário cair na conta!`;
     } else {
         badgeStatus.innerText = "Equilíbrio Justo ⚖️";
         badgeStatus.className = "text-amber-400 font-black";
@@ -261,12 +283,9 @@ function renderizarMetas() {
 }
 
 // ---------------------------------------------------------
-// EXIBIR HISTÓRICO DE APORTES COM OPÇÃO DE EXCLUIR APORTE (ESTORNO)
+// EXIBIR HISTÓRICO DE APORTES COM OPÇÃO DE EXCLUIR APORTE
 // ---------------------------------------------------------
-let metaAtualHistoricoId = null;
-
 function abrirHistoricoMeta(metaId) {
-    metaAtualHistoricoId = metaId;
     const meta = metasGlobais.find(m => m.id == metaId);
     if (!meta) return;
 
@@ -314,7 +333,6 @@ function renderizarListaAportesModal(meta) {
     document.getElementById('hist-meta-total').innerText = formatarMoedaLocal(meta.valor_atual || somaAportesListados);
 }
 
-// Estorna o valor do aporte para o saldo livre ao excluir o lançamento
 async function excluirAporte(transacaoId, metaId) {
     const isDark = document.documentElement.classList.contains('dark');
     const confirmacao = await Swal.fire({
@@ -333,25 +351,20 @@ async function excluirAporte(transacaoId, metaId) {
 
     try {
         const client = window.supabaseClient || supabaseClient;
-        
-        // 1. Encontra a transação de aporte para saber o valor exato
         const transacao = transacoesGlobais.find(t => t.id == transacaoId);
         if (!transacao) throw new Error("Aporte não encontrado.");
 
-        // 2. Apaga a transação de despesa do banco (devolvendo o dinheiro para o caixa)
         const { error: errTrans } = await client.from('transacoes').delete().eq('id', transacaoId);
         if (errTrans) throw errTrans;
 
         transacoesGlobais = transacoesGlobais.filter(t => t.id != transacaoId);
 
-        // 3. Atualiza o valor guardado na meta
         const meta = metasGlobais.find(m => m.id == metaId);
         if (meta) {
             meta.valor_atual = Math.max(0, (meta.valor_atual || 0) - transacao.valor);
             await client.from('metas').update({ valor_atual: meta.valor_atual }).eq('id', metaId);
         }
 
-        // Recarrega as análises e atualiza a lista no modal
         processarAnaliseInteligente();
         renderizarMetas();
         renderizarListaAportesModal(meta);
@@ -365,7 +378,6 @@ async function excluirAporte(transacaoId, metaId) {
 
 function fecharHistoricoMeta() {
     document.getElementById('modal-historico-meta').classList.add('hidden');
-    metaAtualHistoricoId = null;
 }
 
 // ---------------------------------------------------------
@@ -482,19 +494,13 @@ async function efetivarGuardar(event) {
     }
 
     try {
-        let totalReceitas = 0;
-        let totalDespesas = 0;
-        transacoesGlobais.forEach(t => {
-            if (t.tipo === 'receita') totalReceitas += t.valor;
-            else if (t.tipo === 'despesa') totalDespesas += t.valor;
-        });
-        const saldoDisponivel = totalReceitas - totalDespesas;
+        const saldoDisponivel = calcularSaldoRealDisponivel();
 
         if (valorGuardado > saldoDisponivel) {
             Swal.fire({
                 icon: 'warning',
                 title: 'Saldo Insuficiente',
-                text: `Você está tentando guardar ${formatarMoedaLocal(valorGuardado)}, mas seu saldo disponível atual é de ${formatarMoedaLocal(saldoDisponivel)}.`,
+                text: `Você está tentando guardar ${formatarMoedaLocal(valorGuardado)}, mas seu saldo disponível atual em caixa é de ${formatarMoedaLocal(saldoDisponivel)}.`,
                 confirmButtonColor: '#4f46e5'
             });
             return;
@@ -534,7 +540,6 @@ async function efetivarGuardar(event) {
     }
 }
 
-// AO EXCLUIR A META INTEIRA, ESTORNA TODOS OS APORTES VINCULADOS PARA O CAIXA
 async function excluirMeta(metaId) {
     const meta = metasGlobais.find(m => m.id == metaId);
     const isDark = document.documentElement.classList.contains('dark');
@@ -557,15 +562,12 @@ async function excluirMeta(metaId) {
         const client = window.supabaseClient || supabaseClient;
 
         if (meta) {
-            // Apaga todas as transações de aporte associadas a esta meta
             const { error: errTrans } = await client.from('transacoes').delete().eq('usuario_id', usuarioLogado.id).eq('descricao', `Aporte: ${meta.titulo}`);
             if (errTrans) throw errTrans;
 
-            // Remove da lista local
             transacoesGlobais = transacoesGlobais.filter(t => t.descricao !== `Aporte: ${meta.titulo}`);
         }
 
-        // Apaga a meta do banco
         const { error } = await client.from('metas').delete().eq('id', metaId);
         if (error) throw error;
 
@@ -583,17 +585,27 @@ async function excluirMeta(metaId) {
 }
 
 // ---------------------------------------------------------
-// ANIMAÇÃO LOTTIE COM 6 SEGUNDOS DE DURAÇÃO
+// ANIMAÇÃO LOTTIE BLINDADA (COM CARREGAMENTO DINÂMICO)
 // ---------------------------------------------------------
 function dispararOverlayLottie(subtexto = "Depósito Realizado com Sucesso!") {
     const urlAnimacao = "https://lottie.host/896876fe-ed06-4076-a17b-5d6704174739/9BiS4WTolI.lottie";
 
+    if (!customElements.get('dotlottie-wc')) {
+        const scriptLottie = document.createElement('script');
+        scriptLottie.src = "https://unpkg.com/@lottiefiles/dotlottie-wc@0.3.0/dist/dotlottie-wc.js";
+        scriptLottie.type = "module";
+        document.head.appendChild(scriptLottie);
+    }
+
     const overlayLottie = document.createElement('div');
-    overlayLottie.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(6px); transition: opacity 0.3s ease; opacity: 0; cursor: pointer;';
+    overlayLottie.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(8px); transition: opacity 0.3s ease; opacity: 0; cursor: pointer;';
     
     overlayLottie.innerHTML = `
-        <dotlottie-wc src="${urlAnimacao}" style="width: 300px; height: 300px;" autoplay loop></dotlottie-wc>
-        <p style="color: #ffffff; font-family: 'Inter', sans-serif; font-weight: 900; font-size: 1.25rem; margin-top: 1rem; text-align: center; padding: 0 1rem; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">${subtexto}</p>
+        <div style="width: 320px; height: 320px; display: flex; align-items: center; justify-content: center;">
+            <dotlottie-wc src="${urlAnimacao}" autoplay loop style="width: 100%; height: 100%;"></dotlottie-wc>
+        </div>
+        <p style="color: #ffffff; font-family: 'Inter', sans-serif; font-weight: 900; font-size: 1.35rem; margin-top: 1.25rem; text-align: center; padding: 0 1.5rem; text-shadow: 0 2px 10px rgba(0,0,0,0.6);">${subtexto}</p>
+        <span style="color: #94a3b8; font-family: 'Inter', sans-serif; font-size: 0.75rem; margin-top: 0.5rem; opacity: 0.8;">(Clique em qualquer lugar para continuar)</span>
     `;
     
     overlayLottie.onclick = () => {
