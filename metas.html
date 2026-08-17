@@ -26,7 +26,6 @@
     
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.4/dist/dotlottie-wc.js" type="module"></script>
     
     <script src="config.js" defer></script>
     <script src="layout.js" defer></script>
@@ -57,10 +56,9 @@
                         <i class="fa-solid fa-bullseye text-indigo-600 dark:text-indigo-400"></i> Metas & Cofrinho
                     </h2>
                     <p class="text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
-                        Planejamento de caixa: Guarde com segurança sem desprover suas obrigações.
+                        Planejamento de caixa: Guarde com segurança sem desprover suas obrigações. <strong class="text-indigo-600 dark:text-indigo-400">Clique em um card para ver o histórico.</strong>
                     </p>
                 </div>
-                <!-- BOTÃO SÓ APARECE NO COMPUTADOR -->
                 <button onclick="abrirModalNovaMeta()" class="hidden md:flex bg-indigo-600 hover:bg-indigo-700 text-white font-black px-5 py-3 rounded-2xl shadow-lg shadow-indigo-500/30 text-sm transition-all items-center gap-2 shrink-0 active:scale-95">
                     <i class="fa-solid fa-plus"></i> Nova Meta
                 </button>
@@ -69,7 +67,6 @@
             <!-- PAINEL DE ANÁLISE INTELIGENTE DE CAIXA -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
                 
-                <!-- Card Inteligente de Capacidade de Poupança -->
                 <div class="lg:col-span-2 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 md:p-8 rounded-3xl shadow-xl relative overflow-hidden flex flex-col justify-between border border-indigo-500/20">
                     <div class="relative z-10">
                         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
@@ -100,7 +97,6 @@
                     </div>
                 </div>
 
-                <!-- Dica do Analista -->
                 <div class="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm flex flex-col justify-between transition-colors">
                     <div>
                         <div class="flex items-center gap-2.5 text-indigo-600 dark:text-indigo-400 mb-3">
@@ -187,6 +183,33 @@
                     <i class="fa-solid fa-vault"></i> Depositar na Meta
                 </button>
             </form>
+        </div>
+    </div>
+
+    <!-- MODAL DE HISTÓRICO DE APORTES DA META -->
+    <div id="modal-historico-meta" onclick="if(event.target === this) fecharHistoricoMeta()" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl p-6 md:p-8 relative border border-slate-200 dark:border-slate-800 cursor-default fade-in flex flex-col max-h-[85vh]">
+            <button onclick="fecharHistoricoMeta()" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-xl shadow-inner shrink-0">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-black text-slate-900 dark:text-white leading-tight" id="hist-meta-titulo">Histórico de Aportes</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">Valores guardados e datas</p>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto space-y-3 pr-1" id="hist-meta-lista" style="scrollbar-width: thin;">
+                <!-- Lista injetada via JS -->
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
+                <span class="text-xs font-black text-slate-400 uppercase tracking-wider">Total Acumulado</span>
+                <span class="text-xl font-black text-emerald-600 dark:text-emerald-400" id="hist-meta-total">R$ 0,00</span>
+            </div>
         </div>
     </div>
 
