@@ -5,7 +5,7 @@
 const COSMOS_API_TOKEN = "COLOQUE_SEU_TOKEN_AQUI"; 
 
 let usuarioLogado = null;
-let carrinho = []; // Agora vai persistir via localStorage
+let carrinho = []; 
 let historicoPrecos = []; 
 let historicoAgrupadoRecibos = [];
 let precoReferenciaHistorico = 0; 
