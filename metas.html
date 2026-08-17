@@ -26,7 +26,8 @@
     
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.4/dist/dotlottie-wc.js" type="module"></script>
+    <!-- Player Lottie Clássico (Robusto e compatível com modais ocultos) -->
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
     
     <script src="config.js" defer></script>
     <script src="layout.js" defer></script>
@@ -190,11 +191,11 @@
         </div>
     </div>
 
-    <!-- MODAL DE CELEBRAÇÃO LOTTIE -->
+    <!-- MODAL DE CELEBRAÇÃO COM LOTTIE PLAYER ROBUSTO -->
     <div id="modal-celebracao" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] flex flex-col items-center justify-center p-4 fade-in">
         <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl p-8 text-center border border-slate-200 dark:border-slate-800 relative">
             <div class="flex justify-center -mt-16 mb-2">
-                <dotlottie-wc src="https://lottie.host/37a482be-32f8-445a-a036-7cd45d5f53d2/KQUtDBoH81.lottie" style="width: 220px; height: 220px;" autoplay></dotlottie-wc>
+                <lottie-player src="https://lottie.host/37a482be-32f8-445a-a036-7cd45d5f53d2/KQUtDBoH81.lottie" background="transparent" speed="1" style="width: 200px; height: 200px;" autoplay loop></lottie-player>
             </div>
             <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-2" id="cel-titulo">Incrível! 🚀</h3>
             <p class="text-sm font-medium text-slate-600 dark:text-slate-300 mb-6 leading-relaxed" id="cel-mensagem">
