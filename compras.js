@@ -1,9 +1,11 @@
 // ==========================================
-// compras.js - MOTOR DE CÂMERA, API DE PRODUTOS E GOOGLE FALLBACK
+// compras.js - MOTOR DE CÂMERA, INTEGRAÇÃO COSMOS E PERSISTÊNCIA DE ESTADO
 // ==========================================
 
+const COSMOS_API_TOKEN = "COLOQUE_SEU_TOKEN_AQUI"; 
+
 let usuarioLogado = null;
-let carrinho = [];
+let carrinho = []; // Agora vai persistir via localStorage
 let historicoPrecos = []; 
 let historicoAgrupadoRecibos = [];
 let precoReferenciaHistorico = 0; 
@@ -45,10 +47,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     usuarioLogado = await verificarSessaoSegura();
     if (!usuarioLogado) return;
 
+    // MAGICA DO ESTADO: Carrega o carrinho pendente
+    carregarCarrinhoLocal();
     await carregarHistoricoPrecos();
     renderizarCarrinho();
 });
 
+// ---------------------------------------------------------
+// PERSISTÊNCIA DE ESTADO (LOCALSTORAGE)
+// ---------------------------------------------------------
+function salvarCarrinhoLocal() {
+    if (usuarioLogado) {
+        localStorage.setItem(`DataWallet_Carrinho_${usuarioLogado.id}`, JSON.stringify(carrinho));
+    }
+}
+
+function carregarCarrinhoLocal() {
+    if (usuarioLogado) {
+        const salvo = localStorage.getItem(`DataWallet_Carrinho_${usuarioLogado.id}`);
+        if (salvo) {
+            try { carrinho = JSON.parse(salvo); } catch(e) { carrinho = []; }
+        }
+    }
+}
+
+function limparCarrinhoLocal() {
+    if (usuarioLogado) {
+        localStorage.removeItem(`DataWallet_Carrinho_${usuarioLogado.id}`);
+    }
+}
+
+// ---------------------------------------------------------
+// FUNÇÕES UTILITÁRIAS
+// ---------------------------------------------------------
 function formatarMoedaLocal(valor) {
     let p = Math.abs(valor).toFixed(2).split('.'); p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     return (valor < 0 ? "- R$ " : "R$ ") + p.join(',');
@@ -110,6 +141,9 @@ function setVisibilidadeMenuGlobal(mostrar) {
     }
 }
 
+// ---------------------------------------------------------
+// CÂMERA, BIP SONORO E OPEN FOOD FACTS (API DE PRODUTOS)
+// ---------------------------------------------------------
 function tocarBipSucesso() {
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -162,14 +196,13 @@ async function fecharLeitorCamera() {
 }
 
 // ---------------------------------------------------------
-// INTELIGÊNCIA DE BUSCA GLOBAL (CÓDIGO DE BARRAS)
+// INTELIGÊNCIA DE CASCATA: LOCAL -> COSMOS -> OPEN FOOD FACTS
 // ---------------------------------------------------------
 async function processarCodigoDeBarras(codigo, isUpdate = false) {
     if (isUpdate) document.getElementById('prod-codigo-barras').value = codigo;
 
     Swal.fire({ title: 'Buscando Produto...', html: `Código: ${codigo}`, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
-    // 1. Banco Offline
     const achouLocal = produtosComuns.find(p => p.ean === codigo);
     if (achouLocal) {
         Swal.close();
@@ -178,20 +211,41 @@ async function processarCodigoDeBarras(codigo, isUpdate = false) {
         return;
     }
 
-    // 2. API Global (Open Food Facts)
+    if (COSMOS_API_TOKEN && COSMOS_API_TOKEN !== "COLOQUE_SEU_TOKEN_AQUI") {
+        try {
+            const cosmosUrl = `https://api.cosmos.bluesoft.com.br/gtins/${codigo}.json`;
+            const resCosmos = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(cosmosUrl)}`, {
+                headers: { 'X-Cosmos-Token': COSMOS_API_TOKEN }
+            });
+            
+            const dataOrigem = await resCosmos.json();
+            
+            if (dataOrigem.contents) {
+                const jsonCosmos = JSON.parse(dataOrigem.contents);
+                if (jsonCosmos.description) {
+                    Swal.close();
+                    const nomeProduto = jsonCosmos.description;
+                    const imagemUrl = jsonCosmos.thumbnail || null;
+                    if (isUpdate) atualizarCamposModalProduto(nomeProduto, 'fa-barcode', 'text-indigo-500', imagemUrl, codigo);
+                    else abrirModalProduto(nomeProduto, 'fa-barcode', 'text-indigo-500', -1, imagemUrl, codigo);
+                    return; 
+                }
+            }
+        } catch (e) { console.log("Cosmos falhou, caindo para Open Food Facts"); }
+    }
+
     try {
-        const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${codigo}.json`);
-        const json = await res.json();
+        const resOFF = await fetch(`https://world.openfoodfacts.org/api/v0/product/${codigo}.json`);
+        const jsonOFF = await resOFF.json();
         Swal.close();
 
-        if (json.status === 1 && json.product) {
-            const nomeProduto = json.product.product_name_pt || json.product.product_name || '';
-            const imagemUrl = json.product.image_front_url || null;
+        if (jsonOFF.status === 1 && jsonOFF.product) {
+            const nomeProduto = jsonOFF.product.product_name_pt || jsonOFF.product.product_name || '';
+            const imagemUrl = jsonOFF.product.image_front_url || null;
 
             if (isUpdate) atualizarCamposModalProduto(nomeProduto, 'fa-barcode', 'text-indigo-500', imagemUrl, codigo);
             else abrirModalProduto(nomeProduto, 'fa-barcode', 'text-indigo-500', -1, imagemUrl, codigo);
         } else {
-            // Falhou a API: Deixa vazio e MOSTRA o botão do Google
             if (isUpdate) atualizarCamposModalProduto('', 'fa-barcode', 'text-slate-500', null, codigo);
             else abrirModalProduto('', 'fa-barcode', 'text-slate-500', -1, null, codigo);
         }
@@ -218,7 +272,6 @@ function atualizarCamposModalProduto(nome, icone, cor, imgUrl, codigo) {
         imgContainer.className = `w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-sm overflow-hidden bg-slate-50 dark:bg-slate-800 ${cor}`;
     }
 
-    // A MÁGICA: Mostra o botão do Google só se tiver código mas NÃO achou nome na API
     const btnGoogle = document.getElementById('btn-google-fallback');
     if ((!nome || nome.trim() === '') && codigo) {
         btnGoogle.href = `https://www.google.com/search?q=${codigo}`;
@@ -393,13 +446,13 @@ function calcularTotalItemModal() {
             box.className = "mb-4 p-2.5 rounded-xl border flex items-center gap-2.5 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50 transition-colors";
             icone.className = "w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400";
             icone.innerHTML = '<i class="fa-solid fa-equals"></i>';
-            texto.innerHTML = `O preço se manteve exatamente o mesmo da última vez.`;
+            texto.innerHTML = `O preço se manteve o mesmo da última vez.`;
         }
     }
 }
 
 // ---------------------------------------------------------
-// CARRINHO E LISTAGEM
+// CARRINHO E LISTAGEM COM PERSISTÊNCIA LOCAL
 // ---------------------------------------------------------
 function salvarItemCarrinho(event) {
     event.preventDefault();
@@ -421,12 +474,15 @@ function salvarItemCarrinho(event) {
 
     if (idx === -1) carrinho.unshift(obj); else carrinho[idx] = obj;
 
+    salvarCarrinhoLocal(); // <--- SALVA NO CACHE
+
     if (navigator.vibrate) navigator.vibrate([50, 50, 50]); 
     fecharModalProduto(); renderizarCarrinho();
 }
 
 function removerItem(idx) {
     carrinho.splice(idx, 1);
+    salvarCarrinhoLocal(); // <--- ATUALIZA O CACHE
     if (navigator.vibrate) navigator.vibrate(50);
     renderizarCarrinho();
 }
@@ -451,7 +507,7 @@ function renderizarCarrinho() {
         return;
     }
 
-    boxFinalizar.classList.remove('hidden'); btnFinalizarTopo.classList.remove('hidden'); btnFinalizarTopo.classList.add('sm:flex');
+    boxFinalizar.classList.remove('hidden'); btnFinalizarTopo.classList.remove('hidden'); btnFinalizarTopo.classList.add('md:flex');
 
     const html = carrinho.map((item, index) => {
         const sub = item.preco * item.quantidade;
@@ -540,7 +596,11 @@ async function efetivarCompra(event) {
         const itensParaInserir = carrinho.map(item => ({ usuario_id: usuarioLogado.id, nome: item.nome, preco_unitario: item.preco, quantidade: item.quantidade, transacao_id: idTransPrincipal }));
         await window.supabaseClient.from('mercado_itens').insert(itensParaInserir);
 
-        fecharModalCheckout(); carrinho = []; renderizarCarrinho(); carregarHistoricoPrecos();
+        fecharModalCheckout(); 
+        carrinho = []; 
+        limparCarrinhoLocal(); // <--- LIMPA O CACHE APÓS O SUCESSO
+        renderizarCarrinho(); 
+        carregarHistoricoPrecos();
         dispararOverlayLottie("Compra Registrada no Caixa!");
     } catch (e) { Swal.fire('Erro ao Finalizar', e.message, 'error'); } finally { btn.innerHTML = htmlOriginal; btn.disabled = false; }
 }
