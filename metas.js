@@ -1,11 +1,10 @@
 // ==========================================
-// metas.js - MOTOR DE INTELIGÊNCIA DE POUPANÇA E METAS (COM AUTO-FECHAMENTO)
+// metas.js - MOTOR DE INTELIGÊNCIA DE POUPANÇA E METAS (SEM AUTO-FECHAMENTO)
 // ==========================================
 
 let usuarioLogado = null;
 let transacoesGlobais = [];
 let metasGlobais = [];
-let celebracaoTimeout = null; // Controle do timer de 5 segundos
 
 document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(() => document.body.classList.remove('fade-in'), 500);
@@ -362,23 +361,14 @@ async function excluirMeta(metaId) {
 }
 
 // ---------------------------------------------------------
-// CELEBRAÇÃO COM AUTO-FECHAMENTO EM 5 SEGUNDOS
+// CELEBRAÇÃO (PERMANECE ATÉ O USUÁRIO CLICAR EM CONTINUAR)
 // ---------------------------------------------------------
 function dispararCelebracao(titulo, mensagem) {
     document.getElementById('cel-titulo').innerText = titulo;
     document.getElementById('cel-mensagem').innerHTML = mensagem;
     document.getElementById('modal-celebracao').classList.remove('hidden');
-
-    // Limpa qualquer timer pendente para evitar conflitos
-    if (celebracaoTimeout) clearTimeout(celebracaoTimeout);
-
-    // Fecha automaticamente após 5 segundos (5000 ms)
-    celebracaoTimeout = setTimeout(() => {
-        fecharCelebracao();
-    }, 5000);
 }
 
 function fecharCelebracao() {
-    if (celebracaoTimeout) clearTimeout(celebracaoTimeout);
     document.getElementById('modal-celebracao').classList.add('hidden');
 }
