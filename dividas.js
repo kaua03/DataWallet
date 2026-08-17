@@ -1,5 +1,5 @@
 // ==========================================
-// dividas.js - ERP KANBAN DEFINITIVO (DADOS EXATOS + ZERO ERROS)
+// dividas.js - ERP KANBAN DEFINITIVO (BLINDAGEM TOTAL + FLUIDEZ)
 // ==========================================
 
 let usuarioLogado = null;
@@ -349,7 +349,9 @@ window.toggleColuna = function(id) {
 
 window.alterarStatusPagamento = async function(idTransacao, novoStatusPago) {
     try {
-        const client = window.supabaseClient;
+        const client = window.supabaseClient || supabaseClient;
+        if (!client) throw new Error("Cliente Supabase não inicializado.");
+
         const { error } = await client.from('transacoes').update({ pago: novoStatusPago }).eq('id', idTransacao);
         if (error) throw error;
         
@@ -419,7 +421,9 @@ window.excluirDivida = async function(idTransacao) {
     if(!confirmacao.isConfirmed) return;
 
     try {
-        const client = window.supabaseClient;
+        const client = window.supabaseClient || supabaseClient;
+        if (!client) throw new Error("Cliente Supabase não inicializado.");
+
         const { error } = await client.from('transacoes').delete().eq('id', idTransacao);
         if (error) throw error;
         transacoesGlobais = transacoesGlobais.filter(t => t.id != idTransacao);
