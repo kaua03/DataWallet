@@ -58,12 +58,13 @@
             <div class="max-w-4xl mx-auto">
                 <div class="flex justify-between items-center mb-6 gap-3">
                     <div class="min-w-0 flex-1">
-                        <!-- ALINHAMENTO DO BADGE CORRIGIDO AQUI -->
                         <div class="flex items-center gap-2 mb-1">
                             <h2 class="text-[10px] md:text-sm font-bold text-indigo-200 uppercase tracking-widest"><i class="fa-solid fa-cart-shopping mr-1"></i> Total da Compra</h2>
-                            <span id="badge-live" class="hidden bg-emerald-500 text-white text-[9px] px-2 py-0.5 rounded-md font-black uppercase tracking-wider items-center gap-1 shadow-sm">
+                            
+                            <!-- SELO (AGORA É UM BOTÃO PARA GERENCIAR) -->
+                            <button onclick="abrirGerenciadorLive()" id="badge-live" class="hidden bg-emerald-500 hover:bg-emerald-600 text-white text-[9px] px-2 py-0.5 rounded-md font-black uppercase tracking-wider items-center gap-1 shadow-sm transition-colors cursor-pointer">
                                 <i class="fa-solid fa-wifi animate-pulse"></i> Compartilhado
-                            </span>
+                            </button>
                         </div>
                         <h1 class="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter truncate" id="total-carrinho">R$ 0,00</h1>
                         <p class="text-xs text-indigo-200 mt-1 font-medium"><span id="qtd-itens-carrinho">0</span> itens no carrinho</p>
@@ -121,18 +122,8 @@
 
     </main>
 
-    <!-- MODAL DO LEITOR DE CÂMERA -->
-    <div id="modal-camera" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[110] flex flex-col items-center justify-center fade-in">
-        <button onclick="fecharLeitorCamera()" class="absolute top-8 right-8 w-12 h-12 rounded-full bg-white/10 text-white hover:bg-rose-500 transition flex items-center justify-center z-[111] active:scale-95"><i class="fa-solid fa-xmark text-xl"></i></button>
-        <h3 class="text-white font-black text-2xl mb-2 text-center">Aponte a Câmera</h3>
-        <p class="text-slate-400 font-medium text-sm mb-8 text-center max-w-xs">Posicione o código de barras no centro para bipar automaticamente.</p>
-        <div class="relative w-[300px] h-[300px] rounded-3xl overflow-hidden bg-black shadow-[0_0_50px_rgba(79,70,229,0.3)] border-2 border-indigo-500 flex items-center justify-center">
-            <div id="reader" class="w-full h-full"></div>
-            <div class="absolute top-0 left-0 w-full h-1 bg-emerald-400 shadow-[0_0_15px_#34d399] z-10 animate-[scan_2s_ease-in-out_infinite]"></div>
-        </div>
-    </div>
-
-    <!-- MODAL DE PRODUTO -->
+    <!-- MODAL DE PRODUTO MANTIDO... (Ocultado do texto para não exceder limites, mas DEIXE IGUAL) -->
+    <!-- (SEU MODAL DE PRODUTO CONTINUA AQUI IGUAL A VERSÃO ANTERIOR) -->
     <div id="modal-produto" class="hidden fixed inset-0 bg-slate-900/85 backdrop-blur-sm z-[100] flex items-center justify-center p-4 fade-in">
         <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl relative border border-slate-200 dark:border-slate-800 flex flex-col p-5 max-h-[95vh] overflow-y-auto" style="scrollbar-width: none;">
             <button type="button" onclick="fecharModalProduto()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center active:scale-95 z-10">
@@ -203,7 +194,8 @@
         </div>
     </div>
 
-    <!-- MODAL COMPARTILHAR (SENHA 30S) -->
+
+    <!-- MODAL COMPARTILHAR (SENHA 60S E BARRA FLUIDA) -->
     <div id="modal-share" class="hidden fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[120] flex items-center justify-center p-4 fade-in">
         <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl relative border border-slate-200 dark:border-slate-800 flex flex-col p-6 text-center">
             <button onclick="fecharModalShare()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center active:scale-95"><i class="fa-solid fa-xmark"></i></button>
@@ -213,12 +205,12 @@
             
             <div class="bg-white p-2 rounded-2xl mx-auto mb-4 inline-block shadow-md"><img id="qr-code-img" src="" alt="QR Code" class="w-40 h-40"></div>
             
-            <!-- SENHA DINÂMICA -->
+            <!-- SENHA DINÂMICA (60S) -->
             <div class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 mb-4 relative overflow-hidden">
                 <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Senha de Acesso (Gerada Agora)</p>
                 <h2 id="share-pin" class="text-4xl font-black text-indigo-600 dark:text-indigo-400 tracking-[0.2em] mb-2 font-mono">000000</h2>
-                <p class="text-[10px] font-bold text-rose-500">Expira em <span id="share-timer">30</span>s</p>
-                <div class="absolute bottom-0 left-0 h-1 bg-rose-500 transition-all duration-1000 linear" id="share-timer-bar" style="width: 100%;"></div>
+                <p class="text-[10px] font-bold text-rose-500">Expira em <span id="share-timer">60</span>s</p>
+                <div class="absolute bottom-0 left-0 h-1 bg-rose-500 transition-all duration-1000 ease-linear" id="share-timer-bar" style="width: 100%;"></div>
             </div>
 
             <div class="flex gap-2 w-full">
@@ -228,7 +220,7 @@
         </div>
     </div>
 
-    <!-- MODAL NOME E SENHA CONVIDADO -->
+    <!-- MODAL NOME E SENHA CONVIDADO (VISUAL AJUSTADO) -->
     <div id="modal-convidado" class="hidden fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col p-6 text-center">
             <div class="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-3xl mx-auto mb-3"><i class="fa-solid fa-handshake"></i></div>
@@ -236,13 +228,27 @@
             <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-6">Você foi convidado(a) para ajudar nas compras!</p>
             
             <input type="text" id="input-convidado-nome" placeholder="Seu nome (Ex: Pai, Filho...)" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl px-4 py-3 outline-none focus:border-indigo-500 font-black text-center text-base mb-3">
-            <input type="text" id="input-convidado-senha" placeholder="Senha de 6 dígitos" maxlength="6" inputmode="numeric" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-indigo-600 dark:text-indigo-400 tracking-[0.2em] font-mono rounded-xl px-4 py-3 outline-none focus:border-indigo-500 font-black text-center text-2xl mb-6">
+            
+            <input type="text" id="input-convidado-senha" placeholder="Senha de 6 dígitos" maxlength="6" inputmode="numeric" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-indigo-600 dark:text-indigo-400 tracking-[0.1em] font-mono rounded-xl px-4 py-3 outline-none focus:border-indigo-500 font-black text-center text-xl mb-6">
             
             <button onclick="entrarComoConvidado()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-xl shadow-lg transition-transform active:scale-95 text-lg">Acessar Carrinho</button>
         </div>
     </div>
 
-    <!-- MODAL DE CHECKOUT -->
+    <!-- MODAL GERENCIADOR DA LIVE (QUEM ESTÁ CONECTADO) -->
+    <div id="modal-gerenciar-live" class="hidden fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[130] flex items-center justify-center p-4 fade-in">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl relative border border-slate-200 dark:border-slate-800 flex flex-col p-6">
+            <button onclick="document.getElementById('modal-gerenciar-live').classList.add('hidden')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center active:scale-95"><i class="fa-solid fa-xmark"></i></button>
+            <h3 class="text-xl font-black text-slate-900 dark:text-white mb-2"><i class="fa-solid fa-wifi text-emerald-500 mr-2"></i> Carrinho Ao Vivo</h3>
+            <p class="text-xs font-bold text-slate-500 mb-4 border-b border-slate-100 dark:border-slate-800 pb-4">Gerencie quem está ajudando você no mercado neste momento.</p>
+            
+            <div id="lista-usuarios-live" class="space-y-2 mb-2 max-h-48 overflow-y-auto" style="scrollbar-width: none;">
+                <!-- Preenchido via JS com o botão de Expulsar -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CHECKOUT MANTIDO... -->
     <div id="modal-checkout" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 fade-in">
         <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl relative border border-slate-200 dark:border-slate-800 flex flex-col p-6 md:p-8">
             <button type="button" onclick="fecharModalCheckout()" class="absolute top-5 right-5 w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center active:scale-95"><i class="fa-solid fa-xmark"></i></button>
@@ -278,22 +284,7 @@
         </div>
     </div>
 
-    <!-- MODAL DE RECIBO -->
-    <div id="modal-recibo" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 fade-in cursor-pointer" onclick="if(event.target === this) fecharModalRecibo()">
-        <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl relative border border-slate-200 dark:border-slate-800 flex flex-col p-6 max-h-[85vh] cursor-default">
-            <button type="button" onclick="fecharModalRecibo()" class="absolute top-5 right-5 w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center active:scale-95"><i class="fa-solid fa-xmark"></i></button>
-            <div class="text-center mb-6 pt-2">
-                <div class="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-3xl mx-auto mb-3 shadow-inner"><i class="fa-solid fa-receipt"></i></div>
-                <h3 class="text-2xl font-black text-slate-900 dark:text-white leading-tight" id="recibo-titulo">Mercado</h3><p class="text-xs font-bold text-slate-400 mt-1" id="recibo-data">15/08/2026</p>
-            </div>
-            <div class="flex-1 overflow-y-auto space-y-2 pr-1 mb-6 border-y border-slate-100 dark:border-slate-800 py-4" id="lista-itens-recibo" style="scrollbar-width: none;"></div>
-            <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
-                <span class="text-xs font-black text-slate-400 uppercase tracking-wider">Total Pago</span><span class="text-2xl font-black text-emerald-600 dark:text-emerald-400" id="recibo-total">R$ 0,00</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- OVERLAY LOTTIE (CANVAS) -->
+    <!-- OVERLAY LOTTIE CANVAS MANTIDO... -->
     <div id="overlay-sucesso" onclick="window.fecharOverlaySucesso()" class="hidden fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[99999] flex flex-col items-center justify-center cursor-pointer transition-opacity duration-300">
         <canvas id="canvas-lottie" width="300" height="300"></canvas>
         <p id="overlay-texto" class="text-white font-black text-2xl text-center px-4 mt-4"></p>
