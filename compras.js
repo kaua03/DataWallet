@@ -1,20 +1,6 @@
 // ==========================================
-// compras.js - LOTTIE CANVAS, REALTIME PRESENCE E OTP (SENHA DINÂMICA)
+// compras.js - MOTOR MULTIPLAYER, KICK, AUTO-LOGIN E OTP 60S
 // ==========================================
-
-// INJEÇÃO DE CSS DE SEGURANÇA PARA RESOLUÇÃO (PC vs MOBILE)
-const styleM = document.createElement('style');
-styleM.innerHTML = `
-    @media (min-width: 768px) {
-        #btn-share-desktop { display: flex !important; }
-        #btn-finalizar-topo { display: flex !important; }
-    }
-    @media (max-width: 767px) {
-        #btn-share-desktop { display: none !important; }
-    }
-`;
-document.head.appendChild(styleM);
-
 
 let usuarioLogado = null;
 let carrinho = []; 
@@ -25,14 +11,13 @@ let html5QrCode = null;
 let debounceBuscaTimeout = null;
 let scanOriginadoDoModal = false;
 
-// Variáveis Multi-player & OTP
+// Variáveis Multi-player
 let sessaoAtualId = null;
-let meuApelido = "Mãe"; 
+let meuApelido = "Dono(a)"; 
 let realTimeChannel = null;
 let otpInterval = null;
 let tempoRestanteOTP = 0;
 
-// BLINDAGEM DO BANCO DE DADOS
 function getDbClient() {
     return window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
 }
@@ -72,32 +57,59 @@ document.addEventListener('DOMContentLoaded', async () => {
     const guestSessionId = urlParams.get('s');
 
     if (guestSessionId) {
+        // MODO CONVIDADO (Oculta coisas do Dono)
         sessaoAtualId = guestSessionId;
-        const sidebar = document.getElementById('sidebar');
-        const fabContainer = document.getElementById('fab-container');
-        const abas = document.getElementById('abas-container');
-        const btnTopo = document.getElementById('btn-finalizar-topo');
-        const btnShare = document.getElementById('btn-share-desktop');
+        esconderInterfaceDono();
         
-        if (sidebar) sidebar.style.display = 'none';
-        if (fabContainer) fabContainer.style.display = 'none';
-        if (abas) abas.style.display = 'none';
-        if (btnTopo) btnTopo.style.display = 'none';
-        if (btnShare) btnShare.style.display = 'none';
+        // PERSISTÊNCIA ANTI-F5: Verifica se ele já logou antes
+        const savedSession = localStorage.getItem('DW_GuestSession');
+        const savedName = localStorage.getItem('DW_GuestName');
         
+        if (savedSession === guestSessionId && savedName) {
+            const client = getDbClient();
+            const { data } = await client.from('mercado_sessoes').select('status').eq('id', guestSessionId).single();
+            if (data && data.status === 'ativa') {
+                meuApelido = savedName;
+                document.getElementById('badge-live').classList.remove('hidden');
+                document.getElementById('badge-live').classList.add('inline-flex');
+                await carregarCarrinhoDB();
+                iniciarSubscriptionRealtime();
+                return; // Pula o Modal de Senha
+            } else {
+                localStorage.removeItem('DW_GuestSession');
+            }
+        }
         document.getElementById('modal-convidado').classList.remove('hidden');
     } else {
+        // MODO DONO
         usuarioLogado = await verificarSessaoSegura();
         if (!usuarioLogado) return;
         meuApelido = "Dono(a)";
+        
+        const btnShareDesk = document.getElementById('btn-share-desktop');
+        if(btnShareDesk) { btnShareDesk.classList.remove('hidden'); btnShareDesk.classList.add('md:flex'); }
         
         await inicializarSessaoRealtimeOwner();
         await carregarHistoricoPrecos();
     }
 });
 
+function esconderInterfaceDono() {
+    const sidebar = document.getElementById('sidebar');
+    const fabContainer = document.getElementById('fab-container');
+    const abas = document.getElementById('abas-container');
+    const btnTopo = document.getElementById('btn-finalizar-topo');
+    const btnShare = document.getElementById('btn-share-desktop');
+    
+    if (sidebar) sidebar.style.display = 'none';
+    if (fabContainer) fabContainer.style.display = 'none';
+    if (abas) abas.style.display = 'none';
+    if (btnTopo) btnTopo.style.display = 'none';
+    if (btnShare) btnShare.style.display = 'none';
+}
+
 // ==========================================
-// MOTOR REAL-TIME E SUPABASE PRESENCE (AO VIVO)
+// MOTOR REAL-TIME, PRESENCE, E KICK GUEST
 // ==========================================
 
 async function inicializarSessaoRealtimeOwner() {
@@ -113,9 +125,7 @@ async function inicializarSessaoRealtimeOwner() {
         if (nova) sessaoAtualId = nova[0].id;
     }
 
-    // Não mostra o badge AO VIVO aqui ainda! Só vai mostrar se tiver visita.
-    document.getElementById('badge-live').classList.add('hidden');
-    
+    document.getElementById('badge-live').classList.add('hidden'); // Oculto até alguém entrar
     await carregarCarrinhoDB();
     iniciarSubscriptionRealtime();
 }
@@ -132,9 +142,8 @@ function iniciarSubscriptionRealtime() {
     const client = getDbClient();
     if (realTimeChannel) client.removeChannel(realTimeChannel);
 
-    // Conecta na sala e ativa o Presence
     realTimeChannel = client.channel(`room-${sessaoAtualId}`, {
-        config: { presence: { key: meuApelido } }
+        config: { presence: { key: meuApelido }, broadcast: { self: true } }
     });
 
     realTimeChannel
@@ -143,8 +152,7 @@ function iniciarSubscriptionRealtime() {
             const totalUsers = Object.keys(newState).length;
             const badgeLive = document.getElementById('badge-live');
             
-            // SE TIVER MAIS DE 1 PESSOA (VOCÊ + VISITAS) MOSTRA A TAG AO VIVO!
-            if (badgeLive) {
+            if (badgeLive && meuApelido === "Dono(a)") {
                 if (totalUsers > 1) {
                     badgeLive.classList.remove('hidden');
                     badgeLive.classList.add('inline-flex');
@@ -154,15 +162,60 @@ function iniciarSubscriptionRealtime() {
                 }
             }
         })
+        .on('broadcast', { event: 'comando_sala' }, (payload) => {
+            // A MAE EXPULSOU ALGUÉM
+            if (payload.payload.acao === 'kick' && payload.payload.alvo === meuApelido) {
+                Swal.fire('Desconectado', 'O administrador fechou a sua conexão com a lista.', 'info').then(() => {
+                    localStorage.removeItem('DW_GuestSession');
+                    window.location.href = window.location.pathname; // Recarrega limpo
+                });
+            }
+            // A MAE FINALIZOU A COMPRA
+            if (payload.payload.acao === 'encerrar' && meuApelido !== "Dono(a)") {
+                Swal.fire('Compra Finalizada', 'A compra foi confirmada no caixa!', 'success').then(() => {
+                    localStorage.removeItem('DW_GuestSession');
+                    window.location.href = window.location.pathname;
+                });
+            }
+        })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'mercado_carrinho', filter: `sessao_id=eq.${sessaoAtualId}` }, payload => {
             carregarCarrinhoDB(); 
         })
         .subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
-                // Ao conectar, informa quem sou eu para a sala
                 await realTimeChannel.track({ online_at: new Date().toISOString() });
             }
         });
+}
+
+// ---------------------------------------------------------
+// GERENCIADOR DE LIVE (PAINEL DE EXPULSAR)
+// ---------------------------------------------------------
+window.abrirGerenciadorLive = function() {
+    if (meuApelido !== "Dono(a)") return Swal.fire('Visualizando', 'Apenas o administrador do carrinho pode gerenciar membros.', 'info');
+    
+    const state = realTimeChannel.presenceState();
+    let html = '';
+    for (const [user] of Object.entries(state)) {
+        if (user === "Dono(a)") continue;
+        html += `
+            <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                <span class="font-bold text-slate-900 dark:text-white"><i class="fa-solid fa-user text-indigo-500 mr-2"></i> ${user}</span>
+                <button onclick="expulsarUsuario('${user}')" class="text-xs bg-rose-500 hover:bg-rose-600 text-white font-black py-1.5 px-3 rounded-lg shadow active:scale-95 transition-transform">Remover</button>
+            </div>
+        `;
+    }
+    
+    if (html === '') html = '<p class="text-xs font-bold text-slate-400 py-4 text-center">Ninguém mais no carrinho.</p>';
+    
+    document.getElementById('lista-usuarios-live').innerHTML = html;
+    document.getElementById('modal-gerenciar-live').classList.remove('hidden');
+}
+
+window.expulsarUsuario = function(apelido) {
+    if (!realTimeChannel) return;
+    realTimeChannel.send({ type: 'broadcast', event: 'comando_sala', payload: { acao: 'kick', alvo: apelido } });
+    Swal.fire({ icon: 'success', title: 'Usuário Removido', showConfirmButton: false, timer: 1000 });
 }
 
 // ---------------------------------------------------------
@@ -191,27 +244,22 @@ function fecharModalShare() {
 
 async function gerarNovaSenhaSessao() {
     const pin = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiraEm = new Date(Date.now() + 30000).toISOString(); 
+    const expiraEm = new Date(Date.now() + 60000).toISOString(); 
     
     document.getElementById('share-pin').innerText = pin;
-    tempoRestanteOTP = 30;
+    tempoRestanteOTP = 60; // AGORA SÃO 60 SEGUNDOS
     atualizarTimerOTP();
     
     try {
         const client = getDbClient();
-        await client.from('mercado_sessoes').update({
-            senha: pin,
-            senha_expira_em: expiraEm
-        }).eq('id', sessaoAtualId);
+        await client.from('mercado_sessoes').update({ senha: pin, senha_expira_em: expiraEm }).eq('id', sessaoAtualId);
     } catch(e) {}
 
     clearInterval(otpInterval);
     otpInterval = setInterval(() => {
         tempoRestanteOTP--;
         atualizarTimerOTP();
-        if (tempoRestanteOTP <= 0) {
-            gerarNovaSenhaSessao(); 
-        }
+        if (tempoRestanteOTP <= 0) gerarNovaSenhaSessao(); 
     }, 1000);
 }
 
@@ -219,7 +267,8 @@ function atualizarTimerOTP() {
     const span = document.getElementById('share-timer');
     const bar = document.getElementById('share-timer-bar');
     if(span) span.innerText = tempoRestanteOTP;
-    if(bar) bar.style.width = `${(tempoRestanteOTP / 30) * 100}%`;
+    // Barra vai diminuindo de forma linear
+    if(bar) bar.style.width = `${(tempoRestanteOTP / 60) * 100}%`;
 }
 
 function copiarLinkShare() {
@@ -235,7 +284,8 @@ async function entrarComoConvidado() {
     const nome = document.getElementById('input-convidado-nome').value.trim();
     const senha = document.getElementById('input-convidado-senha').value.trim();
     
-    if (!nome || !senha) return Swal.fire('Aviso', 'Preencha seu nome e a senha.', 'warning');
+    if (!nome) return Swal.fire('Aviso', 'Preencha o seu nome para entrar.', 'warning');
+    if (!senha) return Swal.fire('Aviso', 'Preencha a senha que aparece no celular do dono.', 'warning');
     
     Swal.fire({ title: 'Verificando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
     
@@ -249,9 +299,15 @@ async function entrarComoConvidado() {
     if (new Date() > new Date(data.senha_expira_em)) return Swal.fire('Acesso Negado', 'Senha expirou!', 'error');
     
     meuApelido = nome;
-    document.getElementById('modal-convidado').classList.add('hidden');
     
-    // O Presence agora controla o badge automaticamente quando a gente entra no canal!
+    // Salva Sessão no Celular dele (Anti F5)
+    localStorage.setItem('DW_GuestSession', sessaoAtualId);
+    localStorage.setItem('DW_GuestName', meuApelido);
+    
+    document.getElementById('modal-convidado').classList.add('hidden');
+    document.getElementById('badge-live').classList.remove('hidden');
+    document.getElementById('badge-live').classList.add('inline-flex');
+    
     await carregarCarrinhoDB();
     iniciarSubscriptionRealtime();
     Swal.fire({ icon: 'success', title: 'Você entrou na compra!', showConfirmButton: false, timer: 1500 });
@@ -411,7 +467,7 @@ function atualizarCamposModalProduto(nome, icone, cor, imgUrl, codigo) {
         btnGoogle.classList.add('hidden'); btnGoogle.classList.remove('block');
     }
 
-    if (nome) analisarPrecoHistoricoInicial(nome);
+    if (nome && meuApelido === "Dono(a)") analisarPrecoHistoricoInicial(nome);
     if (!nome || nome.trim() === '') inputNome.focus(); else document.getElementById('prod-preco').focus();
 }
 
@@ -490,7 +546,7 @@ async function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-
         if (item) {
             if (item.editando_por && item.editando_por !== meuApelido) {
                 setVisibilidadeMenuGlobal(true);
-                return Swal.fire('Bloqueado', `Sendo alterado por: <b>${item.editando_por}</b>.`, 'warning');
+                return Swal.fire('Bloqueado', `Sendo alterado por: <b>${item.editando_por}</b>. Aguarde.`, 'warning');
             }
             
             const client = getDbClient();
@@ -511,6 +567,7 @@ async function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-
         document.getElementById('prod-id').value = '';
         document.getElementById('prod-qtd').value = 1;
         document.getElementById('prod-obs').value = '';
+        document.getElementById('prod-subtotal').innerText = 'R$ 0,00';
     }
 
     document.getElementById('modal-produto').classList.remove('hidden');
@@ -538,9 +595,12 @@ function ajustarQtd(delta) {
 
 function analisarPrecoHistoricoInicial(nomeProduto) {
     const box = document.getElementById('box-inteligencia-preco');
+    
+    // Convidado não tem acesso ao historico da conta
+    if (meuApelido !== "Dono(a)") { box.classList.add('hidden'); precoReferenciaHistorico = 0; return; }
+
     const icone = document.getElementById('icone-inteligencia');
     const texto = document.getElementById('texto-inteligencia');
-
     const nomeNormalizado = removerAcentos(nomeProduto);
     if (!nomeNormalizado) { box.classList.add('hidden'); precoReferenciaHistorico = 0; return; }
 
@@ -552,7 +612,7 @@ function analisarPrecoHistoricoInicial(nomeProduto) {
         box.className = "mb-4 p-2.5 rounded-xl border flex items-center gap-2.5 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50 transition-colors";
         icone.className = "w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400";
         icone.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i>';
-        texto.innerHTML = `Última vez: <b>${formatarMoedaLocal(precoReferenciaHistorico)}</b>. Digite o novo preço.`;
+        texto.innerHTML = `Última vez pago: <b>${formatarMoedaLocal(precoReferenciaHistorico)}</b>.`;
     } else {
         precoReferenciaHistorico = 0;
         box.classList.add('hidden');
@@ -564,7 +624,7 @@ function calcularTotalItemModal() {
     const qtd = parseInt(document.getElementById('prod-qtd').value) || 1;
     document.getElementById('prod-subtotal').innerText = formatarMoedaLocal(precoAtual * qtd);
 
-    if (precoReferenciaHistorico > 0 && precoAtual > 0) {
+    if (precoReferenciaHistorico > 0 && precoAtual > 0 && meuApelido === "Dono(a)") {
         const box = document.getElementById('box-inteligencia-preco');
         const icone = document.getElementById('icone-inteligencia');
         const texto = document.getElementById('texto-inteligencia');
@@ -591,6 +651,9 @@ function calcularTotalItemModal() {
     }
 }
 
+// ---------------------------------------------------------
+// SALVAR E RENDERIZAR NO BANCO (MULTIPLAYER LIVE)
+// ---------------------------------------------------------
 async function salvarItemCarrinho(event) {
     event.preventDefault();
     if (!sessaoAtualId) return Swal.fire('Erro', 'Sessão Perdida. Recarregue a página.', 'error');
@@ -676,7 +739,7 @@ function renderizarCarrinho() {
             : `<i class="fa-solid ${item.icone}"></i>`;
 
         let travaHtml = item.editando_por 
-            ? `<div class="absolute top-2 right-2 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow z-10"><i class="fa-solid fa-lock mr-1"></i>${item.editando_por} editando</div>` 
+            ? `<div class="absolute top-2 right-2 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow z-10"><i class="fa-solid fa-lock mr-1"></i>${item.editando_por}</div>` 
             : '';
 
         let obsHtml = item.obs ? `<p class="text-[9px] font-bold text-amber-500 dark:text-amber-400 mt-1"><i class="fa-solid fa-info-circle mr-1"></i>${item.obs}</p>` : '';
@@ -705,7 +768,7 @@ function renderizarCarrinho() {
 }
 
 // ---------------------------------------------------------
-// FINALIZAÇÃO DE COMPRA
+// FINALIZAÇÃO DE COMPRA (E EXPULSÃO DE TODOS)
 // ---------------------------------------------------------
 function abrirModalCheckout() {
     if (carrinho.length === 0) return;
@@ -770,6 +833,9 @@ async function efetivarCompra(event) {
         await client.from('mercado_itens').insert(itensParaInserir);
 
         await client.from('mercado_sessoes').update({status: 'finalizada'}).eq('id', sessaoAtualId);
+        
+        // Manda o sinal de rádio expulsando a família que estava ajudando
+        if (realTimeChannel) realTimeChannel.send({ type: 'broadcast', event: 'comando_sala', payload: { acao: 'encerrar' } });
 
         fecharModalCheckout(); 
         await inicializarSessaoRealtimeOwner(); 
@@ -815,7 +881,7 @@ function dispararOverlaySucesso(subtexto) {
 }
 
 // ---------------------------------------------------------
-// HISTÓRICO DE RECIBOS
+// HISTÓRICO DE RECIBOS E CONTA DO DONO
 // ---------------------------------------------------------
 async function carregarHistoricoPrecos() {
     try {
