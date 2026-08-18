@@ -1,8 +1,6 @@
 // ==========================================
-// compras.js - MOTOR DE CÂMERA, INTEGRAÇÃO COSMOS E PERSISTÊNCIA DE ESTADO
+// compras.js - MOTOR DE CÂMERA E PERSISTÊNCIA DE ESTADO (SEM COSMOS API)
 // ==========================================
-
-const COSMOS_API_TOKEN = "COLOQUE_SEU_TOKEN_AQUI"; 
 
 let usuarioLogado = null;
 let carrinho = []; 
@@ -47,7 +45,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     usuarioLogado = await verificarSessaoSegura();
     if (!usuarioLogado) return;
 
-    // MAGICA DO ESTADO: Carrega o carrinho pendente
     carregarCarrinhoLocal();
     await carregarHistoricoPrecos();
     renderizarCarrinho();
@@ -78,7 +75,7 @@ function limparCarrinhoLocal() {
 }
 
 // ---------------------------------------------------------
-// FUNÇÕES UTILITÁRIAS
+// FUNÇÕES UTILITÁRIAS E NAVEGAÇÃO DE ABAS
 // ---------------------------------------------------------
 function formatarMoedaLocal(valor) {
     let p = Math.abs(valor).toFixed(2).split('.'); p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -129,14 +126,6 @@ function setVisibilidadeMenuGlobal(mostrar) {
         const fabContainer = fabItems.parentElement;
         if (fabContainer) {
             fabContainer.style.display = mostrar ? 'block' : 'none';
-        }
-    }
-    const boxMobile = document.getElementById('box-finalizar-mobile');
-    if (boxMobile) {
-        if (!mostrar) {
-            boxMobile.classList.add('hidden');
-        } else if (carrinho.length > 0 && !document.getElementById('view-carrinho').classList.contains('hidden')) {
-            boxMobile.classList.remove('hidden');
         }
     }
 }
@@ -196,13 +185,14 @@ async function fecharLeitorCamera() {
 }
 
 // ---------------------------------------------------------
-// INTELIGÊNCIA DE CASCATA: LOCAL -> COSMOS -> OPEN FOOD FACTS
+// INTELIGÊNCIA DE CASCATA: LOCAL -> OPEN FOOD FACTS
 // ---------------------------------------------------------
 async function processarCodigoDeBarras(codigo, isUpdate = false) {
     if (isUpdate) document.getElementById('prod-codigo-barras').value = codigo;
 
     Swal.fire({ title: 'Buscando Produto...', html: `Código: ${codigo}`, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
+    // 1. Banco Offline
     const achouLocal = produtosComuns.find(p => p.ean === codigo);
     if (achouLocal) {
         Swal.close();
@@ -211,29 +201,7 @@ async function processarCodigoDeBarras(codigo, isUpdate = false) {
         return;
     }
 
-    if (COSMOS_API_TOKEN && COSMOS_API_TOKEN !== "COLOQUE_SEU_TOKEN_AQUI") {
-        try {
-            const cosmosUrl = `https://api.cosmos.bluesoft.com.br/gtins/${codigo}.json`;
-            const resCosmos = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(cosmosUrl)}`, {
-                headers: { 'X-Cosmos-Token': COSMOS_API_TOKEN }
-            });
-            
-            const dataOrigem = await resCosmos.json();
-            
-            if (dataOrigem.contents) {
-                const jsonCosmos = JSON.parse(dataOrigem.contents);
-                if (jsonCosmos.description) {
-                    Swal.close();
-                    const nomeProduto = jsonCosmos.description;
-                    const imagemUrl = jsonCosmos.thumbnail || null;
-                    if (isUpdate) atualizarCamposModalProduto(nomeProduto, 'fa-barcode', 'text-indigo-500', imagemUrl, codigo);
-                    else abrirModalProduto(nomeProduto, 'fa-barcode', 'text-indigo-500', -1, imagemUrl, codigo);
-                    return; 
-                }
-            }
-        } catch (e) { console.log("Cosmos falhou, caindo para Open Food Facts"); }
-    }
-
+    // 2. API Global (Open Food Facts)
     try {
         const resOFF = await fetch(`https://world.openfoodfacts.org/api/v0/product/${codigo}.json`);
         const jsonOFF = await resOFF.json();
@@ -246,6 +214,7 @@ async function processarCodigoDeBarras(codigo, isUpdate = false) {
             if (isUpdate) atualizarCamposModalProduto(nomeProduto, 'fa-barcode', 'text-indigo-500', imagemUrl, codigo);
             else abrirModalProduto(nomeProduto, 'fa-barcode', 'text-indigo-500', -1, imagemUrl, codigo);
         } else {
+            // Falhou: Deixa vazio e MOSTRA o botão do Google
             if (isUpdate) atualizarCamposModalProduto('', 'fa-barcode', 'text-slate-500', null, codigo);
             else abrirModalProduto('', 'fa-barcode', 'text-slate-500', -1, null, codigo);
         }
@@ -474,7 +443,7 @@ function salvarItemCarrinho(event) {
 
     if (idx === -1) carrinho.unshift(obj); else carrinho[idx] = obj;
 
-    salvarCarrinhoLocal(); // <--- SALVA NO CACHE
+    salvarCarrinhoLocal(); 
 
     if (navigator.vibrate) navigator.vibrate([50, 50, 50]); 
     fecharModalProduto(); renderizarCarrinho();
@@ -482,7 +451,7 @@ function salvarItemCarrinho(event) {
 
 function removerItem(idx) {
     carrinho.splice(idx, 1);
-    salvarCarrinhoLocal(); // <--- ATUALIZA O CACHE
+    salvarCarrinhoLocal(); 
     if (navigator.vibrate) navigator.vibrate(50);
     renderizarCarrinho();
 }
@@ -491,7 +460,6 @@ function renderizarCarrinho() {
     const container = document.getElementById('lista-carrinho');
     const totalEl = document.getElementById('total-carrinho');
     const qtdEl = document.getElementById('qtd-itens-carrinho');
-    const boxFinalizar = document.getElementById('box-finalizar-mobile');
     const btnFinalizarTopo = document.getElementById('btn-finalizar-topo');
 
     let total = 0; let qtdItens = 0;
@@ -499,15 +467,17 @@ function renderizarCarrinho() {
     if (carrinho.length === 0) {
         container.innerHTML = `
             <div class="flex flex-col items-center justify-center py-20 opacity-60">
-                <dotlottie-wc src="https://lottie.host/7e008fa9-2de6-455b-baf5-0e1ce8b8fcfa/R8B5B1bN9C.json" style="width: 150px; height: 150px;" autoplay loop></dotlottie-wc>
-                <p class="text-sm font-bold text-slate-500 dark:text-slate-400 mt-2 text-center max-w-[250px]">O carrinho está vazio.<br>Bipe ou digite o nome de um produto.</p>
+                <div class="w-24 h-24 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                    <i class="fa-solid fa-basket-shopping text-4xl text-slate-400"></i>
+                </div>
+                <p class="text-sm font-bold text-slate-500 dark:text-slate-400 text-center max-w-[250px]">O carrinho está vazio.<br>Bipe ou digite o nome de um produto.</p>
             </div>`;
         totalEl.innerText = "R$ 0,00"; qtdEl.innerText = "0";
-        boxFinalizar.classList.add('hidden'); btnFinalizarTopo.classList.add('hidden');
+        btnFinalizarTopo.classList.add('hidden'); btnFinalizarTopo.classList.remove('flex');
         return;
     }
 
-    boxFinalizar.classList.remove('hidden'); btnFinalizarTopo.classList.remove('hidden'); btnFinalizarTopo.classList.add('md:flex');
+    btnFinalizarTopo.classList.remove('hidden'); btnFinalizarTopo.classList.add('flex');
 
     const html = carrinho.map((item, index) => {
         const sub = item.preco * item.quantidade;
@@ -564,11 +534,14 @@ async function efetivarCompra(event) {
     const htmlOriginal = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando Caixa...'; btn.disabled = true;
 
     try {
+        const client = window.supabaseClient || supabaseClient;
+        if (!client) throw new Error("Cliente Supabase não inicializado. Recarregue a página.");
+
         let total = 0; carrinho.forEach(i => total += (i.preco * i.quantidade));
         const descLocal = document.getElementById('checkout-desc').value || "Compra no Mercado";
         const tipoPagamento = document.querySelector('input[name="pagamento"]:checked').value;
         
-        const { data: catData } = await window.supabaseClient.from('categorias').select('id, nome').eq('usuario_id', usuarioLogado.id);
+        const { data: catData } = await client.from('categorias').select('id, nome').eq('usuario_id', usuarioLogado.id);
         let idCategoria = null;
         if (catData && catData.length > 0) {
             const alimentacao = catData.find(c => c.nome.toLowerCase().includes('alimentação') || c.nome.toLowerCase().includes('mercado'));
@@ -589,33 +562,41 @@ async function efetivarCompra(event) {
             }
         }
 
-        const { data: retTrans, error: errT } = await window.supabaseClient.from('transacoes').insert(transacoesParaInserir).select();
+        const { data: retTrans, error: errT } = await client.from('transacoes').insert(transacoesParaInserir).select();
         if (errT) throw errT;
 
         const idTransPrincipal = retTrans[0].id;
         const itensParaInserir = carrinho.map(item => ({ usuario_id: usuarioLogado.id, nome: item.nome, preco_unitario: item.preco, quantidade: item.quantidade, transacao_id: idTransPrincipal }));
-        await window.supabaseClient.from('mercado_itens').insert(itensParaInserir);
+        await client.from('mercado_itens').insert(itensParaInserir);
 
         fecharModalCheckout(); 
         carrinho = []; 
-        limparCarrinhoLocal(); // <--- LIMPA O CACHE APÓS O SUCESSO
+        limparCarrinhoLocal(); 
         renderizarCarrinho(); 
         carregarHistoricoPrecos();
-        dispararOverlayLottie("Compra Registrada no Caixa!");
+        dispararOverlaySucesso("Compra Registrada no Caixa!");
     } catch (e) { Swal.fire('Erro ao Finalizar', e.message, 'error'); } finally { btn.innerHTML = htmlOriginal; btn.disabled = false; }
 }
 
-function dispararOverlayLottie(subtexto) {
-    const urlAnimacao = "https://lottie.host/78d29cd2-20ba-42fa-89bb-5471e7c8353c/EglrVN8uNB.lottie"; 
-    if (!customElements.get('dotlottie-wc')) {
-        const scriptLottie = document.createElement('script'); scriptLottie.src = "https://unpkg.com/@lottiefiles/dotlottie-wc@0.3.0/dist/dotlottie-wc.js"; scriptLottie.type = "module"; document.head.appendChild(scriptLottie);
-    }
-    const overlayLottie = document.createElement('div');
-    overlayLottie.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(8px); transition: opacity 0.3s ease; opacity: 0; cursor: pointer;';
-    overlayLottie.innerHTML = `<div style="width: 250px; height: 250px; display: flex; align-items: center; justify-content: center;"><dotlottie-wc src="${urlAnimacao}" autoplay style="width: 100%; height: 100%;"></dotlottie-wc></div><p style="color: #ffffff; font-family: 'Inter', sans-serif; font-weight: 900; font-size: 1.35rem; margin-top: 1rem; text-align: center; padding: 0 1.5rem; text-shadow: 0 2px 10px rgba(0,0,0,0.6);">${subtexto}</p>`;
-    document.documentElement.appendChild(overlayLottie);
-    requestAnimationFrame(() => overlayLottie.style.opacity = '1');
-    setTimeout(() => { if (document.body.contains(overlayLottie)) { overlayLottie.style.opacity = '0'; setTimeout(() => overlayLottie.remove(), 300); } }, 2600);
+function dispararOverlaySucesso(subtexto) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px); transition: opacity 0.3s ease; opacity: 0;';
+    
+    overlay.innerHTML = `
+        <div class="w-32 h-32 bg-emerald-500 rounded-full flex items-center justify-center mb-6 shadow-[0_0_50px_rgba(16,185,129,0.5)] transform scale-0 animate-[popIn_0.5s_cubic-bezier(0.175,0.885,0.32,1.275)_forwards]">
+            <i class="fa-solid fa-check text-6xl text-white"></i>
+        </div>
+        <p class="text-white font-black text-2xl text-center px-4 animate-[fadeInUp_0.5s_ease_0.2s_forwards] opacity-0">${subtexto}</p>
+        <style>
+            @keyframes popIn { to { transform: scale(1); } }
+            @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        </style>
+    `;
+    
+    document.documentElement.appendChild(overlay);
+    requestAnimationFrame(() => overlay.style.opacity = '1');
+    
+    setTimeout(() => { if (document.body.contains(overlay)) { overlay.style.opacity = '0'; setTimeout(() => overlay.remove(), 300); } }, 2500);
 }
 
 // ---------------------------------------------------------
@@ -623,7 +604,9 @@ function dispararOverlayLottie(subtexto) {
 // ---------------------------------------------------------
 async function carregarHistoricoPrecos() {
     try {
-        const client = window.supabaseClient;
+        const client = window.supabaseClient || supabaseClient;
+        if (!client) return;
+
         const { data: itensDB } = await client.from('mercado_itens').select('*').eq('usuario_id', usuarioLogado.id).order('criado_em', { ascending: false });
         if (itensDB) historicoPrecos = itensDB;
 
