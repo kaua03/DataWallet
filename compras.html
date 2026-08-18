@@ -23,6 +23,7 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Bibliotecas: Supabase, Lottie e Leitor de Código de Barras -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.4/dist/dotlottie-wc.js" type="module"></script>
@@ -56,14 +57,20 @@
         <!-- HEADER E ABAS -->
         <header class="bg-indigo-600 dark:bg-indigo-900 text-white p-5 md:p-8 rounded-b-3xl md:rounded-b-[3rem] shadow-lg shadow-indigo-600/20 relative z-20 shrink-0 mx-0 md:mx-4 md:mt-4 transition-colors">
             <div class="max-w-4xl mx-auto">
-                <div class="flex justify-between items-center mb-6">
-                    <div>
-                        <h2 class="text-xs md:text-sm font-bold text-indigo-200 uppercase tracking-widest mb-1 flex items-center gap-2">
+                <!-- Botão e Valor Total Alinhados Lado a Lado Responsivamente -->
+                <div class="flex justify-between items-center mb-6 gap-2">
+                    <div class="min-w-0 flex-1">
+                        <h2 class="text-xs md:text-sm font-bold text-indigo-200 uppercase tracking-widest mb-1 flex items-center gap-1.5">
                             <i class="fa-solid fa-cart-shopping"></i> Total da Compra
                         </h2>
-                        <h1 class="text-4xl md:text-5xl font-black tracking-tighter" id="total-carrinho">R$ 0,00</h1>
+                        <h1 class="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter truncate" id="total-carrinho">R$ 0,00</h1>
                         <p class="text-xs text-indigo-200 mt-1 font-medium"><span id="qtd-itens-carrinho">0</span> itens no carrinho</p>
                     </div>
+                    
+                    <!-- BOTÃO ÚNICO DE FINALIZAR -->
+                    <button onclick="abrirModalCheckout()" id="btn-finalizar-topo" class="hidden bg-emerald-500 hover:bg-emerald-400 text-white font-black px-4 py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl shadow-lg transition-transform active:scale-95 items-center justify-center gap-2 shrink-0 text-sm md:text-base border border-emerald-400">
+                        Finalizar <i class="fa-solid fa-check"></i>
+                    </button>
                 </div>
                 
                 <div class="flex bg-indigo-700/50 dark:bg-indigo-950/50 p-1.5 rounded-xl max-w-sm">
@@ -97,13 +104,6 @@
                     <div id="lista-carrinho" class="space-y-3"></div>
                 </div>
             </section>
-
-            <!-- BOTÃO ÚNICO DE FINALIZAR COMPRA (Fixo embaixo, respeitando menu) -->
-            <div id="box-finalizar-mobile" class="fixed bottom-6 left-4 right-20 md:left-1/2 md:-translate-x-1/2 md:w-[calc(100%-2rem)] md:max-w-3xl md:right-auto z-40 hidden fade-in">
-                <button onclick="abrirModalCheckout()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-[0_10px_25px_rgba(16,185,129,0.4)] flex justify-center items-center gap-2 text-lg active:scale-95 transition-transform border border-emerald-400">
-                    <i class="fa-solid fa-cash-register"></i> Finalizar Compra
-                </button>
-            </div>
         </div>
 
         <!-- ABA 2: HISTÓRICO DE COMPRAS -->
