@@ -1,5 +1,5 @@
 // ==========================================
-// compras.js - MOTOR DE CÂMERA, LOTTIE, REALTIME E OTP (SENHA DINÂMICA)
+// compras.js - MOTOR DE CÂMERA, LOTTIE CANVAS, REALTIME E OTP
 // ==========================================
 
 let usuarioLogado = null;
@@ -9,6 +9,7 @@ let historicoAgrupadoRecibos = [];
 let precoReferenciaHistorico = 0; 
 let html5QrCode = null; 
 let debounceBuscaTimeout = null;
+let scanOriginadoDoModal = false;
 
 // Variáveis Multi-player & OTP
 let sessaoAtualId = null;
@@ -16,6 +17,8 @@ let meuApelido = "Mãe"; // Modificado se for convidado
 let realTimeChannel = null;
 let otpInterval = null;
 let tempoRestanteOTP = 0;
+
+window.abrirModalShare = abrirModalShare;
 
 const produtosComuns = [
     { ean: "7896098900123", nome: "Sabão em Barra Ypê Verde", icone: "fa-soap", cor: "text-emerald-500" },
@@ -36,7 +39,6 @@ const produtosComuns = [
 document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(() => document.body.classList.remove('fade-in'), 300);
 
-    // Fade links (mantem SPA e não pisca a tela)
     document.querySelectorAll('a').forEach(link => {
         if(link.hostname === window.location.hostname && link.target !== '_blank') {
             link.addEventListener('click', e => {
@@ -53,7 +55,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (guestSessionId) {
         sessaoAtualId = guestSessionId;
-        // Oculta coisas de "Dono"
         const sidebar = document.getElementById('sidebar');
         const fabContainer = document.getElementById('fab-container');
         const abas = document.getElementById('abas-container');
@@ -72,7 +73,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         usuarioLogado = await verificarSessaoSegura();
         if (!usuarioLogado) return;
         meuApelido = "Dono(a)";
-        document.getElementById('btn-share-desktop').classList.remove('hidden');
+        
+        const btnShareDesk = document.getElementById('btn-share-desktop');
+        if(btnShareDesk) btnShareDesk.classList.remove('hidden');
+        
         await inicializarSessaoRealtimeOwner();
         await carregarHistoricoPrecos();
     }
@@ -109,7 +113,7 @@ function iniciarSubscriptionRealtime() {
     if (realTimeChannel) window.supabaseClient.removeChannel(realTimeChannel);
     realTimeChannel = window.supabaseClient.channel('carrinho-live')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'mercado_carrinho', filter: `sessao_id=eq.${sessaoAtualId}` }, payload => {
-            carregarCarrinhoDB(); // Atualiza a tela de todos instantaneamente
+            carregarCarrinhoDB(); 
         })
         .subscribe();
 }
@@ -139,9 +143,8 @@ function fecharModalShare() {
 }
 
 async function gerarNovaSenhaSessao() {
-    // Gera PIN de 6 números
     const pin = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiraEm = new Date(Date.now() + 30000).toISOString(); // 30 segundos no futuro
+    const expiraEm = new Date(Date.now() + 30000).toISOString(); 
     
     document.getElementById('share-pin').innerText = pin;
     tempoRestanteOTP = 30;
@@ -159,7 +162,7 @@ async function gerarNovaSenhaSessao() {
         tempoRestanteOTP--;
         atualizarTimerOTP();
         if (tempoRestanteOTP <= 0) {
-            gerarNovaSenhaSessao(); // Roda de novo infinitamente enquanto a tela tiver aberta
+            gerarNovaSenhaSessao(); 
         }
     }, 1000);
 }
@@ -178,30 +181,25 @@ function copiarLinkShare() {
 }
 
 // ---------------------------------------------------------
-// AUTENTICAÇÃO DO CONVIDADO (O FILHO/MARIDO LENDO O QR CODE)
+// AUTENTICAÇÃO DO CONVIDADO
 // ---------------------------------------------------------
 async function entrarComoConvidado() {
     const nome = document.getElementById('input-convidado-nome').value.trim();
     const senha = document.getElementById('input-convidado-senha').value.trim();
     
-    if (!nome || !senha) return Swal.fire('Aviso', 'Preencha seu nome e a senha de 6 dígitos que está na tela da sua mãe.', 'warning');
+    if (!nome || !senha) return Swal.fire('Aviso', 'Preencha seu nome e a senha.', 'warning');
     
     Swal.fire({ title: 'Verificando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
     
-    // Bate no banco para checar a senha da sessão exata
     const { data, error } = await window.supabaseClient
-        .from('mercado_sessoes')
-        .select('senha, senha_expira_em')
-        .eq('id', sessaoAtualId)
-        .single();
+        .from('mercado_sessoes').select('senha, senha_expira_em').eq('id', sessaoAtualId).single();
         
     Swal.close();
     
-    if (error || !data) return Swal.fire('Erro', 'Código de Sessão inválido.', 'error');
+    if (error || !data) return Swal.fire('Erro', 'Sessão inválida.', 'error');
     if (data.senha !== senha) return Swal.fire('Acesso Negado', 'Senha Incorreta.', 'error');
-    if (new Date() > new Date(data.senha_expira_em)) return Swal.fire('Acesso Negado', 'A senha expirou! Olhe a tela da sua mãe novamente e pegue a nova senha.', 'error');
+    if (new Date() > new Date(data.senha_expira_em)) return Swal.fire('Acesso Negado', 'Senha expirou!', 'error');
     
-    // Sucesso!
     meuApelido = nome;
     document.getElementById('modal-convidado').classList.add('hidden');
     document.getElementById('badge-live').classList.remove('hidden');
@@ -266,7 +264,7 @@ function setVisibilidadeMenuGlobal(mostrar) {
 }
 
 // ---------------------------------------------------------
-// CÂMERA E OPEN FOOD FACTS (API DE PRODUTOS)
+// CÂMERA E OPEN FOOD FACTS
 // ---------------------------------------------------------
 function tocarBipSucesso() {
     try {
@@ -285,8 +283,8 @@ async function abrirLeitorCamera(fromModal = false) {
     scanOriginadoDoModal = fromModal;
     try {
         const devices = await Html5Qrcode.getCameras();
-        if (!devices || devices.length === 0) return Swal.fire('Aviso', 'Nenhuma câmera encontrada.', 'info');
-    } catch (err) { return Swal.fire('Erro na Câmera', 'Permissão negada.', 'error'); }
+        if (!devices || devices.length === 0) return Swal.fire('Aviso', 'Nenhuma câmera.', 'info');
+    } catch (err) { return Swal.fire('Erro', 'Permissão negada.', 'error'); }
 
     setVisibilidadeMenuGlobal(false);
     document.getElementById('modal-camera').classList.remove('hidden');
@@ -432,7 +430,7 @@ function limparBusca() {
 }
 
 // ---------------------------------------------------------
-// MODAL PRODUTO & CONTROLE DE TRAVA (LOCKING) NO SUPABASE
+// MODAL PRODUTO & CONTROLE DE TRAVA (LOCKING NO SUPABASE)
 // ---------------------------------------------------------
 async function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-indigo-500', dbId = null, imagemUrl = null, codigoBarras = null) {
     document.getElementById('box-autocomplete').classList.add('hidden');
@@ -443,17 +441,13 @@ async function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-
     const form = document.getElementById('form-produto');
     form.reset();
 
-    // TRAVA ANTI-COLISÃO (MULTIPLAYER)
     if (dbId && dbId !== 'null') {
         const item = carrinho.find(i => i.id === dbId);
         if (item) {
-            // Se alguém já clicou antes de mim e cravou o apelido lá
             if (item.editando_por && item.editando_por !== meuApelido) {
                 setVisibilidadeMenuGlobal(true);
-                return Swal.fire('Bloqueado', `Este item está sendo alterado por: <b>${item.editando_por}</b>. Aguarde.`, 'warning');
+                return Swal.fire('Bloqueado', `Sendo alterado por: <b>${item.editando_por}</b>. Aguarde.`, 'warning');
             }
-            
-            // Avisa o Supabase que EU estou mexendo nisso agora (trava os outros)
             await window.supabaseClient.from('mercado_carrinho').update({ editando_por: meuApelido }).eq('id', dbId);
             
             document.getElementById('prod-qtd').value = item.quantidade;
@@ -467,7 +461,6 @@ async function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-
             calcularTotalItemModal(); 
         }
     } else {
-        // NOVO ITEM (Ninguém mexeu ainda)
         atualizarCamposModalProduto(nomeProduto, icone, cor, imagemUrl, codigoBarras);
         document.getElementById('prod-id').value = '';
         document.getElementById('prod-qtd').value = 1;
@@ -480,12 +473,8 @@ async function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-
 async function fecharModalProduto() {
     document.getElementById('modal-produto').classList.add('hidden');
     setVisibilidadeMenuGlobal(true);
-    
-    // Libera a trava no Supabase se eu fechar sem salvar
     const dbId = document.getElementById('prod-id').value;
-    if (dbId) {
-        await window.supabaseClient.from('mercado_carrinho').update({ editando_por: null }).eq('id', dbId);
-    }
+    if (dbId) await window.supabaseClient.from('mercado_carrinho').update({ editando_por: null }).eq('id', dbId);
 }
 
 function ajustarQtd(delta) {
@@ -513,7 +502,7 @@ function analisarPrecoHistoricoInicial(nomeProduto) {
         box.className = "mb-4 p-2.5 rounded-xl border flex items-center gap-2.5 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50 transition-colors";
         icone.className = "w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400";
         icone.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i>';
-        texto.innerHTML = `Última vez pago: <b>${formatarMoedaLocal(precoReferenciaHistorico)}</b>. Digite o preço atual.`;
+        texto.innerHTML = `Última vez: <b>${formatarMoedaLocal(precoReferenciaHistorico)}</b>.`;
     } else {
         precoReferenciaHistorico = 0;
         box.classList.add('hidden');
@@ -557,7 +546,7 @@ function calcularTotalItemModal() {
 // ---------------------------------------------------------
 async function salvarItemCarrinho(event) {
     event.preventDefault();
-    if (!sessaoAtualId) return Swal.fire('Erro', 'Sessão Perdida. Recarregue a página.', 'error');
+    if (!sessaoAtualId) return Swal.fire('Erro', 'Sessão Perdida.', 'error');
 
     const dbId = document.getElementById('prod-id').value;
     let nome = document.getElementById('prod-nome').value.trim();
@@ -583,7 +572,7 @@ async function salvarItemCarrinho(event) {
         ean: ean,
         icone: dic ? dic.icone : 'fa-box',
         cor: dic ? dic.cor : 'text-slate-500',
-        editando_por: null // Libera a trava pra todo mundo
+        editando_por: null 
     };
 
     if (dbId && dbId !== 'null') payload.id = dbId;
@@ -592,14 +581,13 @@ async function salvarItemCarrinho(event) {
     document.getElementById('modal-produto').classList.add('hidden'); 
     setVisibilidadeMenuGlobal(true);
 
-    // O Supabase Realtime detecta esse insert/upsert e atualiza o celular de todo mundo na mesma hora!
     await window.supabaseClient.from('mercado_carrinho').upsert(payload);
 }
 
 async function removerItem(dbId) {
     const item = carrinho.find(i => i.id === dbId);
     if (item && item.editando_por && item.editando_por !== meuApelido) {
-        return Swal.fire('Bloqueado', `Sendo alterado por: ${item.editando_por}`, 'warning');
+        return Swal.fire('Bloqueado', `Sendo editado por: ${item.editando_por}`, 'warning');
     }
     if (navigator.vibrate) navigator.vibrate(50);
     await window.supabaseClient.from('mercado_carrinho').delete().eq('id', dbId);
@@ -626,7 +614,7 @@ function renderizarCarrinho() {
         return;
     }
 
-    if (btnFinalizarTopo && meuApelido === "Dono(a)") { // Só o Dono finaliza compra
+    if (btnFinalizarTopo && meuApelido === "Dono(a)") { 
         btnFinalizarTopo.classList.remove('hidden'); btnFinalizarTopo.classList.add('flex');
     }
 
@@ -729,16 +717,14 @@ async function efetivarCompra(event) {
         const { data: retTrans, error: errT } = await client.from('transacoes').insert(transacoesParaInserir).select();
         if (errT) throw errT;
 
-        // O Histórico do mercado (mercado_itens) continuará existindo para inteligência
         const itensParaInserir = carrinho.map(item => ({ usuario_id: usuarioLogado.id, nome: item.nome, preco_unitario: item.preco, quantidade: item.quantidade, transacao_id: retTrans[0].id }));
         await client.from('mercado_itens').insert(itensParaInserir);
 
-        // Desliga a sessão atual da nuvem (limpa o carrinho de todos)
         await client.from('mercado_sessoes').update({status: 'finalizada'}).eq('id', sessaoAtualId);
 
         fecharModalCheckout(); 
         
-        await inicializarSessaoRealtimeOwner(); // Inicia um carrinho limpo na nuvem
+        await inicializarSessaoRealtimeOwner(); 
         await carregarHistoricoPrecos();
         dispararOverlaySucesso("Compra Registrada!");
     } catch (e) { Swal.fire('Erro ao Finalizar', e.message, 'error'); } finally { btn.innerHTML = htmlOriginal; btn.disabled = false; }
@@ -781,7 +767,7 @@ function dispararOverlaySucesso(subtexto) {
 }
 
 // ---------------------------------------------------------
-// HISTÓRICO DE RECIBOS
+// HISTÓRICO DE RECIBOS (COMPRAS ANTERIORES)
 // ---------------------------------------------------------
 async function carregarHistoricoPrecos() {
     try {
