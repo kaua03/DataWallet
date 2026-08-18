@@ -1,5 +1,5 @@
 // ==========================================
-// compras.js - MOTOR MULTIPLAYER COM TRAVA CONDICIONAL E UX BLINDADA
+// compras.js - MOTOR MULTIPLAYER (VALIDAÇÃO UX), TEMA E EXPULSÃO
 // ==========================================
 
 let usuarioLogado = null;
@@ -16,7 +16,7 @@ let meuApelido = "Dono(a)";
 let realTimeChannel = null;
 let otpInterval = null;
 let tempoRestanteOTP = 0;
-let usuariosConectados = 1; // Contador de presença ativo
+let usuariosConectados = 1; 
 
 function getDbClient() {
     return window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
@@ -58,6 +58,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (guestSessionId) {
         sessaoAtualId = guestSessionId;
+        esconderInterfaceDono();
+        
+        // MOSTRA BOTÃO DE TEMA APENAS PARA CONVIDADOS
+        const btnTema = document.getElementById('btn-tema-guest');
+        if (btnTema) {
+            btnTema.classList.remove('hidden');
+            btnTema.classList.add('flex');
+        }
         
         const savedSession = localStorage.getItem('DW_GuestSession');
         const savedName = localStorage.getItem('DW_GuestName');
@@ -65,6 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (savedSession === guestSessionId && savedName) {
             const client = getDbClient();
             const { data } = await client.from('mercado_sessoes').select('status').eq('id', guestSessionId).single();
+            
             if (data && data.status === 'ativa') {
                 meuApelido = savedName;
                 document.getElementById('badge-live').classList.remove('hidden');
@@ -74,6 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return; 
             } else {
                 localStorage.removeItem('DW_GuestSession');
+                localStorage.removeItem('DW_GuestName');
             }
         }
         document.getElementById('modal-convidado').classList.remove('hidden');
@@ -90,8 +100,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+function esconderInterfaceDono() {
+    const sidebar = document.getElementById('sidebar');
+    const fabContainer = document.getElementById('fab-container');
+    const abas = document.getElementById('abas-container');
+    const btnTopo = document.getElementById('btn-finalizar-topo');
+    const btnShare = document.getElementById('btn-share-desktop');
+    
+    if (sidebar) sidebar.style.display = 'none';
+    if (fabContainer) fabContainer.style.display = 'none';
+    if (abas) abas.style.display = 'none'; 
+    if (btnTopo) btnTopo.style.display = 'none';
+    if (btnShare) btnShare.style.display = 'none';
+}
+
 // ==========================================
-// MOTOR REAL-TIME, PRESENCE E KICK GUEST
+// MOTOR REAL-TIME E SUPABASE PRESENCE
 // ==========================================
 async function inicializarSessaoRealtimeOwner() {
     const client = getDbClient();
@@ -144,15 +168,31 @@ function iniciarSubscriptionRealtime() {
             }
         })
         .on('broadcast', { event: 'comando_sala' }, (payload) => {
+            // AVISO MANDATÓRIO DE EXPULSÃO (KICK)
             if (payload.payload.acao === 'kick' && payload.payload.alvo === meuApelido) {
-                Swal.fire('Desconectado', 'O administrador fechou a sua conexão com a lista.', 'info').then(() => {
+                Swal.fire({
+                    title: 'Desconectado', 
+                    text: 'O administrador removeu você do carrinho.', 
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    confirmButtonText: 'Sair'
+                }).then(() => {
                     localStorage.removeItem('DW_GuestSession');
+                    localStorage.removeItem('DW_GuestName');
                     window.location.href = window.location.pathname; 
                 });
             }
+            // AVISO MANDATÓRIO DE COMPRA FINALIZADA
             if (payload.payload.acao === 'encerrar' && meuApelido !== "Dono(a)") {
-                Swal.fire('Compra Finalizada', 'A compra foi confirmada no caixa!', 'success').then(() => {
+                Swal.fire({
+                    title: 'Compra Finalizada!', 
+                    text: 'A compra foi confirmada no caixa pelo titular.', 
+                    icon: 'success',
+                    allowOutsideClick: false,
+                    confirmButtonText: 'Sair'
+                }).then(() => {
                     localStorage.removeItem('DW_GuestSession');
+                    localStorage.removeItem('DW_GuestName');
                     window.location.href = window.location.pathname;
                 });
             }
@@ -168,7 +208,7 @@ function iniciarSubscriptionRealtime() {
 }
 
 // ---------------------------------------------------------
-// GERENCIADOR DE LIVE (PAINEL DE EXPULSAR)
+// GERENCIADOR DE LIVE E OTP
 // ---------------------------------------------------------
 window.abrirGerenciadorLive = function() {
     if (meuApelido !== "Dono(a)") return Swal.fire('Aviso', 'Apenas o administrador gerencia membros.', 'info');
@@ -197,9 +237,6 @@ window.expulsarUsuario = function(apelido) {
     Swal.fire({ icon: 'success', title: 'Usuário Removido', showConfirmButton: false, timer: 1000 });
 }
 
-// ---------------------------------------------------------
-// COMPARTILHAR CARRINHO E GERAÇÃO DE SENHA (OTP)
-// ---------------------------------------------------------
 async function abrirModalShare() {
     if (!sessaoAtualId) return Swal.fire('Aviso', 'Sessão ainda não inicializada.', 'warning');
     
@@ -254,7 +291,7 @@ function copiarLinkShare() {
 }
 
 // ---------------------------------------------------------
-// AUTENTICAÇÃO DO CONVIDADO (COM VALIDAÇÃO REFORÇADA)
+// AUTENTICAÇÃO DO CONVIDADO (COM VALIDAÇÃO)
 // ---------------------------------------------------------
 async function entrarComoConvidado() {
     const nomeInput = document.getElementById('input-convidado-nome');
@@ -512,9 +549,6 @@ function limparBusca() {
     input.value = ''; buscarProdutosAutocompletar(); input.focus();
 }
 
-// ---------------------------------------------------------
-// MODAL PRODUTO & CONTROLE DE TRAVA CONDICIONAL
-// ---------------------------------------------------------
 async function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-indigo-500', dbId = null, imagemUrl = null, codigoBarras = null) {
     document.getElementById('box-autocomplete').classList.add('hidden');
     document.getElementById('input-busca-produto').value = '';
@@ -526,12 +560,11 @@ async function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-
     if (dbId && dbId !== 'null') {
         const item = carrinho.find(i => i.id === dbId);
         if (item) {
-            // TRAVA SÓ VALIDA SE HOUVER MAIS DE 1 PESSOA CONECTADA
+            // SÓ CHECA A TRAVA SE TIVER ALGUÉM ALÉM DE VOCÊ NA SALA
             if (usuariosConectados > 1 && item.editando_por && item.editando_por !== meuApelido) {
                 return Swal.fire('Bloqueado', `Sendo alterado por: <b>${item.editando_por}</b>. Aguarde.`, 'warning');
             }
             
-            // Só grava a trava no banco se estiver em sessão compartilhada
             if (usuariosConectados > 1) {
                 const client = getDbClient();
                 await client.from('mercado_carrinho').update({ editando_por: meuApelido }).eq('id', dbId);
@@ -748,7 +781,7 @@ function renderizarCarrinho() {
 }
 
 // ---------------------------------------------------------
-// FINALIZAÇÃO DE COMPRA
+// FINALIZAÇÃO DE COMPRA E SUCESSO
 // ---------------------------------------------------------
 function abrirModalCheckout() {
     if (carrinho.length === 0) return;
@@ -821,9 +854,6 @@ async function efetivarCompra(event) {
     } catch (e) { Swal.fire('Erro ao Finalizar', e.message, 'error'); } finally { btn.innerHTML = htmlOriginal; btn.disabled = false; }
 }
 
-// ---------------------------------------------------------
-// ANIMAÇÃO LOTTIE COM CANCELAMENTO GARANTIDO
-// ---------------------------------------------------------
 window.fecharOverlaySucesso = function() {
     const overlay = document.getElementById('overlay-sucesso');
     if (overlay && !overlay.classList.contains('hidden')) {
@@ -845,20 +875,21 @@ function dispararOverlaySucesso(subtexto) {
 
     if (window.lottieInstance) window.lottieInstance.destroy();
 
+    // Lottie sem Loop e tempo reduzido para fechar bonito!
     if (window.DotLottie) {
         window.lottieInstance = new window.DotLottie({
             autoplay: true,
-            loop: true, 
+            loop: false, 
             canvas: document.getElementById("canvas-lottie"),
             src: "https://lottie.host/2ce5f1a7-2937-4da3-9a5c-caa2e7700556/3Pv1oQDKS5.lottie",
         });
     }
 
-    window.fecharOverlayTimeout = setTimeout(() => { window.fecharOverlaySucesso(); }, 3500);
+    window.fecharOverlayTimeout = setTimeout(() => { window.fecharOverlaySucesso(); }, 2200);
 }
 
 // ---------------------------------------------------------
-// HISTÓRICO DE RECIBOS E CONTA DO DONO
+// HISTÓRICO DE RECIBOS DA CONTA DO DONO
 // ---------------------------------------------------------
 async function carregarHistoricoPrecos() {
     try {
