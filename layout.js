@@ -1,5 +1,5 @@
 // ==========================================
-// layout.js - MOTOR GLOBAL DE SIDEBAR, TEMA E AÇÕES MOBILE (ZERO FLICKER)
+// layout.js - MOTOR GLOBAL DE SIDEBAR, TEMA E AÇÕES MOBILE (BLINDADO)
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -110,7 +110,7 @@ function inicializarLayout(isDark) {
         const ativo = paginaAtual === item.link;
         const classesAtivo = ativo ? `bg-indigo-50 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30` : `bg-white text-slate-500 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700`;
         return `
-            <a href="${item.link}" class="w-10 h-10 rounded-full shadow-lg flex items-center justify-center border transition-transform hover:scale-110 pointer-events-auto ${classesAtivo}">
+            <a href="${item.link}" class="w-10 h-10 rounded-full shadow-lg flex items-center justify-center border transition-transform hover:scale-110 pointer-events-none ${classesAtivo} mobile-menu-btn">
                 <i class="fa-solid ${item.icone} pointer-events-none"></i>
             </a>
         `;
@@ -140,13 +140,13 @@ function inicializarLayout(isDark) {
     const iconeTemaMobile = isDark ? 'fa-solid fa-sun text-xl text-amber-400' : 'fa-solid fa-moon text-xl text-white';
 
     const mobileMenuHtml = `
-        <div class="md:hidden fixed bottom-6 right-6 z-[60] w-14 h-14">
+        <div id="fab-container" class="md:hidden fixed bottom-6 right-6 z-[60] w-14 h-14">
             ${btnAcaoMobileHtml}
             <div id="fab-items" class="absolute bottom-16 right-2 w-10 flex flex-col items-center gap-2.5 transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none z-40">
-                <button onclick="sairDoSistema()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-rose-500 border border-rose-100 dark:border-rose-900/50 shadow-lg flex items-center justify-center transition-transform hover:scale-110 pointer-events-auto">
+                <button onclick="sairDoSistema()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-rose-500 border border-rose-100 dark:border-rose-900/50 shadow-lg flex items-center justify-center transition-transform hover:scale-110 pointer-events-none mobile-menu-btn">
                     <i class="fa-solid fa-right-from-bracket pointer-events-none"></i>
                 </button>
-                <button id="btn-dark-mobile" onclick="window.toggleDarkMode()" class="w-10 h-10 rounded-full bg-slate-800 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible pointer-events-auto">
+                <button id="btn-dark-mobile" onclick="window.toggleDarkMode()" class="w-10 h-10 rounded-full bg-slate-800 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible pointer-events-none mobile-menu-btn">
                     <i id="icone-dark-mode-mobile" class="${iconeTemaMobile} pointer-events-none"></i>
                     <i id="star-mobile" class="fa-solid fa-star absolute text-[12px] text-white opacity-0 pointer-events-none z-50"></i>
                 </button>
@@ -170,13 +170,15 @@ window.toggleMobileMenu = function() {
     const actionBtn = document.getElementById('fab-action');
     const icon = document.getElementById('fab-icon');
     const btn = document.getElementById('fab-menu');
+    const btnsSecundarios = document.querySelectorAll('.mobile-menu-btn');
     
     window._menuMobileAberto = !window._menuMobileAberto;
 
     if (window._menuMobileAberto) {
         if (items) {
             items.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
-            items.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
+            items.classList.add('opacity-100', 'translate-y-0');
+            btnsSecundarios.forEach(b => b.classList.replace('pointer-events-none', 'pointer-events-auto'));
         }
         if (actionBtn) {
             actionBtn.classList.remove('opacity-0', 'pointer-events-none');
@@ -192,7 +194,8 @@ window.toggleMobileMenu = function() {
     } else {
         if (items) {
             items.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
-            items.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+            items.classList.remove('opacity-100', 'translate-y-0');
+            btnsSecundarios.forEach(b => b.classList.replace('pointer-events-auto', 'pointer-events-none'));
         }
         if (actionBtn) {
             actionBtn.classList.add('opacity-0', 'pointer-events-none');
