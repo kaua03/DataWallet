@@ -90,6 +90,19 @@ function inicializarLayout(isDark) {
     const iconeTemaDesktop = isDark ? 'fa-solid fa-sun text-lg text-amber-400' : 'fa-solid fa-moon text-lg text-white';
     const classeBotaoDesktop = isDark ? 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors w-full' : 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-slate-800 text-white hover:bg-slate-700 transition-colors w-full';
 
+    // Botão de QR Code exclusivo para a barra lateral do Desktop na tela de compras
+    let qrButtonDesktopHtml = '';
+    if (isCompras) {
+        qrButtonDesktopHtml = `
+            <div class="mb-3 w-full px-1">
+                <button onclick="window.abrirModalShare()" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors overflow-hidden w-full shadow-md shadow-indigo-600/30">
+                    <div class="w-6 flex items-center justify-center shrink-0"><i class="fa-solid fa-qrcode text-lg"></i></div>
+                    <span class="sidebar-text ml-3">QR Code</span>
+                </button>
+            </div>
+        `;
+    }
+
     const sidebarHtml = `
         <div class="hidden md:block w-20 shrink-0"></div>
         <aside id="sidebar" class="hidden md:flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200/60 dark:border-slate-800 py-6 px-4 h-full z-40 fixed left-0 top-0 overflow-hidden shadow-sm transition-colors duration-300">
@@ -100,6 +113,9 @@ function inicializarLayout(isDark) {
                 <h2 class="sidebar-text text-2xl font-black text-slate-900 dark:text-white tracking-tight ml-3">DataWallet</h2>
             </div>
             <nav class="flex-1 space-y-2 w-full">${navLinksHtml}</nav>
+            
+            ${qrButtonDesktopHtml}
+
             <div class="mt-auto w-full space-y-2">
                 <button id="btn-dark-desktop" onclick="window.toggleDarkMode()" class="${classeBotaoDesktop}">
                     <div class="relative w-6 flex items-center justify-center shrink-0 overflow-visible">
@@ -126,10 +142,9 @@ function inicializarLayout(isDark) {
         `;
     }).join('');
 
-    // Botão de QR Code dentro do menu mobile (tamanho w-10 h-10 igual aos outros)
-    let qrButtonHtml = '';
+    let qrButtonMobileHtml = '';
     if (isCompras) {
-        qrButtonHtml = `
+        qrButtonMobileHtml = `
             <button onclick="window.abrirModalShare()" class="w-10 h-10 rounded-full bg-indigo-600 text-white shadow-lg flex items-center justify-center border border-indigo-400 transition-transform hover:scale-110 pointer-events-none mobile-menu-btn">
                 <i class="fa-solid fa-qrcode pointer-events-none text-sm"></i>
             </button>
@@ -137,7 +152,6 @@ function inicializarLayout(isDark) {
         `;
     }
 
-    // Botão que corre para a esquerda no mobile (se for dashboard, dívidas, metas, etc.)
     let btnAcaoMobileHtml = '';
     if (isDashboard) {
         btnAcaoMobileHtml = `<button onclick="toggleCoach()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-900 dark:bg-black text-indigo-400 shadow-lg flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-slate-700 dark:border-indigo-500/50"><i class="fa-solid fa-robot pointer-events-none"></i></button>`;
@@ -146,7 +160,6 @@ function inicializarLayout(isDark) {
     } else if (isMetas) {
         btnAcaoMobileHtml = `<button onclick="window.abrirModalNovaMeta()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-plus pointer-events-none"></i></button>`;
     } else if (isCompras) {
-        // No mobile da tela de compras, o botão flutuante principal corre para a esquerda abrindo o QR Code!
         btnAcaoMobileHtml = `<button onclick="window.abrirModalShare()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-qrcode pointer-events-none"></i></button>`;
     }
 
@@ -164,7 +177,7 @@ function inicializarLayout(isDark) {
                     <i id="star-mobile" class="fa-solid fa-star absolute text-[12px] text-white opacity-0 pointer-events-none z-50"></i>
                 </button>
                 <div class="w-8 h-px bg-slate-200 dark:bg-slate-700 my-1 mobile-menu-btn pointer-events-none opacity-0 transition-opacity"></div>
-                ${isCompras ? '' : qrButtonHtml}
+                ${isCompras ? '' : qrButtonMobileHtml}
                 ${mobileLinksHtml}
             </div>
             
