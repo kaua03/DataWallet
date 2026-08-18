@@ -1,5 +1,5 @@
 // ==========================================
-// compras.js - MOTOR DE CÂMERA, OPEN FOOD FACTS E PERSISTÊNCIA DE ESTADO
+// compras.js - MOTOR DE CÂMERA, PERSISTÊNCIA DE ESTADO E LOTTIE ANIMATION
 // ==========================================
 
 let usuarioLogado = null;
@@ -582,25 +582,39 @@ async function efetivarCompra(event) {
     } catch (e) { Swal.fire('Erro ao Finalizar', e.message, 'error'); } finally { btn.innerHTML = htmlOriginal; btn.disabled = false; }
 }
 
+// ---------------------------------------------------------
+// ANIMAÇÃO LOTTIE COM DESTRAVAMENTO MANUAL
+// ---------------------------------------------------------
 function dispararOverlaySucesso(subtexto) {
+    const travados = document.querySelectorAll('.overlay-mercado-lottie');
+    travados.forEach(t => t.remove());
+
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px); transition: opacity 0.3s ease; opacity: 0;';
+    overlay.className = 'overlay-mercado-lottie';
+    overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 9999999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px); transition: opacity 0.3s ease; opacity: 0; cursor: pointer;';
     
+    // 👇 COLE O LINK DO SEU LOTTIE AQUI 👇
+    const linkDaSuaAnimacao = "https://lottie.host/80a0f9de-2b99-4a94-8149-8086026857cc/5fL8V2t2jZ.lottie"; // Substitua pelo link que você copiou no vídeo!
+
     overlay.innerHTML = `
-        <div class="w-32 h-32 bg-emerald-500 rounded-full flex items-center justify-center mb-6 shadow-[0_0_50px_rgba(16,185,129,0.5)] transform scale-0 animate-[popIn_0.5s_cubic-bezier(0.175,0.885,0.32,1.275)_forwards]">
-            <i class="fa-solid fa-check text-6xl text-white"></i>
+        <div style="width: 300px; height: 300px; display: flex; align-items: center; justify-content: center;">
+            <dotlottie-wc src="${linkDaSuaAnimacao}" autoplay style="width: 100%; height: 100%;"></dotlottie-wc>
         </div>
-        <p class="text-white font-black text-2xl text-center px-4 animate-[fadeInUp_0.5s_ease_0.2s_forwards] opacity-0">${subtexto}</p>
-        <style>
-            @keyframes popIn { to { transform: scale(1); } }
-            @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        </style>
+        <p class="text-white font-black text-2xl text-center px-4 mt-4">${subtexto}</p>
+        <p class="text-slate-400 text-xs mt-3 font-medium animate-pulse">(Toque em qualquer lugar para fechar)</p>
     `;
     
+    const fecharOverlay = () => {
+        overlay.style.opacity = '0';
+        setTimeout(() => { if (document.body.contains(overlay)) overlay.remove(); }, 300);
+    };
+
+    overlay.onclick = fecharOverlay;
+
     document.documentElement.appendChild(overlay);
     requestAnimationFrame(() => overlay.style.opacity = '1');
     
-    setTimeout(() => { if (document.body.contains(overlay)) { overlay.style.opacity = '0'; setTimeout(() => overlay.remove(), 300); } }, 2500);
+    setTimeout(() => { fecharOverlay(); }, 3500);
 }
 
 // ---------------------------------------------------------
