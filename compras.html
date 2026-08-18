@@ -64,10 +64,6 @@
                         <h1 class="text-4xl md:text-5xl font-black tracking-tighter" id="total-carrinho">R$ 0,00</h1>
                         <p class="text-xs text-indigo-200 mt-1 font-medium"><span id="qtd-itens-carrinho">0</span> itens no carrinho</p>
                     </div>
-                    
-                    <button onclick="abrirModalCheckout()" id="btn-finalizar-topo" class="hidden md:flex bg-emerald-500 hover:bg-emerald-400 text-white font-black px-6 py-4 rounded-2xl shadow-lg transition-transform active:scale-95 items-center gap-2">
-                        Finalizar <i class="fa-solid fa-check"></i>
-                    </button>
                 </div>
                 
                 <div class="flex bg-indigo-700/50 dark:bg-indigo-950/50 p-1.5 rounded-xl max-w-sm">
@@ -102,9 +98,9 @@
                 </div>
             </section>
 
-            <!-- SÓ APARECE EM CELULARES (md:hidden) E RESPEITA O BOTÃO DO MENU (right-20) -->
-            <div id="box-finalizar-mobile" class="md:hidden fixed bottom-6 left-4 right-20 z-40 hidden fade-in">
-                <button onclick="abrirModalCheckout()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-[0_10px_25px_rgba(16,185,129,0.4)] flex justify-center items-center gap-2 text-base active:scale-95 transition-transform border border-emerald-400">
+            <!-- BOTÃO ÚNICO DE FINALIZAR COMPRA (Fixo embaixo, respeitando menu) -->
+            <div id="box-finalizar-mobile" class="fixed bottom-6 left-4 right-20 md:left-1/2 md:-translate-x-1/2 md:w-[calc(100%-2rem)] md:max-w-3xl md:right-auto z-40 hidden fade-in">
+                <button onclick="abrirModalCheckout()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-[0_10px_25px_rgba(16,185,129,0.4)] flex justify-center items-center gap-2 text-lg active:scale-95 transition-transform border border-emerald-400">
                     <i class="fa-solid fa-cash-register"></i> Finalizar Compra
                 </button>
             </div>
