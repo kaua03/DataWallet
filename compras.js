@@ -233,7 +233,19 @@ window.abrirGerenciadorLive = function() {
 
 window.expulsarUsuario = function(apelido) {
     if (!realTimeChannel) return;
+    
     realTimeChannel.send({ type: 'broadcast', event: 'comando_sala', payload: { acao: 'kick', alvo: apelido } });
+    
+    const container = document.getElementById('lista-usuarios-live');
+    const elementos = container.querySelectorAll('.flex.justify-between');
+    elementos.forEach(el => {
+        if (el.innerText.includes(apelido)) el.remove();
+    });
+    
+    if (container.children.length === 0) {
+        container.innerHTML = '<p class="text-xs font-bold text-slate-400 py-4 text-center">Nenhum convidado online.</p>';
+    }
+
     Swal.fire({ icon: 'success', title: 'Usuário Removido', showConfirmButton: false, timer: 1000 });
 }
 
@@ -672,15 +684,16 @@ async function salvarItemCarrinho(event) {
 
     const dbId = document.getElementById('prod-id').value;
     let nome = document.getElementById('prod-nome').value.trim();
-    if (!nome) nome = "Produto Genérico";
+    const preco = desmascararMoeda(document.getElementById('prod-preco').value); // Preço pode ser 0
+    const qtd = parseInt(document.getElementById('prod-qtd').value);
     
+    // VALIDAÇÃO: Nome e Quantidade são obrigatórios
+    if (!nome) return Swal.fire('Atenção', 'Informe o nome do produto.', 'warning');
+    if (!qtd || qtd < 1) return Swal.fire('Atenção', 'Informe uma quantidade válida.', 'warning');
+
     const obs = document.getElementById('prod-obs').value.trim();
     const imgUrl = document.getElementById('prod-img-hidden').value;
     const ean = document.getElementById('prod-codigo-barras').value;
-    const preco = desmascararMoeda(document.getElementById('prod-preco').value);
-    const qtd = parseInt(document.getElementById('prod-qtd').value);
-
-    if (preco <= 0) return Swal.fire('Atenção', 'Informe o preço.', 'warning');
 
     const dic = produtosComuns.find(p => removerAcentos(p.nome) === removerAcentos(nome));
     
