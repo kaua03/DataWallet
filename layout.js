@@ -91,15 +91,13 @@ function inicializarLayout(isDark) {
     const classeBotaoDesktop = isDark ? 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors w-full' : 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-slate-800 text-white hover:bg-slate-700 transition-colors w-full';
 
     // Botão de QR Code exclusivo para a barra lateral do Desktop na tela de compras
-let qrButtonDesktopHtml = '';
+    let qrButtonDesktopHtml = '';
     if (isCompras) {
         qrButtonDesktopHtml = `
-            <div class="w-full px-3 mb-2">
-                <button onclick="window.abrirModalShare()" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors w-full shadow-md shadow-indigo-600/30">
-                    <div class="w-6 flex items-center justify-center shrink-0"><i class="fa-solid fa-qrcode text-lg"></i></div>
-                    <span class="sidebar-text ml-3">QR Code</span>
-                </button>
-            </div>
+            <button onclick="window.abrirModalShare()" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors overflow-hidden shadow-md shadow-indigo-600/30">
+                <div class="w-6 flex items-center justify-center shrink-0"><i class="fa-solid fa-qrcode text-lg"></i></div>
+                <span class="sidebar-text ml-3">QR Code</span>
+            </button>
         `;
     }
 
