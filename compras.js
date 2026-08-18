@@ -1,5 +1,5 @@
 // ==========================================
-// compras.js - MOTOR DE CÂMERA, LOTTIE E REALTIME MULTIPLAYER (SUPABASE)
+// compras.js - MOTOR DE CÂMERA, LOTTIE, REALTIME E OTP (SENHA DINÂMICA)
 // ==========================================
 
 let usuarioLogado = null;
@@ -10,10 +10,12 @@ let precoReferenciaHistorico = 0;
 let html5QrCode = null; 
 let debounceBuscaTimeout = null;
 
-// Variáveis Multi-player
+// Variáveis Multi-player & OTP
 let sessaoAtualId = null;
-let meuApelido = "Mãe"; // Pode ser alterado se for convidado
+let meuApelido = "Mãe"; // Modificado se for convidado
 let realTimeChannel = null;
+let otpInterval = null;
+let tempoRestanteOTP = 0;
 
 const produtosComuns = [
     { ean: "7896098900123", nome: "Sabão em Barra Ypê Verde", icone: "fa-soap", cor: "text-emerald-500" },
@@ -34,7 +36,7 @@ const produtosComuns = [
 document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(() => document.body.classList.remove('fade-in'), 300);
 
-    // Bypass temporário no Layout.js para links nas abas normais (mantem SPA)
+    // Fade links (mantem SPA e não pisca a tela)
     document.querySelectorAll('a').forEach(link => {
         if(link.hostname === window.location.hostname && link.target !== '_blank') {
             link.addEventListener('click', e => {
@@ -45,64 +47,48 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // VERIFICA SE É CONVIDADO (Traz URL ?s=UUID)
+    // VERIFICA SE É UM CONVIDADO CHEGANDO PELO LINK/QR CODE
     const urlParams = new URLSearchParams(window.location.search);
     const guestSessionId = urlParams.get('s');
 
     if (guestSessionId) {
-        // MODO CONVIDADO (Oculta sidebar/menus e pede nome)
         sessaoAtualId = guestSessionId;
+        // Oculta coisas de "Dono"
         const sidebar = document.getElementById('sidebar');
         const fabContainer = document.getElementById('fab-container');
         const abas = document.getElementById('abas-container');
         const btnTopo = document.getElementById('btn-finalizar-topo');
-        const btnShare = document.getElementById('btn-share');
-        const btnMob = document.getElementById('box-finalizar-mobile');
+        const btnShare = document.getElementById('btn-share-desktop');
         
         if (sidebar) sidebar.style.display = 'none';
         if (fabContainer) fabContainer.style.display = 'none';
         if (abas) abas.style.display = 'none';
         if (btnTopo) btnTopo.style.display = 'none';
         if (btnShare) btnShare.style.display = 'none';
-        if (btnMob) btnMob.classList.add('hide-permanent'); // Esconde de vez
         
         document.getElementById('modal-convidado').classList.remove('hidden');
     } else {
-        // MODO DONO DA CONTA (Verifica Login Normal)
+        // MODO DONO DA CONTA (A mãe)
         usuarioLogado = await verificarSessaoSegura();
         if (!usuarioLogado) return;
         meuApelido = "Dono(a)";
-        document.getElementById('btn-share').classList.remove('hidden');
+        document.getElementById('btn-share-desktop').classList.remove('hidden');
         await inicializarSessaoRealtimeOwner();
         await carregarHistoricoPrecos();
     }
 });
 
 // ==========================================
-// MOTOR REAL-TIME MULTIPLAYER (SUPABASE)
+// MOTOR REAL-TIME MULTIPLAYER COM OTP
 // ==========================================
-
-async function entrarComoConvidado() {
-    const nome = document.getElementById('input-convidado-nome').value.trim();
-    if (!nome) return Swal.fire('Aviso', 'Por favor, digite seu nome para ajudar.', 'warning');
-    
-    meuApelido = nome;
-    document.getElementById('modal-convidado').classList.add('hidden');
-    document.getElementById('badge-live').classList.remove('hidden');
-    
-    await carregarCarrinhoDB();
-    iniciarSubscriptionRealtime();
-}
 
 async function inicializarSessaoRealtimeOwner() {
     const client = window.supabaseClient;
-    // Tenta achar uma sessão ativa
     const { data: sessoesAtivas } = await client.from('mercado_sessoes').select('id').eq('usuario_id', usuarioLogado.id).eq('status', 'ativa').order('criado_em', { ascending: false }).limit(1);
     
     if (sessoesAtivas && sessoesAtivas.length > 0) {
         sessaoAtualId = sessoesAtivas[0].id;
     } else {
-        // Cria nova sessão
         const { data: nova } = await client.from('mercado_sessoes').insert([{ usuario_id: usuarioLogado.id, status: 'ativa' }]).select('id');
         if (nova) sessaoAtualId = nova[0].id;
     }
@@ -121,19 +107,20 @@ async function carregarCarrinhoDB() {
 
 function iniciarSubscriptionRealtime() {
     if (realTimeChannel) window.supabaseClient.removeChannel(realTimeChannel);
-    
     realTimeChannel = window.supabaseClient.channel('carrinho-live')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'mercado_carrinho', filter: `sessao_id=eq.${sessaoAtualId}` }, payload => {
-            carregarCarrinhoDB(); // Atualiza a tela de todos assim que mudar no banco
+            carregarCarrinhoDB(); // Atualiza a tela de todos instantaneamente
         })
         .subscribe();
 }
 
-// ==========================================
-// COMPARTILHAR CARRINHO (QR CODE)
-// ==========================================
-function abrirModalShare() {
+// ---------------------------------------------------------
+// COMPARTILHAR CARRINHO E GERAÇÃO DE SENHA (OTP)
+// ---------------------------------------------------------
+async function abrirModalShare() {
     if (!sessaoAtualId) return;
+    setVisibilidadeMenuGlobal(false);
+    
     const url = new URL(window.location.href);
     url.searchParams.set('s', sessaoAtualId);
     const linkStr = url.toString();
@@ -142,6 +129,46 @@ function abrirModalShare() {
     document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(linkStr)}`;
     
     document.getElementById('modal-share').classList.remove('hidden');
+    await gerarNovaSenhaSessao();
+}
+
+function fecharModalShare() {
+    document.getElementById('modal-share').classList.add('hidden');
+    clearInterval(otpInterval);
+    setVisibilidadeMenuGlobal(true);
+}
+
+async function gerarNovaSenhaSessao() {
+    // Gera PIN de 6 números
+    const pin = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiraEm = new Date(Date.now() + 30000).toISOString(); // 30 segundos no futuro
+    
+    document.getElementById('share-pin').innerText = pin;
+    tempoRestanteOTP = 30;
+    atualizarTimerOTP();
+    
+    try {
+        await window.supabaseClient.from('mercado_sessoes').update({
+            senha: pin,
+            senha_expira_em: expiraEm
+        }).eq('id', sessaoAtualId);
+    } catch(e) {}
+
+    clearInterval(otpInterval);
+    otpInterval = setInterval(() => {
+        tempoRestanteOTP--;
+        atualizarTimerOTP();
+        if (tempoRestanteOTP <= 0) {
+            gerarNovaSenhaSessao(); // Roda de novo infinitamente enquanto a tela tiver aberta
+        }
+    }, 1000);
+}
+
+function atualizarTimerOTP() {
+    const span = document.getElementById('share-timer');
+    const bar = document.getElementById('share-timer-bar');
+    if(span) span.innerText = tempoRestanteOTP;
+    if(bar) bar.style.width = `${(tempoRestanteOTP / 30) * 100}%`;
 }
 
 function copiarLinkShare() {
@@ -150,9 +177,43 @@ function copiarLinkShare() {
     Swal.fire({ icon: 'success', title: 'Copiado!', showConfirmButton: false, timer: 1000 });
 }
 
+// ---------------------------------------------------------
+// AUTENTICAÇÃO DO CONVIDADO (O FILHO/MARIDO LENDO O QR CODE)
+// ---------------------------------------------------------
+async function entrarComoConvidado() {
+    const nome = document.getElementById('input-convidado-nome').value.trim();
+    const senha = document.getElementById('input-convidado-senha').value.trim();
+    
+    if (!nome || !senha) return Swal.fire('Aviso', 'Preencha seu nome e a senha de 6 dígitos que está na tela da sua mãe.', 'warning');
+    
+    Swal.fire({ title: 'Verificando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+    
+    // Bate no banco para checar a senha da sessão exata
+    const { data, error } = await window.supabaseClient
+        .from('mercado_sessoes')
+        .select('senha, senha_expira_em')
+        .eq('id', sessaoAtualId)
+        .single();
+        
+    Swal.close();
+    
+    if (error || !data) return Swal.fire('Erro', 'Código de Sessão inválido.', 'error');
+    if (data.senha !== senha) return Swal.fire('Acesso Negado', 'Senha Incorreta.', 'error');
+    if (new Date() > new Date(data.senha_expira_em)) return Swal.fire('Acesso Negado', 'A senha expirou! Olhe a tela da sua mãe novamente e pegue a nova senha.', 'error');
+    
+    // Sucesso!
+    meuApelido = nome;
+    document.getElementById('modal-convidado').classList.add('hidden');
+    document.getElementById('badge-live').classList.remove('hidden');
+    
+    await carregarCarrinhoDB();
+    iniciarSubscriptionRealtime();
+    Swal.fire({ icon: 'success', title: 'Você entrou na compra!', showConfirmButton: false, timer: 1500 });
+}
+
 
 // ---------------------------------------------------------
-// FUNÇÕES UTILITÁRIAS
+// FUNÇÕES UTILITÁRIAS E NAVEGAÇÃO DE ABAS
 // ---------------------------------------------------------
 function formatarMoedaLocal(valor) {
     let p = Math.abs(valor).toFixed(2).split('.'); p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -199,11 +260,13 @@ function mudarAba(aba) {
 
 function setVisibilidadeMenuGlobal(mostrar) {
     const fabContainer = document.getElementById('fab-container');
-    if (fabContainer) fabContainer.style.display = mostrar ? 'block' : 'none';
+    if (fabContainer && !document.getElementById('modal-convidado').classList.contains('hidden') === false) {
+        fabContainer.style.display = mostrar ? 'block' : 'none';
+    }
 }
 
 // ---------------------------------------------------------
-// CÂMERA E OPEN FOOD FACTS
+// CÂMERA E OPEN FOOD FACTS (API DE PRODUTOS)
 // ---------------------------------------------------------
 function tocarBipSucesso() {
     try {
@@ -369,7 +432,7 @@ function limparBusca() {
 }
 
 // ---------------------------------------------------------
-// MODAL PRODUTO & CONTROLE DE TRAVA (LOCKING)
+// MODAL PRODUTO & CONTROLE DE TRAVA (LOCKING) NO SUPABASE
 // ---------------------------------------------------------
 async function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-indigo-500', dbId = null, imagemUrl = null, codigoBarras = null) {
     document.getElementById('box-autocomplete').classList.add('hidden');
@@ -381,14 +444,16 @@ async function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-
     form.reset();
 
     // TRAVA ANTI-COLISÃO (MULTIPLAYER)
-    if (dbId) {
+    if (dbId && dbId !== 'null') {
         const item = carrinho.find(i => i.id === dbId);
         if (item) {
+            // Se alguém já clicou antes de mim e cravou o apelido lá
             if (item.editando_por && item.editando_por !== meuApelido) {
                 setVisibilidadeMenuGlobal(true);
-                return Swal.fire('Item Bloqueado', `Este item está sendo editado por: <b>${item.editando_por}</b>. Aguarde.`, 'warning');
+                return Swal.fire('Bloqueado', `Este item está sendo alterado por: <b>${item.editando_por}</b>. Aguarde.`, 'warning');
             }
-            // Bloqueia no Banco
+            
+            // Avisa o Supabase que EU estou mexendo nisso agora (trava os outros)
             await window.supabaseClient.from('mercado_carrinho').update({ editando_por: meuApelido }).eq('id', dbId);
             
             document.getElementById('prod-qtd').value = item.quantidade;
@@ -402,10 +467,11 @@ async function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-
             calcularTotalItemModal(); 
         }
     } else {
-        // NOVO ITEM
+        // NOVO ITEM (Ninguém mexeu ainda)
         atualizarCamposModalProduto(nomeProduto, icone, cor, imagemUrl, codigoBarras);
         document.getElementById('prod-id').value = '';
         document.getElementById('prod-qtd').value = 1;
+        document.getElementById('prod-obs').value = '';
     }
 
     document.getElementById('modal-produto').classList.remove('hidden');
@@ -415,7 +481,7 @@ async function fecharModalProduto() {
     document.getElementById('modal-produto').classList.add('hidden');
     setVisibilidadeMenuGlobal(true);
     
-    // Libera a trava no banco se cancelou a edição
+    // Libera a trava no Supabase se eu fechar sem salvar
     const dbId = document.getElementById('prod-id').value;
     if (dbId) {
         await window.supabaseClient.from('mercado_carrinho').update({ editando_por: null }).eq('id', dbId);
@@ -447,7 +513,7 @@ function analisarPrecoHistoricoInicial(nomeProduto) {
         box.className = "mb-4 p-2.5 rounded-xl border flex items-center gap-2.5 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50 transition-colors";
         icone.className = "w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400";
         icone.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i>';
-        texto.innerHTML = `Última vez: <b>${formatarMoedaLocal(precoReferenciaHistorico)}</b>. Digite o novo preço.`;
+        texto.innerHTML = `Última vez pago: <b>${formatarMoedaLocal(precoReferenciaHistorico)}</b>. Digite o preço atual.`;
     } else {
         precoReferenciaHistorico = 0;
         box.classList.add('hidden');
@@ -487,11 +553,11 @@ function calcularTotalItemModal() {
 }
 
 // ---------------------------------------------------------
-// SALVAR, REMOVER E RENDERIZAR (NO SUPABASE)
+// SALVAR E RENDERIZAR NO BANCO (MULTIPLAYER LIVE)
 // ---------------------------------------------------------
 async function salvarItemCarrinho(event) {
     event.preventDefault();
-    if (!sessaoAtualId) return Swal.fire('Aviso', 'Nenhuma sessão ativa.', 'error');
+    if (!sessaoAtualId) return Swal.fire('Erro', 'Sessão Perdida. Recarregue a página.', 'error');
 
     const dbId = document.getElementById('prod-id').value;
     let nome = document.getElementById('prod-nome').value.trim();
@@ -517,35 +583,32 @@ async function salvarItemCarrinho(event) {
         ean: ean,
         icone: dic ? dic.icone : 'fa-box',
         cor: dic ? dic.cor : 'text-slate-500',
-        editando_por: null // Libera a trava ao salvar
+        editando_por: null // Libera a trava pra todo mundo
     };
 
-    if (dbId) payload.id = dbId;
+    if (dbId && dbId !== 'null') payload.id = dbId;
 
     if (navigator.vibrate) navigator.vibrate([50, 50, 50]); 
-    document.getElementById('modal-produto').classList.add('hidden'); // Falso Fechamento visual rápido
+    document.getElementById('modal-produto').classList.add('hidden'); 
     setVisibilidadeMenuGlobal(true);
 
+    // O Supabase Realtime detecta esse insert/upsert e atualiza o celular de todo mundo na mesma hora!
     await window.supabaseClient.from('mercado_carrinho').upsert(payload);
-    // Realtime fará o render automático!
 }
 
 async function removerItem(dbId) {
     const item = carrinho.find(i => i.id === dbId);
     if (item && item.editando_por && item.editando_por !== meuApelido) {
-        return Swal.fire('Bloqueado', `Sendo editado por: ${item.editando_por}`, 'warning');
+        return Swal.fire('Bloqueado', `Sendo alterado por: ${item.editando_por}`, 'warning');
     }
-    
     if (navigator.vibrate) navigator.vibrate(50);
     await window.supabaseClient.from('mercado_carrinho').delete().eq('id', dbId);
-    // Realtime atualiza a tela automaticamente
 }
 
 function renderizarCarrinho() {
     const container = document.getElementById('lista-carrinho');
     const totalEl = document.getElementById('total-carrinho');
     const qtdEl = document.getElementById('qtd-itens-carrinho');
-    const boxFinalizar = document.getElementById('box-finalizar-mobile');
     const btnFinalizarTopo = document.getElementById('btn-finalizar-topo');
 
     let total = 0; let qtdItens = 0;
@@ -559,16 +622,12 @@ function renderizarCarrinho() {
                 <p class="text-sm font-bold text-slate-500 dark:text-slate-400 text-center max-w-[250px]">O carrinho está vazio.<br>Bipe ou digite o nome de um produto.</p>
             </div>`;
         totalEl.innerText = "R$ 0,00"; qtdEl.innerText = "0";
-        if (!document.getElementById('box-finalizar-mobile').classList.contains('hide-permanent')) {
-            boxFinalizar.classList.add('hidden');
-            if(btnFinalizarTopo) btnFinalizarTopo.classList.add('hidden');
-        }
+        if (btnFinalizarTopo) { btnFinalizarTopo.classList.add('hidden'); btnFinalizarTopo.classList.remove('flex'); }
         return;
     }
 
-    if (!document.getElementById('box-finalizar-mobile').classList.contains('hide-permanent')) {
-        boxFinalizar.classList.remove('hidden');
-        if(btnFinalizarTopo) { btnFinalizarTopo.classList.remove('hidden'); btnFinalizarTopo.classList.add('md:flex'); }
+    if (btnFinalizarTopo && meuApelido === "Dono(a)") { // Só o Dono finaliza compra
+        btnFinalizarTopo.classList.remove('hidden'); btnFinalizarTopo.classList.add('flex');
     }
 
     const html = carrinho.map((item) => {
@@ -580,7 +639,7 @@ function renderizarCarrinho() {
             : `<i class="fa-solid ${item.icone}"></i>`;
 
         let travaHtml = item.editando_por 
-            ? `<div class="absolute top-2 right-2 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow"><i class="fa-solid fa-lock mr-1"></i>${item.editando_por}</div>` 
+            ? `<div class="absolute top-2 right-2 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow z-10"><i class="fa-solid fa-lock mr-1"></i>${item.editando_por} editando</div>` 
             : '';
 
         let obsHtml = item.obs ? `<p class="text-[9px] font-bold text-amber-500 dark:text-amber-400 mt-1"><i class="fa-solid fa-info-circle mr-1"></i>${item.obs}</p>` : '';
@@ -598,7 +657,7 @@ function renderizarCarrinho() {
             </div>
             <div class="text-right shrink-0 flex items-center gap-3">
                 <span class="font-black text-indigo-600 dark:text-indigo-400 text-base block">${formatarMoedaLocal(sub)}</span>
-                <button onclick="event.stopPropagation(); removerItem('${item.id}')" class="w-8 h-8 bg-rose-50 text-rose-500 dark:bg-rose-500/10 dark:text-rose-400 rounded-lg flex items-center justify-center"><i class="fa-solid fa-trash text-xs"></i></button>
+                <button onclick="event.stopPropagation(); removerItem('${item.id}')" class="w-8 h-8 bg-rose-50 text-rose-500 dark:bg-rose-500/10 dark:text-rose-400 rounded-lg flex items-center justify-center z-10"><i class="fa-solid fa-trash text-xs"></i></button>
             </div>
         </div>`;
     }).join('');
@@ -609,7 +668,7 @@ function renderizarCarrinho() {
 }
 
 // ---------------------------------------------------------
-// CHECKOUT E FINALIZAÇÃO PARA O BANCO DE DADOS
+// FINALIZAÇÃO DE COMPRA
 // ---------------------------------------------------------
 function abrirModalCheckout() {
     if (carrinho.length === 0) return;
@@ -640,7 +699,7 @@ async function efetivarCompra(event) {
 
     try {
         const client = window.supabaseClient;
-        if (!client) throw new Error("Cliente Supabase não inicializado. Recarregue.");
+        if (!client) throw new Error("Cliente não encontrado.");
 
         let total = 0; carrinho.forEach(i => total += (i.preco * i.quantidade));
         const descLocal = document.getElementById('checkout-desc').value || "Compra no Mercado";
@@ -670,17 +729,16 @@ async function efetivarCompra(event) {
         const { data: retTrans, error: errT } = await client.from('transacoes').insert(transacoesParaInserir).select();
         if (errT) throw errT;
 
-        const idTransPrincipal = retTrans[0].id;
-        const itensParaInserir = carrinho.map(item => ({ usuario_id: usuarioLogado.id, nome: item.nome, preco_unitario: item.preco, quantidade: item.quantidade, transacao_id: idTransPrincipal }));
+        // O Histórico do mercado (mercado_itens) continuará existindo para inteligência
+        const itensParaInserir = carrinho.map(item => ({ usuario_id: usuarioLogado.id, nome: item.nome, preco_unitario: item.preco, quantidade: item.quantidade, transacao_id: retTrans[0].id }));
         await client.from('mercado_itens').insert(itensParaInserir);
 
-        // Finaliza a sessão atual
+        // Desliga a sessão atual da nuvem (limpa o carrinho de todos)
         await client.from('mercado_sessoes').update({status: 'finalizada'}).eq('id', sessaoAtualId);
 
         fecharModalCheckout(); 
         
-        // Recria sessão
-        await inicializarSessaoRealtimeOwner();
+        await inicializarSessaoRealtimeOwner(); // Inicia um carrinho limpo na nuvem
         await carregarHistoricoPrecos();
         dispararOverlaySucesso("Compra Registrada!");
     } catch (e) { Swal.fire('Erro ao Finalizar', e.message, 'error'); } finally { btn.innerHTML = htmlOriginal; btn.disabled = false; }
@@ -723,7 +781,7 @@ function dispararOverlaySucesso(subtexto) {
 }
 
 // ---------------------------------------------------------
-// HISTÓRICO DE RECIBOS (COMPRAS ANTERIORES)
+// HISTÓRICO DE RECIBOS
 // ---------------------------------------------------------
 async function carregarHistoricoPrecos() {
     try {
