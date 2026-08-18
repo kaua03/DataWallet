@@ -53,21 +53,23 @@
 
     <main class="flex-1 h-full flex flex-col relative">
         
-        <!-- HEADER (Botão Finalizar Único no Topo) -->
+        <!-- HEADER -->
         <header class="bg-indigo-600 dark:bg-indigo-900 text-white p-5 md:p-8 rounded-b-3xl md:rounded-b-[3rem] shadow-lg shadow-indigo-600/20 relative z-20 shrink-0 mx-0 md:mx-4 md:mt-4 transition-colors">
             <div class="max-w-4xl mx-auto">
                 <div class="flex justify-between items-center mb-6 gap-3">
                     <div class="min-w-0 flex-1">
+                        <!-- ALINHAMENTO DO BADGE CORRIGIDO AQUI -->
                         <div class="flex items-center gap-2 mb-1">
                             <h2 class="text-[10px] md:text-sm font-bold text-indigo-200 uppercase tracking-widest"><i class="fa-solid fa-cart-shopping mr-1"></i> Total da Compra</h2>
-                            <span id="badge-live" class="hidden bg-rose-500 text-white text-[8px] px-2 py-0.5 rounded-full font-black animate-pulse"><i class="fa-solid fa-circle text-[5px] mr-1"></i>AO VIVO</span>
+                            <span id="badge-live" class="hidden bg-emerald-500 text-white text-[9px] px-2 py-0.5 rounded-md font-black uppercase tracking-wider items-center gap-1 shadow-sm">
+                                <i class="fa-solid fa-wifi animate-pulse"></i> Compartilhado
+                            </span>
                         </div>
                         <h1 class="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter truncate" id="total-carrinho">R$ 0,00</h1>
                         <p class="text-xs text-indigo-200 mt-1 font-medium"><span id="qtd-itens-carrinho">0</span> itens no carrinho</p>
                     </div>
                     
-                    <!-- ÚNICO BOTÃO DE FINALIZAR DO SISTEMA INTEIRO -->
-                    <button onclick="abrirModalCheckout()" id="btn-finalizar-topo" class="hidden bg-emerald-500 hover:bg-emerald-400 text-white font-black px-4 py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl shadow-lg transition-transform active:scale-95 items-center justify-center gap-2 shrink-0 text-sm md:text-base border border-emerald-400">
+                    <button onclick="abrirModalCheckout()" id="btn-finalizar-topo" class="hidden bg-emerald-500 hover:bg-emerald-400 text-white font-black px-4 py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2 shrink-0 text-sm md:text-base border border-emerald-400">
                         Finalizar <i class="fa-solid fa-check"></i>
                     </button>
                 </div>
@@ -92,7 +94,7 @@
                 <div id="box-autocomplete" class="hidden absolute top-[85px] left-4 right-4 bg-white dark:bg-slate-900 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-slate-200 dark:border-slate-800 overflow-hidden z-30 max-h-64 overflow-y-auto"></div>
             </section>
 
-            <section class="flex-1 overflow-y-auto px-4 pb-12 pt-2" style="scrollbar-width: none;">
+            <section class="flex-1 overflow-y-auto px-4 pb-20 pt-2" style="scrollbar-width: none;">
                 <div class="max-w-4xl mx-auto">
                     <div id="lista-carrinho" class="space-y-3"></div>
                 </div>
@@ -130,7 +132,7 @@
         </div>
     </div>
 
-    <!-- MODAL DE PRODUTO (Com campo Observação) -->
+    <!-- MODAL DE PRODUTO -->
     <div id="modal-produto" class="hidden fixed inset-0 bg-slate-900/85 backdrop-blur-sm z-[100] flex items-center justify-center p-4 fade-in">
         <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl relative border border-slate-200 dark:border-slate-800 flex flex-col p-5 max-h-[95vh] overflow-y-auto" style="scrollbar-width: none;">
             <button type="button" onclick="fecharModalProduto()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center active:scale-95 z-10">
