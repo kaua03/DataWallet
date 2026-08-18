@@ -91,10 +91,11 @@ function inicializarLayout(isDark) {
     const classeBotaoDesktop = isDark ? 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors w-full' : 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-slate-800 text-white hover:bg-slate-700 transition-colors w-full';
 
     // Botão de QR Code exclusivo para a barra lateral do Desktop na tela de compras
+    // QR Code na Sidebar: Agora usando a classe sidebar-link para manter o espaçamento uniforme
     let qrButtonDesktopHtml = '';
     if (isCompras) {
         qrButtonDesktopHtml = `
-            <button onclick="window.abrirModalShare()" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors overflow-hidden shadow-md shadow-indigo-600/30">
+            <button onclick="window.abrirModalShare()" class="sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors overflow-hidden w-full shadow-md shadow-indigo-600/30">
                 <div class="w-6 flex items-center justify-center shrink-0"><i class="fa-solid fa-qrcode text-lg"></i></div>
                 <span class="sidebar-text ml-3">QR Code</span>
             </button>
@@ -110,9 +111,12 @@ function inicializarLayout(isDark) {
                 </div>
                 <h2 class="sidebar-text text-2xl font-black text-slate-900 dark:text-white tracking-tight ml-3">DataWallet</h2>
             </div>
-            <nav class="flex-1 space-y-2 w-full">${navLinksHtml}</nav>
             
-            ${qrButtonDesktopHtml}
+            <!-- AQUI É O PULO DO GATO: O espaço entre eles é controlado pelo space-y-2 -->
+            <nav class="flex-1 space-y-2 w-full">
+                ${navLinksHtml}
+                ${qrButtonDesktopHtml}
+            </nav>
 
             <div class="mt-auto w-full space-y-2">
                 <button id="btn-dark-desktop" onclick="window.toggleDarkMode()" class="${classeBotaoDesktop}">
