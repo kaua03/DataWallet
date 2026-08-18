@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     injetarEstilosGlobais();
 
-    // 🔴 BLINDAGEM MESTRE: Se for link de convidado (?s=...), NÃO INJETA O MENU!
     const urlParams = new URLSearchParams(window.location.search);
     const isGuest = urlParams.has('s');
 
@@ -47,6 +46,10 @@ function injetarEstilosGlobais() {
         #sidebar:hover .sidebar-link { width: 100%; }
         .sidebar-text { opacity: 0; transform: translateX(-10px); visibility: hidden; transition: all 0.2s ease-in-out; white-space: nowrap; }
         #sidebar:hover .sidebar-text { visibility: visible; opacity: 1; transform: translateX(0); transition-delay: 0.15s; }
+
+        /* Animação exclusiva do Sub-menu do QR Code */
+        .sub-menu-item { max-height: 0; opacity: 0; visibility: hidden; margin-top: 0; transform: translateX(-15px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none; overflow: hidden; }
+        #sidebar:hover .sub-menu-item { max-height: 3rem; opacity: 1; visibility: visible; margin-top: 0.25rem; transform: translateX(0); pointer-events: auto; }
 
         @media (min-width: 768px) {
             #fab-container { display: none !important; }
@@ -87,16 +90,16 @@ function inicializarLayout(isDark) {
             </a>
         `;
 
-        // LÓGICA DO SUB-MENU: Se for o botão de compras e a tela for compras, adiciona o sub-botão QR Code
+        // LÓGICA DO SUB-MENU HIERÁRQUICO (Só aparece no Hover e fica deslocado)
         if (item.link === 'compras.html' && isCompras) {
-            const classesSub = `text-slate-500 hover:bg-slate-50 hover:text-indigo-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-indigo-400`;
             html += `
-                <button onclick="window.abrirModalShare()" class="sidebar-link flex items-center h-10 px-3 mt-1 rounded-xl font-bold transition-colors overflow-hidden w-full border border-transparent hover:border-slate-200 dark:hover:border-slate-700 ${classesSub}">
-                    <div class="w-6 flex items-center justify-center shrink-0"><i class="fa-solid fa-qrcode text-base"></i></div>
-                    <span class="sidebar-text ml-3 text-sm">QR Code</span>
-                </button>
+                <div class="sub-menu-item pl-9 pr-1 w-full">
+                    <button onclick="window.abrirModalShare()" class="w-full flex items-center h-9 px-3 rounded-lg font-bold bg-indigo-500 hover:bg-indigo-400 text-white dark:bg-indigo-600 dark:hover:bg-indigo-500 shadow-md shadow-indigo-500/30 transition-transform active:scale-95 border border-indigo-400 dark:border-indigo-500">
+                        <i class="fa-solid fa-qrcode text-sm"></i>
+                        <span class="ml-2 text-xs whitespace-nowrap">Compartilhar</span>
+                    </button>
+                </div>
             `;
-            // Envolve ambos em uma div para manter a união visual dentro do space-y-2
             return `<div class="flex flex-col">${html}</div>`;
         }
 
@@ -153,8 +156,8 @@ function inicializarLayout(isDark) {
     } else if (isMetas) {
         btnAcaoMobileHtml = `<button onclick="window.abrirModalNovaMeta()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-plus pointer-events-none"></i></button>`;
     } else if (isCompras) {
-        // LÓGICA DO MOBILE: O botão QR Code corre para a esquerda. A cor agora reflete o padrão das telas.
-        btnAcaoMobileHtml = `<button onclick="window.abrirModalShare()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-[0_10px_25px_rgba(0,0,0,0.1)] dark:shadow-[0_10px_25px_rgba(0,0,0,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-slate-200 dark:border-slate-700"><i class="fa-solid fa-qrcode pointer-events-none"></i></button>`;
+        // MENOR (w-11) E COR CHAMATIVA NO MOBILE (Centralizado atrás do principal bottom-1.5)
+        btnAcaoMobileHtml = `<button onclick="window.abrirModalShare()" id="fab-action" class="absolute bottom-1.5 right-1.5 w-11 h-11 rounded-full bg-indigo-500 hover:bg-indigo-400 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white shadow-[0_8px_20px_rgba(99,102,241,0.5)] flex items-center justify-center text-lg transition-all duration-300 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500"><i class="fa-solid fa-qrcode pointer-events-none"></i></button>`;
     }
 
     const iconeTemaMobile = isDark ? 'fa-solid fa-sun text-xl text-amber-400' : 'fa-solid fa-moon text-xl text-white';
@@ -263,13 +266,13 @@ function atualizarIconesDark(isDark) {
     
     if (isDark) {
         if (iconePc) iconePc.className = 'fa-solid fa-sun text-lg text-amber-400 transition-colors duration-300';
-        if (iconeMobile) iconeMobile.className = 'fa-solid fa-sun text-xl text-amber-400 transition-colors duration-300';
+        if (iconeMobile) iconeMobile.className = 'fa-solid fa-sun text-base text-amber-400 transition-colors duration-300';
         if (btnPc) btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors w-full';
         if (txtPc) txtPc.innerText = 'Tema Claro';
         if (btnTemaGuest) btnTemaGuest.innerHTML = '<i class="fa-solid fa-sun text-amber-400"></i><span class="hidden md:block">Tema Claro</span>';
     } else {
         if (iconePc) iconePc.className = 'fa-solid fa-moon text-lg text-white transition-colors duration-300';
-        if (iconeMobile) iconeMobile.className = 'fa-solid fa-moon text-xl text-white transition-colors duration-300';
+        if (iconeMobile) iconeMobile.className = 'fa-solid fa-moon text-base text-white transition-colors duration-300';
         if (btnPc) btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-slate-800 text-white hover:bg-slate-700 transition-colors w-full';
         if (txtPc) txtPc.innerText = 'Tema Escuro';
         if (btnTemaGuest) btnTemaGuest.innerHTML = '<i class="fa-solid fa-moon text-white"></i><span class="hidden md:block">Tema Escuro</span>';
