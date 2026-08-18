@@ -1,5 +1,5 @@
 // ==========================================
-// compras.js - MOTOR DE CÂMERA E PERSISTÊNCIA DE ESTADO (SEM COSMOS API)
+// compras.js - MOTOR DE CÂMERA E PERSISTÊNCIA DE ESTADO (BLINDADO)
 // ==========================================
 
 let usuarioLogado = null;
@@ -120,13 +120,11 @@ function mudarAba(aba) {
     }
 }
 
+// Controle absoluto do botão Menu (FAB)
 function setVisibilidadeMenuGlobal(mostrar) {
-    const fabItems = document.getElementById('fab-items');
-    if (fabItems) {
-        const fabContainer = fabItems.parentElement;
-        if (fabContainer) {
-            fabContainer.style.display = mostrar ? 'block' : 'none';
-        }
+    const fabContainer = document.getElementById('fab-container');
+    if (fabContainer) {
+        fabContainer.style.display = mostrar ? 'block' : 'none';
     }
 }
 
@@ -158,6 +156,7 @@ async function abrirLeitorCamera(fromModal = false) {
         return Swal.fire('Erro na Câmera', 'Permissão de câmera negada ou indisponível.', 'error');
     }
 
+    setVisibilidadeMenuGlobal(false);
     document.getElementById('modal-camera').classList.remove('hidden');
     
     html5QrCode = new Html5Qrcode("reader");
@@ -178,6 +177,7 @@ async function abrirLeitorCamera(fromModal = false) {
 
 async function fecharLeitorCamera() {
     document.getElementById('modal-camera').classList.add('hidden');
+    setVisibilidadeMenuGlobal(true);
     if (html5QrCode) {
         try { await html5QrCode.stop(); html5QrCode.clear(); } catch(e) {}
         html5QrCode = null;
@@ -192,7 +192,6 @@ async function processarCodigoDeBarras(codigo, isUpdate = false) {
 
     Swal.fire({ title: 'Buscando Produto...', html: `Código: ${codigo}`, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
-    // 1. Banco Offline
     const achouLocal = produtosComuns.find(p => p.ean === codigo);
     if (achouLocal) {
         Swal.close();
@@ -201,7 +200,6 @@ async function processarCodigoDeBarras(codigo, isUpdate = false) {
         return;
     }
 
-    // 2. API Global (Open Food Facts)
     try {
         const resOFF = await fetch(`https://world.openfoodfacts.org/api/v0/product/${codigo}.json`);
         const jsonOFF = await resOFF.json();
@@ -214,7 +212,6 @@ async function processarCodigoDeBarras(codigo, isUpdate = false) {
             if (isUpdate) atualizarCamposModalProduto(nomeProduto, 'fa-barcode', 'text-indigo-500', imagemUrl, codigo);
             else abrirModalProduto(nomeProduto, 'fa-barcode', 'text-indigo-500', -1, imagemUrl, codigo);
         } else {
-            // Falhou: Deixa vazio e MOSTRA o botão do Google
             if (isUpdate) atualizarCamposModalProduto('', 'fa-barcode', 'text-slate-500', null, codigo);
             else abrirModalProduto('', 'fa-barcode', 'text-slate-500', -1, null, codigo);
         }
@@ -460,7 +457,7 @@ function renderizarCarrinho() {
     const container = document.getElementById('lista-carrinho');
     const totalEl = document.getElementById('total-carrinho');
     const qtdEl = document.getElementById('qtd-itens-carrinho');
-    const btnFinalizarTopo = document.getElementById('btn-finalizar-topo');
+    const boxFinalizar = document.getElementById('box-finalizar-mobile');
 
     let total = 0; let qtdItens = 0;
 
@@ -473,11 +470,11 @@ function renderizarCarrinho() {
                 <p class="text-sm font-bold text-slate-500 dark:text-slate-400 text-center max-w-[250px]">O carrinho está vazio.<br>Bipe ou digite o nome de um produto.</p>
             </div>`;
         totalEl.innerText = "R$ 0,00"; qtdEl.innerText = "0";
-        btnFinalizarTopo.classList.add('hidden'); btnFinalizarTopo.classList.remove('flex');
+        boxFinalizar.classList.add('hidden');
         return;
     }
 
-    btnFinalizarTopo.classList.remove('hidden'); btnFinalizarTopo.classList.add('flex');
+    boxFinalizar.classList.remove('hidden');
 
     const html = carrinho.map((item, index) => {
         const sub = item.preco * item.quantidade;
@@ -513,6 +510,8 @@ function renderizarCarrinho() {
 // ---------------------------------------------------------
 function abrirModalCheckout() {
     if (carrinho.length === 0) return;
+    setVisibilidadeMenuGlobal(false);
+    
     let total = 0; carrinho.forEach(i => total += (i.preco * i.quantidade));
     document.getElementById('checkout-total').innerText = formatarMoedaLocal(total);
     const hoje = new Date(); const v = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 10);
@@ -520,7 +519,10 @@ function abrirModalCheckout() {
     toggleParcelasCheckout(); document.getElementById('modal-checkout').classList.remove('hidden');
 }
 
-function fecharModalCheckout() { document.getElementById('modal-checkout').classList.add('hidden'); }
+function fecharModalCheckout() { 
+    document.getElementById('modal-checkout').classList.add('hidden'); 
+    setVisibilidadeMenuGlobal(true);
+}
 
 function toggleParcelasCheckout() {
     const tipo = document.querySelector('input[name="pagamento"]:checked').value;
@@ -531,11 +533,11 @@ function toggleParcelasCheckout() {
 async function efetivarCompra(event) {
     event.preventDefault();
     const btn = document.getElementById('btn-processar-compra');
-    const htmlOriginal = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando Caixa...'; btn.disabled = true;
+    const htmlOriginal = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando...'; btn.disabled = true;
 
     try {
         const client = window.supabaseClient || supabaseClient;
-        if (!client) throw new Error("Cliente Supabase não inicializado. Recarregue a página.");
+        if (!client) throw new Error("Cliente de banco não encontrado.");
 
         let total = 0; carrinho.forEach(i => total += (i.preco * i.quantidade));
         const descLocal = document.getElementById('checkout-desc').value || "Compra no Mercado";
@@ -651,6 +653,7 @@ function renderizarListaDeRecibos() {
 }
 
 function abrirReciboHistorico(transacaoId) {
+    setVisibilidadeMenuGlobal(false);
     const recibo = historicoAgrupadoRecibos.find(r => r.id === transacaoId);
     if(!recibo) return;
     document.getElementById('recibo-titulo').innerText = recibo.descricao;
@@ -669,4 +672,7 @@ function abrirReciboHistorico(transacaoId) {
     document.getElementById('modal-recibo').classList.remove('hidden');
 }
 
-function fecharModalRecibo() { document.getElementById('modal-recibo').classList.add('hidden'); }
+function fecharModalRecibo() { 
+    document.getElementById('modal-recibo').classList.add('hidden'); 
+    setVisibilidadeMenuGlobal(true);
+}
