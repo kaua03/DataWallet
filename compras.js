@@ -1,5 +1,5 @@
 // ==========================================
-// compras.js - MOTOR MULTIPLAYER (VALIDAÇÃO UX) E AUTO-LOGIN
+// compras.js - MOTOR MULTIPLAYER COM TRAVA CONDICIONAL E UX BLINDADA
 // ==========================================
 
 let usuarioLogado = null;
@@ -16,6 +16,7 @@ let meuApelido = "Dono(a)";
 let realTimeChannel = null;
 let otpInterval = null;
 let tempoRestanteOTP = 0;
+let usuariosConectados = 1; // Contador de presença ativo
 
 function getDbClient() {
     return window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
@@ -90,9 +91,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// MOTOR REAL-TIME, PRESENCE, E KICK GUEST
+// MOTOR REAL-TIME, PRESENCE E KICK GUEST
 // ==========================================
-
 async function inicializarSessaoRealtimeOwner() {
     const client = getDbClient();
     if (!client) return;
@@ -130,11 +130,11 @@ function iniciarSubscriptionRealtime() {
     realTimeChannel
         .on('presence', { event: 'sync' }, () => {
             const newState = realTimeChannel.presenceState();
-            const totalUsers = Object.keys(newState).length;
+            usuariosConectados = Object.keys(newState).length;
             const badgeLive = document.getElementById('badge-live');
             
             if (badgeLive && meuApelido === "Dono(a)") {
-                if (totalUsers > 1) {
+                if (usuariosConectados > 1) {
                     badgeLive.classList.remove('hidden');
                     badgeLive.classList.add('inline-flex');
                 } else {
@@ -171,21 +171,21 @@ function iniciarSubscriptionRealtime() {
 // GERENCIADOR DE LIVE (PAINEL DE EXPULSAR)
 // ---------------------------------------------------------
 window.abrirGerenciadorLive = function() {
-    if (meuApelido !== "Dono(a)") return Swal.fire('Visualizando', 'Apenas o administrador do carrinho pode gerenciar membros.', 'info');
+    if (meuApelido !== "Dono(a)") return Swal.fire('Aviso', 'Apenas o administrador gerencia membros.', 'info');
     
-    const state = realTimeChannel.presenceState();
+    const state = realTimeChannel ? realTimeChannel.presenceState() : {};
     let html = '';
     for (const [user] of Object.entries(state)) {
         if (user === "Dono(a)") continue;
         html += `
             <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
-                <span class="font-bold text-slate-900 dark:text-white"><i class="fa-solid fa-user text-indigo-500 mr-2"></i> ${user}</span>
+                <span class="font-bold text-slate-900 dark:text-white text-xs md:text-sm"><i class="fa-solid fa-user text-indigo-500 mr-2"></i> ${user}</span>
                 <button onclick="expulsarUsuario('${user}')" class="text-xs bg-rose-500 hover:bg-rose-600 text-white font-black py-1.5 px-3 rounded-lg shadow active:scale-95 transition-transform">Remover</button>
             </div>
         `;
     }
     
-    if (html === '') html = '<p class="text-xs font-bold text-slate-400 py-4 text-center">Ninguém mais no carrinho.</p>';
+    if (html === '') html = '<p class="text-xs font-bold text-slate-400 py-4 text-center">Nenhum convidado online.</p>';
     
     document.getElementById('lista-usuarios-live').innerHTML = html;
     document.getElementById('modal-gerenciar-live').classList.remove('hidden');
@@ -254,7 +254,7 @@ function copiarLinkShare() {
 }
 
 // ---------------------------------------------------------
-// AUTENTICAÇÃO DO CONVIDADO (COM AVISOS CLAROS DE UX)
+// AUTENTICAÇÃO DO CONVIDADO (COM VALIDAÇÃO REFORÇADA)
 // ---------------------------------------------------------
 async function entrarComoConvidado() {
     const nomeInput = document.getElementById('input-convidado-nome');
@@ -264,15 +264,17 @@ async function entrarComoConvidado() {
     const senha = senhaInput.value.trim();
     
     if (!nome) {
-        nomeInput.classList.add('ring-2', 'ring-rose-500');
-        setTimeout(() => nomeInput.classList.remove('ring-2', 'ring-rose-500'), 2000);
-        return Swal.fire('Aviso', 'Por favor, informe seu nome para entrar.', 'warning');
+        nomeInput.focus();
+        nomeInput.classList.add('ring-2', 'ring-rose-500', 'border-rose-500');
+        setTimeout(() => nomeInput.classList.remove('ring-2', 'ring-rose-500', 'border-rose-500'), 2500);
+        return Swal.fire('Atenção', 'Digite o seu nome para entrar.', 'warning');
     }
     
     if (!senha || senha.length !== 6) {
-        senhaInput.classList.add('ring-2', 'ring-rose-500');
-        setTimeout(() => senhaInput.classList.remove('ring-2', 'ring-rose-500'), 2000);
-        return Swal.fire('Aviso', 'Informe a senha de 6 dígitos que aparece no celular de quem compartilhou.', 'warning');
+        senhaInput.focus();
+        senhaInput.classList.add('ring-2', 'ring-rose-500', 'border-rose-500');
+        setTimeout(() => senhaInput.classList.remove('ring-2', 'ring-rose-500', 'border-rose-500'), 2500);
+        return Swal.fire('Atenção', 'Informe a senha de 6 dígitos exibida na tela do administrador.', 'warning');
     }
     
     Swal.fire({ title: 'Verificando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
@@ -282,9 +284,9 @@ async function entrarComoConvidado() {
         
     Swal.close();
     
-    if (error || !data) return Swal.fire('Erro', 'Sessão inválida ou não existe mais.', 'error');
-    if (data.senha !== senha) return Swal.fire('Acesso Negado', 'A senha está incorreta.', 'error');
-    if (new Date() > new Date(data.senha_expira_em)) return Swal.fire('Acesso Negado', 'Essa senha expirou! Olhe o celular novamente e digite o novo código.', 'error');
+    if (error || !data) return Swal.fire('Erro', 'Sessão inválida ou finalizada.', 'error');
+    if (data.senha !== senha) return Swal.fire('Acesso Negado', 'Senha Incorreta.', 'error');
+    if (new Date() > new Date(data.senha_expira_em)) return Swal.fire('Acesso Negado', 'Esta senha expirou. Obtenha a nova senha no dispositivo do dono.', 'error');
     
     meuApelido = nome;
     
@@ -459,16 +461,16 @@ function buscarProdutosAutocompletar() {
 
     btnLimpar.classList.remove('hidden');
     let resultadosHTML = produtosComuns.filter(p => removerAcentos(p.nome).includes(termo)).slice(0, 4).map(p => `
-        <div onclick="abrirModalProduto('${p.nome.replace(/'/g, "\\'")}', '${p.icone}', '${p.cor}')" class="autocomplete-item p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 cursor-pointer">
-            <div class="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-lg ${p.cor}"><i class="fa-solid ${p.icone}"></i></div>
-            <span class="font-bold text-slate-900 dark:text-white">${p.nome}</span>
+        <div onclick="abrirModalProduto('${p.nome.replace(/'/g, "\\'")}', '${p.icone}', '${p.cor}')" class="autocomplete-item p-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 cursor-pointer">
+            <div class="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-base ${p.cor}"><i class="fa-solid ${p.icone}"></i></div>
+            <span class="font-bold text-slate-900 dark:text-white text-xs md:text-sm">${p.nome}</span>
         </div>
     `).join('');
 
     resultadosHTML = `
-        <div onclick="abrirModalProduto('${inputStr.replace(/'/g, "\\'")}', 'fa-box', 'text-indigo-500')" class="autocomplete-item p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 cursor-pointer bg-indigo-50/50 dark:bg-indigo-900/10">
-            <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center text-lg text-indigo-600 dark:text-indigo-300"><i class="fa-solid fa-plus"></i></div>
-            <span class="font-black text-indigo-700 dark:text-indigo-300">Adicionar "${inputStr}"</span>
+        <div onclick="abrirModalProduto('${inputStr.replace(/'/g, "\\'")}', 'fa-box', 'text-indigo-500')" class="autocomplete-item p-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 cursor-pointer bg-indigo-50/50 dark:bg-indigo-900/10">
+            <div class="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center text-base text-indigo-600 dark:text-indigo-300"><i class="fa-solid fa-plus"></i></div>
+            <span class="font-black text-indigo-700 dark:text-indigo-300 text-xs md:text-sm">Adicionar "${inputStr}"</span>
         </div>
     ` + resultadosHTML;
 
@@ -490,9 +492,9 @@ function buscarProdutosAutocompletar() {
                         const imgP = p.image_front_small_url || '';
                         const imgTag = imgP ? `<img src="${imgP}" class="w-full h-full object-cover rounded-full">` : `<i class="fa-solid fa-barcode"></i>`;
                         return `
-                        <div onclick="abrirModalProduto('${nomeP}', 'fa-barcode', 'text-slate-400', null, '${imgP}')" class="autocomplete-item p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 cursor-pointer">
-                            <div class="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-lg text-slate-400 border border-slate-200 dark:border-slate-700 overflow-hidden">${imgTag}</div>
-                            <span class="font-bold text-slate-900 dark:text-white line-clamp-1">${nomeP}</span>
+                        <div onclick="abrirModalProduto('${nomeP}', 'fa-barcode', 'text-slate-400', null, '${imgP}')" class="autocomplete-item p-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 cursor-pointer">
+                            <div class="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-base text-slate-400 border border-slate-200 dark:border-slate-700 overflow-hidden">${imgTag}</div>
+                            <span class="font-bold text-slate-900 dark:text-white text-xs md:text-sm line-clamp-1">${nomeP}</span>
                         </div>`;
                     }).join('');
                     box.innerHTML += apiHTML;
@@ -510,6 +512,9 @@ function limparBusca() {
     input.value = ''; buscarProdutosAutocompletar(); input.focus();
 }
 
+// ---------------------------------------------------------
+// MODAL PRODUTO & CONTROLE DE TRAVA CONDICIONAL
+// ---------------------------------------------------------
 async function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-indigo-500', dbId = null, imagemUrl = null, codigoBarras = null) {
     document.getElementById('box-autocomplete').classList.add('hidden');
     document.getElementById('input-busca-produto').value = '';
@@ -521,12 +526,16 @@ async function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-
     if (dbId && dbId !== 'null') {
         const item = carrinho.find(i => i.id === dbId);
         if (item) {
-            if (item.editando_por && item.editando_por !== meuApelido) {
+            // TRAVA SÓ VALIDA SE HOUVER MAIS DE 1 PESSOA CONECTADA
+            if (usuariosConectados > 1 && item.editando_por && item.editando_por !== meuApelido) {
                 return Swal.fire('Bloqueado', `Sendo alterado por: <b>${item.editando_por}</b>. Aguarde.`, 'warning');
             }
             
-            const client = getDbClient();
-            await client.from('mercado_carrinho').update({ editando_por: meuApelido }).eq('id', dbId);
+            // Só grava a trava no banco se estiver em sessão compartilhada
+            if (usuariosConectados > 1) {
+                const client = getDbClient();
+                await client.from('mercado_carrinho').update({ editando_por: meuApelido }).eq('id', dbId);
+            }
             
             document.getElementById('prod-qtd').value = item.quantidade;
             document.getElementById('prod-obs').value = item.obs || '';
@@ -553,7 +562,7 @@ async function fecharModalProduto() {
     document.getElementById('modal-produto').classList.add('hidden');
     
     const dbId = document.getElementById('prod-id').value;
-    if (dbId) {
+    if (dbId && usuariosConectados > 1) {
         const client = getDbClient();
         await client.from('mercado_carrinho').update({ editando_por: null }).eq('id', dbId);
     }
@@ -583,9 +592,9 @@ function analisarPrecoHistoricoInicial(nomeProduto) {
         precoReferenciaHistorico = parseFloat(historicoItem.preco_unitario);
         box.classList.remove('hidden');
         box.className = "mb-4 p-2.5 rounded-xl border flex items-center gap-2.5 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50 transition-colors";
-        icone.className = "w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400";
+        icone.className = "w-7 h-7 rounded-full flex items-center justify-center text-xs shrink-0 bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400";
         icone.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i>';
-        texto.innerHTML = `Última vez pago: <b>${formatarMoedaLocal(precoReferenciaHistorico)}</b>. Digite o preço atual.`;
+        texto.innerHTML = `Última vez pago: <b>${formatarMoedaLocal(precoReferenciaHistorico)}</b>.`;
     } else {
         precoReferenciaHistorico = 0;
         box.classList.add('hidden');
@@ -607,17 +616,17 @@ function calcularTotalItemModal() {
 
         if (diferenca > 0.01) {
             box.className = "mb-4 p-2.5 rounded-xl border flex items-center gap-2.5 bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30 transition-colors";
-            icone.className = "w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400";
+            icone.className = "w-7 h-7 rounded-full flex items-center justify-center text-xs shrink-0 bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400";
             icone.innerHTML = '<i class="fa-solid fa-arrow-trend-up"></i>';
             texto.innerHTML = `Atenção: <b class="text-rose-600 dark:text-rose-400">${formatarMoedaLocal(Math.abs(diferenca))} mais caro</b> (+${percentual}%)`;
         } else if (diferenca < -0.01) {
             box.className = "mb-4 p-2.5 rounded-xl border flex items-center gap-2.5 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 transition-colors";
-            icone.className = "w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400";
+            icone.className = "w-7 h-7 rounded-full flex items-center justify-center text-xs shrink-0 bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400";
             icone.innerHTML = '<i class="fa-solid fa-arrow-trend-down"></i>';
             texto.innerHTML = `Ótimo! <b class="text-emerald-600 dark:text-emerald-400">${formatarMoedaLocal(Math.abs(diferenca))} mais barato</b> (-${percentual}%)`;
         } else {
             box.className = "mb-4 p-2.5 rounded-xl border flex items-center gap-2.5 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50 transition-colors";
-            icone.className = "w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400";
+            icone.className = "w-7 h-7 rounded-full flex items-center justify-center text-xs shrink-0 bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400";
             icone.innerHTML = '<i class="fa-solid fa-equals"></i>';
             texto.innerHTML = `O preço cravou o mesmo da última compra.`;
         }
@@ -666,8 +675,8 @@ async function salvarItemCarrinho(event) {
 
 async function removerItem(dbId) {
     const item = carrinho.find(i => i.id === dbId);
-    if (item && item.editando_por && item.editando_por !== meuApelido) {
-        return Swal.fire('Bloqueado', `Sendo editado por: ${item.editando_por}`, 'warning');
+    if (usuariosConectados > 1 && item && item.editando_por && item.editando_por !== meuApelido) {
+        return Swal.fire('Bloqueado', `Sendo alterado por: ${item.editando_por}`, 'warning');
     }
     if (navigator.vibrate) navigator.vibrate(50);
     const client = getDbClient();
@@ -685,12 +694,13 @@ function renderizarCarrinho() {
     if (carrinho.length === 0) {
         container.innerHTML = `
             <div class="flex flex-col items-center justify-center py-20 opacity-60">
-                <div class="w-24 h-24 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
-                    <i class="fa-solid fa-basket-shopping text-4xl text-slate-400"></i>
+                <div class="w-20 h-20 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center mb-3">
+                    <i class="fa-solid fa-basket-shopping text-3xl text-slate-400"></i>
                 </div>
-                <p class="text-sm font-bold text-slate-500 dark:text-slate-400 text-center max-w-[250px]">O carrinho está vazio.<br>Bipe ou digite o nome de um produto.</p>
+                <p class="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 text-center max-w-[250px]">O carrinho está vazio.<br>Bipe ou digite o nome de um produto.</p>
             </div>`;
-        totalEl.innerText = "R$ 0,00"; qtdEl.innerText = "0";
+        totalEl.innerText = "R$ 0,00"; 
+        qtdEl.innerText = "0 itens";
         if (btnFinalizarTopo) { btnFinalizarTopo.classList.add('hidden'); btnFinalizarTopo.classList.remove('flex'); }
         return;
     }
@@ -707,33 +717,34 @@ function renderizarCarrinho() {
             ? `<img src="${item.img_url}" class="w-full h-full object-cover">` 
             : `<i class="fa-solid ${item.icone}"></i>`;
 
-        let travaHtml = item.editando_por 
-            ? `<div class="absolute top-2 right-2 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow z-10"><i class="fa-solid fa-lock mr-1"></i>${item.editando_por} editando</div>` 
+        let travaHtml = (usuariosConectados > 1 && item.editando_por)
+            ? `<div class="absolute top-2 right-2 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow z-10"><i class="fa-solid fa-lock mr-1"></i>${item.editando_por}</div>` 
             : '';
 
-        let obsHtml = item.obs ? `<p class="text-[9px] font-bold text-amber-500 dark:text-amber-400 mt-1"><i class="fa-solid fa-info-circle mr-1"></i>${item.obs}</p>` : '';
+        let obsHtml = item.obs ? `<p class="text-[9px] font-bold text-amber-500 dark:text-amber-400 mt-0.5"><i class="fa-solid fa-info-circle mr-1"></i>${item.obs}</p>` : '';
 
         return `
-        <div class="relative bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800 flex items-center justify-between gap-3 active:scale-[0.98] transition-transform cursor-pointer ${item.editando_por ? 'opacity-50 ring-2 ring-amber-500/50' : ''}" onclick="abrirModalProduto('${item.nome.replace(/'/g, "\\'")}', '${item.icone}', '${item.cor}', '${item.id}', '${item.img_url}', '${item.ean}')">
+        <div class="relative bg-white dark:bg-slate-900 p-3.5 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800 flex items-center justify-between gap-3 active:scale-[0.98] transition-transform cursor-pointer ${usuariosConectados > 1 && item.editando_por ? 'opacity-50 ring-2 ring-amber-500/50' : ''}" onclick="abrirModalProduto('${item.nome.replace(/'/g, "\\'")}', '${item.icone}', '${item.cor}', '${item.id}', '${item.img_url}', '${item.ean}')">
             ${travaHtml}
-            <div class="w-12 h-12 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-xl shrink-0 overflow-hidden ${item.img_url ? '' : item.cor}">
+            <div class="w-11 h-11 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-lg shrink-0 overflow-hidden ${item.img_url ? '' : item.cor}">
                 ${miniFoto}
             </div>
             <div class="flex-1 min-w-0">
-                <h4 class="font-bold text-slate-900 dark:text-white text-sm truncate">${item.nome}</h4>
+                <h4 class="font-bold text-slate-900 dark:text-white text-xs md:text-sm truncate">${item.nome}</h4>
                 <p class="text-[10px] font-bold text-slate-400 uppercase mt-0.5">${item.quantidade}x ${formatarMoedaLocal(item.preco)}</p>
                 ${obsHtml}
             </div>
-            <div class="text-right shrink-0 flex items-center gap-3">
-                <span class="font-black text-indigo-600 dark:text-indigo-400 text-base block">${formatarMoedaLocal(sub)}</span>
-                <button onclick="event.stopPropagation(); removerItem('${item.id}')" class="w-8 h-8 bg-rose-50 text-rose-500 dark:bg-rose-500/10 dark:text-rose-400 rounded-lg flex items-center justify-center z-10"><i class="fa-solid fa-trash text-xs"></i></button>
+            <div class="text-right shrink-0 flex items-center gap-2.5">
+                <span class="font-black text-indigo-600 dark:text-indigo-400 text-sm md:text-base block">${formatarMoedaLocal(sub)}</span>
+                <button onclick="event.stopPropagation(); removerItem('${item.id}')" class="w-7 h-7 bg-rose-50 text-rose-500 dark:bg-rose-500/10 dark:text-rose-400 rounded-lg flex items-center justify-center z-10"><i class="fa-solid fa-trash text-[10px]"></i></button>
             </div>
         </div>`;
     }).join('');
 
     container.innerHTML = html;
     let parts = Math.abs(total).toFixed(2).split('.'); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    totalEl.innerText = "R$ " + parts.join(','); qtdEl.innerText = qtdItens;
+    totalEl.innerText = "R$ " + parts.join(','); 
+    qtdEl.innerText = `${qtdItens} itens`;
 }
 
 // ---------------------------------------------------------
@@ -884,14 +895,14 @@ function renderizarListaDeRecibos() {
     container.innerHTML = historicoAgrupadoRecibos.map(recibo => {
         let dStr = recibo.data.split('-').reverse().join('/');
         return `
-        <div onclick="abrirReciboHistorico(${recibo.id})" class="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800 flex items-center justify-between gap-3 active:scale-95 transition-transform cursor-pointer hover:border-indigo-300">
-            <div class="w-12 h-12 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 text-xl shrink-0"><i class="fa-solid fa-store"></i></div>
+        <div onclick="abrirReciboHistorico(${recibo.id})" class="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800 flex items-center justify-between gap-3 active:scale-95 transition-transform cursor-pointer hover:border-indigo-300">
+            <div class="w-11 h-11 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 text-lg shrink-0"><i class="fa-solid fa-store"></i></div>
             <div class="flex-1 min-w-0">
-                <h4 class="font-bold text-slate-900 dark:text-white text-base truncate">${recibo.descricao}</h4>
+                <h4 class="font-bold text-slate-900 dark:text-white text-sm truncate">${recibo.descricao}</h4>
                 <p class="text-[10px] font-bold text-slate-400 uppercase mt-0.5"><i class="fa-regular fa-calendar mr-1"></i> ${dStr} • ${recibo.itens.length} itens</p>
             </div>
             <div class="text-right shrink-0">
-                <span class="font-black text-slate-900 dark:text-white text-lg block">${formatarMoedaLocal(recibo.total)}</span>
+                <span class="font-black text-slate-900 dark:text-white text-base block">${formatarMoedaLocal(recibo.total)}</span>
             </div>
         </div>`;
     }).join('');
@@ -907,10 +918,10 @@ function abrirReciboHistorico(transacaoId) {
     lista.innerHTML = recibo.itens.map(item => `
         <div class="flex justify-between items-center py-2 border-b border-slate-50 dark:border-slate-800/50 last:border-0">
             <div>
-                <p class="text-sm font-bold text-slate-700 dark:text-slate-200">${item.nome}</p>
+                <p class="text-xs md:text-sm font-bold text-slate-700 dark:text-slate-200">${item.nome}</p>
                 <p class="text-[10px] font-bold text-slate-400">${item.quantidade}x ${formatarMoedaLocal(item.preco_unitario)}</p>
             </div>
-            <span class="text-sm font-black text-slate-900 dark:text-white">${formatarMoedaLocal(item.quantidade * item.preco_unitario)}</span>
+            <span class="text-xs md:text-sm font-black text-slate-900 dark:text-white">${formatarMoedaLocal(item.quantidade * item.preco_unitario)}</span>
         </div>
     `).join('');
     document.getElementById('modal-recibo').classList.remove('hidden');
