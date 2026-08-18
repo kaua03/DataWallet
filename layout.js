@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     injetarEstilosGlobais();
 
-    // 🔴 BLINDAGEM MESTRE: Se for link de convidado (?s=...), NÃO INJETA O MENU!
     const urlParams = new URLSearchParams(window.location.search);
     const isGuest = urlParams.has('s');
 
@@ -119,19 +118,20 @@ function inicializarLayout(isDark) {
 
     let mobileLinksHtml = menuItems.slice().reverse().map(item => {
         const ativo = paginaAtual === item.link;
-        const classesAtivo = ativo ? `bg-indigo-50 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30` : `bg-white text-slate-500 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700`;
+        const classesAtivo = ativo ? `bg-indigo-50 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30` : `bg-white text-slate-500 dark:bg-slate-800 dark:text-slate-400 border-slate-200 border-slate-700`;
         return `
             <a href="${item.link}" class="w-10 h-10 rounded-full shadow-lg flex items-center justify-center border transition-transform hover:scale-110 pointer-events-none mobile-menu-btn ${classesAtivo}">
-                <i class="fa-solid ${item.icone} pointer-events-none"></i>
+                <i class="fa-solid ${item.icone} pointer-events-none text-sm"></i>
             </a>
         `;
     }).join('');
 
+    // APENAS UM BOTÃO DE QR CODE NO MENU MOBILE (COM TAMANHO PADRÃO w-10 h-10)
     let qrButtonHtml = '';
     if (isCompras) {
         qrButtonHtml = `
-            <button onclick="window.abrirModalShare()" class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 shadow-lg flex items-center justify-center border border-indigo-200 dark:border-indigo-700 transition-transform hover:scale-110 pointer-events-none mobile-menu-btn">
-                <i class="fa-solid fa-qrcode pointer-events-none"></i>
+            <button onclick="window.abrirModalShare()" class="w-10 h-10 rounded-full bg-indigo-600 text-white shadow-lg flex items-center justify-center border border-indigo-400 transition-transform hover:scale-110 pointer-events-none mobile-menu-btn">
+                <i class="fa-solid fa-qrcode pointer-events-none text-sm"></i>
             </button>
             <div class="w-8 h-px bg-slate-200 dark:bg-slate-700 my-1 mobile-menu-btn pointer-events-none opacity-0"></div>
         `;
@@ -144,18 +144,16 @@ function inicializarLayout(isDark) {
         btnAcaoMobileHtml = `<button onclick="window.abrirModalNovaDivida()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-plus pointer-events-none"></i></button>`;
     } else if (isMetas) {
         btnAcaoMobileHtml = `<button onclick="window.abrirModalNovaMeta()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-plus pointer-events-none"></i></button>`;
-    } else if (isCompras) {
-        btnAcaoMobileHtml = `<button onclick="window.abrirModalShare()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-qrcode pointer-events-none"></i></button>`;
     }
 
-    const iconeTemaMobile = isDark ? 'fa-solid fa-sun text-xl text-amber-400' : 'fa-solid fa-moon text-xl text-white';
+    const iconeTemaMobile = isDark ? 'fa-solid fa-sun text-base text-amber-400' : 'fa-solid fa-moon text-base text-white';
 
     const mobileMenuHtml = `
         <div id="fab-container" class="fixed bottom-6 right-6 z-[60] w-14 h-14">
             ${btnAcaoMobileHtml}
             <div id="fab-items" class="absolute bottom-16 right-2 w-10 flex flex-col items-center gap-2.5 transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none z-40">
                 <button onclick="sairDoSistema()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-rose-500 border border-rose-100 dark:border-rose-900/50 shadow-lg flex items-center justify-center transition-transform hover:scale-110 pointer-events-none mobile-menu-btn">
-                    <i class="fa-solid fa-right-from-bracket pointer-events-none"></i>
+                    <i class="fa-solid fa-right-from-bracket pointer-events-none text-sm"></i>
                 </button>
                 <button id="btn-dark-mobile" onclick="window.toggleDarkMode()" class="w-10 h-10 rounded-full bg-slate-800 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible pointer-events-none mobile-menu-btn">
                     <i id="icone-dark-mode-mobile" class="${iconeTemaMobile} pointer-events-none"></i>
@@ -248,8 +246,6 @@ function atualizarIconesDark(isDark) {
     const iconeMobile = document.getElementById('icone-dark-mode-mobile');
     const starPc = document.getElementById('star-desktop');
     const starMobile = document.getElementById('star-mobile');
-    
-    // Sincroniza o botão de tema exclusivo do Convidado, se estiver na tela
     const btnTemaGuest = document.getElementById('btn-tema-guest');
     
     if(starPc) { starPc.classList.remove('animate-star'); void starPc.offsetWidth; }
@@ -257,23 +253,16 @@ function atualizarIconesDark(isDark) {
     
     if (isDark) {
         if (iconePc) iconePc.className = 'fa-solid fa-sun text-lg text-amber-400 transition-colors duration-300';
-        if (iconeMobile) iconeMobile.className = 'fa-solid fa-sun text-xl text-amber-400 transition-colors duration-300';
+        if (iconeMobile) iconeMobile.className = 'fa-solid fa-sun text-base text-amber-400 transition-colors duration-300';
         if (btnPc) btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors w-full';
         if (txtPc) txtPc.innerText = 'Tema Claro';
-        
-        if (btnTemaGuest) {
-            btnTemaGuest.innerHTML = '<i class="fa-solid fa-sun text-amber-400"></i><span class="hidden md:block">Tema Claro</span>';
-        }
+        if (btnTemaGuest) btnTemaGuest.innerHTML = '<i class="fa-solid fa-sun text-amber-400"></i><span class="hidden md:block">Tema Claro</span>';
     } else {
         if (iconePc) iconePc.className = 'fa-solid fa-moon text-lg text-white transition-colors duration-300';
-        if (iconeMobile) iconeMobile.className = 'fa-solid fa-moon text-xl text-white transition-colors duration-300';
+        if (iconeMobile) iconeMobile.className = 'fa-solid fa-moon text-base text-white transition-colors duration-300';
         if (btnPc) btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-slate-800 text-white hover:bg-slate-700 transition-colors w-full';
         if (txtPc) txtPc.innerText = 'Tema Escuro';
-        
-        if (btnTemaGuest) {
-            btnTemaGuest.innerHTML = '<i class="fa-solid fa-moon text-white"></i><span class="hidden md:block">Tema Escuro</span>';
-        }
-        
+        if (btnTemaGuest) btnTemaGuest.innerHTML = '<i class="fa-solid fa-moon text-white"></i><span class="hidden md:block">Tema Escuro</span>';
         if(starPc) starPc.classList.add('animate-star');
         if(starMobile) starMobile.classList.add('animate-star');
     }
