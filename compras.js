@@ -60,7 +60,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         sessaoAtualId = guestSessionId;
         esconderInterfaceDono();
         
-        // MOSTRA BOTÃO DE TEMA APENAS PARA CONVIDADOS
         const btnTema = document.getElementById('btn-tema-guest');
         if (btnTema) {
             btnTema.classList.remove('hidden');
@@ -112,6 +111,16 @@ function esconderInterfaceDono() {
     if (abas) abas.style.display = 'none'; 
     if (btnTopo) btnTopo.style.display = 'none';
     if (btnShare) btnShare.style.display = 'none';
+}
+
+// ---------------------------------------------------------
+// FUNÇÃO MESTRE DE SAÍDA (VOLTA PARA A TELA DE CONVIDADO)
+// ---------------------------------------------------------
+window.sairSessaoConvidado = function() {
+    localStorage.removeItem('DW_GuestSession');
+    localStorage.removeItem('DW_GuestName');
+    // Usa reload() para manter o ?s= na URL e prender ele na tela de Convidado
+    window.location.reload(); 
 }
 
 // ==========================================
@@ -177,24 +186,19 @@ function iniciarSubscriptionRealtime() {
                     allowOutsideClick: false,
                     confirmButtonText: 'Sair'
                 }).then(() => {
-                    localStorage.removeItem('DW_GuestSession');
-                    localStorage.removeItem('DW_GuestName');
-                    window.location.href = window.location.pathname; 
+                    window.sairSessaoConvidado();
                 });
             }
-            // AVISO MANDATÓRIO DE COMPRA FINALIZADA
+            
+            // AVISO MANDATÓRIO DE COMPRA FINALIZADA (COM ANIMAÇÃO LOTTIE)
             if (payload.payload.acao === 'encerrar' && meuApelido !== "Dono(a)") {
-                Swal.fire({
-                    title: 'Compra Finalizada!', 
-                    text: 'A compra foi confirmada no caixa pelo titular.', 
-                    icon: 'success',
-                    allowOutsideClick: false,
-                    confirmButtonText: 'Sair'
-                }).then(() => {
-                    localStorage.removeItem('DW_GuestSession');
-                    localStorage.removeItem('DW_GuestName');
-                    window.location.href = window.location.pathname;
-                });
+                // 1. O convidado vê a mesma animação Lottie do Dono
+                dispararOverlaySucesso("Compra Finalizada!");
+                
+                // 2. Aguarda a animação fechar suavemente (2.5s) e volta para a tela inicial de convidado
+                setTimeout(() => {
+                    window.sairSessaoConvidado();
+                }, 2500);
             }
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'mercado_carrinho', filter: `sessao_id=eq.${sessaoAtualId}` }, payload => {
@@ -684,10 +688,9 @@ async function salvarItemCarrinho(event) {
 
     const dbId = document.getElementById('prod-id').value;
     let nome = document.getElementById('prod-nome').value.trim();
-    const preco = desmascararMoeda(document.getElementById('prod-preco').value); // Preço pode ser 0
+    const preco = desmascararMoeda(document.getElementById('prod-preco').value); 
     const qtd = parseInt(document.getElementById('prod-qtd').value);
     
-    // VALIDAÇÃO: Nome e Quantidade são obrigatórios
     if (!nome) return Swal.fire('Atenção', 'Informe o nome do produto.', 'warning');
     if (!qtd || qtd < 1) return Swal.fire('Atenção', 'Informe uma quantidade válida.', 'warning');
 
@@ -794,7 +797,7 @@ function renderizarCarrinho() {
 }
 
 // ---------------------------------------------------------
-// FINALIZAÇÃO DE COMPRA E SUCESSO
+// FINALIZAÇÃO DE COMPRA
 // ---------------------------------------------------------
 function abrirModalCheckout() {
     if (carrinho.length === 0) return;
@@ -888,7 +891,6 @@ function dispararOverlaySucesso(subtexto) {
 
     if (window.lottieInstance) window.lottieInstance.destroy();
 
-    // Lottie sem Loop e tempo reduzido para fechar bonito!
     if (window.DotLottie) {
         window.lottieInstance = new window.DotLottie({
             autoplay: true,
