@@ -57,11 +57,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const guestSessionId = urlParams.get('s');
 
     if (guestSessionId) {
-        // MODO CONVIDADO (Oculta coisas do Dono)
         sessaoAtualId = guestSessionId;
         esconderInterfaceDono();
         
-        // PERSISTÊNCIA ANTI-F5: Verifica se ele já logou antes
         const savedSession = localStorage.getItem('DW_GuestSession');
         const savedName = localStorage.getItem('DW_GuestName');
         
@@ -74,14 +72,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('badge-live').classList.add('inline-flex');
                 await carregarCarrinhoDB();
                 iniciarSubscriptionRealtime();
-                return; // Pula o Modal de Senha
+                return; 
             } else {
                 localStorage.removeItem('DW_GuestSession');
             }
         }
         document.getElementById('modal-convidado').classList.remove('hidden');
     } else {
-        // MODO DONO
         usuarioLogado = await verificarSessaoSegura();
         if (!usuarioLogado) return;
         meuApelido = "Dono(a)";
@@ -109,9 +106,8 @@ function esconderInterfaceDono() {
 }
 
 // ==========================================
-// MOTOR REAL-TIME, PRESENCE, E KICK GUEST
+// MOTOR REAL-TIME, PRESENCE E KICK GUEST
 // ==========================================
-
 async function inicializarSessaoRealtimeOwner() {
     const client = getDbClient();
     if (!client) return;
@@ -125,7 +121,7 @@ async function inicializarSessaoRealtimeOwner() {
         if (nova) sessaoAtualId = nova[0].id;
     }
 
-    document.getElementById('badge-live').classList.add('hidden'); // Oculto até alguém entrar
+    document.getElementById('badge-live').classList.add('hidden'); 
     await carregarCarrinhoDB();
     iniciarSubscriptionRealtime();
 }
@@ -163,14 +159,12 @@ function iniciarSubscriptionRealtime() {
             }
         })
         .on('broadcast', { event: 'comando_sala' }, (payload) => {
-            // A MAE EXPULSOU ALGUÉM
             if (payload.payload.acao === 'kick' && payload.payload.alvo === meuApelido) {
-                Swal.fire('Desconectado', 'O administrador fechou a sua conexão com a lista.', 'info').then(() => {
+                Swal.fire('Desconectado', 'O administrador fechou a sua conexão.', 'info').then(() => {
                     localStorage.removeItem('DW_GuestSession');
-                    window.location.href = window.location.pathname; // Recarrega limpo
+                    window.location.href = window.location.pathname; 
                 });
             }
-            // A MAE FINALIZOU A COMPRA
             if (payload.payload.acao === 'encerrar' && meuApelido !== "Dono(a)") {
                 Swal.fire('Compra Finalizada', 'A compra foi confirmada no caixa!', 'success').then(() => {
                     localStorage.removeItem('DW_GuestSession');
@@ -192,7 +186,7 @@ function iniciarSubscriptionRealtime() {
 // GERENCIADOR DE LIVE (PAINEL DE EXPULSAR)
 // ---------------------------------------------------------
 window.abrirGerenciadorLive = function() {
-    if (meuApelido !== "Dono(a)") return Swal.fire('Visualizando', 'Apenas o administrador do carrinho pode gerenciar membros.', 'info');
+    if (meuApelido !== "Dono(a)") return Swal.fire('Aviso', 'Apenas o administrador gerencia membros.', 'info');
     
     const state = realTimeChannel.presenceState();
     let html = '';
@@ -247,7 +241,7 @@ async function gerarNovaSenhaSessao() {
     const expiraEm = new Date(Date.now() + 60000).toISOString(); 
     
     document.getElementById('share-pin').innerText = pin;
-    tempoRestanteOTP = 60; // AGORA SÃO 60 SEGUNDOS
+    tempoRestanteOTP = 60; 
     atualizarTimerOTP();
     
     try {
@@ -267,7 +261,6 @@ function atualizarTimerOTP() {
     const span = document.getElementById('share-timer');
     const bar = document.getElementById('share-timer-bar');
     if(span) span.innerText = tempoRestanteOTP;
-    // Barra vai diminuindo de forma linear
     if(bar) bar.style.width = `${(tempoRestanteOTP / 60) * 100}%`;
 }
 
@@ -284,8 +277,8 @@ async function entrarComoConvidado() {
     const nome = document.getElementById('input-convidado-nome').value.trim();
     const senha = document.getElementById('input-convidado-senha').value.trim();
     
-    if (!nome) return Swal.fire('Aviso', 'Preencha o seu nome para entrar.', 'warning');
-    if (!senha) return Swal.fire('Aviso', 'Preencha a senha que aparece no celular do dono.', 'warning');
+    if (!nome) return Swal.fire('Aviso', 'Preencha o seu nome.', 'warning');
+    if (!senha) return Swal.fire('Aviso', 'Preencha a senha.', 'warning');
     
     Swal.fire({ title: 'Verificando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
     
@@ -300,7 +293,6 @@ async function entrarComoConvidado() {
     
     meuApelido = nome;
     
-    // Salva Sessão no Celular dele (Anti F5)
     localStorage.setItem('DW_GuestSession', sessaoAtualId);
     localStorage.setItem('DW_GuestName', meuApelido);
     
@@ -546,7 +538,7 @@ async function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-
         if (item) {
             if (item.editando_por && item.editando_por !== meuApelido) {
                 setVisibilidadeMenuGlobal(true);
-                return Swal.fire('Bloqueado', `Sendo alterado por: <b>${item.editando_por}</b>. Aguarde.`, 'warning');
+                return Swal.fire('Bloqueado', `Sendo alterado por: <b>${item.editando_por}</b>.`, 'warning');
             }
             
             const client = getDbClient();
@@ -595,8 +587,6 @@ function ajustarQtd(delta) {
 
 function analisarPrecoHistoricoInicial(nomeProduto) {
     const box = document.getElementById('box-inteligencia-preco');
-    
-    // Convidado não tem acesso ao historico da conta
     if (meuApelido !== "Dono(a)") { box.classList.add('hidden'); precoReferenciaHistorico = 0; return; }
 
     const icone = document.getElementById('icone-inteligencia');
@@ -651,9 +641,6 @@ function calcularTotalItemModal() {
     }
 }
 
-// ---------------------------------------------------------
-// SALVAR E RENDERIZAR NO BANCO (MULTIPLAYER LIVE)
-// ---------------------------------------------------------
 async function salvarItemCarrinho(event) {
     event.preventDefault();
     if (!sessaoAtualId) return Swal.fire('Erro', 'Sessão Perdida. Recarregue a página.', 'error');
@@ -722,12 +709,12 @@ function renderizarCarrinho() {
                 <p class="text-sm font-bold text-slate-500 dark:text-slate-400 text-center max-w-[250px]">O carrinho está vazio.<br>Bipe ou digite o nome de um produto.</p>
             </div>`;
         totalEl.innerText = "R$ 0,00"; qtdEl.innerText = "0";
-        if (btnFinalizarTopo) { btnFinalizarTopo.classList.add('hidden'); btnFinalizarTopo.classList.remove('md:flex'); }
+        if (btnFinalizarTopo) { btnFinalizarTopo.classList.add('hidden'); btnFinalizarTopo.classList.remove('flex'); }
         return;
     }
 
     if (btnFinalizarTopo && meuApelido === "Dono(a)") { 
-        btnFinalizarTopo.classList.remove('hidden'); btnFinalizarTopo.classList.add('md:flex');
+        btnFinalizarTopo.classList.remove('hidden'); btnFinalizarTopo.classList.add('flex');
     }
 
     const html = carrinho.map((item) => {
@@ -768,7 +755,7 @@ function renderizarCarrinho() {
 }
 
 // ---------------------------------------------------------
-// FINALIZAÇÃO DE COMPRA (E EXPULSÃO DE TODOS)
+// FINALIZAÇÃO DE COMPRA
 // ---------------------------------------------------------
 function abrirModalCheckout() {
     if (carrinho.length === 0) return;
@@ -834,7 +821,6 @@ async function efetivarCompra(event) {
 
         await client.from('mercado_sessoes').update({status: 'finalizada'}).eq('id', sessaoAtualId);
         
-        // Manda o sinal de rádio expulsando a família que estava ajudando
         if (realTimeChannel) realTimeChannel.send({ type: 'broadcast', event: 'comando_sala', payload: { acao: 'encerrar' } });
 
         fecharModalCheckout(); 
