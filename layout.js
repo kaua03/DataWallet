@@ -249,6 +249,9 @@ function atualizarIconesDark(isDark) {
     const starPc = document.getElementById('star-desktop');
     const starMobile = document.getElementById('star-mobile');
     
+    // Sincroniza o botão de tema exclusivo do Convidado, se estiver na tela
+    const btnTemaGuest = document.getElementById('btn-tema-guest');
+    
     if(starPc) { starPc.classList.remove('animate-star'); void starPc.offsetWidth; }
     if(starMobile) { starMobile.classList.remove('animate-star'); void starMobile.offsetWidth; }
     
@@ -257,11 +260,20 @@ function atualizarIconesDark(isDark) {
         if (iconeMobile) iconeMobile.className = 'fa-solid fa-sun text-xl text-amber-400 transition-colors duration-300';
         if (btnPc) btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors w-full';
         if (txtPc) txtPc.innerText = 'Tema Claro';
+        
+        if (btnTemaGuest) {
+            btnTemaGuest.innerHTML = '<i class="fa-solid fa-sun text-amber-400"></i><span class="hidden md:block">Tema Claro</span>';
+        }
     } else {
         if (iconePc) iconePc.className = 'fa-solid fa-moon text-lg text-white transition-colors duration-300';
         if (iconeMobile) iconeMobile.className = 'fa-solid fa-moon text-xl text-white transition-colors duration-300';
         if (btnPc) btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-slate-800 text-white hover:bg-slate-700 transition-colors w-full';
         if (txtPc) txtPc.innerText = 'Tema Escuro';
+        
+        if (btnTemaGuest) {
+            btnTemaGuest.innerHTML = '<i class="fa-solid fa-moon text-white"></i><span class="hidden md:block">Tema Escuro</span>';
+        }
+        
         if(starPc) starPc.classList.add('animate-star');
         if(starMobile) starMobile.classList.add('animate-star');
     }
