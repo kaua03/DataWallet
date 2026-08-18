@@ -1,5 +1,5 @@
 // ==========================================
-// compras.js - MOTOR MULTIPLAYER, KICK, AUTO-LOGIN E OTP 60S
+// compras.js - MOTOR MULTIPLAYER (VALIDAÇÃO UX) E AUTO-LOGIN
 // ==========================================
 
 let usuarioLogado = null;
@@ -11,7 +11,6 @@ let html5QrCode = null;
 let debounceBuscaTimeout = null;
 let scanOriginadoDoModal = false;
 
-// Variáveis Multi-player
 let sessaoAtualId = null;
 let meuApelido = "Dono(a)"; 
 let realTimeChannel = null;
@@ -58,7 +57,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (guestSessionId) {
         sessaoAtualId = guestSessionId;
-        esconderInterfaceDono();
         
         const savedSession = localStorage.getItem('DW_GuestSession');
         const savedName = localStorage.getItem('DW_GuestName');
@@ -91,23 +89,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-function esconderInterfaceDono() {
-    const sidebar = document.getElementById('sidebar');
-    const fabContainer = document.getElementById('fab-container');
-    const abas = document.getElementById('abas-container');
-    const btnTopo = document.getElementById('btn-finalizar-topo');
-    const btnShare = document.getElementById('btn-share-desktop');
-    
-    if (sidebar) sidebar.style.display = 'none';
-    if (fabContainer) fabContainer.style.display = 'none';
-    if (abas) abas.style.display = 'none';
-    if (btnTopo) btnTopo.style.display = 'none';
-    if (btnShare) btnShare.style.display = 'none';
-}
+// ==========================================
+// MOTOR REAL-TIME, PRESENCE, E KICK GUEST
+// ==========================================
 
-// ==========================================
-// MOTOR REAL-TIME, PRESENCE E KICK GUEST
-// ==========================================
 async function inicializarSessaoRealtimeOwner() {
     const client = getDbClient();
     if (!client) return;
@@ -160,7 +145,7 @@ function iniciarSubscriptionRealtime() {
         })
         .on('broadcast', { event: 'comando_sala' }, (payload) => {
             if (payload.payload.acao === 'kick' && payload.payload.alvo === meuApelido) {
-                Swal.fire('Desconectado', 'O administrador fechou a sua conexão.', 'info').then(() => {
+                Swal.fire('Desconectado', 'O administrador fechou a sua conexão com a lista.', 'info').then(() => {
                     localStorage.removeItem('DW_GuestSession');
                     window.location.href = window.location.pathname; 
                 });
@@ -186,7 +171,7 @@ function iniciarSubscriptionRealtime() {
 // GERENCIADOR DE LIVE (PAINEL DE EXPULSAR)
 // ---------------------------------------------------------
 window.abrirGerenciadorLive = function() {
-    if (meuApelido !== "Dono(a)") return Swal.fire('Aviso', 'Apenas o administrador gerencia membros.', 'info');
+    if (meuApelido !== "Dono(a)") return Swal.fire('Visualizando', 'Apenas o administrador do carrinho pode gerenciar membros.', 'info');
     
     const state = realTimeChannel.presenceState();
     let html = '';
@@ -217,7 +202,6 @@ window.expulsarUsuario = function(apelido) {
 // ---------------------------------------------------------
 async function abrirModalShare() {
     if (!sessaoAtualId) return Swal.fire('Aviso', 'Sessão ainda não inicializada.', 'warning');
-    setVisibilidadeMenuGlobal(false);
     
     const url = new URL(window.location.href);
     url.searchParams.set('s', sessaoAtualId);
@@ -233,7 +217,6 @@ async function abrirModalShare() {
 function fecharModalShare() {
     document.getElementById('modal-share').classList.add('hidden');
     clearInterval(otpInterval);
-    setVisibilidadeMenuGlobal(true);
 }
 
 async function gerarNovaSenhaSessao() {
@@ -271,14 +254,26 @@ function copiarLinkShare() {
 }
 
 // ---------------------------------------------------------
-// AUTENTICAÇÃO DO CONVIDADO
+// AUTENTICAÇÃO DO CONVIDADO (COM AVISOS CLAROS DE UX)
 // ---------------------------------------------------------
 async function entrarComoConvidado() {
-    const nome = document.getElementById('input-convidado-nome').value.trim();
-    const senha = document.getElementById('input-convidado-senha').value.trim();
+    const nomeInput = document.getElementById('input-convidado-nome');
+    const senhaInput = document.getElementById('input-convidado-senha');
     
-    if (!nome) return Swal.fire('Aviso', 'Preencha o seu nome.', 'warning');
-    if (!senha) return Swal.fire('Aviso', 'Preencha a senha.', 'warning');
+    const nome = nomeInput.value.trim();
+    const senha = senhaInput.value.trim();
+    
+    if (!nome) {
+        nomeInput.classList.add('ring-2', 'ring-rose-500');
+        setTimeout(() => nomeInput.classList.remove('ring-2', 'ring-rose-500'), 2000);
+        return Swal.fire('Aviso', 'Por favor, informe seu nome para entrar.', 'warning');
+    }
+    
+    if (!senha || senha.length !== 6) {
+        senhaInput.classList.add('ring-2', 'ring-rose-500');
+        setTimeout(() => senhaInput.classList.remove('ring-2', 'ring-rose-500'), 2000);
+        return Swal.fire('Aviso', 'Informe a senha de 6 dígitos que aparece no celular de quem compartilhou.', 'warning');
+    }
     
     Swal.fire({ title: 'Verificando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
     
@@ -287,9 +282,9 @@ async function entrarComoConvidado() {
         
     Swal.close();
     
-    if (error || !data) return Swal.fire('Erro', 'Sessão inválida.', 'error');
-    if (data.senha !== senha) return Swal.fire('Acesso Negado', 'Senha Incorreta.', 'error');
-    if (new Date() > new Date(data.senha_expira_em)) return Swal.fire('Acesso Negado', 'Senha expirou!', 'error');
+    if (error || !data) return Swal.fire('Erro', 'Sessão inválida ou não existe mais.', 'error');
+    if (data.senha !== senha) return Swal.fire('Acesso Negado', 'A senha está incorreta.', 'error');
+    if (new Date() > new Date(data.senha_expira_em)) return Swal.fire('Acesso Negado', 'Essa senha expirou! Olhe o celular novamente e digite o novo código.', 'error');
     
     meuApelido = nome;
     
@@ -351,13 +346,6 @@ function mudarAba(aba) {
     }
 }
 
-function setVisibilidadeMenuGlobal(mostrar) {
-    const fabContainer = document.getElementById('fab-container');
-    if (fabContainer && document.getElementById('modal-convidado').classList.contains('hidden')) {
-        fabContainer.style.display = mostrar ? 'block' : 'none';
-    }
-}
-
 // ---------------------------------------------------------
 // CÂMERA E OPEN FOOD FACTS
 // ---------------------------------------------------------
@@ -381,7 +369,6 @@ async function abrirLeitorCamera(fromModal = false) {
         if (!devices || devices.length === 0) return Swal.fire('Aviso', 'Nenhuma câmera encontrada.', 'info');
     } catch (err) { return Swal.fire('Erro na Câmera', 'Permissão negada.', 'error'); }
 
-    setVisibilidadeMenuGlobal(false);
     document.getElementById('modal-camera').classList.remove('hidden');
     html5QrCode = new Html5Qrcode("reader");
     
@@ -399,7 +386,6 @@ async function abrirLeitorCamera(fromModal = false) {
 
 async function fecharLeitorCamera() {
     document.getElementById('modal-camera').classList.add('hidden');
-    setVisibilidadeMenuGlobal(true);
     if (html5QrCode) { try { await html5QrCode.stop(); html5QrCode.clear(); } catch(e) {} html5QrCode = null; }
 }
 
@@ -528,7 +514,6 @@ async function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-
     document.getElementById('box-autocomplete').classList.add('hidden');
     document.getElementById('input-busca-produto').value = '';
     document.getElementById('btn-limpar-busca').classList.add('hidden');
-    setVisibilidadeMenuGlobal(false);
 
     const form = document.getElementById('form-produto');
     form.reset();
@@ -537,8 +522,7 @@ async function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-
         const item = carrinho.find(i => i.id === dbId);
         if (item) {
             if (item.editando_por && item.editando_por !== meuApelido) {
-                setVisibilidadeMenuGlobal(true);
-                return Swal.fire('Bloqueado', `Sendo alterado por: <b>${item.editando_por}</b>.`, 'warning');
+                return Swal.fire('Bloqueado', `Sendo alterado por: <b>${item.editando_por}</b>. Aguarde.`, 'warning');
             }
             
             const client = getDbClient();
@@ -567,7 +551,6 @@ async function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-
 
 async function fecharModalProduto() {
     document.getElementById('modal-produto').classList.add('hidden');
-    setVisibilidadeMenuGlobal(true);
     
     const dbId = document.getElementById('prod-id').value;
     if (dbId) {
@@ -602,7 +585,7 @@ function analisarPrecoHistoricoInicial(nomeProduto) {
         box.className = "mb-4 p-2.5 rounded-xl border flex items-center gap-2.5 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50 transition-colors";
         icone.className = "w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400";
         icone.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i>';
-        texto.innerHTML = `Última vez pago: <b>${formatarMoedaLocal(precoReferenciaHistorico)}</b>.`;
+        texto.innerHTML = `Última vez pago: <b>${formatarMoedaLocal(precoReferenciaHistorico)}</b>. Digite o preço atual.`;
     } else {
         precoReferenciaHistorico = 0;
         box.classList.add('hidden');
@@ -676,7 +659,6 @@ async function salvarItemCarrinho(event) {
 
     if (navigator.vibrate) navigator.vibrate([50, 50, 50]); 
     document.getElementById('modal-produto').classList.add('hidden'); 
-    setVisibilidadeMenuGlobal(true);
 
     const client = getDbClient();
     await client.from('mercado_carrinho').upsert(payload);
@@ -726,7 +708,7 @@ function renderizarCarrinho() {
             : `<i class="fa-solid ${item.icone}"></i>`;
 
         let travaHtml = item.editando_por 
-            ? `<div class="absolute top-2 right-2 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow z-10"><i class="fa-solid fa-lock mr-1"></i>${item.editando_por}</div>` 
+            ? `<div class="absolute top-2 right-2 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow z-10"><i class="fa-solid fa-lock mr-1"></i>${item.editando_por} editando</div>` 
             : '';
 
         let obsHtml = item.obs ? `<p class="text-[9px] font-bold text-amber-500 dark:text-amber-400 mt-1"><i class="fa-solid fa-info-circle mr-1"></i>${item.obs}</p>` : '';
@@ -759,7 +741,6 @@ function renderizarCarrinho() {
 // ---------------------------------------------------------
 function abrirModalCheckout() {
     if (carrinho.length === 0) return;
-    setVisibilidadeMenuGlobal(false);
     
     let total = 0; carrinho.forEach(i => total += (i.preco * i.quantidade));
     document.getElementById('checkout-total').innerText = formatarMoedaLocal(total);
@@ -770,7 +751,6 @@ function abrirModalCheckout() {
 
 function fecharModalCheckout() { 
     document.getElementById('modal-checkout').classList.add('hidden'); 
-    setVisibilidadeMenuGlobal(true);
 }
 
 function toggleParcelasCheckout() {
@@ -918,7 +898,6 @@ function renderizarListaDeRecibos() {
 }
 
 function abrirReciboHistorico(transacaoId) {
-    setVisibilidadeMenuGlobal(false);
     const recibo = historicoAgrupadoRecibos.find(r => r.id === transacaoId);
     if(!recibo) return;
     document.getElementById('recibo-titulo').innerText = recibo.descricao;
@@ -939,5 +918,4 @@ function abrirReciboHistorico(transacaoId) {
 
 function fecharModalRecibo() { 
     document.getElementById('modal-recibo').classList.add('hidden'); 
-    setVisibilidadeMenuGlobal(true);
 }
