@@ -1,5 +1,5 @@
 // ==========================================
-// layout.js - MOTOR GLOBAL DE SIDEBAR E FAB MENU
+// layout.js - MOTOR GLOBAL DE SIDEBAR, TEMA E AÇÕES MOBILE (BLINDADO)
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -40,6 +40,18 @@ function injetarEstilosGlobais() {
         #sidebar:hover .sidebar-link { width: 100%; }
         .sidebar-text { opacity: 0; transform: translateX(-10px); visibility: hidden; transition: all 0.2s ease-in-out; white-space: nowrap; }
         #sidebar:hover .sidebar-text { visibility: visible; opacity: 1; transform: translateX(0); transition-delay: 0.15s; }
+
+        /* ========================================= */
+        /* BLINDAGEM ABSOLUTA DE RESOLUÇÃO (PC vs MOBILE) */
+        /* ========================================= */
+        @media (min-width: 768px) {
+            #fab-container { display: none !important; }
+            #sidebar { display: flex !important; }
+        }
+        @media (max-width: 767px) {
+            #sidebar { display: none !important; }
+            #fab-container { display: block !important; }
+        }
     `;
     document.head.appendChild(style);
 }
@@ -111,14 +123,13 @@ function inicializarLayout(isDark) {
         `;
     }).join('');
 
-    // Adiciona o Botão QR Code no menu de bolinhas se for a página do Mercado
     let qrButtonHtml = '';
     if (isCompras) {
         qrButtonHtml = `
             <button onclick="window.abrirModalShare()" class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 shadow-lg flex items-center justify-center border border-indigo-200 dark:border-indigo-700 transition-transform hover:scale-110 pointer-events-none mobile-menu-btn">
                 <i class="fa-solid fa-qrcode pointer-events-none"></i>
             </button>
-            <div class="w-8 h-px bg-slate-200 dark:bg-slate-700 my-1 mobile-menu-btn pointer-events-none"></div>
+            <div class="w-8 h-px bg-slate-200 dark:bg-slate-700 my-1 mobile-menu-btn pointer-events-none opacity-0"></div>
         `;
     }
 
@@ -134,7 +145,7 @@ function inicializarLayout(isDark) {
     const iconeTemaMobile = isDark ? 'fa-solid fa-sun text-xl text-amber-400' : 'fa-solid fa-moon text-xl text-white';
 
     const mobileMenuHtml = `
-        <div id="fab-container" class="md:hidden fixed bottom-6 right-6 z-[60] w-14 h-14">
+        <div id="fab-container" class="fixed bottom-6 right-6 z-[60] w-14 h-14">
             ${btnAcaoMobileHtml}
             <div id="fab-items" class="absolute bottom-16 right-2 w-10 flex flex-col items-center gap-2.5 transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none z-40">
                 <button onclick="sairDoSistema()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-rose-500 border border-rose-100 dark:border-rose-900/50 shadow-lg flex items-center justify-center transition-transform hover:scale-110 pointer-events-none mobile-menu-btn">
@@ -144,7 +155,7 @@ function inicializarLayout(isDark) {
                     <i id="icone-dark-mode-mobile" class="${iconeTemaMobile} pointer-events-none"></i>
                     <i id="star-mobile" class="fa-solid fa-star absolute text-[12px] text-white opacity-0 pointer-events-none z-50"></i>
                 </button>
-                <div class="w-8 h-px bg-slate-200 dark:bg-slate-700 my-1 mobile-menu-btn pointer-events-none"></div>
+                <div class="w-8 h-px bg-slate-200 dark:bg-slate-700 my-1 mobile-menu-btn pointer-events-none opacity-0 transition-opacity"></div>
                 ${qrButtonHtml}
                 ${mobileLinksHtml}
             </div>
@@ -174,6 +185,7 @@ window.toggleMobileMenu = function() {
             items.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
             items.classList.add('opacity-100', 'translate-y-0');
             btnsSecundarios.forEach(b => b.classList.replace('pointer-events-none', 'pointer-events-auto'));
+            btnsSecundarios.forEach(b => b.classList.remove('opacity-0')); // Garante que a linha separadora apareca
         }
         if (actionBtn) {
             actionBtn.classList.remove('opacity-0', 'pointer-events-none');
@@ -191,6 +203,7 @@ window.toggleMobileMenu = function() {
             items.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
             items.classList.remove('opacity-100', 'translate-y-0');
             btnsSecundarios.forEach(b => b.classList.replace('pointer-events-auto', 'pointer-events-none'));
+            btnsSecundarios.forEach(b => { if(b.tagName === 'DIV') b.classList.add('opacity-0') });
         }
         if (actionBtn) {
             actionBtn.classList.add('opacity-0', 'pointer-events-none');
