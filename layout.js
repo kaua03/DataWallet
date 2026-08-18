@@ -3,6 +3,7 @@
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Verifica o tema ANTES de injetar qualquer HTML para evitar piscar a tela
     const temaSalvo = localStorage.getItem('DataWallet_Tema') || localStorage.getItem('theme');
     const prefereDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const isDark = temaSalvo === 'escuro' || temaSalvo === 'dark' || (!temaSalvo && prefereDark);
@@ -24,8 +25,11 @@ function injetarEstilosGlobais() {
     const style = document.createElement('style');
     style.id = 'global-star-style';
     style.innerHTML = `
+        /* 1. CORREÇÃO DA PISCADA BRANCA */
         html { background-color: #f8fafc; }
         html.dark { background-color: #020617; }
+
+        /* 2. ANIMAÇÃO DA ESTRELINHA */
         @keyframes starRise {
             0% { transform: translate(0, 0) scale(0.5) rotate(0deg); opacity: 0; }
             30% { opacity: 1; }
@@ -33,6 +37,8 @@ function injetarEstilosGlobais() {
             100% { transform: translate(10px, -15px) scale(0) rotate(90deg); opacity: 0; }
         }
         .animate-star { animation: starRise 1s ease-out forwards; }
+        
+        /* 3. COMPORTAMENTOS DA SIDEBAR DESKTOP */
         #sidebar { width: 5rem; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, background-color 0.3s; z-index: 50; }
         #sidebar:hover { width: 16rem; box-shadow: 15px 0 30px rgba(0,0,0,0.05); }
         .dark #sidebar:hover { box-shadow: 15px 0 30px rgba(0,0,0,0.4); }
@@ -41,9 +47,7 @@ function injetarEstilosGlobais() {
         .sidebar-text { opacity: 0; transform: translateX(-10px); visibility: hidden; transition: all 0.2s ease-in-out; white-space: nowrap; }
         #sidebar:hover .sidebar-text { visibility: visible; opacity: 1; transform: translateX(0); transition-delay: 0.15s; }
 
-        /* ========================================= */
-        /* BLINDAGEM ABSOLUTA DE RESOLUÇÃO (PC vs MOBILE) */
-        /* ========================================= */
+        /* 4. BLINDAGEM DE RESOLUÇÃO (PC VS MOBILE) */
         @media (min-width: 768px) {
             #fab-container { display: none !important; }
             #sidebar { display: flex !important; }
@@ -61,7 +65,7 @@ function inicializarLayout(isDark) {
     const isDashboard = paginaAtual === 'dashboard.html';
     const isPassivos = paginaAtual === 'dividas.html';
     const isMetas = paginaAtual === 'metas.html' || paginaAtual === 'planos.html';
-    const isCompras = paginaAtual === 'compras.html';
+    const isCompras = paginaAtual === 'compras.html'; // Tela do Mercado
 
     const menuItems = [
         { nome: 'Movimentações', link: 'movimentacoes.html', icone: 'fa-money-bill-transfer', corBg: 'indigo-50', corTxt: 'indigo-700' },
@@ -72,6 +76,7 @@ function inicializarLayout(isDark) {
         { nome: 'Mercado', link: 'compras.html', icone: 'fa-cart-shopping', corBg: 'indigo-50', corTxt: 'indigo-700' }
     ];
 
+    // ================= DESKTOP SIDEBAR =================
     let navLinksHtml = menuItems.map(item => {
         const ativo = paginaAtual === item.link;
         const classesAtivo = ativo ? `bg-${item.corBg} text-${item.corTxt} dark:bg-indigo-500/20 dark:text-indigo-400` : `text-slate-500 hover:bg-slate-50 hover:text-indigo-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-indigo-400`;
@@ -113,6 +118,7 @@ function inicializarLayout(isDark) {
         </aside>
     `;
 
+    // ================= MOBILE MENU =================
     let mobileLinksHtml = menuItems.slice().reverse().map(item => {
         const ativo = paginaAtual === item.link;
         const classesAtivo = ativo ? `bg-indigo-50 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30` : `bg-white text-slate-500 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700`;
@@ -123,16 +129,7 @@ function inicializarLayout(isDark) {
         `;
     }).join('');
 
-    let qrButtonHtml = '';
-    if (isCompras) {
-        qrButtonHtml = `
-            <button onclick="window.abrirModalShare()" class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 shadow-lg flex items-center justify-center border border-indigo-200 dark:border-indigo-700 transition-transform hover:scale-110 pointer-events-none mobile-menu-btn">
-                <i class="fa-solid fa-qrcode pointer-events-none"></i>
-            </button>
-            <div class="w-8 h-px bg-slate-200 dark:bg-slate-700 my-1 mobile-menu-btn pointer-events-none opacity-0"></div>
-        `;
-    }
-
+    // A MÁGICA: O botão "fab-action" (que corre para a esquerda) vira dinâmico dependendo da tela!
     let btnAcaoMobileHtml = '';
     if (isDashboard) {
         btnAcaoMobileHtml = `<button onclick="toggleCoach()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-900 dark:bg-black text-indigo-400 shadow-lg flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-slate-700 dark:border-indigo-500/50"><i class="fa-solid fa-robot pointer-events-none"></i></button>`;
@@ -140,6 +137,9 @@ function inicializarLayout(isDark) {
         btnAcaoMobileHtml = `<button onclick="window.abrirModalNovaDivida()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-plus pointer-events-none"></i></button>`;
     } else if (isMetas) {
         btnAcaoMobileHtml = `<button onclick="window.abrirModalNovaMeta()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-plus pointer-events-none"></i></button>`;
+    } else if (isCompras) {
+        // Agora, se for tela de compras, o Botão de Compartilhar assume o papel do robô e corre para o lado!
+        btnAcaoMobileHtml = `<button onclick="window.abrirModalShare()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-qrcode pointer-events-none"></i></button>`;
     }
 
     const iconeTemaMobile = isDark ? 'fa-solid fa-sun text-xl text-amber-400' : 'fa-solid fa-moon text-xl text-white';
@@ -156,7 +156,6 @@ function inicializarLayout(isDark) {
                     <i id="star-mobile" class="fa-solid fa-star absolute text-[12px] text-white opacity-0 pointer-events-none z-50"></i>
                 </button>
                 <div class="w-8 h-px bg-slate-200 dark:bg-slate-700 my-1 mobile-menu-btn pointer-events-none opacity-0 transition-opacity"></div>
-                ${qrButtonHtml}
                 ${mobileLinksHtml}
             </div>
             
@@ -185,7 +184,7 @@ window.toggleMobileMenu = function() {
             items.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
             items.classList.add('opacity-100', 'translate-y-0');
             btnsSecundarios.forEach(b => b.classList.replace('pointer-events-none', 'pointer-events-auto'));
-            btnsSecundarios.forEach(b => b.classList.remove('opacity-0')); // Garante que a linha separadora apareca
+            btnsSecundarios.forEach(b => b.classList.remove('opacity-0')); 
         }
         if (actionBtn) {
             actionBtn.classList.remove('opacity-0', 'pointer-events-none');
