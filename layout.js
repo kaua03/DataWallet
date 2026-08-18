@@ -1,9 +1,8 @@
 // ==========================================
-// layout.js - MOTOR GLOBAL DE SIDEBAR, TEMA E AÇÕES MOBILE (BLINDADO)
+// layout.js - MOTOR GLOBAL DE SIDEBAR E FAB MENU
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Verifica o tema ANTES de injetar qualquer HTML para evitar piscar a tela
     const temaSalvo = localStorage.getItem('DataWallet_Tema') || localStorage.getItem('theme');
     const prefereDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const isDark = temaSalvo === 'escuro' || temaSalvo === 'dark' || (!temaSalvo && prefereDark);
@@ -25,11 +24,8 @@ function injetarEstilosGlobais() {
     const style = document.createElement('style');
     style.id = 'global-star-style';
     style.innerHTML = `
-        /* 1. CORREÇÃO DA PISCADA BRANCA: Pinta o fundo absoluto do navegador */
         html { background-color: #f8fafc; }
         html.dark { background-color: #020617; }
-
-        /* 2. ANIMAÇÃO DA ESTRELINHA */
         @keyframes starRise {
             0% { transform: translate(0, 0) scale(0.5) rotate(0deg); opacity: 0; }
             30% { opacity: 1; }
@@ -37,8 +33,6 @@ function injetarEstilosGlobais() {
             100% { transform: translate(10px, -15px) scale(0) rotate(90deg); opacity: 0; }
         }
         .animate-star { animation: starRise 1s ease-out forwards; }
-        
-        /* 3. A "ROUPA" DA SIDEBAR: Regras de minimização e expansão restauradas */
         #sidebar { width: 5rem; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, background-color 0.3s; z-index: 50; }
         #sidebar:hover { width: 16rem; box-shadow: 15px 0 30px rgba(0,0,0,0.05); }
         .dark #sidebar:hover { box-shadow: 15px 0 30px rgba(0,0,0,0.4); }
@@ -55,6 +49,7 @@ function inicializarLayout(isDark) {
     const isDashboard = paginaAtual === 'dashboard.html';
     const isPassivos = paginaAtual === 'dividas.html';
     const isMetas = paginaAtual === 'metas.html' || paginaAtual === 'planos.html';
+    const isCompras = paginaAtual === 'compras.html';
 
     const menuItems = [
         { nome: 'Movimentações', link: 'movimentacoes.html', icone: 'fa-money-bill-transfer', corBg: 'indigo-50', corTxt: 'indigo-700' },
@@ -110,31 +105,30 @@ function inicializarLayout(isDark) {
         const ativo = paginaAtual === item.link;
         const classesAtivo = ativo ? `bg-indigo-50 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30` : `bg-white text-slate-500 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700`;
         return `
-            <a href="${item.link}" class="w-10 h-10 rounded-full shadow-lg flex items-center justify-center border transition-transform hover:scale-110 pointer-events-none ${classesAtivo} mobile-menu-btn">
+            <a href="${item.link}" class="w-10 h-10 rounded-full shadow-lg flex items-center justify-center border transition-transform hover:scale-110 pointer-events-none mobile-menu-btn ${classesAtivo}">
                 <i class="fa-solid ${item.icone} pointer-events-none"></i>
             </a>
         `;
     }).join('');
 
+    // Adiciona o Botão QR Code no menu de bolinhas se for a página do Mercado
+    let qrButtonHtml = '';
+    if (isCompras) {
+        qrButtonHtml = `
+            <button onclick="window.abrirModalShare()" class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 shadow-lg flex items-center justify-center border border-indigo-200 dark:border-indigo-700 transition-transform hover:scale-110 pointer-events-none mobile-menu-btn">
+                <i class="fa-solid fa-qrcode pointer-events-none"></i>
+            </button>
+            <div class="w-8 h-px bg-slate-200 dark:bg-slate-700 my-1 mobile-menu-btn pointer-events-none"></div>
+        `;
+    }
+
     let btnAcaoMobileHtml = '';
     if (isDashboard) {
-        btnAcaoMobileHtml = `
-            <button onclick="toggleCoach()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-900 dark:bg-black text-indigo-400 shadow-lg flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-slate-700 dark:border-indigo-500/50">
-                <i class="fa-solid fa-robot pointer-events-none"></i>
-            </button>
-        `;
+        btnAcaoMobileHtml = `<button onclick="toggleCoach()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-900 dark:bg-black text-indigo-400 shadow-lg flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-slate-700 dark:border-indigo-500/50"><i class="fa-solid fa-robot pointer-events-none"></i></button>`;
     } else if (isPassivos) {
-        btnAcaoMobileHtml = `
-            <button onclick="window.abrirModalNovaDivida()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500/50">
-                <i class="fa-solid fa-plus pointer-events-none"></i>
-            </button>
-        `;
+        btnAcaoMobileHtml = `<button onclick="window.abrirModalNovaDivida()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-plus pointer-events-none"></i></button>`;
     } else if (isMetas) {
-        btnAcaoMobileHtml = `
-            <button onclick="window.abrirModalNovaMeta()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500/50">
-                <i class="fa-solid fa-plus pointer-events-none"></i>
-            </button>
-        `;
+        btnAcaoMobileHtml = `<button onclick="window.abrirModalNovaMeta()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-plus pointer-events-none"></i></button>`;
     }
 
     const iconeTemaMobile = isDark ? 'fa-solid fa-sun text-xl text-amber-400' : 'fa-solid fa-moon text-xl text-white';
@@ -150,7 +144,8 @@ function inicializarLayout(isDark) {
                     <i id="icone-dark-mode-mobile" class="${iconeTemaMobile} pointer-events-none"></i>
                     <i id="star-mobile" class="fa-solid fa-star absolute text-[12px] text-white opacity-0 pointer-events-none z-50"></i>
                 </button>
-                <div class="w-8 h-px bg-slate-200 dark:bg-slate-700 my-1"></div>
+                <div class="w-8 h-px bg-slate-200 dark:bg-slate-700 my-1 mobile-menu-btn pointer-events-none"></div>
+                ${qrButtonHtml}
                 ${mobileLinksHtml}
             </div>
             
@@ -241,18 +236,13 @@ function atualizarIconesDark(isDark) {
     if (isDark) {
         if (iconePc) iconePc.className = 'fa-solid fa-sun text-lg text-amber-400 transition-colors duration-300';
         if (iconeMobile) iconeMobile.className = 'fa-solid fa-sun text-xl text-amber-400 transition-colors duration-300';
-        if (btnPc) {
-            btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors w-full';
-        }
+        if (btnPc) btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors w-full';
         if (txtPc) txtPc.innerText = 'Tema Claro';
     } else {
         if (iconePc) iconePc.className = 'fa-solid fa-moon text-lg text-white transition-colors duration-300';
         if (iconeMobile) iconeMobile.className = 'fa-solid fa-moon text-xl text-white transition-colors duration-300';
-        if (btnPc) {
-            btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-slate-800 text-white hover:bg-slate-700 transition-colors w-full';
-        }
+        if (btnPc) btnPc.className = 'sidebar-link flex items-center h-12 px-3 rounded-xl font-bold bg-slate-800 text-white hover:bg-slate-700 transition-colors w-full';
         if (txtPc) txtPc.innerText = 'Tema Escuro';
-        
         if(starPc) starPc.classList.add('animate-star');
         if(starMobile) starMobile.classList.add('animate-star');
     }
