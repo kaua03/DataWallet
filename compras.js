@@ -1,6 +1,20 @@
 // ==========================================
-// compras.js - MOTOR DE CÂMERA, LOTTIE, REALTIME E OTP (SENHA DINÂMICA)
+// compras.js - LOTTIE CANVAS, REALTIME PRESENCE E OTP (SENHA DINÂMICA)
 // ==========================================
+
+// INJEÇÃO DE CSS DE SEGURANÇA PARA RESOLUÇÃO (PC vs MOBILE)
+const styleM = document.createElement('style');
+styleM.innerHTML = `
+    @media (min-width: 768px) {
+        #btn-share-desktop { display: flex !important; }
+        #btn-finalizar-topo { display: flex !important; }
+    }
+    @media (max-width: 767px) {
+        #btn-share-desktop { display: none !important; }
+    }
+`;
+document.head.appendChild(styleM);
+
 
 let usuarioLogado = null;
 let carrinho = []; 
@@ -9,6 +23,7 @@ let historicoAgrupadoRecibos = [];
 let precoReferenciaHistorico = 0; 
 let html5QrCode = null; 
 let debounceBuscaTimeout = null;
+let scanOriginadoDoModal = false;
 
 // Variáveis Multi-player & OTP
 let sessaoAtualId = null;
@@ -22,7 +37,6 @@ function getDbClient() {
     return window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
 }
 
-// Expõe funções para o HTML de forma segura
 window.abrirModalShare = abrirModalShare;
 
 const produtosComuns = [
@@ -77,24 +91,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!usuarioLogado) return;
         meuApelido = "Dono(a)";
         
-        const btnShareDesk = document.getElementById('btn-share-desktop');
-        if(btnShareDesk) {
-            btnShareDesk.classList.remove('hidden');
-            btnShareDesk.classList.add('max-md:hidden', 'md:flex'); // Mostra só no PC, oculta no Mobile
-        }
-        
         await inicializarSessaoRealtimeOwner();
         await carregarHistoricoPrecos();
     }
 });
 
 // ==========================================
-// MOTOR REAL-TIME MULTIPLAYER COM OTP
+// MOTOR REAL-TIME E SUPABASE PRESENCE (AO VIVO)
 // ==========================================
 
 async function inicializarSessaoRealtimeOwner() {
     const client = getDbClient();
-    if (!client) { console.error("Banco não encontrado."); return; }
+    if (!client) return;
 
     const { data: sessoesAtivas } = await client.from('mercado_sessoes').select('id').eq('usuario_id', usuarioLogado.id).eq('status', 'ativa').order('criado_em', { ascending: false }).limit(1);
     
@@ -105,7 +113,9 @@ async function inicializarSessaoRealtimeOwner() {
         if (nova) sessaoAtualId = nova[0].id;
     }
 
-    document.getElementById('badge-live').classList.remove('hidden');
+    // Não mostra o badge AO VIVO aqui ainda! Só vai mostrar se tiver visita.
+    document.getElementById('badge-live').classList.add('hidden');
+    
     await carregarCarrinhoDB();
     iniciarSubscriptionRealtime();
 }
@@ -121,11 +131,38 @@ async function carregarCarrinhoDB() {
 function iniciarSubscriptionRealtime() {
     const client = getDbClient();
     if (realTimeChannel) client.removeChannel(realTimeChannel);
-    realTimeChannel = client.channel('carrinho-live')
+
+    // Conecta na sala e ativa o Presence
+    realTimeChannel = client.channel(`room-${sessaoAtualId}`, {
+        config: { presence: { key: meuApelido } }
+    });
+
+    realTimeChannel
+        .on('presence', { event: 'sync' }, () => {
+            const newState = realTimeChannel.presenceState();
+            const totalUsers = Object.keys(newState).length;
+            const badgeLive = document.getElementById('badge-live');
+            
+            // SE TIVER MAIS DE 1 PESSOA (VOCÊ + VISITAS) MOSTRA A TAG AO VIVO!
+            if (badgeLive) {
+                if (totalUsers > 1) {
+                    badgeLive.classList.remove('hidden');
+                    badgeLive.classList.add('inline-flex');
+                } else {
+                    badgeLive.classList.add('hidden');
+                    badgeLive.classList.remove('inline-flex');
+                }
+            }
+        })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'mercado_carrinho', filter: `sessao_id=eq.${sessaoAtualId}` }, payload => {
             carregarCarrinhoDB(); 
         })
-        .subscribe();
+        .subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                // Ao conectar, informa quem sou eu para a sala
+                await realTimeChannel.track({ online_at: new Date().toISOString() });
+            }
+        });
 }
 
 // ---------------------------------------------------------
@@ -213,8 +250,8 @@ async function entrarComoConvidado() {
     
     meuApelido = nome;
     document.getElementById('modal-convidado').classList.add('hidden');
-    document.getElementById('badge-live').classList.remove('hidden');
     
+    // O Presence agora controla o badge automaticamente quando a gente entra no canal!
     await carregarCarrinhoDB();
     iniciarSubscriptionRealtime();
     Swal.fire({ icon: 'success', title: 'Você entrou na compra!', showConfirmButton: false, timer: 1500 });
@@ -268,7 +305,7 @@ function mudarAba(aba) {
 
 function setVisibilidadeMenuGlobal(mostrar) {
     const fabContainer = document.getElementById('fab-container');
-    if (fabContainer && !document.getElementById('modal-convidado').classList.contains('hidden') === false) {
+    if (fabContainer && document.getElementById('modal-convidado').classList.contains('hidden')) {
         fabContainer.style.display = mostrar ? 'block' : 'none';
     }
 }
@@ -320,7 +357,7 @@ async function fecharLeitorCamera() {
 
 async function processarCodigoDeBarras(codigo, isUpdate = false) {
     if (isUpdate) document.getElementById('prod-codigo-barras').value = codigo;
-    Swal.fire({ title: 'Buscando...', html: `Código: ${codigo}`, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+    Swal.fire({ title: 'Buscando Produto...', html: `Código: ${codigo}`, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
     const achouLocal = produtosComuns.find(p => p.ean === codigo);
     if (achouLocal) {
@@ -515,7 +552,7 @@ function analisarPrecoHistoricoInicial(nomeProduto) {
         box.className = "mb-4 p-2.5 rounded-xl border flex items-center gap-2.5 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50 transition-colors";
         icone.className = "w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400";
         icone.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i>';
-        texto.innerHTML = `Última vez pago: <b>${formatarMoedaLocal(precoReferenciaHistorico)}</b>. Digite o preço atual.`;
+        texto.innerHTML = `Última vez: <b>${formatarMoedaLocal(precoReferenciaHistorico)}</b>. Digite o novo preço.`;
     } else {
         precoReferenciaHistorico = 0;
         box.classList.add('hidden');
@@ -622,12 +659,12 @@ function renderizarCarrinho() {
                 <p class="text-sm font-bold text-slate-500 dark:text-slate-400 text-center max-w-[250px]">O carrinho está vazio.<br>Bipe ou digite o nome de um produto.</p>
             </div>`;
         totalEl.innerText = "R$ 0,00"; qtdEl.innerText = "0";
-        if (btnFinalizarTopo) { btnFinalizarTopo.classList.add('hidden'); btnFinalizarTopo.classList.remove('flex'); }
+        if (btnFinalizarTopo) { btnFinalizarTopo.classList.add('hidden'); btnFinalizarTopo.classList.remove('md:flex'); }
         return;
     }
 
     if (btnFinalizarTopo && meuApelido === "Dono(a)") { 
-        btnFinalizarTopo.classList.remove('hidden'); btnFinalizarTopo.classList.add('flex');
+        btnFinalizarTopo.classList.remove('hidden'); btnFinalizarTopo.classList.add('md:flex');
     }
 
     const html = carrinho.map((item) => {
@@ -639,7 +676,7 @@ function renderizarCarrinho() {
             : `<i class="fa-solid ${item.icone}"></i>`;
 
         let travaHtml = item.editando_por 
-            ? `<div class="absolute top-2 right-2 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow z-10"><i class="fa-solid fa-lock mr-1"></i>${item.editando_por}</div>` 
+            ? `<div class="absolute top-2 right-2 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow z-10"><i class="fa-solid fa-lock mr-1"></i>${item.editando_por} editando</div>` 
             : '';
 
         let obsHtml = item.obs ? `<p class="text-[9px] font-bold text-amber-500 dark:text-amber-400 mt-1"><i class="fa-solid fa-info-circle mr-1"></i>${item.obs}</p>` : '';
@@ -735,7 +772,6 @@ async function efetivarCompra(event) {
         await client.from('mercado_sessoes').update({status: 'finalizada'}).eq('id', sessaoAtualId);
 
         fecharModalCheckout(); 
-        
         await inicializarSessaoRealtimeOwner(); 
         await carregarHistoricoPrecos();
         dispararOverlaySucesso("Compra Registrada!");
@@ -779,7 +815,7 @@ function dispararOverlaySucesso(subtexto) {
 }
 
 // ---------------------------------------------------------
-// HISTÓRICO DE RECIBOS (COMPRAS ANTERIORES)
+// HISTÓRICO DE RECIBOS
 // ---------------------------------------------------------
 async function carregarHistoricoPrecos() {
     try {
