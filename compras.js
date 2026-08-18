@@ -1,5 +1,5 @@
 // ==========================================
-// compras.js - MOTOR DE CÂMERA, PERSISTÊNCIA DE ESTADO E LOTTIE ANIMATION
+// compras.js - MOTOR DE CÂMERA, CANVAS LOTTIE E PERSISTÊNCIA DE ESTADO
 // ==========================================
 
 let usuarioLogado = null;
@@ -54,24 +54,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 // PERSISTÊNCIA DE ESTADO (LOCALSTORAGE)
 // ---------------------------------------------------------
 function salvarCarrinhoLocal() {
-    if (usuarioLogado) {
-        localStorage.setItem(`DataWallet_Carrinho_${usuarioLogado.id}`, JSON.stringify(carrinho));
-    }
+    if (usuarioLogado) localStorage.setItem(`DataWallet_Carrinho_${usuarioLogado.id}`, JSON.stringify(carrinho));
 }
 
 function carregarCarrinhoLocal() {
     if (usuarioLogado) {
         const salvo = localStorage.getItem(`DataWallet_Carrinho_${usuarioLogado.id}`);
-        if (salvo) {
-            try { carrinho = JSON.parse(salvo); } catch(e) { carrinho = []; }
-        }
+        if (salvo) { try { carrinho = JSON.parse(salvo); } catch(e) { carrinho = []; } }
     }
 }
 
 function limparCarrinhoLocal() {
-    if (usuarioLogado) {
-        localStorage.removeItem(`DataWallet_Carrinho_${usuarioLogado.id}`);
-    }
+    if (usuarioLogado) localStorage.removeItem(`DataWallet_Carrinho_${usuarioLogado.id}`);
 }
 
 // ---------------------------------------------------------
@@ -122,9 +116,7 @@ function mudarAba(aba) {
 
 function setVisibilidadeMenuGlobal(mostrar) {
     const fabContainer = document.getElementById('fab-container');
-    if (fabContainer) {
-        fabContainer.style.display = mostrar ? 'block' : 'none';
-    }
+    if (fabContainer) fabContainer.style.display = mostrar ? 'block' : 'none';
 }
 
 // ---------------------------------------------------------
@@ -145,23 +137,16 @@ function tocarBipSucesso() {
 
 async function abrirLeitorCamera(fromModal = false) {
     scanOriginadoDoModal = fromModal;
-    
     try {
         const devices = await Html5Qrcode.getCameras();
-        if (!devices || devices.length === 0) {
-            return Swal.fire('Aviso', 'Nenhuma câmera encontrada neste dispositivo.', 'info');
-        }
-    } catch (err) {
-        return Swal.fire('Erro na Câmera', 'Permissão de câmera negada ou indisponível.', 'error');
-    }
+        if (!devices || devices.length === 0) return Swal.fire('Aviso', 'Nenhuma câmera encontrada neste dispositivo.', 'info');
+    } catch (err) { return Swal.fire('Erro na Câmera', 'Permissão de câmera negada ou indisponível.', 'error'); }
 
     setVisibilidadeMenuGlobal(false);
     document.getElementById('modal-camera').classList.remove('hidden');
-    
     html5QrCode = new Html5Qrcode("reader");
-    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
     
-    html5QrCode.start({ facingMode: "environment" }, config, 
+    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, 
         async (decodedText) => {
             tocarBipSucesso();
             await fecharLeitorCamera();
@@ -177,10 +162,7 @@ async function abrirLeitorCamera(fromModal = false) {
 async function fecharLeitorCamera() {
     document.getElementById('modal-camera').classList.add('hidden');
     setVisibilidadeMenuGlobal(true);
-    if (html5QrCode) {
-        try { await html5QrCode.stop(); html5QrCode.clear(); } catch(e) {}
-        html5QrCode = null;
-    }
+    if (html5QrCode) { try { await html5QrCode.stop(); html5QrCode.clear(); } catch(e) {} html5QrCode = null; }
 }
 
 // ---------------------------------------------------------
@@ -207,7 +189,6 @@ async function processarCodigoDeBarras(codigo, isUpdate = false) {
         if (jsonOFF.status === 1 && jsonOFF.product) {
             const nomeProduto = jsonOFF.product.product_name_pt || jsonOFF.product.product_name || '';
             const imagemUrl = jsonOFF.product.image_front_url || null;
-
             if (isUpdate) atualizarCamposModalProduto(nomeProduto, 'fa-barcode', 'text-indigo-500', imagemUrl, codigo);
             else abrirModalProduto(nomeProduto, 'fa-barcode', 'text-indigo-500', -1, imagemUrl, codigo);
         } else {
@@ -240,20 +221,13 @@ function atualizarCamposModalProduto(nome, icone, cor, imgUrl, codigo) {
     const btnGoogle = document.getElementById('btn-google-fallback');
     if ((!nome || nome.trim() === '') && codigo) {
         btnGoogle.href = `https://www.google.com/search?q=${codigo}`;
-        btnGoogle.classList.remove('hidden');
-        btnGoogle.classList.add('block');
+        btnGoogle.classList.remove('hidden'); btnGoogle.classList.add('block');
     } else {
-        btnGoogle.classList.add('hidden');
-        btnGoogle.classList.remove('block');
+        btnGoogle.classList.add('hidden'); btnGoogle.classList.remove('block');
     }
 
     if (nome) analisarPrecoHistoricoInicial(nome);
-
-    if (!nome || nome.trim() === '') {
-        inputNome.focus();
-    } else {
-        document.getElementById('prod-preco').focus();
-    }
+    if (!nome || nome.trim() === '') inputNome.focus(); else document.getElementById('prod-preco').focus();
 }
 
 function buscarProdutosAutocompletar() {
@@ -265,7 +239,6 @@ function buscarProdutosAutocompletar() {
     if (termo.length === 0) { box.classList.add('hidden'); btnLimpar.classList.add('hidden'); return; }
 
     btnLimpar.classList.remove('hidden');
-    
     let resultadosHTML = produtosComuns.filter(p => removerAcentos(p.nome).includes(termo)).slice(0, 4).map(p => `
         <div onclick="abrirModalProduto('${p.nome.replace(/'/g, "\\'")}', '${p.icone}', '${p.cor}')" class="autocomplete-item p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 cursor-pointer">
             <div class="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-lg ${p.cor}"><i class="fa-solid ${p.icone}"></i></div>
@@ -289,7 +262,6 @@ function buscarProdutosAutocompletar() {
             try {
                 const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${termo}&search_simple=1&action=process&json=1&page_size=3`);
                 const json = await res.json();
-                
                 const spinner = document.getElementById('spinner-api-busca');
                 if(spinner) spinner.remove();
 
@@ -325,7 +297,6 @@ function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-indigo
     document.getElementById('btn-limpar-busca').classList.add('hidden');
     
     setVisibilidadeMenuGlobal(false);
-
     const form = document.getElementById('form-produto');
     form.reset();
     
@@ -437,7 +408,6 @@ function salvarItemCarrinho(event) {
     if (idx === -1) carrinho.unshift(obj); else carrinho[idx] = obj;
 
     salvarCarrinhoLocal(); 
-
     if (navigator.vibrate) navigator.vibrate([50, 50, 50]); 
     fecharModalProduto(); renderizarCarrinho();
 }
@@ -578,43 +548,49 @@ async function efetivarCompra(event) {
         limparCarrinhoLocal(); 
         renderizarCarrinho(); 
         carregarHistoricoPrecos();
-        dispararOverlaySucesso("Compra Registrada no Caixa!");
+        dispararOverlaySucesso("Compra Registrada!");
     } catch (e) { Swal.fire('Erro ao Finalizar', e.message, 'error'); } finally { btn.innerHTML = htmlOriginal; btn.disabled = false; }
 }
 
 // ---------------------------------------------------------
-// ANIMAÇÃO LOTTIE COM DESTRAVAMENTO MANUAL
+// ANIMAÇÃO LOTTIE COM CANCELAMENTO GARANTIDO
 // ---------------------------------------------------------
+window.fecharOverlaySucesso = function() {
+    const overlay = document.getElementById('overlay-sucesso');
+    if (overlay && !overlay.classList.contains('hidden')) {
+        overlay.classList.add('hidden');
+        if (window.lottieInstance) {
+            window.lottieInstance.destroy();
+            window.lottieInstance = null;
+        }
+        clearTimeout(window.fecharOverlayTimeout);
+    }
+};
+
 function dispararOverlaySucesso(subtexto) {
-    const travados = document.querySelectorAll('.overlay-mercado-lottie');
-    travados.forEach(t => t.remove());
+    const overlay = document.getElementById('overlay-sucesso');
+    if (!overlay) return;
 
-    const overlay = document.createElement('div');
-    overlay.className = 'overlay-mercado-lottie';
-    overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 9999999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px); transition: opacity 0.3s ease; opacity: 0; cursor: pointer;';
-    
-    // 👇 COLE O LINK DO SEU LOTTIE AQUI 👇
-    const linkDaSuaAnimacao = "https://lottie.host/80a0f9de-2b99-4a94-8149-8086026857cc/5fL8V2t2jZ.lottie"; // Substitua pelo link que você copiou no vídeo!
+    document.getElementById('overlay-texto').innerText = subtexto;
+    overlay.classList.remove('hidden');
 
-    overlay.innerHTML = `
-        <div style="width: 300px; height: 300px; display: flex; align-items: center; justify-content: center;">
-            <dotlottie-wc src="${linkDaSuaAnimacao}" autoplay style="width: 100%; height: 100%;"></dotlottie-wc>
-        </div>
-        <p class="text-white font-black text-2xl text-center px-4 mt-4">${subtexto}</p>
-        <p class="text-slate-400 text-xs mt-3 font-medium animate-pulse">(Toque em qualquer lugar para fechar)</p>
-    `;
-    
-    const fecharOverlay = () => {
-        overlay.style.opacity = '0';
-        setTimeout(() => { if (document.body.contains(overlay)) overlay.remove(); }, 300);
-    };
+    if (window.lottieInstance) {
+        window.lottieInstance.destroy();
+    }
 
-    overlay.onclick = fecharOverlay;
+    if (window.DotLottie) {
+        window.lottieInstance = new window.DotLottie({
+            autoplay: true,
+            loop: true, // Adicionado como você pediu no código acima
+            canvas: document.getElementById("canvas-lottie"),
+            src: "https://lottie.host/2ce5f1a7-2937-4da3-9a5c-caa2e7700556/3Pv1oQDKS5.lottie",
+        });
+    }
 
-    document.documentElement.appendChild(overlay);
-    requestAnimationFrame(() => overlay.style.opacity = '1');
-    
-    setTimeout(() => { fecharOverlay(); }, 3500);
+    // Auto fechar depois de 3.5 segundos para caso ela não toque na tela
+    window.fecharOverlayTimeout = setTimeout(() => {
+        window.fecharOverlaySucesso();
+    }, 3500);
 }
 
 // ---------------------------------------------------------
