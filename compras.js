@@ -1,5 +1,5 @@
 // ==========================================
-// compras.js - MOTOR DE CÂMERA E PERSISTÊNCIA DE ESTADO (BLINDADO)
+// compras.js - MOTOR DE CÂMERA, OPEN FOOD FACTS E PERSISTÊNCIA DE ESTADO
 // ==========================================
 
 let usuarioLogado = null;
@@ -120,7 +120,6 @@ function mudarAba(aba) {
     }
 }
 
-// Controle absoluto do botão Menu (FAB)
 function setVisibilidadeMenuGlobal(mostrar) {
     const fabContainer = document.getElementById('fab-container');
     if (fabContainer) {
@@ -129,7 +128,7 @@ function setVisibilidadeMenuGlobal(mostrar) {
 }
 
 // ---------------------------------------------------------
-// CÂMERA, BIP SONORO E OPEN FOOD FACTS (API DE PRODUTOS)
+// CÂMERA E OPEN FOOD FACTS (API DE PRODUTOS)
 // ---------------------------------------------------------
 function tocarBipSucesso() {
     try {
@@ -185,7 +184,7 @@ async function fecharLeitorCamera() {
 }
 
 // ---------------------------------------------------------
-// INTELIGÊNCIA DE CASCATA: LOCAL -> OPEN FOOD FACTS
+// INTELIGÊNCIA: LOCAL -> OPEN FOOD FACTS
 // ---------------------------------------------------------
 async function processarCodigoDeBarras(codigo, isUpdate = false) {
     if (isUpdate) document.getElementById('prod-codigo-barras').value = codigo;
@@ -417,9 +416,6 @@ function calcularTotalItemModal() {
     }
 }
 
-// ---------------------------------------------------------
-// CARRINHO E LISTAGEM COM PERSISTÊNCIA LOCAL
-// ---------------------------------------------------------
 function salvarItemCarrinho(event) {
     event.preventDefault();
     const idx = parseInt(document.getElementById('prod-id').value);
@@ -457,7 +453,7 @@ function renderizarCarrinho() {
     const container = document.getElementById('lista-carrinho');
     const totalEl = document.getElementById('total-carrinho');
     const qtdEl = document.getElementById('qtd-itens-carrinho');
-    const boxFinalizar = document.getElementById('box-finalizar-mobile');
+    const btnFinalizarTopo = document.getElementById('btn-finalizar-topo');
 
     let total = 0; let qtdItens = 0;
 
@@ -470,11 +466,17 @@ function renderizarCarrinho() {
                 <p class="text-sm font-bold text-slate-500 dark:text-slate-400 text-center max-w-[250px]">O carrinho está vazio.<br>Bipe ou digite o nome de um produto.</p>
             </div>`;
         totalEl.innerText = "R$ 0,00"; qtdEl.innerText = "0";
-        boxFinalizar.classList.add('hidden');
+        if (btnFinalizarTopo) {
+            btnFinalizarTopo.classList.add('hidden');
+            btnFinalizarTopo.classList.remove('flex');
+        }
         return;
     }
 
-    boxFinalizar.classList.remove('hidden');
+    if (btnFinalizarTopo) {
+        btnFinalizarTopo.classList.remove('hidden');
+        btnFinalizarTopo.classList.add('flex');
+    }
 
     const html = carrinho.map((item, index) => {
         const sub = item.preco * item.quantidade;
@@ -537,7 +539,7 @@ async function efetivarCompra(event) {
 
     try {
         const client = window.supabaseClient || supabaseClient;
-        if (!client) throw new Error("Cliente de banco não encontrado.");
+        if (!client) throw new Error("Cliente Supabase não inicializado. Recarregue a página.");
 
         let total = 0; carrinho.forEach(i => total += (i.preco * i.quantidade));
         const descLocal = document.getElementById('checkout-desc').value || "Compra no Mercado";
