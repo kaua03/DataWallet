@@ -23,11 +23,14 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Bibliotecas: Supabase, Lottie e Leitor de Código de Barras -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.4/dist/dotlottie-wc.js" type="module"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    
+    <script type="module">
+      import { DotLottie } from "https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web/+esm";
+      window.DotLottie = DotLottie;
+    </script>
     
     <script src="config.js" defer></script>
     <script src="layout.js" defer></script>
@@ -54,11 +57,8 @@
 
     <main class="flex-1 h-full flex flex-col relative">
         
-        <!-- HEADER E ABAS (COM O ÚNICO BOTÃO DE FINALIZAR) -->
         <header class="bg-indigo-600 dark:bg-indigo-900 text-white p-5 md:p-8 rounded-b-3xl md:rounded-b-[3rem] shadow-lg shadow-indigo-600/20 relative z-20 shrink-0 mx-0 md:mx-4 md:mt-4 transition-colors">
             <div class="max-w-4xl mx-auto">
-                
-                <!-- Layout Responsivo do Topo: Preço à esquerda, Botão à direita -->
                 <div class="flex justify-between items-center mb-6 gap-3">
                     <div class="min-w-0 flex-1">
                         <h2 class="text-[10px] md:text-sm font-bold text-indigo-200 uppercase tracking-widest mb-1 flex items-center gap-1.5">
@@ -68,7 +68,6 @@
                         <p class="text-xs text-indigo-200 mt-1 font-medium"><span id="qtd-itens-carrinho">0</span> itens no carrinho</p>
                     </div>
                     
-                    <!-- BOTÃO ÚNICO DE FINALIZAR -->
                     <button onclick="abrirModalCheckout()" id="btn-finalizar-topo" class="hidden bg-emerald-500 hover:bg-emerald-400 text-white font-black px-4 py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl shadow-lg transition-transform active:scale-95 items-center justify-center gap-2 shrink-0 text-sm md:text-base border border-emerald-400">
                         Finalizar <i class="fa-solid fa-check"></i>
                     </button>
@@ -81,7 +80,6 @@
             </div>
         </header>
 
-        <!-- ABA 1: CARRINHO ATUAL -->
         <div id="view-carrinho" class="flex-1 flex flex-col overflow-hidden fade-in relative">
             <section class="max-w-4xl mx-auto w-full px-4 pt-6 pb-2 shrink-0 relative z-10">
                 <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10 transition-all flex items-center p-2">
@@ -96,18 +94,16 @@
                         <i class="fa-solid fa-xmark text-lg"></i>
                     </button>
                 </div>
-                
                 <div id="box-autocomplete" class="hidden absolute top-[85px] left-4 right-4 bg-white dark:bg-slate-900 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-slate-200 dark:border-slate-800 overflow-hidden z-30 max-h-64 overflow-y-auto"></div>
             </section>
 
-            <section class="flex-1 overflow-y-auto px-4 pb-20 md:pb-8 pt-2" style="scrollbar-width: none;">
+            <section class="flex-1 overflow-y-auto px-4 pb-28 md:pb-8 pt-2" style="scrollbar-width: none;">
                 <div class="max-w-4xl mx-auto">
                     <div id="lista-carrinho" class="space-y-3"></div>
                 </div>
             </section>
         </div>
 
-        <!-- ABA 2: HISTÓRICO DE COMPRAS -->
         <div id="view-historico" class="flex-1 overflow-y-auto hidden fade-in px-4 pt-6 pb-24" style="scrollbar-width: none;">
             <div class="max-w-4xl mx-auto">
                 <div class="flex items-center gap-3 mb-6">
@@ -116,7 +112,6 @@
                     </div>
                     <h3 class="text-xl font-black text-slate-900 dark:text-white">Suas Compras Anteriores</h3>
                 </div>
-                
                 <div id="lista-historico-recibos" class="space-y-4">
                     <div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-slate-400 text-2xl"></i></div>
                 </div>
@@ -124,7 +119,6 @@
         </div>
     </main>
 
-    <!-- MODAL DO LEITOR DE CÂMERA -->
     <div id="modal-camera" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[110] flex flex-col items-center justify-center fade-in">
         <button onclick="fecharLeitorCamera()" class="absolute top-8 right-8 w-12 h-12 rounded-full bg-white/10 text-white hover:bg-rose-500 transition flex items-center justify-center z-[111] active:scale-95">
             <i class="fa-solid fa-xmark text-xl"></i>
@@ -139,20 +133,15 @@
     </div>
     <style>@keyframes scan { 0% { transform: translateY(0); } 50% { transform: translateY(300px); } 100% { transform: translateY(0); } }</style>
 
-    <!-- MODAL DE ADICIONAR / EDITAR PRODUTO -->
     <div id="modal-produto" class="hidden fixed inset-0 bg-slate-900/85 backdrop-blur-sm z-[100] flex items-center justify-center p-4 fade-in">
         <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl relative border border-slate-200 dark:border-slate-800 flex flex-col p-5">
-            
             <button type="button" onclick="fecharModalProduto()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center active:scale-95 z-10">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-            
             <div class="flex items-center gap-3 mb-4 pr-6">
                 <div id="prod-img-container" class="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-xl text-indigo-500 shrink-0 shadow-sm border border-indigo-100 dark:border-indigo-500/20 overflow-hidden"></div>
-                <!-- TÍTULO EDITÁVEL -->
                 <input type="text" id="prod-nome" oninput="analisarPrecoHistoricoInicial(this.value)" class="flex-1 text-lg font-black text-slate-900 dark:text-white bg-transparent outline-none border-b border-dashed border-slate-300 dark:border-slate-700 focus:border-indigo-500 pb-0.5" placeholder="Nome do Produto">
             </div>
-            
             <div id="box-inteligencia-preco" class="hidden mb-4 p-2.5 rounded-xl border flex items-center gap-2.5">
                 <div id="icone-inteligencia" class="w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0"></div>
                 <div>
@@ -165,14 +154,12 @@
                 <input type="hidden" id="prod-id">
                 <input type="hidden" id="prod-img-hidden">
                 
-                <!-- CÓDIGO DE BARRAS RE-BIPÁVEL -->
                 <div>
                     <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Código de Barras</label>
                     <div class="flex items-center gap-2">
                         <input type="text" id="prod-codigo-barras" onchange="if(this.value) processarCodigoDeBarras(this.value, true)" placeholder="Digite ou bipe o código..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-2xl px-4 py-3 outline-none focus:border-indigo-500 font-medium">
                         <button type="button" onclick="abrirLeitorCamera(true)" class="w-12 h-12 shrink-0 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center text-xl transition-colors active:scale-95 shadow-sm"><i class="fa-solid fa-camera"></i></button>
                     </div>
-                    <!-- BOTÃO SALVA VIDAS -->
                     <a id="btn-google-fallback" href="#" target="_blank" class="hidden w-full bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-bold py-2 rounded-xl text-center text-xs mt-2 border border-slate-200 dark:border-slate-700 transition hover:bg-slate-200 dark:hover:bg-slate-700">
                         <i class="fa-brands fa-google mr-1"></i> Procurar na Web
                     </a>
@@ -207,7 +194,6 @@
         </div>
     </div>
 
-    <!-- MODAL DE CHECKOUT -->
     <div id="modal-checkout" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 fade-in">
         <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl relative border border-slate-200 dark:border-slate-800 flex flex-col p-6 md:p-8">
             <button type="button" onclick="fecharModalCheckout()" class="absolute top-5 right-5 w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center active:scale-95">
@@ -261,7 +247,6 @@
         </div>
     </div>
 
-    <!-- MODAL DE RECIBO -->
     <div id="modal-recibo" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 fade-in cursor-pointer" onclick="if(event.target === this) fecharModalRecibo()">
         <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl relative border border-slate-200 dark:border-slate-800 flex flex-col p-6 max-h-[85vh] cursor-default">
             <button type="button" onclick="fecharModalRecibo()" class="absolute top-5 right-5 w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white transition flex items-center justify-center active:scale-95">
@@ -279,5 +264,12 @@
             </div>
         </div>
     </div>
+
+    <div id="overlay-sucesso" onclick="window.fecharOverlaySucesso()" class="hidden fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[99999] flex flex-col items-center justify-center cursor-pointer transition-opacity duration-300">
+        <canvas id="canvas-lottie" width="300" height="300"></canvas>
+        <p id="overlay-texto" class="text-white font-black text-2xl text-center px-4 mt-4"></p>
+        <p class="text-slate-400 text-xs mt-3 font-medium animate-pulse">(Toque na tela para fechar)</p>
+    </div>
+
 </body>
 </html>
