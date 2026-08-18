@@ -119,7 +119,6 @@ function esconderInterfaceDono() {
 window.sairSessaoConvidado = function() {
     localStorage.removeItem('DW_GuestSession');
     localStorage.removeItem('DW_GuestName');
-    // Usa reload() para manter o ?s= na URL e prender ele na tela de Convidado
     window.location.reload(); 
 }
 
@@ -177,7 +176,6 @@ function iniciarSubscriptionRealtime() {
             }
         })
         .on('broadcast', { event: 'comando_sala' }, (payload) => {
-            // AVISO MANDATÓRIO DE EXPULSÃO (KICK)
             if (payload.payload.acao === 'kick' && payload.payload.alvo === meuApelido) {
                 Swal.fire({
                     title: 'Desconectado', 
@@ -190,12 +188,8 @@ function iniciarSubscriptionRealtime() {
                 });
             }
             
-            // AVISO MANDATÓRIO DE COMPRA FINALIZADA (COM ANIMAÇÃO LOTTIE)
             if (payload.payload.acao === 'encerrar' && meuApelido !== "Dono(a)") {
-                // 1. O convidado vê a mesma animação Lottie do Dono
                 dispararOverlaySucesso("Compra Finalizada!");
-                
-                // 2. Aguarda a animação fechar suavemente (2.5s) e volta para a tela inicial de convidado
                 setTimeout(() => {
                     window.sairSessaoConvidado();
                 }, 2500);
@@ -682,6 +676,9 @@ function calcularTotalItemModal() {
     }
 }
 
+// ==============================================================
+// 🟢 O PULO DO GATO: SEPARAÇÃO DE INSERT E UPDATE PARA BLINDAR
+// ==============================================================
 async function salvarItemCarrinho(event) {
     event.preventDefault();
     if (!sessaoAtualId) return Swal.fire('Erro', 'Sessão Perdida. Recarregue a página.', 'error');
@@ -713,13 +710,27 @@ async function salvarItemCarrinho(event) {
         editando_por: null 
     };
 
-    if (dbId && dbId !== 'null') payload.id = dbId;
-
     if (navigator.vibrate) navigator.vibrate([50, 50, 50]); 
     document.getElementById('modal-produto').classList.add('hidden'); 
 
     const client = getDbClient();
-    await client.from('mercado_carrinho').upsert(payload);
+    
+    try {
+        // Se já existe um ID, é edição (UPDATE)
+        if (dbId && dbId !== 'null' && dbId !== '') {
+            payload.id = dbId;
+            const { error } = await client.from('mercado_carrinho').update(payload).eq('id', dbId);
+            if (error) throw error;
+        } 
+        // Se NÃO tem ID, é item novo (INSERT explícito) -> Evita que o Supabase sobrescreva a tabela.
+        else {
+            const { error } = await client.from('mercado_carrinho').insert([payload]);
+            if (error) throw error;
+        }
+    } catch(err) {
+        console.error("Erro ao salvar:", err);
+        Swal.fire('Erro ao salvar item', 'Verifique sua conexão e tente novamente.', 'error');
+    }
 }
 
 async function removerItem(dbId) {
