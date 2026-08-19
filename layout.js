@@ -47,17 +47,15 @@ function injetarEstilosGlobais() {
         .sidebar-text { opacity: 0; transform: translateX(-10px); visibility: hidden; transition: all 0.2s ease-in-out; white-space: nowrap; }
         #sidebar:hover .sidebar-text { visibility: visible; opacity: 1; transform: translateX(0); transition-delay: 0.15s; }
 
-        /* Animação exclusiva do Sub-menu do QR Code */
         .sub-menu-item { max-height: 0; opacity: 0; visibility: hidden; margin-top: 0; transform: translateX(-15px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none; overflow: hidden; }
         #sidebar:hover .sub-menu-item { max-height: 3rem; opacity: 1; visibility: visible; margin-top: 0.25rem; transform: translateX(0); pointer-events: auto; }
 
         @media (min-width: 768px) {
-            #fab-container { display: none !important; }
+            #fab-container, #fab-overlay { display: none !important; }
             #sidebar { display: flex !important; }
         }
         @media (max-width: 767px) {
             #sidebar { display: none !important; }
-            #fab-container { display: flex !important; }
         }
     `;
     document.head.appendChild(style);
@@ -149,22 +147,24 @@ function inicializarLayout(isDark) {
 
     let btnAcaoMobileHtml = '';
     if (isDashboard) {
-        btnAcaoMobileHtml = `<button onclick="toggleCoach()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-900 dark:bg-black text-indigo-400 shadow-lg flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-[60] border border-slate-700 dark:border-indigo-500/50"><i class="fa-solid fa-robot pointer-events-none"></i></button>`;
+        btnAcaoMobileHtml = `<button onclick="toggleCoach()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-900 dark:bg-black text-indigo-400 shadow-lg flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-[9999] border border-slate-700 dark:border-indigo-500/50"><i class="fa-solid fa-robot pointer-events-none"></i></button>`;
     } else if (isPassivos) {
-        btnAcaoMobileHtml = `<button onclick="window.abrirModalNovaDivida()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-[60] border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-plus pointer-events-none"></i></button>`;
+        btnAcaoMobileHtml = `<button onclick="window.abrirModalNovaDivida()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-[9999] border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-plus pointer-events-none"></i></button>`;
     } else if (isMetas) {
-        btnAcaoMobileHtml = `<button onclick="window.abrirModalNovaMeta()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-[60] border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-plus pointer-events-none"></i></button>`;
+        btnAcaoMobileHtml = `<button onclick="window.abrirModalNovaMeta()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-[9999] border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-plus pointer-events-none"></i></button>`;
     } else if (isCompras) {
-        btnAcaoMobileHtml = `<button onclick="window.abrirModalShare()" id="fab-action" class="absolute bottom-1.5 right-1.5 w-11 h-11 rounded-full bg-indigo-500 hover:bg-indigo-400 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white shadow-[0_8px_20px_rgba(99,102,241,0.5)] flex items-center justify-center text-lg transition-all duration-300 opacity-0 pointer-events-none z-[60] border border-indigo-400 dark:border-indigo-500"><i class="fa-solid fa-qrcode pointer-events-none"></i></button>`;
+        btnAcaoMobileHtml = `<button onclick="window.abrirModalShare()" id="fab-action" class="absolute bottom-1.5 right-1.5 w-11 h-11 rounded-full bg-indigo-500 hover:bg-indigo-400 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white shadow-[0_8px_20px_rgba(99,102,241,0.5)] flex items-center justify-center text-lg transition-all duration-300 opacity-0 pointer-events-none z-[9999] border border-indigo-400 dark:border-indigo-500"><i class="fa-solid fa-qrcode pointer-events-none"></i></button>`;
     }
 
     const iconeTemaMobile = isDark ? 'fa-solid fa-sun text-xl text-amber-400' : 'fa-solid fa-moon text-xl text-white';
 
-    // 🟢 CORREÇÃO MESTRE Z-INDEX: Elevado para 9999 para esmagar os gráficos do dashboard.
+    // 🟢 A PAREDE DE VIDRO: Criamos o fab-overlay para bloquear 100% da tela traseira
     const mobileMenuHtml = `
+        <div id="fab-overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[9998] opacity-0 pointer-events-none transition-opacity duration-300"></div>
+        
         <div id="fab-container" class="fixed bottom-6 right-6 z-[9999] flex items-end justify-end pointer-events-none">
             ${btnAcaoMobileHtml}
-            <div id="fab-items" class="absolute bottom-16 right-2 w-10 flex flex-col items-center gap-2.5 transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none z-50">
+            <div id="fab-items" class="absolute bottom-16 right-2 w-10 flex flex-col items-center gap-2.5 transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none z-[9999]">
                 <button onclick="sairDoSistema()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-rose-500 border border-rose-100 dark:border-rose-900/50 shadow-lg flex items-center justify-center transition-transform hover:scale-110 pointer-events-none mobile-menu-btn">
                     <i class="fa-solid fa-right-from-bracket pointer-events-none text-sm"></i>
                 </button>
@@ -176,7 +176,7 @@ function inicializarLayout(isDark) {
                 ${mobileLinksHtml}
             </div>
             
-            <button onclick="toggleMobileMenu()" id="fab-menu" class="relative w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_4px_20px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 z-[70] pointer-events-auto hover:scale-105">
+            <button onclick="toggleMobileMenu()" id="fab-menu" class="relative w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_4px_20px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 z-[9999] pointer-events-auto hover:scale-105">
                 <i class="fa-solid fa-bars transition-all duration-300 pointer-events-none" id="fab-icon"></i>
             </button>
         </div>
@@ -188,6 +188,7 @@ function inicializarLayout(isDark) {
 
 window._menuMobileAberto = false;
 window.toggleMobileMenu = function() {
+    const overlay = document.getElementById('fab-overlay');
     const items = document.getElementById('fab-items');
     const actionBtn = document.getElementById('fab-action');
     const icon = document.getElementById('fab-icon');
@@ -197,8 +198,13 @@ window.toggleMobileMenu = function() {
     window._menuMobileAberto = !window._menuMobileAberto;
 
     if (window._menuMobileAberto) {
+        // Ativa a Parede de Vidro (Bloqueia tudo por trás)
+        if (overlay) {
+            overlay.classList.remove('opacity-0', 'pointer-events-none');
+            overlay.classList.add('opacity-100', 'pointer-events-auto');
+        }
+
         if (items) {
-            // Garante o pointer-events-auto na coluna inteira
             items.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
             items.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
             btnsSecundarios.forEach(b => b.classList.replace('pointer-events-none', 'pointer-events-auto'));
@@ -216,8 +222,13 @@ window.toggleMobileMenu = function() {
         }
         setTimeout(() => { if(icon) icon.classList.replace('fa-bars', 'fa-xmark'); }, 150);
     } else {
+        // Desativa a Parede de Vidro
+        if (overlay) {
+            overlay.classList.add('opacity-0', 'pointer-events-none');
+            overlay.classList.remove('opacity-100', 'pointer-events-auto');
+        }
+
         if (items) {
-            // Remove o pointer-events-auto para limpar a tela
             items.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
             items.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
             btnsSecundarios.forEach(b => b.classList.replace('pointer-events-auto', 'pointer-events-none'));
