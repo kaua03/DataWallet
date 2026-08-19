@@ -18,9 +18,8 @@ let otpInterval = null;
 let tempoRestanteOTP = 0;
 let usuariosConectados = 1; 
 
-// 🟢 SISTEMA DE PERMISSÕES EM TEMPO REAL
-let permissoesConvidados = {}; // O dono guarda as permissões de todos
-let minhasPermissoes = { incluir: true, editar: true, excluir: false }; // Permissões locais do usuário atual
+let permissoesConvidados = {}; 
+let minhasPermissoes = { incluir: true, editar: true, excluir: false }; 
 
 function getDbClient() {
     return window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
@@ -83,7 +82,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('badge-live').classList.add('inline-flex');
                 await carregarCarrinhoDB();
                 iniciarSubscriptionRealtime();
-                aplicarMinhasPermissoesUI(); // Aplica permissões na inicialização
+                aplicarMinhasPermissoesUI(); 
                 return; 
             } else {
                 localStorage.removeItem('DW_GuestSession');
@@ -119,7 +118,6 @@ function esconderInterfaceDono() {
 }
 
 function aplicarMinhasPermissoesUI() {
-    // Esconde ou Mostra a barra inteira de busca/bipe baseada na permissão de "Incluir"
     const secAdd = document.querySelector('#view-carrinho section:first-of-type');
     if (secAdd) {
         if (meuApelido === "Dono(a)" || minhasPermissoes.incluir) {
@@ -188,28 +186,30 @@ function iniciarSubscriptionRealtime() {
                     badgeLive.classList.remove('inline-flex');
                 }
 
-                // O Dono identifica quem entrou e distribui as permissões oficiais
                 let mudouPermissao = false;
                 for (let u of Object.keys(newState)) {
                     if (u !== "Dono(a)" && !permissoesConvidados[u]) {
-                        permissoesConvidados[u] = { incluir: true, editar: true, excluir: false }; // Padrão Inicial
+                        permissoesConvidados[u] = { incluir: true, editar: true, excluir: false }; 
                         mudouPermissao = true;
                     }
                 }
                 
-                // Sempre dispara as permissões quando ocorre um sync para garantir que os celulares atualizaram
                 realTimeChannel.send({ type: 'broadcast', event: 'comando_sala', payload: { acao: 'sincronizar_permissoes', permissoes: permissoesConvidados } });
             }
         })
         .on('broadcast', { event: 'comando_sala' }, (payload) => {
             
-            // 🟢 RECEBENDO PERMISSÕES
+            // ESCUTA DE SINAL: O GRITO DE ATUALIZAR CARRINHO
+            if (payload.payload.acao === 'atualizar_carrinho') {
+                carregarCarrinhoDB();
+            }
+
             if (payload.payload.acao === 'sincronizar_permissoes') {
                 if (meuApelido !== "Dono(a)") {
                     if (payload.payload.permissoes[meuApelido]) {
                         minhasPermissoes = payload.payload.permissoes[meuApelido];
                         aplicarMinhasPermissoesUI();
-                        renderizarCarrinho(); // Recarrega a lista para mostrar/ocultar lixeira
+                        renderizarCarrinho(); 
                     }
                 } else {
                     permissoesConvidados = payload.payload.permissoes;
@@ -267,7 +267,6 @@ window.abrirGerenciadorLive = function() {
                 </div>
                 
                 <div class="flex items-center justify-between gap-2 px-1">
-                    <!-- Incluir -->
                     <div class="flex flex-col items-center">
                         <span class="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Incluir</span>
                         <label class="relative inline-flex items-center cursor-pointer">
@@ -276,7 +275,6 @@ window.abrirGerenciadorLive = function() {
                         </label>
                     </div>
                     
-                    <!-- Editar -->
                     <div class="flex flex-col items-center">
                         <span class="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Editar</span>
                         <label class="relative inline-flex items-center cursor-pointer">
@@ -285,7 +283,6 @@ window.abrirGerenciadorLive = function() {
                         </label>
                     </div>
 
-                    <!-- Excluir -->
                     <div class="flex flex-col items-center">
                         <span class="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Excluir</span>
                         <label class="relative inline-flex items-center cursor-pointer">
@@ -308,7 +305,6 @@ window.alterarPermissao = function(user, tipo, valor) {
     if (!permissoesConvidados[user]) return;
     permissoesConvidados[user][tipo] = valor;
     
-    // Dispara a nova permissão para a sala inteira na hora
     if (realTimeChannel) {
         realTimeChannel.send({ type: 'broadcast', event: 'comando_sala', payload: { acao: 'sincronizar_permissoes', permissoes: permissoesConvidados } });
     }
@@ -655,7 +651,6 @@ async function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-
 
     if (dbId && dbId !== 'null') {
         
-        // Proteção Final contra Cliques acidentais se não tem permissão de Editar
         if (meuApelido !== "Dono(a)" && !minhasPermissoes.editar) {
             return Swal.fire('Bloqueado', 'O administrador não concedeu permissão para você editar itens.', 'warning');
         }
@@ -812,11 +807,17 @@ async function salvarItemCarrinho(event) {
             const { error } = await client.from('mercado_carrinho').insert([payload]);
             if (error) throw error;
         }
+        
+        // GRITO DE ATUALIZAÇÃO (Sincronia Rápida)
+        if (realTimeChannel) realTimeChannel.send({ type: 'broadcast', event: 'comando_sala', payload: { acao: 'atualizar_carrinho' } });
+        carregarCarrinhoDB();
+        
     } catch(err) {
         Swal.fire('Erro ao salvar item', 'Verifique sua conexão e tente novamente.', 'error');
     }
 }
 
+// 🟢 FUNÇÃO DE REMOVER COM ALERTA E ATUALIZAÇÃO EM TEMPO REAL
 async function removerItem(dbId) {
     if (meuApelido !== "Dono(a)" && !minhasPermissoes.excluir) {
         return Swal.fire('Bloqueado', 'O administrador não concedeu permissão para você excluir itens.', 'warning');
@@ -826,9 +827,34 @@ async function removerItem(dbId) {
     if (usuariosConectados > 1 && item && item.editando_por && item.editando_por !== meuApelido) {
         return Swal.fire('Bloqueado', `Sendo alterado por: ${item.editando_por}`, 'warning');
     }
+    
+    // AVISO DE CONFIRMAÇÃO ELEGANTE
+    const confirmacao = await Swal.fire({
+        title: 'Remover item?',
+        html: `Deseja realmente remover <b>${item.nome}</b> do carrinho?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444', 
+        cancelButtonColor: '#64748b', 
+        confirmButtonText: 'Sim, remover',
+        cancelButtonText: 'Cancelar'
+    });
+
+    if (!confirmacao.isConfirmed) return;
+
     if (navigator.vibrate) navigator.vibrate(50);
     const client = getDbClient();
-    await client.from('mercado_carrinho').delete().eq('id', dbId);
+    
+    try {
+        await client.from('mercado_carrinho').delete().eq('id', dbId);
+        
+        // GRITO DE ATUALIZAÇÃO PARA EXCLUSÃO (Sincronia Rápida)
+        if (realTimeChannel) realTimeChannel.send({ type: 'broadcast', event: 'comando_sala', payload: { acao: 'atualizar_carrinho' } });
+        carregarCarrinhoDB();
+        
+    } catch (err) {
+        Swal.fire('Erro', 'Não foi possível remover o item.', 'error');
+    }
 }
 
 function renderizarCarrinho() {
@@ -868,18 +894,15 @@ function renderizarCarrinho() {
             ? `<img src="${item.img_url}" class="w-full h-full object-cover">` 
             : `<i class="fa-solid ${item.icone}"></i>`;
 
-        // 🟢 TAG DE EDIÇÃO: Ajustada para flutuar acima do item, sem sobrepor a lixeira
         let travaHtml = (usuariosConectados > 1 && item.editando_por)
             ? `<div class="absolute -top-3 right-3 bg-amber-500 text-white text-[10px] font-black px-2.5 py-0.5 rounded-lg shadow-sm border border-amber-400 z-20 flex items-center gap-1.5 uppercase tracking-wider"><i class="fa-solid fa-lock text-[9px]"></i> ${item.editando_por}</div>` 
             : '';
 
         let obsHtml = item.obs ? `<p class="text-[9px] font-bold text-amber-500 dark:text-amber-400 mt-0.5"><i class="fa-solid fa-info-circle mr-1"></i>${item.obs}</p>` : '';
 
-        // Validação de Visual se pode editar
         let cursorClass = pEditar ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 active:scale-[0.98] transition-all' : 'cursor-default';
         let onClickStr = pEditar ? `onclick="abrirModalProduto('${item.nome.replace(/'/g, "\\'")}', '${item.icone}', '${item.cor}', '${item.id}', '${item.img_url}', '${item.ean}')"` : '';
 
-        // Validação se a lixeira vai aparecer
         let lixeiraHtml = '';
         if (pExcluir) {
             lixeiraHtml = `<button onclick="event.stopPropagation(); removerItem('${item.id}')" class="w-8 h-8 bg-rose-50 text-rose-500 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20 rounded-lg flex items-center justify-center z-10 transition-colors"><i class="fa-solid fa-trash text-[11px]"></i></button>`;
