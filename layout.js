@@ -61,6 +61,21 @@ function injetarEstilosGlobais() {
     document.head.appendChild(style);
 }
 
+// 🟢 FUNÇÃO ENVELOPADORA: Fecha o menu antes de abrir a função solicitada
+window.fecharMenuEAbrirModal = function(funcaoAlvo) {
+    if (window._menuMobileAberto) {
+        window.toggleMobileMenu();
+    }
+    // Aguarda a animação do menu fechar (150ms) antes de acionar o Modal/Ação
+    setTimeout(() => {
+        if (typeof window[funcaoAlvo] === 'function') {
+            window[funcaoAlvo]();
+        } else {
+            console.error('Função não encontrada:', funcaoAlvo);
+        }
+    }, 150);
+}
+
 function inicializarLayout(isDark) {
     const paginaAtual = window.location.pathname.split('/').pop() || 'movimentacoes.html';
     const isDashboard = paginaAtual === 'dashboard.html';
@@ -145,20 +160,20 @@ function inicializarLayout(isDark) {
         `;
     }).join('');
 
+    // 🟢 BOTÕES DE AÇÃO AGORA USAM A FUNÇÃO DE FECHAR O MENU ANTES (fecharMenuEAbrirModal)
     let btnAcaoMobileHtml = '';
     if (isDashboard) {
-        btnAcaoMobileHtml = `<button onclick="toggleCoach()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-900 dark:bg-black text-indigo-400 shadow-lg flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-[9999] border border-slate-700 dark:border-indigo-500/50"><i class="fa-solid fa-robot pointer-events-none"></i></button>`;
+        btnAcaoMobileHtml = `<button onclick="fecharMenuEAbrirModal('toggleCoach')" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-900 dark:bg-black text-indigo-400 shadow-lg flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-[9999] border border-slate-700 dark:border-indigo-500/50"><i class="fa-solid fa-robot pointer-events-none"></i></button>`;
     } else if (isPassivos) {
-        btnAcaoMobileHtml = `<button onclick="window.abrirModalNovaDivida()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-[9999] border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-plus pointer-events-none"></i></button>`;
+        btnAcaoMobileHtml = `<button onclick="fecharMenuEAbrirModal('abrirModalNovaDivida')" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-[9999] border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-plus pointer-events-none"></i></button>`;
     } else if (isMetas) {
-        btnAcaoMobileHtml = `<button onclick="window.abrirModalNovaMeta()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-[9999] border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-plus pointer-events-none"></i></button>`;
+        btnAcaoMobileHtml = `<button onclick="fecharMenuEAbrirModal('abrirModalNovaMeta')" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-[9999] border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-plus pointer-events-none"></i></button>`;
     } else if (isCompras) {
-        btnAcaoMobileHtml = `<button onclick="window.abrirModalShare()" id="fab-action" class="absolute bottom-1.5 right-1.5 w-11 h-11 rounded-full bg-indigo-500 hover:bg-indigo-400 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white shadow-[0_8px_20px_rgba(99,102,241,0.5)] flex items-center justify-center text-lg transition-all duration-300 opacity-0 pointer-events-none z-[9999] border border-indigo-400 dark:border-indigo-500"><i class="fa-solid fa-qrcode pointer-events-none"></i></button>`;
+        btnAcaoMobileHtml = `<button onclick="fecharMenuEAbrirModal('abrirModalShare')" id="fab-action" class="absolute bottom-1.5 right-1.5 w-11 h-11 rounded-full bg-indigo-500 hover:bg-indigo-400 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white shadow-[0_8px_20px_rgba(99,102,241,0.5)] flex items-center justify-center text-lg transition-all duration-300 opacity-0 pointer-events-none z-[9999] border border-indigo-400 dark:border-indigo-500"><i class="fa-solid fa-qrcode pointer-events-none"></i></button>`;
     }
 
     const iconeTemaMobile = isDark ? 'fa-solid fa-sun text-xl text-amber-400' : 'fa-solid fa-moon text-xl text-white';
 
-    // 🟢 A PAREDE DE VIDRO: Criamos o fab-overlay para bloquear 100% da tela traseira
     const mobileMenuHtml = `
         <div id="fab-overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[9998] opacity-0 pointer-events-none transition-opacity duration-300"></div>
         
@@ -168,7 +183,9 @@ function inicializarLayout(isDark) {
                 <button onclick="sairDoSistema()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-rose-500 border border-rose-100 dark:border-rose-900/50 shadow-lg flex items-center justify-center transition-transform hover:scale-110 pointer-events-none mobile-menu-btn">
                     <i class="fa-solid fa-right-from-bracket pointer-events-none text-sm"></i>
                 </button>
-                <button id="btn-dark-mobile" onclick="window.toggleDarkMode()" class="w-10 h-10 rounded-full bg-slate-800 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible pointer-events-none mobile-menu-btn">
+                
+                <!-- 🟢 MODO NOTURNO TAMBÉM FECHA O MENU AO CLICAR -->
+                <button id="btn-dark-mobile" onclick="window.toggleDarkMode(); window.toggleMobileMenu();" class="w-10 h-10 rounded-full bg-slate-800 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible pointer-events-none mobile-menu-btn">
                     <i id="icone-dark-mode-mobile" class="${iconeTemaMobile} pointer-events-none"></i>
                     <i id="star-mobile" class="fa-solid fa-star absolute text-[12px] text-white opacity-0 pointer-events-none z-50"></i>
                 </button>
@@ -198,7 +215,6 @@ window.toggleMobileMenu = function() {
     window._menuMobileAberto = !window._menuMobileAberto;
 
     if (window._menuMobileAberto) {
-        // Ativa a Parede de Vidro (Bloqueia tudo por trás)
         if (overlay) {
             overlay.classList.remove('opacity-0', 'pointer-events-none');
             overlay.classList.add('opacity-100', 'pointer-events-auto');
@@ -222,7 +238,6 @@ window.toggleMobileMenu = function() {
         }
         setTimeout(() => { if(icon) icon.classList.replace('fa-bars', 'fa-xmark'); }, 150);
     } else {
-        // Desativa a Parede de Vidro
         if (overlay) {
             overlay.classList.add('opacity-0', 'pointer-events-none');
             overlay.classList.remove('opacity-100', 'pointer-events-auto');
