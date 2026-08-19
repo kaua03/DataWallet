@@ -77,6 +77,10 @@ window.fecharMenuEAbrirModal = function(funcaoAlvo) {
 }
 
 function inicializarLayout(isDark) {
+    // 🟢 AUTO-LIMPEZA MESTRE: O "Exterminador de Clones"
+    // Busca e destrói qualquer menu antigo que tenha ficado hardcoded no HTML.
+    document.querySelectorAll('#sidebar, #fab-container, #fab-overlay').forEach(el => el.remove());
+
     const paginaAtual = window.location.pathname.split('/').pop() || 'movimentacoes.html';
     const isDashboard = paginaAtual === 'dashboard.html';
     const isPassivos = paginaAtual === 'dividas.html';
@@ -160,7 +164,6 @@ function inicializarLayout(isDark) {
         `;
     }).join('');
 
-    // 🟢 BOTÕES DE AÇÃO AGORA USAM A FUNÇÃO DE FECHAR O MENU ANTES (fecharMenuEAbrirModal)
     let btnAcaoMobileHtml = '';
     if (isDashboard) {
         btnAcaoMobileHtml = `<button onclick="fecharMenuEAbrirModal('toggleCoach')" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-900 dark:bg-black text-indigo-400 shadow-lg flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-[9999] border border-slate-700 dark:border-indigo-500/50"><i class="fa-solid fa-robot pointer-events-none"></i></button>`;
@@ -184,7 +187,6 @@ function inicializarLayout(isDark) {
                     <i class="fa-solid fa-right-from-bracket pointer-events-none text-sm"></i>
                 </button>
                 
-                <!-- 🟢 MODO NOTURNO TAMBÉM FECHA O MENU AO CLICAR -->
                 <button id="btn-dark-mobile" onclick="window.toggleDarkMode(); window.toggleMobileMenu();" class="w-10 h-10 rounded-full bg-slate-800 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible pointer-events-none mobile-menu-btn">
                     <i id="icone-dark-mode-mobile" class="${iconeTemaMobile} pointer-events-none"></i>
                     <i id="star-mobile" class="fa-solid fa-star absolute text-[12px] text-white opacity-0 pointer-events-none z-50"></i>
