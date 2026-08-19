@@ -1,5 +1,5 @@
 // ==========================================
-// compras.js - MOTOR MULTIPLAYER (VALIDAÇÃO UX), TEMA E EXPULSÃO
+// compras.js - MOTOR MULTIPLAYER, PERMISSÕES E UX
 // ==========================================
 
 let usuarioLogado = null;
@@ -17,6 +17,10 @@ let realTimeChannel = null;
 let otpInterval = null;
 let tempoRestanteOTP = 0;
 let usuariosConectados = 1; 
+
+// 🟢 SISTEMA DE PERMISSÕES EM TEMPO REAL
+let permissoesConvidados = {}; // O dono guarda as permissões de todos
+let minhasPermissoes = { incluir: true, editar: true, excluir: false }; // Permissões locais do usuário atual
 
 function getDbClient() {
     return window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
@@ -79,6 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('badge-live').classList.add('inline-flex');
                 await carregarCarrinhoDB();
                 iniciarSubscriptionRealtime();
+                aplicarMinhasPermissoesUI(); // Aplica permissões na inicialização
                 return; 
             } else {
                 localStorage.removeItem('DW_GuestSession');
@@ -113,9 +118,18 @@ function esconderInterfaceDono() {
     if (btnShare) btnShare.style.display = 'none';
 }
 
-// ---------------------------------------------------------
-// FUNÇÃO MESTRE DE SAÍDA (VOLTA PARA A TELA DE CONVIDADO)
-// ---------------------------------------------------------
+function aplicarMinhasPermissoesUI() {
+    // Esconde ou Mostra a barra inteira de busca/bipe baseada na permissão de "Incluir"
+    const secAdd = document.querySelector('#view-carrinho section:first-of-type');
+    if (secAdd) {
+        if (meuApelido === "Dono(a)" || minhasPermissoes.incluir) {
+            secAdd.style.display = 'block';
+        } else {
+            secAdd.style.display = 'none';
+        }
+    }
+}
+
 window.sairSessaoConvidado = function() {
     localStorage.removeItem('DW_GuestSession');
     localStorage.removeItem('DW_GuestName');
@@ -165,7 +179,7 @@ function iniciarSubscriptionRealtime() {
             usuariosConectados = Object.keys(newState).length;
             const badgeLive = document.getElementById('badge-live');
             
-            if (badgeLive && meuApelido === "Dono(a)") {
+            if (meuApelido === "Dono(a)") {
                 if (usuariosConectados > 1) {
                     badgeLive.classList.remove('hidden');
                     badgeLive.classList.add('inline-flex');
@@ -173,9 +187,35 @@ function iniciarSubscriptionRealtime() {
                     badgeLive.classList.add('hidden');
                     badgeLive.classList.remove('inline-flex');
                 }
+
+                // O Dono identifica quem entrou e distribui as permissões oficiais
+                let mudouPermissao = false;
+                for (let u of Object.keys(newState)) {
+                    if (u !== "Dono(a)" && !permissoesConvidados[u]) {
+                        permissoesConvidados[u] = { incluir: true, editar: true, excluir: false }; // Padrão Inicial
+                        mudouPermissao = true;
+                    }
+                }
+                
+                // Sempre dispara as permissões quando ocorre um sync para garantir que os celulares atualizaram
+                realTimeChannel.send({ type: 'broadcast', event: 'comando_sala', payload: { acao: 'sincronizar_permissoes', permissoes: permissoesConvidados } });
             }
         })
         .on('broadcast', { event: 'comando_sala' }, (payload) => {
+            
+            // 🟢 RECEBENDO PERMISSÕES
+            if (payload.payload.acao === 'sincronizar_permissoes') {
+                if (meuApelido !== "Dono(a)") {
+                    if (payload.payload.permissoes[meuApelido]) {
+                        minhasPermissoes = payload.payload.permissoes[meuApelido];
+                        aplicarMinhasPermissoesUI();
+                        renderizarCarrinho(); // Recarrega a lista para mostrar/ocultar lixeira
+                    }
+                } else {
+                    permissoesConvidados = payload.payload.permissoes;
+                }
+            }
+
             if (payload.payload.acao === 'kick' && payload.payload.alvo === meuApelido) {
                 Swal.fire({
                     title: 'Desconectado', 
@@ -206,19 +246,54 @@ function iniciarSubscriptionRealtime() {
 }
 
 // ---------------------------------------------------------
-// GERENCIADOR DE LIVE E OTP
+// GERENCIADOR DE LIVE E PERMISSÕES DOS CONVIDADOS
 // ---------------------------------------------------------
 window.abrirGerenciadorLive = function() {
     if (meuApelido !== "Dono(a)") return Swal.fire('Aviso', 'Apenas o administrador gerencia membros.', 'info');
     
     const state = realTimeChannel ? realTimeChannel.presenceState() : {};
     let html = '';
+    
     for (const [user] of Object.entries(state)) {
         if (user === "Dono(a)") continue;
+        
+        const p = permissoesConvidados[user] || { incluir: true, editar: true, excluir: false };
+        
         html += `
-            <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
-                <span class="font-bold text-slate-900 dark:text-white text-xs md:text-sm"><i class="fa-solid fa-user text-indigo-500 mr-2"></i> ${user}</span>
-                <button onclick="expulsarUsuario('${user}')" class="text-xs bg-rose-500 hover:bg-rose-600 text-white font-black py-1.5 px-3 rounded-lg shadow active:scale-95 transition-transform">Remover</button>
+            <div class="flex flex-col bg-slate-50 dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-200 dark:border-slate-700/60">
+                    <span class="font-black text-slate-900 dark:text-white text-sm"><i class="fa-solid fa-user text-indigo-500 mr-2"></i> ${user}</span>
+                    <button onclick="expulsarUsuario('${user}')" class="text-[10px] bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500 dark:hover:text-white font-black py-1.5 px-3 rounded-lg transition-colors">Remover</button>
+                </div>
+                
+                <div class="flex items-center justify-between gap-2 px-1">
+                    <!-- Incluir -->
+                    <div class="flex flex-col items-center">
+                        <span class="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Incluir</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" ${p.incluir ? 'checked' : ''} onchange="alterarPermissao('${user}', 'incluir', this.checked)">
+                            <div class="w-8 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-500"></div>
+                        </label>
+                    </div>
+                    
+                    <!-- Editar -->
+                    <div class="flex flex-col items-center">
+                        <span class="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Editar</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" ${p.editar ? 'checked' : ''} onchange="alterarPermissao('${user}', 'editar', this.checked)">
+                            <div class="w-8 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-500"></div>
+                        </label>
+                    </div>
+
+                    <!-- Excluir -->
+                    <div class="flex flex-col items-center">
+                        <span class="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Excluir</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" ${p.excluir ? 'checked' : ''} onchange="alterarPermissao('${user}', 'excluir', this.checked)">
+                            <div class="w-8 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-500"></div>
+                        </label>
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -229,13 +304,23 @@ window.abrirGerenciadorLive = function() {
     document.getElementById('modal-gerenciar-live').classList.remove('hidden');
 }
 
+window.alterarPermissao = function(user, tipo, valor) {
+    if (!permissoesConvidados[user]) return;
+    permissoesConvidados[user][tipo] = valor;
+    
+    // Dispara a nova permissão para a sala inteira na hora
+    if (realTimeChannel) {
+        realTimeChannel.send({ type: 'broadcast', event: 'comando_sala', payload: { acao: 'sincronizar_permissoes', permissoes: permissoesConvidados } });
+    }
+}
+
 window.expulsarUsuario = function(apelido) {
     if (!realTimeChannel) return;
     
     realTimeChannel.send({ type: 'broadcast', event: 'comando_sala', payload: { acao: 'kick', alvo: apelido } });
     
     const container = document.getElementById('lista-usuarios-live');
-    const elementos = container.querySelectorAll('.flex.justify-between');
+    const elementos = container.querySelectorAll('.flex.flex-col.bg-slate-50');
     elementos.forEach(el => {
         if (el.innerText.includes(apelido)) el.remove();
     });
@@ -247,6 +332,9 @@ window.expulsarUsuario = function(apelido) {
     Swal.fire({ icon: 'success', title: 'Usuário Removido', showConfirmButton: false, timer: 1000 });
 }
 
+// ---------------------------------------------------------
+// COMPARTILHAMENTO
+// ---------------------------------------------------------
 async function abrirModalShare() {
     if (!sessaoAtualId) return Swal.fire('Aviso', 'Sessão ainda não inicializada.', 'warning');
     
@@ -300,9 +388,6 @@ function copiarLinkShare() {
     Swal.fire({ icon: 'success', title: 'Copiado!', showConfirmButton: false, timer: 1000 });
 }
 
-// ---------------------------------------------------------
-// AUTENTICAÇÃO DO CONVIDADO (COM VALIDAÇÃO)
-// ---------------------------------------------------------
 async function entrarComoConvidado() {
     const nomeInput = document.getElementById('input-convidado-nome');
     const senhaInput = document.getElementById('input-convidado-senha');
@@ -346,6 +431,7 @@ async function entrarComoConvidado() {
     
     await carregarCarrinhoDB();
     iniciarSubscriptionRealtime();
+    aplicarMinhasPermissoesUI();
     Swal.fire({ icon: 'success', title: 'Você entrou na compra!', showConfirmButton: false, timer: 1500 });
 }
 
@@ -568,9 +654,14 @@ async function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-
     form.reset();
 
     if (dbId && dbId !== 'null') {
+        
+        // Proteção Final contra Cliques acidentais se não tem permissão de Editar
+        if (meuApelido !== "Dono(a)" && !minhasPermissoes.editar) {
+            return Swal.fire('Bloqueado', 'O administrador não concedeu permissão para você editar itens.', 'warning');
+        }
+
         const item = carrinho.find(i => i.id === dbId);
         if (item) {
-            // SÓ CHECA A TRAVA SE TIVER ALGUÉM ALÉM DE VOCÊ NA SALA
             if (usuariosConectados > 1 && item.editando_por && item.editando_por !== meuApelido) {
                 return Swal.fire('Bloqueado', `Sendo alterado por: <b>${item.editando_por}</b>. Aguarde.`, 'warning');
             }
@@ -676,9 +767,6 @@ function calcularTotalItemModal() {
     }
 }
 
-// ==============================================================
-// 🟢 O PULO DO GATO: SEPARAÇÃO DE INSERT E UPDATE PARA BLINDAR
-// ==============================================================
 async function salvarItemCarrinho(event) {
     event.preventDefault();
     if (!sessaoAtualId) return Swal.fire('Erro', 'Sessão Perdida. Recarregue a página.', 'error');
@@ -716,24 +804,24 @@ async function salvarItemCarrinho(event) {
     const client = getDbClient();
     
     try {
-        // Se já existe um ID, é edição (UPDATE)
         if (dbId && dbId !== 'null' && dbId !== '') {
             payload.id = dbId;
             const { error } = await client.from('mercado_carrinho').update(payload).eq('id', dbId);
             if (error) throw error;
-        } 
-        // Se NÃO tem ID, é item novo (INSERT explícito) -> Evita que o Supabase sobrescreva a tabela.
-        else {
+        } else {
             const { error } = await client.from('mercado_carrinho').insert([payload]);
             if (error) throw error;
         }
     } catch(err) {
-        console.error("Erro ao salvar:", err);
         Swal.fire('Erro ao salvar item', 'Verifique sua conexão e tente novamente.', 'error');
     }
 }
 
 async function removerItem(dbId) {
+    if (meuApelido !== "Dono(a)" && !minhasPermissoes.excluir) {
+        return Swal.fire('Bloqueado', 'O administrador não concedeu permissão para você excluir itens.', 'warning');
+    }
+
     const item = carrinho.find(i => i.id === dbId);
     if (usuariosConectados > 1 && item && item.editando_por && item.editando_por !== meuApelido) {
         return Swal.fire('Bloqueado', `Sendo alterado por: ${item.editando_por}`, 'warning');
@@ -769,6 +857,9 @@ function renderizarCarrinho() {
         btnFinalizarTopo.classList.remove('hidden'); btnFinalizarTopo.classList.add('flex');
     }
 
+    const pEditar = meuApelido === "Dono(a)" || minhasPermissoes.editar;
+    const pExcluir = meuApelido === "Dono(a)" || minhasPermissoes.excluir;
+
     const html = carrinho.map((item) => {
         const sub = item.preco * item.quantidade;
         total += sub; qtdItens += item.quantidade;
@@ -777,14 +868,25 @@ function renderizarCarrinho() {
             ? `<img src="${item.img_url}" class="w-full h-full object-cover">` 
             : `<i class="fa-solid ${item.icone}"></i>`;
 
+        // 🟢 TAG DE EDIÇÃO: Ajustada para flutuar acima do item, sem sobrepor a lixeira
         let travaHtml = (usuariosConectados > 1 && item.editando_por)
-            ? `<div class="absolute top-2 right-2 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow z-10"><i class="fa-solid fa-lock mr-1"></i>${item.editando_por}</div>` 
+            ? `<div class="absolute -top-3 right-3 bg-amber-500 text-white text-[10px] font-black px-2.5 py-0.5 rounded-lg shadow-sm border border-amber-400 z-20 flex items-center gap-1.5 uppercase tracking-wider"><i class="fa-solid fa-lock text-[9px]"></i> ${item.editando_por}</div>` 
             : '';
 
         let obsHtml = item.obs ? `<p class="text-[9px] font-bold text-amber-500 dark:text-amber-400 mt-0.5"><i class="fa-solid fa-info-circle mr-1"></i>${item.obs}</p>` : '';
 
+        // Validação de Visual se pode editar
+        let cursorClass = pEditar ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 active:scale-[0.98] transition-all' : 'cursor-default';
+        let onClickStr = pEditar ? `onclick="abrirModalProduto('${item.nome.replace(/'/g, "\\'")}', '${item.icone}', '${item.cor}', '${item.id}', '${item.img_url}', '${item.ean}')"` : '';
+
+        // Validação se a lixeira vai aparecer
+        let lixeiraHtml = '';
+        if (pExcluir) {
+            lixeiraHtml = `<button onclick="event.stopPropagation(); removerItem('${item.id}')" class="w-8 h-8 bg-rose-50 text-rose-500 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20 rounded-lg flex items-center justify-center z-10 transition-colors"><i class="fa-solid fa-trash text-[11px]"></i></button>`;
+        }
+
         return `
-        <div class="relative bg-white dark:bg-slate-900 p-3.5 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800 flex items-center justify-between gap-3 active:scale-[0.98] transition-transform cursor-pointer ${usuariosConectados > 1 && item.editando_por ? 'opacity-50 ring-2 ring-amber-500/50' : ''}" onclick="abrirModalProduto('${item.nome.replace(/'/g, "\\'")}', '${item.icone}', '${item.cor}', '${item.id}', '${item.img_url}', '${item.ean}')">
+        <div class="relative bg-white dark:bg-slate-900 p-3.5 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800 flex items-center justify-between gap-3 ${cursorClass} ${usuariosConectados > 1 && item.editando_por ? 'ring-2 ring-amber-500/50' : ''}" ${onClickStr}>
             ${travaHtml}
             <div class="w-11 h-11 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-lg shrink-0 overflow-hidden ${item.img_url ? '' : item.cor}">
                 ${miniFoto}
@@ -796,7 +898,7 @@ function renderizarCarrinho() {
             </div>
             <div class="text-right shrink-0 flex items-center gap-2.5">
                 <span class="font-black text-indigo-600 dark:text-indigo-400 text-sm md:text-base block">${formatarMoedaLocal(sub)}</span>
-                <button onclick="event.stopPropagation(); removerItem('${item.id}')" class="w-7 h-7 bg-rose-50 text-rose-500 dark:bg-rose-500/10 dark:text-rose-400 rounded-lg flex items-center justify-center z-10"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                ${lixeiraHtml}
             </div>
         </div>`;
     }).join('');
