@@ -603,15 +603,23 @@ function buscarProdutosAutocompletar() {
         </div>
     ` + resultadosHTML;
 
-    box.innerHTML = resultadosHTML + `<div id="spinner-api-busca" class="p-3 text-center text-slate-400 text-xs font-bold"><i class="fa-solid fa-spinner fa-spin"></i> Buscando online...</div>`;
+    // Adiciona o spinner com um ID para podermos manipular depois
+    box.innerHTML = resultadosHTML + `<div id="spinner-api-busca" class="p-3 text-center text-slate-400 text-xs font-bold"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Buscando online...</div>`;
     box.classList.remove('hidden');
 
     clearTimeout(debounceBuscaTimeout);
     if (termo.length >= 3) {
         debounceBuscaTimeout = setTimeout(async () => {
             try {
+                // Tentativa de buscar na API externa
                 const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${termo}&search_simple=1&action=process&json=1&page_size=3`);
+                
+                // Se o servidor retornar erro 500, 503, etc, forçamos o erro para cair no catch
+                if (!res.ok) throw new Error('API Offline');
+                
                 const json = await res.json();
+                
+                // Remove o spinner se a busca deu certo
                 const spinner = document.getElementById('spinner-api-busca');
                 if(spinner) spinner.remove();
 
@@ -628,7 +636,15 @@ function buscarProdutosAutocompletar() {
                     }).join('');
                     box.innerHTML += apiHTML;
                 }
-            } catch (e) {}
+            } catch (e) {
+                // 🟢 CORREÇÃO: Tratamento gracioso caso a API caia (Erro 503) ou dê CORS
+                const spinner = document.getElementById('spinner-api-busca');
+                if(spinner) {
+                    spinner.innerHTML = `<i class="fa-solid fa-cloud-bolt text-rose-400 mr-1"></i> <span class="text-rose-400/80">Busca online indisponível no momento.</span>`;
+                    // Remove a mensagem de erro sutilmente após 3 segundos
+                    setTimeout(() => { if(spinner) spinner.remove(); }, 3000);
+                }
+            }
         }, 800);
     } else {
         const spinner = document.getElementById('spinner-api-busca');
