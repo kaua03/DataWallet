@@ -532,8 +532,15 @@ async function processarCodigoDeBarras(codigo, isUpdate = false) {
         return;
     }
 
+    // 🟢 DEFESA NÍVEL SÊNIOR: Corta a conexão se a API demorar mais de 5 segundos
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     try {
-        const resOFF = await fetch(`https://world.openfoodfacts.org/api/v0/product/${codigo}.json`);
+        // 🟢 MUDANÇA PARA O BRASIL: "br.openfoodfacts.org"
+        const resOFF = await fetch(`https://br.openfoodfacts.org/api/v0/product/${codigo}.json`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
         const jsonOFF = await resOFF.json();
         Swal.close();
 
@@ -547,6 +554,8 @@ async function processarCodigoDeBarras(codigo, isUpdate = false) {
             else abrirModalProduto('', 'fa-barcode', 'text-slate-500', null, null, codigo);
         }
     } catch (e) {
+        // Cai aqui se a API estiver fora do ar ou estourar o limite de 5s
+        clearTimeout(timeoutId);
         Swal.close();
         if (isUpdate) atualizarCamposModalProduto('', 'fa-barcode', 'text-slate-500', null, codigo);
         else abrirModalProduto('', 'fa-barcode', 'text-slate-500', null, null, codigo);
@@ -603,23 +612,25 @@ function buscarProdutosAutocompletar() {
         </div>
     ` + resultadosHTML;
 
-    // Adiciona o spinner com um ID para podermos manipular depois
     box.innerHTML = resultadosHTML + `<div id="spinner-api-busca" class="p-3 text-center text-slate-400 text-xs font-bold"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Buscando online...</div>`;
     box.classList.remove('hidden');
 
     clearTimeout(debounceBuscaTimeout);
     if (termo.length >= 3) {
         debounceBuscaTimeout = setTimeout(async () => {
+            // 🟢 DEFESA NÍVEL SÊNIOR: Timeout de 4 segundos na busca de texto
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
+
             try {
-                // Tentativa de buscar na API externa
-                const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${termo}&search_simple=1&action=process&json=1&page_size=3`);
+                // 🟢 MUDANÇA PARA O BRASIL: "br.openfoodfacts.org"
+                const res = await fetch(`https://br.openfoodfacts.org/cgi/search.pl?search_terms=${termo}&search_simple=1&action=process&json=1&page_size=3`, { signal: controller.signal });
+                clearTimeout(timeoutId);
                 
-                // Se o servidor retornar erro 500, 503, etc, forçamos o erro para cair no catch
                 if (!res.ok) throw new Error('API Offline');
                 
                 const json = await res.json();
                 
-                // Remove o spinner se a busca deu certo
                 const spinner = document.getElementById('spinner-api-busca');
                 if(spinner) spinner.remove();
 
@@ -637,12 +648,12 @@ function buscarProdutosAutocompletar() {
                     box.innerHTML += apiHTML;
                 }
             } catch (e) {
-                // 🟢 CORREÇÃO: Tratamento gracioso caso a API caia (Erro 503) ou dê CORS
+                clearTimeout(timeoutId);
                 const spinner = document.getElementById('spinner-api-busca');
                 if(spinner) {
-                    spinner.innerHTML = `<i class="fa-solid fa-cloud-bolt text-rose-400 mr-1"></i> <span class="text-rose-400/80">Busca online indisponível no momento.</span>`;
-                    // Remove a mensagem de erro sutilmente após 3 segundos
-                    setTimeout(() => { if(spinner) spinner.remove(); }, 3000);
+                    // Mensagem extremamente sutil de falha que some sozinha
+                    spinner.innerHTML = `<i class="fa-solid fa-link-slash text-slate-400/40 mr-1"></i> <span class="text-slate-400/40 font-medium">Servidor global offline</span>`;
+                    setTimeout(() => { if(spinner) spinner.remove(); }, 2000);
                 }
             }
         }, 800);
