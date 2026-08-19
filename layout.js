@@ -149,22 +149,22 @@ function inicializarLayout(isDark) {
 
     let btnAcaoMobileHtml = '';
     if (isDashboard) {
-        btnAcaoMobileHtml = `<button onclick="toggleCoach()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-900 dark:bg-black text-indigo-400 shadow-lg flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-slate-700 dark:border-indigo-500/50"><i class="fa-solid fa-robot pointer-events-none"></i></button>`;
+        btnAcaoMobileHtml = `<button onclick="toggleCoach()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-slate-900 dark:bg-black text-indigo-400 shadow-lg flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-[60] border border-slate-700 dark:border-indigo-500/50"><i class="fa-solid fa-robot pointer-events-none"></i></button>`;
     } else if (isPassivos) {
-        btnAcaoMobileHtml = `<button onclick="window.abrirModalNovaDivida()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-plus pointer-events-none"></i></button>`;
+        btnAcaoMobileHtml = `<button onclick="window.abrirModalNovaDivida()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-[60] border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-plus pointer-events-none"></i></button>`;
     } else if (isMetas) {
-        btnAcaoMobileHtml = `<button onclick="window.abrirModalNovaMeta()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-plus pointer-events-none"></i></button>`;
+        btnAcaoMobileHtml = `<button onclick="window.abrirModalNovaMeta()" id="fab-action" class="absolute bottom-0 right-0 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 opacity-0 pointer-events-none z-[60] border border-indigo-400 dark:border-indigo-500/50"><i class="fa-solid fa-plus pointer-events-none"></i></button>`;
     } else if (isCompras) {
-        btnAcaoMobileHtml = `<button onclick="window.abrirModalShare()" id="fab-action" class="absolute bottom-1.5 right-1.5 w-11 h-11 rounded-full bg-indigo-500 hover:bg-indigo-400 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white shadow-[0_8px_20px_rgba(99,102,241,0.5)] flex items-center justify-center text-lg transition-all duration-300 opacity-0 pointer-events-none z-40 border border-indigo-400 dark:border-indigo-500"><i class="fa-solid fa-qrcode pointer-events-none"></i></button>`;
+        btnAcaoMobileHtml = `<button onclick="window.abrirModalShare()" id="fab-action" class="absolute bottom-1.5 right-1.5 w-11 h-11 rounded-full bg-indigo-500 hover:bg-indigo-400 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white shadow-[0_8px_20px_rgba(99,102,241,0.5)] flex items-center justify-center text-lg transition-all duration-300 opacity-0 pointer-events-none z-[60] border border-indigo-400 dark:border-indigo-500"><i class="fa-solid fa-qrcode pointer-events-none"></i></button>`;
     }
 
     const iconeTemaMobile = isDark ? 'fa-solid fa-sun text-xl text-amber-400' : 'fa-solid fa-moon text-xl text-white';
 
-    // 🟢 CORREÇÃO: Menu agora é um flex-container livre de largura e com pointer-events-none na base para não bugar o iOS/Safari
+    // 🟢 CORREÇÃO MESTRE Z-INDEX: Elevado para 9999 para esmagar os gráficos do dashboard.
     const mobileMenuHtml = `
-        <div id="fab-container" class="fixed bottom-6 right-6 z-[90] flex items-end justify-end pointer-events-none">
+        <div id="fab-container" class="fixed bottom-6 right-6 z-[9999] flex items-end justify-end pointer-events-none">
             ${btnAcaoMobileHtml}
-            <div id="fab-items" class="absolute bottom-16 right-2 w-10 flex flex-col items-center gap-2.5 transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none z-40">
+            <div id="fab-items" class="absolute bottom-16 right-2 w-10 flex flex-col items-center gap-2.5 transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none z-50">
                 <button onclick="sairDoSistema()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-rose-500 border border-rose-100 dark:border-rose-900/50 shadow-lg flex items-center justify-center transition-transform hover:scale-110 pointer-events-none mobile-menu-btn">
                     <i class="fa-solid fa-right-from-bracket pointer-events-none text-sm"></i>
                 </button>
@@ -176,7 +176,7 @@ function inicializarLayout(isDark) {
                 ${mobileLinksHtml}
             </div>
             
-            <button onclick="toggleMobileMenu()" id="fab-menu" class="relative w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_4px_20px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 z-50 pointer-events-auto hover:scale-105">
+            <button onclick="toggleMobileMenu()" id="fab-menu" class="relative w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_4px_20px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 z-[70] pointer-events-auto hover:scale-105">
                 <i class="fa-solid fa-bars transition-all duration-300 pointer-events-none" id="fab-icon"></i>
             </button>
         </div>
@@ -198,8 +198,9 @@ window.toggleMobileMenu = function() {
 
     if (window._menuMobileAberto) {
         if (items) {
+            // Garante o pointer-events-auto na coluna inteira
             items.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
-            items.classList.add('opacity-100', 'translate-y-0');
+            items.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
             btnsSecundarios.forEach(b => b.classList.replace('pointer-events-none', 'pointer-events-auto'));
             btnsSecundarios.forEach(b => b.classList.remove('opacity-0')); 
         }
@@ -216,8 +217,9 @@ window.toggleMobileMenu = function() {
         setTimeout(() => { if(icon) icon.classList.replace('fa-bars', 'fa-xmark'); }, 150);
     } else {
         if (items) {
+            // Remove o pointer-events-auto para limpar a tela
             items.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
-            items.classList.remove('opacity-100', 'translate-y-0');
+            items.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
             btnsSecundarios.forEach(b => b.classList.replace('pointer-events-auto', 'pointer-events-none'));
             btnsSecundarios.forEach(b => { if(b.tagName === 'DIV') b.classList.add('opacity-0') });
         }
