@@ -1,5 +1,5 @@
 // ==========================================
-// login.js - LÓGICA DO GRÁFICO VIVO E TOUCH (MOBILE)
+// login.js - LÓGICA DO GRÁFICO VIVO E TEXTOS ATUALIZADOS
 // ==========================================
 
 let isLogin = true;
@@ -16,7 +16,7 @@ const eyelidR = document.getElementById('eyelid-r');
 const barLeft = document.getElementById('bar-left');
 const barRight = document.getElementById('bar-right');
 
-// 🟢 RASTREAMENTO UNIVERSAL (MOUSE NO PC E DEDO NO CELULAR)
+// 🟢 OLHOS SEGUEM O MOUSE / DEDO (Quando não está focado nos inputs)
 function rastrearOlhar(clientX, clientY) {
     if (!emailInput.matches(':focus') && !passInput.matches(':focus')) {
         const rect = mascotContainer.getBoundingClientRect();
@@ -29,7 +29,7 @@ function rastrearOlhar(clientX, clientY) {
             const pupilY = bounds.top - rect.top + bounds.height / 2;
             
             const angle = Math.atan2(y - pupilY, x - pupilX);
-            const distance = 4; // Raio limite do globo ocular
+            const distance = 4;
             
             const moveX = Math.cos(angle) * distance;
             const moveY = Math.sin(angle) * distance;
@@ -37,28 +37,47 @@ function rastrearOlhar(clientX, clientY) {
         });
     }
 }
-
-// Escuta o Mouse no Computador
 document.addEventListener('mousemove', (e) => rastrearOlhar(e.clientX, e.clientY));
-
-// Escuta o Deslizar do Dedo no Celular (touches[0] é o primeiro dedo na tela)
 document.addEventListener('touchmove', (e) => rastrearOlhar(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
 
-// 🟢 ACOMPANHA A DIGITAÇÃO (Cresce as barras e mexe as pupilas)
+
+// 🟢 ACOMPANHA A DIGITAÇÃO E CONTROLA A ALTURA (O Efeito "Curiar")
 function trackTyping(inputElement) {
     const length = inputElement.value.length;
     const percent = Math.min(length / 20, 1);
+    const moveX = (percent * 8) - 4; // Move a pupila da esquerda para a direita
     
-    const moveX = (percent * 8) - 4;
-    pupils.forEach(pupil => {
-        pupil.style.transform = `translate(${moveX}px, 1px)`;
-    });
+    const isPasswordFocus = passInput === document.activeElement;
+    const isHidden = isPasswordFocus && passInput.type === 'password';
 
-    barLeft.style.height = `${64 + (percent * 8)}px`;
-    barRight.style.height = `${80 + (percent * 8)}px`;
+    if (isHidden) {
+        // 🟢 MODO ESCONDIDO ("CURIANDO POR CIMA DO MURO")
+        pupils.forEach(pupil => {
+            pupil.style.transform = `translate(${moveX}px, 2px)`; // Foca um pouco pra baixo
+        });
+        
+        // Oculta as barras rebaixando a altura delas drasticamente (Afundam atrás da base)
+        barLeft.style.height = '30px';
+        barRight.style.height = '35px';
+    } else {
+        // 🟢 MODO NORMAL (Lendo o E-mail ou Senha Exposta)
+        pupils.forEach(pupil => {
+            pupil.style.transform = `translate(${moveX}px, 1px)`;
+        });
+        
+        // Se estiver na senha revelada, as barras ficam levemente mais altas que o normal (Assustado/Atento)
+        if (isPasswordFocus && passInput.type === 'text') {
+            barLeft.style.height = `${70 + (percent * 5)}px`;
+            barRight.style.height = `${86 + (percent * 5)}px`;
+        } else {
+            // Digitanto o E-mail normal
+            barLeft.style.height = `${64 + (percent * 8)}px`;
+            barRight.style.height = `${80 + (percent * 8)}px`;
+        }
+    }
 }
 
-// 🟢 EVENTOS DO E-MAIL
+// Eventos do Email
 emailInput.addEventListener('input', () => trackTyping(emailInput));
 emailInput.addEventListener('focus', () => {
     eyelidL.style.transform = 'scaleY(0)';
@@ -66,61 +85,65 @@ emailInput.addEventListener('focus', () => {
     trackTyping(emailInput);
 });
 
-// 🟢 EVENTOS DA SENHA (A Mágica da Espiadinha)
+// Eventos da Senha
 passInput.addEventListener('input', () => trackTyping(passInput));
 passInput.addEventListener('focus', () => {
     if (passInput.type === 'password') {
-        eyelidL.style.transform = 'scaleY(1)'; // Fecha olho esquerdo 100%
-        eyelidR.style.transform = 'scaleY(1)'; // Fecha olho direito 100%
+        // "Curiando": Pálpebras descem 60% nos dois olhos (apertando a vista)
+        eyelidL.style.transform = 'scaleY(0.6)';
+        eyelidR.style.transform = 'scaleY(0.6)';
     } else {
-        eyelidL.style.transform = 'scaleY(1)';   // Esquerdo continua fechado
-        eyelidR.style.transform = 'scaleY(0.6)'; // Direito espiando pela fresta (60% fechado)
+        // Senha exposta: Olhos arregalados
+        eyelidL.style.transform = 'scaleY(0)';
+        eyelidR.style.transform = 'scaleY(0)';
     }
     trackTyping(passInput);
 });
 
 passInput.addEventListener('blur', () => {
-    eyelidL.style.transform = 'scaleY(0)'; // Abre
-    eyelidR.style.transform = 'scaleY(0)'; // Abre
+    // Quando sai da senha, as pálpebras abrem, as pupilas resetam e o corpo levanta
+    eyelidL.style.transform = 'scaleY(0)';
+    eyelidR.style.transform = 'scaleY(0)';
     pupils.forEach(p => p.style.transform = `translate(0px, 0px)`);
     barLeft.style.height = '64px';
     barRight.style.height = '80px';
 });
 
-// 🟢 BOTÃO VER SENHA
+// Botão do Olhinho (Revelar Senha)
 togglePassBtn.addEventListener('click', () => {
     if (passInput.type === 'password') {
+        // Revelou a senha: Pula de trás do muro e arregala os olhos
         passInput.type = 'text';
         iconPass.classList.replace('fa-eye', 'fa-eye-slash');
         
-        // O Efeito Espião: Arregala só a metade de um olho!
-        eyelidL.style.transform = 'scaleY(1)';   // Mantém esquerdo trancado
-        eyelidR.style.transform = 'scaleY(0.6)'; // Levanta um pouco a pálpebra direita
-        
+        eyelidL.style.transform = 'scaleY(0)';   
+        eyelidR.style.transform = 'scaleY(0)'; 
+        trackTyping(passInput); // Reposiciona as barras lá no alto
     } else {
+        // Escondeu a senha: Volta a se abaixar e curiar
         passInput.type = 'password';
         iconPass.classList.replace('fa-eye-slash', 'fa-eye');
         
-        // Volta a fechar os dois
-        eyelidL.style.transform = 'scaleY(1)'; 
-        eyelidR.style.transform = 'scaleY(1)';
+        eyelidL.style.transform = 'scaleY(0.6)'; 
+        eyelidR.style.transform = 'scaleY(0.6)';
         passInput.focus();
+        trackTyping(passInput); // Encolhe as barras novamente
     }
 });
 
-// 🟢 PISCAR AUTOMÁTICO (Com trava de inteligência)
+// 🟢 PISCAR AUTOMÁTICO (Vida ao mascote)
 setInterval(() => {
     const isPasswordFocus = passInput === document.activeElement;
     
-    // Se o usuário estiver na senha, o sistema anula o piscar automático 
-    // para não quebrar a animação dos olhos já fechados ou espiando.
-    if (isPasswordFocus) return; 
+    // Se o mascote estiver escondido/curiando a senha, ele não pisca para não estragar o charme da pose.
+    if (isPasswordFocus && passInput.type === 'password') return; 
     
     eyelidL.style.transform = 'scaleY(1)';
     eyelidR.style.transform = 'scaleY(1)';
     
     setTimeout(() => {
-        if (!isPasswordFocus) {
+        // Retorna ao estado normal 
+        if (!isPasswordFocus || (isPasswordFocus && passInput.type === 'text')) {
             eyelidL.style.transform = 'scaleY(0)';
             eyelidR.style.transform = 'scaleY(0)';
         }
@@ -128,14 +151,18 @@ setInterval(() => {
 }, 4000);
 
 // ==========================================
-// ALTERNÂNCIA E INTEGRAÇÃO SUPABASE
+// ALTERNÂNCIA E SUPABASE
 // ==========================================
 document.getElementById('btn-toggle-mode').addEventListener('click', () => {
     isLogin = !isLogin;
-    document.getElementById('titulo-form').innerText = isLogin ? 'Acesso Seguro' : 'Criar Conta de Elite';
+    document.getElementById('titulo-form').innerText = isLogin ? 'Acesso Seguro' : 'Criar Conta';
     document.getElementById('subtitulo-form').innerText = isLogin ? 'Analytics & Inteligência Financeira.' : 'Junte-se à alta performance financeira.';
-    document.getElementById('btn-submit').innerHTML = isLogin ? 'Acessar Painel <i class="fa-solid fa-arrow-right"></i>' : 'Solicitar Acesso <i class="fa-solid fa-shield-halved"></i>';
-    document.getElementById('texto-rodape').innerText = isLogin ? 'Ainda não faz parte da elite?' : 'Já possui acesso de elite?';
+    
+    document.getElementById('btn-submit').innerHTML = isLogin 
+        ? 'Acessar <i class="fa-solid fa-arrow-right transition-transform duration-300 group-hover:translate-x-1.5"></i>' 
+        : 'Cadastrar <i class="fa-solid fa-shield-halved transition-transform duration-300 group-hover:scale-110"></i>';
+        
+    document.getElementById('texto-rodape').innerText = isLogin ? 'Ainda não tem cadastro?' : 'Já possui cadastro?';
     document.getElementById('btn-toggle-mode').innerText = isLogin ? 'Criar Conta' : 'Fazer Login';
     
     const boxLgpd = document.getElementById('box-lgpd');
@@ -170,7 +197,7 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
             Swal.fire({
                 icon: 'success',
                 title: 'Solicitação Enviada!',
-                text: 'Sua conta foi criada com segurança.',
+                text: 'Sua conta foi criada com segurança. Aguarde a liberação do Administrador.',
                 confirmButtonColor: '#4f46e5'
             }).then(() => { document.getElementById('btn-toggle-mode').click(); });
         }
