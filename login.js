@@ -1,62 +1,97 @@
 // ==========================================
-// login.js - AUTENTICAÇÃO E ANIMAÇÃO DO MASCOTE (UX)
+// login.js - AUTENTICAÇÃO E MASCOTE GUARDIÃO (UX DE ELITE)
 // ==========================================
 
 let isLogin = true;
 
 const emailInput = document.getElementById('email');
 const passInput = document.getElementById('senha');
-const botEyes = document.getElementById('bot-eyes');
-const botHands = document.getElementById('bot-hands');
+const pupilL = document.getElementById('pupil-l');
+const pupilR = document.getElementById('pupil-r');
+const eyelidL = document.getElementById('eyelid-l');
+const eyelidR = document.getElementById('eyelid-r');
+const vaultDial = document.getElementById('vault-dial');
 const togglePassBtn = document.getElementById('toggle-pass');
 const iconPass = document.getElementById('icon-pass');
 
-// 🟢 MÁGICA 1: Os olhos seguem os caracteres digitados no email
-emailInput.addEventListener('input', (e) => {
-    const length = e.target.value.length;
-    // Cálculo sutil: move no máximo 14px para a direita
-    let move = (length * 0.8) - 10; 
-    if (move > 14) move = 14;
-    if (move < -14) move = -14;
-    botEyes.style.transform = `translateX(${move}px)`;
-});
+// 🟢 FUNÇÕES DO MASCOTE
+function fecharOlho(olho) { olho.classList.replace('scale-y-0', 'scale-y-100'); }
+function abrirOlho(olho) { olho.classList.replace('scale-y-100', 'scale-y-0'); }
 
+function seguirTexto(inputElement) {
+    const length = inputElement.value.length;
+    const maxLength = 25; 
+    const percent = Math.min(length / maxLength, 1);
+    
+    // Movimento X da pupila (-5px até +5px) e Y levemente para baixo (focando no input)
+    const moveX = (percent * 10) - 5;
+    const moveY = 2;
+
+    pupilL.style.transform = `translate(${moveX}px, ${moveY}px)`;
+    pupilR.style.transform = `translate(${moveX}px, ${moveY}px)`;
+    
+    // O Dial (tranca do cofre) gira junto com a digitação!
+    vaultDial.style.transform = `rotate(${percent * 180}deg)`;
+}
+
+// 🟢 EVENTOS DO E-MAIL
+emailInput.addEventListener('input', () => seguirTexto(emailInput));
 emailInput.addEventListener('focus', () => {
-    botHands.classList.replace('translate-y-0', 'translate-y-[120%]');
-    botEyes.style.transform = `scale(1) translateX(0px)`;
+    abrirOlho(eyelidL);
+    abrirOlho(eyelidR);
+    seguirTexto(emailInput);
 });
 
-// 🟢 MÁGICA 2: Cobre os olhos ao focar na senha
+// 🟢 EVENTOS DA SENHA (A Mágica do Olho Fechado)
+passInput.addEventListener('input', () => seguirTexto(passInput));
 passInput.addEventListener('focus', () => {
     if (passInput.type === 'password') {
-        botHands.classList.replace('translate-y-[120%]', 'translate-y-0');
-        botEyes.style.transform = `scale(1) translateX(0px)`;
+        fecharOlho(eyelidL); // Fecha o olho esquerdo!
+        abrirOlho(eyelidR);  // Mantém o direito aberto focando!
+    } else {
+        abrirOlho(eyelidL);
+        abrirOlho(eyelidR);
     }
+    seguirTexto(passInput);
 });
 
 passInput.addEventListener('blur', () => {
-    botHands.classList.replace('translate-y-0', 'translate-y-[120%]');
+    abrirOlho(eyelidL); // Abre os dois ao sair
+    pupilL.style.transform = `translate(0px, 0px)`;
+    pupilR.style.transform = `translate(0px, 0px)`;
+    vaultDial.style.transform = `rotate(0deg)`;
 });
 
-// 🟢 MÁGICA 3: O susto ao clicar em ver senha
+// 🟢 BOTÃO VER SENHA
 togglePassBtn.addEventListener('click', () => {
     if (passInput.type === 'password') {
         passInput.type = 'text';
         iconPass.classList.replace('fa-eye', 'fa-eye-slash');
-        
-        // Tira as mãos e arregala os olhos!
-        botHands.classList.replace('translate-y-0', 'translate-y-[120%]');
-        botEyes.style.transform = 'scale(1.4)';
+        // Arregala os dois olhos quando a senha aparece
+        abrirOlho(eyelidL);
+        abrirOlho(eyelidR);
     } else {
         passInput.type = 'password';
         iconPass.classList.replace('fa-eye-slash', 'fa-eye');
-        
-        // Tampa os olhos de novo
-        botHands.classList.replace('translate-y-[120%]', 'translate-y-0');
-        botEyes.style.transform = 'scale(1)';
+        // Fecha o olho esquerdo novamente
+        fecharOlho(eyelidL);
         passInput.focus(); 
     }
 });
+
+// 🟢 PISCAR AUTOMÁTICO (Vida ao mascote)
+setInterval(() => {
+    // Se o olho esquerdo já estiver fechado (modo senha), não pisca ele.
+    const isPasswordHidden = passInput === document.activeElement && passInput.type === 'password';
+    
+    if (!isPasswordHidden) fecharOlho(eyelidL);
+    fecharOlho(eyelidR);
+    
+    setTimeout(() => {
+        if (!isPasswordHidden) abrirOlho(eyelidL);
+        abrirOlho(eyelidR);
+    }, 150); // Pisca super rápido
+}, 3500); // A cada 3.5 segundos
 
 // ==========================================
 // LÓGICA DE ALTERNÂNCIA (LOGIN / CADASTRO)
@@ -64,20 +99,17 @@ togglePassBtn.addEventListener('click', () => {
 document.getElementById('btn-toggle-mode').addEventListener('click', () => {
     isLogin = !isLogin;
     
-    document.getElementById('titulo-form').innerText = isLogin ? 'Acessar DataWallet' : 'Criar Conta de Elite';
-    document.getElementById('subtitulo-form').innerText = isLogin ? 'Sua inteligência financeira na nuvem.' : 'Junte-se à alta performance financeira.';
-    document.getElementById('btn-submit').innerHTML = isLogin ? 'Entrar no Sistema <i class="fa-solid fa-arrow-right"></i>' : 'Cadastrar e Blindar <i class="fa-solid fa-shield-halved"></i>';
+    document.getElementById('titulo-form').innerText = isLogin ? 'Acesso Seguro' : 'Criar Conta de Elite';
+    document.getElementById('subtitulo-form').innerText = isLogin ? 'O seu guardião de dados financeiros.' : 'Junte-se à alta performance financeira.';
+    document.getElementById('btn-submit').innerHTML = isLogin ? 'Desbloquear Cofre <i class="fa-solid fa-unlock-keyhole"></i>' : 'Cadastrar e Blindar <i class="fa-solid fa-shield-halved"></i>';
     document.getElementById('texto-rodape').innerText = isLogin ? 'Ainda não faz parte da elite?' : 'Já possui acesso de elite?';
     document.getElementById('btn-toggle-mode').innerText = isLogin ? 'Criar Conta' : 'Fazer Login';
     
-    // Oculta ou mostra o termo da LGPD
     const boxLgpd = document.getElementById('box-lgpd');
     if (isLogin) {
-        boxLgpd.classList.add('hidden');
-        boxLgpd.classList.remove('flex');
+        boxLgpd.classList.add('hidden'); boxLgpd.classList.remove('flex');
     } else {
-        boxLgpd.classList.remove('hidden');
-        boxLgpd.classList.add('flex');
+        boxLgpd.classList.remove('hidden'); boxLgpd.classList.add('flex');
     }
 });
 
@@ -90,7 +122,7 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
     const email = emailInput.value.trim();
     const senha = passInput.value.trim();
 
-    // 🟢 DEFESA LGPD: Validação obrigatória de consentimento no cadastro
+    // 🟢 DEFESA LGPD
     if (!isLogin && !document.getElementById('check-lgpd').checked) {
         return Swal.fire('Atenção', 'Para prosseguirmos, você deve concordar com os termos de tratamento de dados (LGPD).', 'warning');
     }
@@ -104,7 +136,6 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
         const client = window.supabaseClient;
 
         if (isLogin) {
-            // LOGIN
             const { data, error } = await client.auth.signInWithPassword({ email, password: senha });
             if (error) throw error;
             
@@ -112,7 +143,6 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
             setTimeout(() => window.location.href = 'dashboard.html', 1000);
             
         } else {
-            // CADASTRO (Senhas são automaticamente transformadas em Hash criptografado pelo Supabase - Em conformidade LGPD)
             const { data, error } = await client.auth.signUp({ email, password: senha });
             if (error) throw error;
             
@@ -122,11 +152,10 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
                 text: 'Sua conta de elite foi criada com segurança. Verifique seu e-mail para confirmar (se exigido).',
                 confirmButtonColor: '#4f46e5'
             }).then(() => {
-                document.getElementById('btn-toggle-mode').click(); // Volta pro modo login
+                document.getElementById('btn-toggle-mode').click(); 
             });
         }
     } catch (err) {
-        // Mensagem genérica por segurança (Evita informar se o e-mail existe ou se a senha está errada)
         Swal.fire('Falha na Autenticação', 'Verifique suas credenciais e tente novamente.', 'error');
     } finally {
         btn.innerHTML = textoOriginal;
