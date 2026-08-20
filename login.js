@@ -1,8 +1,10 @@
 // ==========================================
-// login.js - LÓGICA DO MASCOTE COMBO CHART (BARRA + LINHA) COM FÍSICA
+// login.js - ENGINE DE EMOÇÃO AVANÇADA (BARRAS + BOCA + ERRO)
 // ==========================================
 
 let isLogin = true;
+let isErrorMode = false; // 🔴 Trava de segurança para manter a cara triste
+let estadoMascote = 'neutro'; // Memória do estado atual
 
 const identInput = document.getElementById('identificador');
 const usernameInput = document.getElementById('username');
@@ -17,7 +19,6 @@ const eyelidR = document.getElementById('eyelid-r');
 const barLeft = document.getElementById('bar-left');
 const barRight = document.getElementById('bar-right');
 
-// Elementos da Boca
 const mouthLine = document.getElementById('mouth-line');
 const mP1 = document.getElementById('mouth-p1');
 const mP2 = document.getElementById('mouth-p2');
@@ -25,7 +26,7 @@ const mP3 = document.getElementById('mouth-p3');
 const mP4 = document.getElementById('mouth-p4');
 const arrayBoca = [mouthLine, mP1, mP2, mP3, mP4];
 
-// 🟢 FÍSICA E LOOP DE EMOÇÃO (O Segredo da Vida)
+// 🟢 FÍSICA DO MOUSE
 let mouseVel = 0;
 let lastX = 0, lastY = 0, lastTime = Date.now();
 
@@ -36,7 +37,6 @@ function trackMouseSpeed(clientX, clientY) {
     const dy = clientY - lastY;
     const dist = Math.sqrt(dx * dx + dy * dy);
     
-    // Calcula a velocidade do movimento
     mouseVel = (dist / dt) * 100;
     
     lastX = clientX;
@@ -44,38 +44,74 @@ function trackMouseSpeed(clientX, clientY) {
     lastTime = now;
 }
 
-// 🟢 CONTROLADOR DA BOCA
+// 🟢 CONTROLADOR MESTRE DE EXPRESSÕES
 function animarBoca(estado, percent = 0) {
     let y1, y2, y3, y4;
+    let bounce = 0;
 
     if (estado === 'escondido') {
-        y1 = 98; y2 = 100; y3 = 100; y4 = 98; // Linha reta e tensa embaixo
-        arrayBoca.forEach(el => el.style.transition = '');
+        y1 = 98; y2 = 100; y3 = 100; y4 = 98; 
+        arrayBoca.forEach(el => el.style.transition = 'all 0.3s');
+        barLeft.style.transform = `translateY(0px)`;
+        barRight.style.transform = `translateY(0px)`;
     } 
     else if (estado === 'revelado') {
-        y1 = 70; y2 = 98; y3 = 98; y4 = 60; // Sorrisão aberto
-        arrayBoca.forEach(el => el.style.transition = '');
+        y1 = 70; y2 = 98; y3 = 98; y4 = 60; 
+        arrayBoca.forEach(el => el.style.transition = 'all 0.3s');
+        barLeft.style.transform = `translateY(0px)`;
+        barRight.style.transform = `translateY(0px)`;
     } 
     else if (estado === 'digitando') {
         let flutter = percent * 8; 
         y1 = 85; y2 = 95 - (flutter / 2); y3 = 90 + (flutter / 2); y4 = 70;
-        arrayBoca.forEach(el => el.style.transition = '');
+        arrayBoca.forEach(el => el.style.transition = 'all 0.1s');
+        barLeft.style.transform = `translateY(0px)`;
+        barRight.style.transform = `translateY(0px)`;
     } 
     else if (estado === 'rindo') {
-        // Modo Gargalhada (Múltiplos pulos contínuos por segundo usando seno)
-        let bounce = Math.sin(Date.now() / 60) * 10; 
+        // 🤣 GARGALHADA: Desliga CSS, usa matemática de seno para quicar linha e barras!
+        bounce = Math.sin(Date.now() / 50) * 6; // Pulos de 6px pra cima e pra baixo
         y1 = 75 + bounce; y2 = 95 + bounce; y3 = 95 + bounce; y4 = 75 + bounce;
-        // Desliga o CSS para ele poder quicar loucamente em tempo real
+        
         arrayBoca.forEach(el => el.style.transition = 'none');
+        barLeft.style.transition = 'none';
+        barRight.style.transition = 'none';
+        
+        // Pula as barras de energia
+        barLeft.style.transform = `translateY(${bounce}px)`;
+        barRight.style.transform = `translateY(${bounce}px)`;
+        
+        // Aperta os olhos de tanto rir
+        eyelidL.style.transform = 'scaleY(1)';
+        eyelidR.style.transform = 'scaleY(1)';
     }
     else if (estado === 'sorrindo') {
-        y1 = 75; y2 = 90; y3 = 90; y4 = 75; // Um sorriso amigável normal
-        arrayBoca.forEach(el => el.style.transition = '');
+        y1 = 75; y2 = 90; y3 = 90; y4 = 75; 
+        arrayBoca.forEach(el => el.style.transition = 'all 0.3s');
+        barLeft.style.transition = 'all 0.3s';
+        barRight.style.transition = 'all 0.3s';
+        barLeft.style.transform = `translateY(0px)`;
+        barRight.style.transform = `translateY(0px)`;
+    }
+    else if (estado === 'triste') {
+        // ☹️ ERRO: Sorriso invertido (Frown)
+        y1 = 92; y2 = 80; y3 = 80; y4 = 92; 
+        arrayBoca.forEach(el => el.style.transition = 'all 0.3s');
+        barLeft.style.transform = `translateY(0px)`;
+        barRight.style.transform = `translateY(0px)`;
+        
+        // Olhinhos caídos pela metade (tristeza)
+        eyelidL.style.transform = 'scaleY(0.5)';
+        eyelidR.style.transform = 'scaleY(0.5)';
     }
     else {
-        // Neutro 😐 (Parado sem fazer nada)
+        // 😐 Neutro
         y1 = 85; y2 = 85; y3 = 85; y4 = 85;
-        arrayBoca.forEach(el => el.style.transition = '');
+        arrayBoca.forEach(el => el.style.transition = 'all 0.3s');
+        barLeft.style.transition = 'all 0.3s';
+        barRight.style.transition = 'all 0.3s';
+        barLeft.style.transform = `translateY(0px)`;
+        barRight.style.transform = `translateY(0px)`;
     }
 
     mouthLine.setAttribute('d', `M 25,${y1} L 60,${y2} L 100,${y3} L 135,${y4}`);
@@ -85,31 +121,54 @@ function animarBoca(estado, percent = 0) {
     mP4.setAttribute('cy', y4);
 }
 
-// 🟢 O CÉREBRO CONTÍNUO DO MASCOTE (Roda 60x por segundo)
+// 🟢 O MOTOR CONTÍNUO (60 FPS)
 function renderMascotEmotions() {
     requestAnimationFrame(renderMascotEmotions);
+    mouseVel *= 0.90; // Desaceleração
     
-    mouseVel *= 0.90; // Desacelera naturalmente quando você para o mouse
+    // Se deu erro, trava a cara de triste
+    if (isErrorMode) {
+        if (estadoMascote !== 'triste') {
+            animarBoca('triste');
+            estadoMascote = 'triste';
+        }
+        return;
+    }
     
-    // Se não tiver clicado em nenhum campo, a emoção segue a física do mouse
     const isFocus = identInput.matches(':focus') || passInput.matches(':focus') || usernameInput.matches(':focus');
     
     if (!isFocus) {
-        if (mouseVel > 40) {
-            animarBoca('rindo'); // 😂
-        } else if (mouseVel > 3) {
-            animarBoca('sorrindo'); // 🙂
+        if (mouseVel > 65) { // 🤣 Sacudiu muito rápido
+            animarBoca('rindo');
+            estadoMascote = 'rindo';
         } else {
-            animarBoca('neutro'); // 😐
+            // Se estava rindo e parou, restaura os olhos e as transições CSS
+            if (estadoMascote === 'rindo') {
+                eyelidL.style.transform = 'scaleY(0)';
+                eyelidR.style.transform = 'scaleY(0)';
+            }
+
+            if (mouseVel > 4) { // 🙂 Mexeu suave
+                if (estadoMascote !== 'sorrindo') {
+                    animarBoca('sorrindo');
+                    estadoMascote = 'sorrindo';
+                }
+            } else { // 😐 Parado
+                if (estadoMascote !== 'neutro') {
+                    animarBoca('neutro');
+                    estadoMascote = 'neutro';
+                }
+            }
         }
+    } else {
+        estadoMascote = 'focado';
     }
 }
-requestAnimationFrame(renderMascotEmotions); // Inicia a vida dele!
+requestAnimationFrame(renderMascotEmotions);
 
-// 🟢 OLHOS SEGUEM O MOUSE E CAPTURAM VELOCIDADE
+// 🟢 OLHOS SEGUEM O MOUSE
 function rastrearOlhar(clientX, clientY) {
     trackMouseSpeed(clientX, clientY);
-    
     if (!identInput.matches(':focus') && !passInput.matches(':focus') && !usernameInput.matches(':focus')) {
         const rect = mascotContainer.getBoundingClientRect();
         const x = clientX - rect.left;
@@ -119,12 +178,9 @@ function rastrearOlhar(clientX, clientY) {
             const bounds = pupil.getBoundingClientRect();
             const pupilX = bounds.left - rect.left + bounds.width / 2;
             const pupilY = bounds.top - rect.top + bounds.height / 2;
-            
             const angle = Math.atan2(y - pupilY, x - pupilX);
-            const distance = 4;
-            
-            const moveX = Math.cos(angle) * distance;
-            const moveY = Math.sin(angle) * distance;
+            const moveX = Math.cos(angle) * 4;
+            const moveY = Math.sin(angle) * 4;
             pupil.style.transform = `translate(${moveX}px, ${moveY}px)`;
         });
     }
@@ -132,8 +188,11 @@ function rastrearOlhar(clientX, clientY) {
 document.addEventListener('mousemove', (e) => rastrearOlhar(e.clientX, e.clientY));
 document.addEventListener('touchmove', (e) => rastrearOlhar(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
 
+
 // 🟢 ACOMPANHA A DIGITAÇÃO
 function trackTyping(inputElement) {
+    if (isErrorMode) return; // Se tiver em erro, não reage à digitação (fica triste)
+    
     const length = inputElement.value.length;
     const percent = Math.min(length / 20, 1);
     const moveX = (percent * 8) - 4; 
@@ -161,38 +220,43 @@ function trackTyping(inputElement) {
     }
 }
 
-// Eventos dos Inputs
 [identInput, usernameInput].forEach(el => {
     el.addEventListener('input', () => trackTyping(el));
     el.addEventListener('focus', () => {
-        eyelidL.style.transform = 'scaleY(0)';
-        eyelidR.style.transform = 'scaleY(0)';
-        trackTyping(el);
+        if (!isErrorMode) {
+            eyelidL.style.transform = 'scaleY(0)';
+            eyelidR.style.transform = 'scaleY(0)';
+            trackTyping(el);
+        }
     });
 });
 
 passInput.addEventListener('input', () => trackTyping(passInput));
 passInput.addEventListener('focus', () => {
-    if (passInput.type === 'password') {
-        eyelidL.style.transform = 'scaleY(0.6)';
-        eyelidR.style.transform = 'scaleY(0.6)';
-    } else {
-        eyelidL.style.transform = 'scaleY(0)';
-        eyelidR.style.transform = 'scaleY(0)';
+    if (!isErrorMode) {
+        if (passInput.type === 'password') {
+            eyelidL.style.transform = 'scaleY(0.6)';
+            eyelidR.style.transform = 'scaleY(0.6)';
+        } else {
+            eyelidL.style.transform = 'scaleY(0)';
+            eyelidR.style.transform = 'scaleY(0)';
+        }
+        trackTyping(passInput);
     }
-    trackTyping(passInput);
 });
 
 passInput.addEventListener('blur', () => {
-    eyelidL.style.transform = 'scaleY(0)';
-    eyelidR.style.transform = 'scaleY(0)';
-    pupils.forEach(p => p.style.transform = `translate(0px, 0px)`);
-    barLeft.style.height = '64px';
-    barRight.style.height = '80px';
-    // O Game Loop assume a boca automaticamente ao dar blur
+    if (!isErrorMode) {
+        eyelidL.style.transform = 'scaleY(0)';
+        eyelidR.style.transform = 'scaleY(0)';
+        pupils.forEach(p => p.style.transform = `translate(0px, 0px)`);
+        barLeft.style.height = '64px';
+        barRight.style.height = '80px';
+    }
 });
 
 togglePassBtn.addEventListener('click', () => {
+    if (isErrorMode) return;
     if (passInput.type === 'password') {
         passInput.type = 'text';
         iconPass.classList.replace('fa-eye', 'fa-eye-slash');
@@ -209,10 +273,12 @@ togglePassBtn.addEventListener('click', () => {
     }
 });
 
-// PISCAR AUTOMÁTICO
+// PISCAR AUTOMÁTICO (Só pisca se não estiver triste ou gargalhando)
 setInterval(() => {
+    if (isErrorMode || estadoMascote === 'rindo') return; 
     const isPasswordFocus = passInput === document.activeElement;
     if (isPasswordFocus && passInput.type === 'password') return; 
+    
     eyelidL.style.transform = 'scaleY(1)';
     eyelidR.style.transform = 'scaleY(1)';
     setTimeout(() => {
@@ -225,7 +291,7 @@ setInterval(() => {
 
 
 // ==========================================
-// ALTERNÂNCIA E AUTENTICAÇÃO (MANTIDA INTACTA)
+// MODO TELA E SISTEMA DE ERROS (TREMOR)
 // ==========================================
 function alternarModoTela() {
     isLogin = !isLogin;
@@ -263,22 +329,55 @@ function alternarModoTela() {
         iconIdent.className = "fa-solid fa-envelope absolute left-4 text-slate-500 transition-colors duration-300 group-focus-within:text-blue-400";
     }
 }
-
 document.getElementById('btn-toggle-mode').addEventListener('click', alternarModoTela);
 document.getElementById('btn-voltar').addEventListener('click', alternarModoTela);
 
+
+// 🔴 ATIVA O TREMOR E A CARA DE TRISTE
+function dispararErroVisual() {
+    isErrorMode = true; // Trava o mascote na tristeza
+    
+    // Seleciona os containers dos inputs para aplicar o CSS vermelho e o Tremor
+    const containers = [
+        identInput.closest('.group'), 
+        passInput.closest('.group'), 
+        usernameInput.closest('.group')
+    ];
+    
+    containers.forEach(c => { if(c) c.classList.add('error-state'); });
+    
+    // Função para limpar o erro no exato momento que o usuário começar a digitar de novo
+    const limparErro = () => {
+        isErrorMode = false;
+        containers.forEach(c => { if(c) c.classList.remove('error-state'); });
+        
+        identInput.removeEventListener('input', limparErro);
+        passInput.removeEventListener('input', limparErro);
+        usernameInput.removeEventListener('input', limparErro);
+        
+        // Religa a animação de focar dependendo de onde ele digitou
+        if (document.activeElement === identInput) { trackTyping(identInput); eyelidL.style.transform = 'scaleY(0)'; eyelidR.style.transform = 'scaleY(0)'; }
+        if (document.activeElement === passInput) trackTyping(passInput);
+    };
+    
+    identInput.addEventListener('input', limparErro);
+    passInput.addEventListener('input', limparErro);
+    usernameInput.addEventListener('input', limparErro);
+}
+
+
+// Tradutor
 function traduzirErroSupabase(mensagem) {
     if (!mensagem) return 'Erro de conexão. Verifique sua internet.';
     const msg = mensagem.toLowerCase();
-    
     if (msg.includes('invalid login credentials')) return 'E-mail, usuário ou senha incorretos.';
     if (msg.includes('password should be at least')) return 'A senha deve ter no mínimo 6 caracteres.';
     if (msg.includes('user already registered') || msg.includes('already exists')) return 'Este e-mail ou usuário já está em uso.';
     if (msg.includes('rate limit')) return 'Muitas tentativas. Aguarde um momento.';
-    
     return `Alerta do Banco de Dados: ${mensagem}`;
 }
 
+// 🟢 ENVIO AO SUPABASE
 document.getElementById('form-auth').addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -316,17 +415,12 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
         } else {
             const { data: userExiste, error: errBusca } = await client.from('usuarios_dicionario').select('username').eq('username', username);
             if (errBusca) throw errBusca; 
-            
-            if (userExiste && userExiste.length > 0) {
-                throw new Error('user already registered'); 
-            }
+            if (userExiste && userExiste.length > 0) throw new Error('user already registered'); 
 
             const { data: authData, error: authErr } = await client.auth.signUp({ email: identificador, password: senha });
             if (authErr) throw authErr;
 
-            if (authData?.user?.identities?.length === 0) {
-                throw new Error('user already registered');
-            }
+            if (authData?.user?.identities?.length === 0) throw new Error('user already registered');
 
             const { error: insertErr } = await client.from('usuarios_dicionario').insert([{ username: username, email: identificador }]);
             if (insertErr) throw insertErr;
@@ -334,7 +428,7 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
             Swal.fire({
                 icon: 'success',
                 title: 'Cadastro Concluído!',
-                text: 'Sua conta de elite foi criada com segurança. Faça o login para continuar.',
+                text: 'Sua conta foi criada com segurança. Faça o login para continuar.',
                 confirmButtonColor: '#2563eb'
             }).then(() => { 
                 alternarModoTela(); 
@@ -343,7 +437,11 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
             });
         }
     } catch (err) {
-        console.error("LOG DE ERRO TÉCNICO PARA O KAUÃ:", err);
+        console.error("LOG DE ERRO TÉCNICO:", err);
+        
+        // 🔴 ATIVA A ANIMAÇÃO DE ERRO NO MASCOTE E NAS CAIXAS!
+        dispararErroVisual();
+        
         const msgAmigavel = traduzirErroSupabase(err.message || err.error_description || JSON.stringify(err));
         Swal.fire('Falha na Autenticação', msgAmigavel, 'error');
     } finally {
