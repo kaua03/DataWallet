@@ -42,8 +42,13 @@
 
     <main class="w-full max-w-md bg-slate-900 border border-slate-800 p-8 rounded-[2rem] shadow-2xl z-10 fade-in relative">
         
+        <!-- Botão Voltar (Oculto no Login, Visível no Cadastro) -->
+        <button type="button" id="btn-voltar" class="hidden absolute top-6 left-6 w-10 h-10 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-full flex items-center justify-center transition-colors shadow-sm z-20">
+            <i class="fa-solid fa-arrow-left"></i>
+        </button>
+
         <!-- O MASCOTE (DataWallet Analytics) -->
-        <div class="relative w-40 h-28 mx-auto mb-4 flex items-end justify-center gap-3 px-4 bg-slate-950/60 rounded-2xl border border-slate-800/80 shadow-inner py-3" id="mascot-container">
+        <div class="relative w-40 h-28 mx-auto mb-4 flex items-end justify-center gap-3 px-4 bg-slate-950/60 rounded-2xl border border-slate-800/80 shadow-inner py-3 mt-4" id="mascot-container">
             <div class="w-7 h-12 bg-slate-800 rounded-t-lg border-t border-x border-slate-700 transition-all duration-300"></div>
             
             <div id="bar-left" class="relative w-9 h-16 bg-blue-600/30 rounded-t-lg border-t border-x border-blue-500/50 flex flex-col justify-start items-center pt-2 transition-all duration-300 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
@@ -75,16 +80,16 @@
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1" id="label-identificador">E-mail ou Usuário</label>
                 <div class="group relative flex items-center bg-slate-950 rounded-xl border border-slate-800 transition-all duration-300 focus-within:-translate-y-1 focus-within:shadow-[0_10px_25px_rgba(59,130,246,0.15)] focus-within:border-blue-500">
                     <i class="fa-solid fa-user absolute left-4 text-slate-500 transition-colors duration-300 group-focus-within:text-blue-400" id="icon-identificador"></i>
-                    <input type="text" id="identificador" required placeholder="Ex: kaua ou kaua@email.com" class="w-full bg-transparent text-white pl-11 pr-4 py-3.5 outline-none font-medium lowercase">
+                    <input type="text" id="identificador" required class="w-full bg-transparent text-white pl-11 pr-4 py-3.5 outline-none font-medium lowercase">
                 </div>
             </div>
 
             <!-- Campo Oculto: Nome de Usuário (Apenas para Cadastro) -->
             <div id="box-username" class="hidden opacity-0 transition-all duration-300">
-                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Nome de Usuário</label>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Usuário</label>
                 <div class="group relative flex items-center bg-slate-950 rounded-xl border border-slate-800 transition-all duration-300 focus-within:-translate-y-1 focus-within:shadow-[0_10px_25px_rgba(59,130,246,0.15)] focus-within:border-blue-500">
                     <i class="fa-solid fa-at absolute left-4 text-slate-500 transition-colors duration-300 group-focus-within:text-blue-400"></i>
-                    <input type="text" id="username" placeholder="Ex: kaua_data" class="w-full bg-transparent text-white pl-11 pr-4 py-3.5 outline-none font-medium lowercase">
+                    <input type="text" id="username" class="w-full bg-transparent text-white pl-11 pr-4 py-3.5 outline-none font-medium lowercase">
                 </div>
             </div>
 
@@ -93,7 +98,7 @@
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Senha</label>
                 <div class="group relative flex items-center bg-slate-950 rounded-xl border border-slate-800 transition-all duration-300 focus-within:-translate-y-1 focus-within:shadow-[0_10px_25px_rgba(59,130,246,0.15)] focus-within:border-blue-500">
                     <i class="fa-solid fa-lock absolute left-4 text-slate-500 transition-colors duration-300 group-focus-within:text-blue-400"></i>
-                    <input type="password" id="senha" required placeholder="••••••••" class="w-full bg-transparent text-white pl-11 pr-12 py-3.5 outline-none font-medium tracking-widest">
+                    <input type="password" id="senha" required class="w-full bg-transparent text-white pl-11 pr-12 py-3.5 outline-none font-medium tracking-widest">
                     <button type="button" id="toggle-pass" class="absolute right-4 text-slate-400 hover:text-blue-400 transition-colors p-1">
                         <i id="icon-pass" class="fa-solid fa-eye"></i>
                     </button>
@@ -112,7 +117,7 @@
             </button>
         </form>
 
-        <div class="mt-8 text-center border-t border-slate-800 pt-6">
+        <div class="mt-8 text-center border-t border-slate-800 pt-6" id="box-rodape">
             <p class="text-sm text-slate-400 font-medium">
                 <span id="texto-rodape">Ainda não tem cadastro?</span> 
                 <button type="button" id="btn-toggle-mode" class="text-blue-400 font-bold hover:text-blue-300 ml-1 transition-colors">Criar Conta</button>
