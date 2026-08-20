@@ -27,39 +27,37 @@
 
     <main class="w-full max-w-md bg-slate-900 border border-slate-800 p-8 rounded-[2rem] shadow-2xl z-10 fade-in relative">
         
-        <!-- O MASCOTE INTERATIVO SVG -->
-        <div class="relative w-48 h-28 mx-auto mb-2" id="mascot-container">
-            <svg viewBox="0 0 200 120" class="w-full h-full overflow-visible">
+        <!-- O MASCOTE: Estilo Gráfico de Barras Financeiro com Olhos -->
+        <div class="relative w-40 h-28 mx-auto mb-4 flex items-end justify-center gap-3 px-4 bg-slate-950/60 rounded-2xl border border-slate-800/80 shadow-inner py-3" id="mascot-container">
+            
+            <!-- Barra 1 (Esquerda) -->
+            <div class="w-7 h-12 bg-slate-800 rounded-t-lg border-t border-x border-slate-700 transition-all duration-300"></div>
+            
+            <!-- Barra 2 (Olho Esquerdo - Altura Média) -->
+            <div id="bar-left" class="relative w-9 h-16 bg-indigo-600/30 rounded-t-lg border-t border-x border-indigo-500/50 flex flex-col justify-start items-center pt-2 transition-all duration-300 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
                 <!-- Olho Esquerdo -->
-                <g id="eye-l-group" transform="translate(60, 50)" class="transition-transform duration-300 ease-out">
-                    <circle cx="0" cy="0" r="18" fill="white" stroke="#334155" stroke-width="4"/>
-                    <circle class="pupil" cx="0" cy="0" r="7" fill="#0f172a"/>
-                    <!-- Pálpebra (Cor bg-slate-900 para sumir no fundo) -->
-                    <path id="eyelid-l" d="M-22,-22 L22,-22 L22,22 L-22,22 Z" fill="#0f172a" transform="scale(1, 0)" class="transition-transform duration-200 origin-top"/>
-                </g>
-                
+                <div class="relative w-4 h-4 bg-white rounded-full overflow-hidden flex items-center justify-center">
+                    <div id="pupil-l" class="w-2 h-2 bg-slate-950 rounded-full transition-transform duration-75"></div>
+                    <div id="eyelid-l" class="absolute inset-0 bg-indigo-900 origin-top scale-y-0 transition-transform duration-150"></div>
+                </div>
+            </div>
+
+            <!-- Barra 3 (Olho Direito - Altura Alta / Dominante) -->
+            <div id="bar-right" class="relative w-9 h-20 bg-indigo-600/40 rounded-t-lg border-t border-x border-indigo-500/60 flex flex-col justify-start items-center pt-2 transition-all duration-300 shadow-[0_0_15px_rgba(99,102,241,0.3)]">
                 <!-- Olho Direito -->
-                <g id="eye-r-group" transform="translate(140, 50)" class="transition-transform duration-300 ease-out">
-                    <circle cx="0" cy="0" r="18" fill="white" stroke="#334155" stroke-width="4"/>
-                    <circle class="pupil" cx="0" cy="0" r="7" fill="#0f172a"/>
-                    <path id="eyelid-r" d="M-22,-22 L22,-22 L22,22 L-22,22 Z" fill="#0f172a" transform="scale(1, 0)" class="transition-transform duration-200 origin-top"/>
-                </g>
-                
-                <!-- Mão Esquerda (Tampa o olho todo) -->
-                <g id="hand-l" class="transition-transform duration-300 ease-out translate-y-[150px]">
-                    <rect x="40" y="30" width="40" height="50" rx="16" fill="#6366f1" stroke="#3730a3" stroke-width="3"/>
-                </g>
-                
-                <!-- Mão Direita (Fica mais baixa para espiar) -->
-                <g id="hand-r" class="transition-transform duration-300 ease-out translate-y-[150px]">
-                    <rect x="120" y="60" width="40" height="50" rx="16" fill="#6366f1" stroke="#3730a3" stroke-width="3"/>
-                </g>
-            </svg>
+                <div class="relative w-4 h-4 bg-white rounded-full overflow-hidden flex items-center justify-center">
+                    <div id="pupil-r" class="w-2 h-2 bg-slate-950 rounded-full transition-transform duration-75"></div>
+                    <div id="eyelid-r" class="absolute inset-0 bg-indigo-900 origin-top scale-y-0 transition-transform duration-150"></div>
+                </div>
+            </div>
+
+            <!-- Barra 4 (Direita) -->
+            <div class="w-7 h-10 bg-slate-800 rounded-t-lg border-t border-x border-slate-700 transition-all duration-300"></div>
         </div>
 
         <div class="text-center mb-8">
             <h1 class="text-3xl font-black text-white tracking-tight" id="titulo-form">Acesso Seguro</h1>
-            <p class="text-sm text-slate-400 font-medium mt-1" id="subtitulo-form">O seu guardião de dados financeiros.</p>
+            <p class="text-sm text-slate-400 font-medium mt-1" id="subtitulo-form">Analytics & Inteligência Financeira.</p>
         </div>
 
         <form id="form-auth" class="space-y-4">
@@ -90,7 +88,7 @@
             </div>
 
             <button type="submit" id="btn-submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black text-lg py-4 rounded-xl shadow-[0_10px_20px_rgba(79,70,229,0.3)] transition-all active:scale-[0.98] mt-4 flex items-center justify-center gap-2">
-                Desbloquear Cofre <i class="fa-solid fa-unlock-keyhole"></i>
+                Acessar Painel <i class="fa-solid fa-arrow-right"></i>
             </button>
         </form>
 
