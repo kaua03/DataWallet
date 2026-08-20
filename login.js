@@ -1,5 +1,5 @@
 // ==========================================
-// login.js - LÓGICA DO GRÁFICO E LOGIN DUPLO (EMAIL/USER)
+// login.js - LÓGICA DO GRÁFICO E NAVEGAÇÃO LIMPA
 // ==========================================
 
 let isLogin = true;
@@ -129,9 +129,9 @@ setInterval(() => {
 }, 4000);
 
 // ==========================================
-// ALTERNÂNCIA E SUPABASE (DUAL LOGIN)
+// ALTERNÂNCIA (LOGIN / CADASTRO / VOLTAR)
 // ==========================================
-document.getElementById('btn-toggle-mode').addEventListener('click', () => {
+function alternarModoTela() {
     isLogin = !isLogin;
     
     document.getElementById('titulo-form').innerText = isLogin ? 'Acesso Seguro' : 'Criar Conta';
@@ -140,33 +140,41 @@ document.getElementById('btn-toggle-mode').addEventListener('click', () => {
     document.getElementById('btn-submit').innerHTML = isLogin 
         ? 'Acessar <i class="fa-solid fa-arrow-right transition-transform duration-300 group-hover:translate-x-1.5"></i>' 
         : 'Cadastrar <i class="fa-solid fa-shield-halved transition-transform duration-300 group-hover:scale-110"></i>';
-        
-    document.getElementById('texto-rodape').innerText = isLogin ? 'Ainda não tem cadastro?' : 'Já possui cadastro?';
-    document.getElementById('btn-toggle-mode').innerText = isLogin ? 'Criar Conta' : 'Fazer Login';
     
-    // Transições de campos do Formulário
+    // Esconde ou Mostra Elementos da Interface
     const boxLgpd = document.getElementById('box-lgpd');
     const boxUsername = document.getElementById('box-username');
     const labelIdent = document.getElementById('label-identificador');
     const iconIdent = document.getElementById('icon-identificador');
+    const btnVoltar = document.getElementById('btn-voltar');
+    const boxRodape = document.getElementById('box-rodape');
     
     if (isLogin) { 
+        // MODO LOGIN
+        btnVoltar.classList.add('hidden');
+        boxRodape.classList.remove('hidden');
+        
         boxLgpd.classList.add('hidden'); boxLgpd.classList.remove('flex');
         boxUsername.classList.add('hidden', 'opacity-0');
         usernameInput.required = false;
         labelIdent.innerText = "E-mail ou Usuário";
-        identInput.placeholder = "Ex: kaua ou kaua@email.com";
         iconIdent.className = "fa-solid fa-user absolute left-4 text-slate-500 transition-colors duration-300 group-focus-within:text-blue-400";
     } else { 
+        // MODO CADASTRO
+        btnVoltar.classList.remove('hidden');
+        boxRodape.classList.add('hidden'); // Esconde o rodapé no cadastro para ficar mais limpo
+        
         boxLgpd.classList.remove('hidden'); boxLgpd.classList.add('flex');
         boxUsername.classList.remove('hidden'); 
-        setTimeout(() => boxUsername.classList.remove('opacity-0'), 50); // Efeito fade
+        setTimeout(() => boxUsername.classList.remove('opacity-0'), 50); 
         usernameInput.required = true;
-        labelIdent.innerText = "Seu E-mail";
-        identInput.placeholder = "Ex: kaua@email.com";
+        labelIdent.innerText = "E-mail"; // Como tem campo de usuário, aqui vira só E-mail
         iconIdent.className = "fa-solid fa-envelope absolute left-4 text-slate-500 transition-colors duration-300 group-focus-within:text-blue-400";
     }
-});
+}
+
+document.getElementById('btn-toggle-mode').addEventListener('click', alternarModoTela);
+document.getElementById('btn-voltar').addEventListener('click', alternarModoTela);
 
 // Tradutor de erros do Supabase
 function traduzirErroSupabase(mensagem) {
@@ -198,17 +206,12 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
         const client = window.supabaseClient;
 
         if (isLogin) {
-            // LÓGICA DE LOGIN DUPLO
             let emailLogin = identificador;
             
-            // Se o cara não digitou "@", assumimos que é o Username. Vamos consultar o "Dicionário"!
             if (!identificador.includes('@')) {
                 const { data, error: errUser } = await client.from('usuarios_dicionario').select('email').eq('username', identificador).single();
-                
-                if (errUser || !data) {
-                    throw new Error('invalid login credentials'); // Força erro padrão para não dar dicas a hackers
-                }
-                emailLogin = data.email; // Achamos o email dele!
+                if (errUser || !data) throw new Error('invalid login credentials'); 
+                emailLogin = data.email; 
             }
 
             const { error } = await client.auth.signInWithPassword({ email: emailLogin, password: senha });
@@ -218,31 +221,27 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
             setTimeout(() => window.location.href = 'dashboard.html', 1000);
             
         } else {
-            // LÓGICA DE CADASTRO
-            // 1. Verifica se o username já existe no Dicionário
             const { data: userExiste } = await client.from('usuarios_dicionario').select('username').eq('username', username).single();
             if (userExiste) throw new Error('user already registered');
 
-            // 2. Cria a conta no Supabase Auth
             const { data: authData, error: authErr } = await client.auth.signUp({ email: identificador, password: senha });
             if (authErr) throw authErr;
 
-            // 3. Salva o nickname no Dicionário para logins futuros
             await client.from('usuarios_dicionario').insert([{ username: username, email: identificador }]);
 
+            // 🟢 INTEGRAÇÃO FINAL: Confirmação Oficial do E-mail
             Swal.fire({
                 icon: 'success',
                 title: 'Cadastro Concluído!',
-                text: 'Sua conta de elite foi criada com segurança. Você já pode fazer login.',
+                text: 'Sua conta de elite foi criada com segurança. Verifique a caixa de entrada do seu e-mail para validar o acesso.',
                 confirmButtonColor: '#2563eb'
             }).then(() => { 
-                document.getElementById('btn-toggle-mode').click(); 
-                identInput.value = username; // Preenche o usuário para ele
+                alternarModoTela(); 
+                identInput.value = username; 
                 passInput.value = '';
             });
         }
     } catch (err) {
-        // Agora você vai saber EXATAMENTE o que deu errado (fim da Síndrome do Impostor)
         const msgAmigavel = traduzirErroSupabase(err.message);
         Swal.fire('Falha na Autenticação', msgAmigavel, 'error');
     } finally {
