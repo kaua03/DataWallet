@@ -1,5 +1,5 @@
 // ==========================================
-// login.js - LÓGICA DO MASCOTE COMBO CHART (BARRA + LINHA)
+// login.js - LÓGICA DO MASCOTE COMBO CHART (BARRA + LINHA) COM FÍSICA
 // ==========================================
 
 let isLogin = true;
@@ -17,34 +17,67 @@ const eyelidR = document.getElementById('eyelid-r');
 const barLeft = document.getElementById('bar-left');
 const barRight = document.getElementById('bar-right');
 
-// Elementos da Boca (Gráfico de Linha)
+// Elementos da Boca
 const mouthLine = document.getElementById('mouth-line');
 const mP1 = document.getElementById('mouth-p1');
 const mP2 = document.getElementById('mouth-p2');
 const mP3 = document.getElementById('mouth-p3');
 const mP4 = document.getElementById('mouth-p4');
+const arrayBoca = [mouthLine, mP1, mP2, mP3, mP4];
 
-// 🟢 CONTROLADOR DA BOCA (GRÁFICO DE LINHA)
+// 🟢 FÍSICA E LOOP DE EMOÇÃO (O Segredo da Vida)
+let mouseVel = 0;
+let lastX = 0, lastY = 0, lastTime = Date.now();
+
+function trackMouseSpeed(clientX, clientY) {
+    const now = Date.now();
+    const dt = Math.max(now - lastTime, 1);
+    const dx = clientX - lastX;
+    const dy = clientY - lastY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    
+    // Calcula a velocidade do movimento
+    mouseVel = (dist / dt) * 100;
+    
+    lastX = clientX;
+    lastY = clientY;
+    lastTime = now;
+}
+
+// 🟢 CONTROLADOR DA BOCA
 function animarBoca(estado, percent = 0) {
     let y1, y2, y3, y4;
 
     if (estado === 'escondido') {
-        // Modo "Curiando": A linha desce, fica reta e séria
-        y1 = 98; y2 = 100; y3 = 100; y4 = 98;
-    } else if (estado === 'revelado') {
-        // Olhos arregalados: Sorriso hiper aberto e confiante
-        y1 = 70; y2 = 98; y3 = 98; y4 = 60;
-    } else {
-        // Estado Normal (Sorriso torto / Smirk)
-        // Adicionamos uma minúscula vibração baseada na digitação (fala)
+        y1 = 98; y2 = 100; y3 = 100; y4 = 98; // Linha reta e tensa embaixo
+        arrayBoca.forEach(el => el.style.transition = '');
+    } 
+    else if (estado === 'revelado') {
+        y1 = 70; y2 = 98; y3 = 98; y4 = 60; // Sorrisão aberto
+        arrayBoca.forEach(el => el.style.transition = '');
+    } 
+    else if (estado === 'digitando') {
         let flutter = percent * 8; 
-        y1 = 85;
-        y2 = 95 - (flutter / 2);
-        y3 = 90 + (flutter / 2);
-        y4 = 70;
+        y1 = 85; y2 = 95 - (flutter / 2); y3 = 90 + (flutter / 2); y4 = 70;
+        arrayBoca.forEach(el => el.style.transition = '');
+    } 
+    else if (estado === 'rindo') {
+        // Modo Gargalhada (Múltiplos pulos contínuos por segundo usando seno)
+        let bounce = Math.sin(Date.now() / 60) * 10; 
+        y1 = 75 + bounce; y2 = 95 + bounce; y3 = 95 + bounce; y4 = 75 + bounce;
+        // Desliga o CSS para ele poder quicar loucamente em tempo real
+        arrayBoca.forEach(el => el.style.transition = 'none');
+    }
+    else if (estado === 'sorrindo') {
+        y1 = 75; y2 = 90; y3 = 90; y4 = 75; // Um sorriso amigável normal
+        arrayBoca.forEach(el => el.style.transition = '');
+    }
+    else {
+        // Neutro 😐 (Parado sem fazer nada)
+        y1 = 85; y2 = 85; y3 = 85; y4 = 85;
+        arrayBoca.forEach(el => el.style.transition = '');
     }
 
-    // Atualiza o desenho da linha e a posição das bolinhas com transição CSS
     mouthLine.setAttribute('d', `M 25,${y1} L 60,${y2} L 100,${y3} L 135,${y4}`);
     mP1.setAttribute('cy', y1);
     mP2.setAttribute('cy', y2);
@@ -52,9 +85,31 @@ function animarBoca(estado, percent = 0) {
     mP4.setAttribute('cy', y4);
 }
 
+// 🟢 O CÉREBRO CONTÍNUO DO MASCOTE (Roda 60x por segundo)
+function renderMascotEmotions() {
+    requestAnimationFrame(renderMascotEmotions);
+    
+    mouseVel *= 0.90; // Desacelera naturalmente quando você para o mouse
+    
+    // Se não tiver clicado em nenhum campo, a emoção segue a física do mouse
+    const isFocus = identInput.matches(':focus') || passInput.matches(':focus') || usernameInput.matches(':focus');
+    
+    if (!isFocus) {
+        if (mouseVel > 40) {
+            animarBoca('rindo'); // 😂
+        } else if (mouseVel > 3) {
+            animarBoca('sorrindo'); // 🙂
+        } else {
+            animarBoca('neutro'); // 😐
+        }
+    }
+}
+requestAnimationFrame(renderMascotEmotions); // Inicia a vida dele!
 
-// 🟢 OLHOS SEGUEM O MOUSE
+// 🟢 OLHOS SEGUEM O MOUSE E CAPTURAM VELOCIDADE
 function rastrearOlhar(clientX, clientY) {
+    trackMouseSpeed(clientX, clientY);
+    
     if (!identInput.matches(':focus') && !passInput.matches(':focus') && !usernameInput.matches(':focus')) {
         const rect = mascotContainer.getBoundingClientRect();
         const x = clientX - rect.left;
@@ -77,8 +132,7 @@ function rastrearOlhar(clientX, clientY) {
 document.addEventListener('mousemove', (e) => rastrearOlhar(e.clientX, e.clientY));
 document.addEventListener('touchmove', (e) => rastrearOlhar(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
 
-
-// 🟢 ACOMPANHA A DIGITAÇÃO E CONTROLA A ALTURA + BOCA
+// 🟢 ACOMPANHA A DIGITAÇÃO
 function trackTyping(inputElement) {
     const length = inputElement.value.length;
     const percent = Math.min(length / 20, 1);
@@ -102,12 +156,12 @@ function trackTyping(inputElement) {
         } else {
             barLeft.style.height = `${64 + (percent * 8)}px`;
             barRight.style.height = `${80 + (percent * 8)}px`;
-            animarBoca('normal', percent);
+            animarBoca('digitando', percent);
         }
     }
 }
 
-// Eventos de Input Text
+// Eventos dos Inputs
 [identInput, usernameInput].forEach(el => {
     el.addEventListener('input', () => trackTyping(el));
     el.addEventListener('focus', () => {
@@ -117,7 +171,6 @@ function trackTyping(inputElement) {
     });
 });
 
-// Eventos da Senha
 passInput.addEventListener('input', () => trackTyping(passInput));
 passInput.addEventListener('focus', () => {
     if (passInput.type === 'password') {
@@ -136,7 +189,7 @@ passInput.addEventListener('blur', () => {
     pupils.forEach(p => p.style.transform = `translate(0px, 0px)`);
     barLeft.style.height = '64px';
     barRight.style.height = '80px';
-    animarBoca('normal', 0);
+    // O Game Loop assume a boca automaticamente ao dar blur
 });
 
 togglePassBtn.addEventListener('click', () => {
@@ -156,7 +209,7 @@ togglePassBtn.addEventListener('click', () => {
     }
 });
 
-// 🟢 PISCAR AUTOMÁTICO
+// PISCAR AUTOMÁTICO
 setInterval(() => {
     const isPasswordFocus = passInput === document.activeElement;
     if (isPasswordFocus && passInput.type === 'password') return; 
@@ -170,8 +223,9 @@ setInterval(() => {
     }, 150);
 }, 4000);
 
+
 // ==========================================
-// ALTERNÂNCIA (LOGIN / CADASTRO / VOLTAR)
+// ALTERNÂNCIA E AUTENTICAÇÃO (MANTIDA INTACTA)
 // ==========================================
 function alternarModoTela() {
     isLogin = !isLogin;
@@ -213,7 +267,6 @@ function alternarModoTela() {
 document.getElementById('btn-toggle-mode').addEventListener('click', alternarModoTela);
 document.getElementById('btn-voltar').addEventListener('click', alternarModoTela);
 
-// Tradutor de erros do Supabase
 function traduzirErroSupabase(mensagem) {
     if (!mensagem) return 'Erro de conexão. Verifique sua internet.';
     const msg = mensagem.toLowerCase();
