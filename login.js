@@ -1,98 +1,135 @@
 // ==========================================
-// login.js - MOTOR DE AUTENTICAÇÃO E CADASTRO
+// login.js - AUTENTICAÇÃO E ANIMAÇÃO DO MASCOTE (UX)
 // ==========================================
 
-document.addEventListener('DOMContentLoaded', async () => {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session) {
-        window.location.replace("index.html"); 
+let isLogin = true;
+
+const emailInput = document.getElementById('email');
+const passInput = document.getElementById('senha');
+const botEyes = document.getElementById('bot-eyes');
+const botHands = document.getElementById('bot-hands');
+const togglePassBtn = document.getElementById('toggle-pass');
+const iconPass = document.getElementById('icon-pass');
+
+// 🟢 MÁGICA 1: Os olhos seguem os caracteres digitados no email
+emailInput.addEventListener('input', (e) => {
+    const length = e.target.value.length;
+    // Cálculo sutil: move no máximo 14px para a direita
+    let move = (length * 0.8) - 10; 
+    if (move > 14) move = 14;
+    if (move < -14) move = -14;
+    botEyes.style.transform = `translateX(${move}px)`;
+});
+
+emailInput.addEventListener('focus', () => {
+    botHands.classList.replace('translate-y-0', 'translate-y-[120%]');
+    botEyes.style.transform = `scale(1) translateX(0px)`;
+});
+
+// 🟢 MÁGICA 2: Cobre os olhos ao focar na senha
+passInput.addEventListener('focus', () => {
+    if (passInput.type === 'password') {
+        botHands.classList.replace('translate-y-[120%]', 'translate-y-0');
+        botEyes.style.transform = `scale(1) translateX(0px)`;
     }
 });
 
-function alternarTelaAuth(tela) {
-    if (tela === 'cadastro') {
-        document.getElementById('form-login').classList.add('hidden');
-        document.getElementById('form-cadastro').classList.remove('hidden');
-        document.getElementById('texto-boas-vindas').innerText = "Crie sua conta para começar";
+passInput.addEventListener('blur', () => {
+    botHands.classList.replace('translate-y-0', 'translate-y-[120%]');
+});
+
+// 🟢 MÁGICA 3: O susto ao clicar em ver senha
+togglePassBtn.addEventListener('click', () => {
+    if (passInput.type === 'password') {
+        passInput.type = 'text';
+        iconPass.classList.replace('fa-eye', 'fa-eye-slash');
+        
+        // Tira as mãos e arregala os olhos!
+        botHands.classList.replace('translate-y-0', 'translate-y-[120%]');
+        botEyes.style.transform = 'scale(1.4)';
     } else {
-        document.getElementById('form-cadastro').classList.add('hidden');
-        document.getElementById('form-login').classList.remove('hidden');
-        document.getElementById('texto-boas-vindas').innerText = "Inteligência financeira na nuvem";
+        passInput.type = 'password';
+        iconPass.classList.replace('fa-eye-slash', 'fa-eye');
+        
+        // Tampa os olhos de novo
+        botHands.classList.replace('translate-y-[120%]', 'translate-y-0');
+        botEyes.style.transform = 'scale(1)';
+        passInput.focus(); 
     }
-}
+});
 
-async function efetuarCadastro() {
-    const nome = document.getElementById('nome-cad') ? document.getElementById('nome-cad').value.trim() : "Usuário";
-    const email = document.getElementById('email-cad').value.trim();
-    const senha = document.getElementById('senha-cad').value;
+// ==========================================
+// LÓGICA DE ALTERNÂNCIA (LOGIN / CADASTRO)
+// ==========================================
+document.getElementById('btn-toggle-mode').addEventListener('click', () => {
+    isLogin = !isLogin;
     
-    if(!email || !senha || senha.length < 6) return alert("E-mail e Senha (mín. 6 caracteres) obrigatórios.");
+    document.getElementById('titulo-form').innerText = isLogin ? 'Acessar DataWallet' : 'Criar Conta de Elite';
+    document.getElementById('subtitulo-form').innerText = isLogin ? 'Sua inteligência financeira na nuvem.' : 'Junte-se à alta performance financeira.';
+    document.getElementById('btn-submit').innerHTML = isLogin ? 'Entrar no Sistema <i class="fa-solid fa-arrow-right"></i>' : 'Cadastrar e Blindar <i class="fa-solid fa-shield-halved"></i>';
+    document.getElementById('texto-rodape').innerText = isLogin ? 'Ainda não faz parte da elite?' : 'Já possui acesso de elite?';
+    document.getElementById('btn-toggle-mode').innerText = isLogin ? 'Criar Conta' : 'Fazer Login';
+    
+    // Oculta ou mostra o termo da LGPD
+    const boxLgpd = document.getElementById('box-lgpd');
+    if (isLogin) {
+        boxLgpd.classList.add('hidden');
+        boxLgpd.classList.remove('flex');
+    } else {
+        boxLgpd.classList.remove('hidden');
+        boxLgpd.classList.add('flex');
+    }
+});
 
-    const btn = document.getElementById('btn-cadastrar');
-    const txtOriginal = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Criando...';
+// ==========================================
+// INTEGRAÇÃO SEGURA COM SUPABASE (AUTH)
+// ==========================================
+document.getElementById('form-auth').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const email = emailInput.value.trim();
+    const senha = passInput.value.trim();
+
+    // 🟢 DEFESA LGPD: Validação obrigatória de consentimento no cadastro
+    if (!isLogin && !document.getElementById('check-lgpd').checked) {
+        return Swal.fire('Atenção', 'Para prosseguirmos, você deve concordar com os termos de tratamento de dados (LGPD).', 'warning');
+    }
+
+    const btn = document.getElementById('btn-submit');
+    const textoOriginal = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Autenticando...';
+    btn.disabled = true;
 
     try {
-        const { data, error } = await supabaseClient.auth.signUp({ 
-            email: email, 
-            password: senha,
-            options: { data: { nome: nome } }
-        });
-        
-        if (error) throw error;
+        const client = window.supabaseClient;
 
-        if (!data.session) {
-            alert("Cadastro realizado! Autopreenhendo seus dados para login.");
-            document.getElementById('email-login').value = email;
-            document.getElementById('senha-login').value = senha;
-            alternarTelaAuth('login');
-            btn.innerHTML = txtOriginal;
-            return;
+        if (isLogin) {
+            // LOGIN
+            const { data, error } = await client.auth.signInWithPassword({ email, password: senha });
+            if (error) throw error;
+            
+            Swal.fire({ icon: 'success', title: 'Acesso Liberado', showConfirmButton: false, timer: 1000 });
+            setTimeout(() => window.location.href = 'dashboard.html', 1000);
+            
+        } else {
+            // CADASTRO (Senhas são automaticamente transformadas em Hash criptografado pelo Supabase - Em conformidade LGPD)
+            const { data, error } = await client.auth.signUp({ email, password: senha });
+            if (error) throw error;
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Cadastro Concluído!',
+                text: 'Sua conta de elite foi criada com segurança. Verifique seu e-mail para confirmar (se exigido).',
+                confirmButtonColor: '#4f46e5'
+            }).then(() => {
+                document.getElementById('btn-toggle-mode').click(); // Volta pro modo login
+            });
         }
-        
-        const usuarioLogado = data.user;
-        
-        // A MAGIA SÊNIOR: Criação automática do ecossistema definitivo do usuário
-        await supabaseClient.from('categorias').insert([
-            { usuario_id: usuarioLogado.id, nome: 'Alimentação', icone: 'fa-burger', cor: 'text-red-500' },
-            { usuario_id: usuarioLogado.id, nome: 'Veículo', icone: 'fa-car', cor: 'text-gray-700' },
-            { usuario_id: usuarioLogado.id, nome: 'Moradia', icone: 'fa-house', cor: 'text-blue-500' },
-            { usuario_id: usuarioLogado.id, nome: 'Estudo', icone: 'fa-graduation-cap', cor: 'text-purple-500' },
-            { usuario_id: usuarioLogado.id, nome: 'Imprevistos', icone: 'fa-kit-medical', cor: 'text-teal-500' },
-            { usuario_id: usuarioLogado.id, nome: 'Lazer & Pessoal', icone: 'fa-ticket', cor: 'text-pink-500' },
-            { usuario_id: usuarioLogado.id, nome: 'Renda & Salário', icone: 'fa-money-bill-wave', cor: 'text-green-500' }
-        ]);
-
-        await supabaseClient.from('planos').insert([
-            { usuario_id: usuarioLogado.id, nome: 'Reserva de Emergência', valor_meta: 10000, cor: 'bg-blue-500' }
-        ]);
-
-        window.location.replace("index.html"); 
-
-    } catch (e) {
-        alert("Erro no cadastro: " + e.message);
-        btn.innerHTML = txtOriginal;
+    } catch (err) {
+        // Mensagem genérica por segurança (Evita informar se o e-mail existe ou se a senha está errada)
+        Swal.fire('Falha na Autenticação', 'Verifique suas credenciais e tente novamente.', 'error');
+    } finally {
+        btn.innerHTML = textoOriginal;
+        btn.disabled = false;
     }
-}
-
-async function efetuarLogin() {
-    const email = document.getElementById('email-login').value.trim();
-    const senha = document.getElementById('senha-login').value;
-    
-    if(!email || !senha) return alert("Preencha e-mail e senha.");
-
-    const btn = document.getElementById('btn-login-desk');
-    const txtOriginal = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Entrando...';
-
-    try {
-        const { error } = await supabaseClient.auth.signInWithPassword({ email: email, password: senha });
-        if (error) throw error;
-        
-        window.location.replace("index.html");
-
-    } catch (e) {
-        alert("Login falhou. Verifique as credenciais.");
-        btn.innerHTML = txtOriginal;
-    }
-}
+});
