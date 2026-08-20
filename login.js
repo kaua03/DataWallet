@@ -1,10 +1,11 @@
 // ==========================================
-// login.js - LÓGICA DO GRÁFICO VIVO E TEXTOS ATUALIZADOS
+// login.js - LÓGICA DO GRÁFICO E LOGIN DUPLO (EMAIL/USER)
 // ==========================================
 
 let isLogin = true;
 
-const emailInput = document.getElementById('email');
+const identInput = document.getElementById('identificador');
+const usernameInput = document.getElementById('username');
 const passInput = document.getElementById('senha');
 const togglePassBtn = document.getElementById('toggle-pass');
 const iconPass = document.getElementById('icon-pass');
@@ -16,9 +17,9 @@ const eyelidR = document.getElementById('eyelid-r');
 const barLeft = document.getElementById('bar-left');
 const barRight = document.getElementById('bar-right');
 
-// 🟢 OLHOS SEGUEM O MOUSE / DEDO (Quando não está focado nos inputs)
+// 🟢 OLHOS SEGUEM O MOUSE
 function rastrearOlhar(clientX, clientY) {
-    if (!emailInput.matches(':focus') && !passInput.matches(':focus')) {
+    if (!identInput.matches(':focus') && !passInput.matches(':focus') && !usernameInput.matches(':focus')) {
         const rect = mascotContainer.getBoundingClientRect();
         const x = clientX - rect.left;
         const y = clientY - rect.top;
@@ -40,60 +41,49 @@ function rastrearOlhar(clientX, clientY) {
 document.addEventListener('mousemove', (e) => rastrearOlhar(e.clientX, e.clientY));
 document.addEventListener('touchmove', (e) => rastrearOlhar(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
 
-
-// 🟢 ACOMPANHA A DIGITAÇÃO E CONTROLA A ALTURA (O Efeito "Curiar")
+// 🟢 ACOMPANHA A DIGITAÇÃO
 function trackTyping(inputElement) {
     const length = inputElement.value.length;
     const percent = Math.min(length / 20, 1);
-    const moveX = (percent * 8) - 4; // Move a pupila da esquerda para a direita
+    const moveX = (percent * 8) - 4; 
     
     const isPasswordFocus = passInput === document.activeElement;
     const isHidden = isPasswordFocus && passInput.type === 'password';
 
     if (isHidden) {
-        // 🟢 MODO ESCONDIDO ("CURIANDO POR CIMA DO MURO")
-        pupils.forEach(pupil => {
-            pupil.style.transform = `translate(${moveX}px, 2px)`; // Foca um pouco pra baixo
-        });
-        
-        // Oculta as barras rebaixando a altura delas drasticamente (Afundam atrás da base)
+        pupils.forEach(pupil => { pupil.style.transform = `translate(${moveX}px, 2px)`; });
         barLeft.style.height = '30px';
         barRight.style.height = '35px';
     } else {
-        // 🟢 MODO NORMAL (Lendo o E-mail ou Senha Exposta)
-        pupils.forEach(pupil => {
-            pupil.style.transform = `translate(${moveX}px, 1px)`;
-        });
+        pupils.forEach(pupil => { pupil.style.transform = `translate(${moveX}px, 1px)`; });
         
-        // Se estiver na senha revelada, as barras ficam levemente mais altas que o normal (Assustado/Atento)
         if (isPasswordFocus && passInput.type === 'text') {
             barLeft.style.height = `${70 + (percent * 5)}px`;
             barRight.style.height = `${86 + (percent * 5)}px`;
         } else {
-            // Digitanto o E-mail normal
             barLeft.style.height = `${64 + (percent * 8)}px`;
             barRight.style.height = `${80 + (percent * 8)}px`;
         }
     }
 }
 
-// Eventos do Email
-emailInput.addEventListener('input', () => trackTyping(emailInput));
-emailInput.addEventListener('focus', () => {
-    eyelidL.style.transform = 'scaleY(0)';
-    eyelidR.style.transform = 'scaleY(0)';
-    trackTyping(emailInput);
+// Eventos de Input Text (Email e Username)
+[identInput, usernameInput].forEach(el => {
+    el.addEventListener('input', () => trackTyping(el));
+    el.addEventListener('focus', () => {
+        eyelidL.style.transform = 'scaleY(0)';
+        eyelidR.style.transform = 'scaleY(0)';
+        trackTyping(el);
+    });
 });
 
 // Eventos da Senha
 passInput.addEventListener('input', () => trackTyping(passInput));
 passInput.addEventListener('focus', () => {
     if (passInput.type === 'password') {
-        // "Curiando": Pálpebras descem 60% nos dois olhos (apertando a vista)
         eyelidL.style.transform = 'scaleY(0.6)';
         eyelidR.style.transform = 'scaleY(0.6)';
     } else {
-        // Senha exposta: Olhos arregalados
         eyelidL.style.transform = 'scaleY(0)';
         eyelidR.style.transform = 'scaleY(0)';
     }
@@ -101,7 +91,6 @@ passInput.addEventListener('focus', () => {
 });
 
 passInput.addEventListener('blur', () => {
-    // Quando sai da senha, as pálpebras abrem, as pupilas resetam e o corpo levanta
     eyelidL.style.transform = 'scaleY(0)';
     eyelidR.style.transform = 'scaleY(0)';
     pupils.forEach(p => p.style.transform = `translate(0px, 0px)`);
@@ -109,40 +98,29 @@ passInput.addEventListener('blur', () => {
     barRight.style.height = '80px';
 });
 
-// Botão do Olhinho (Revelar Senha)
 togglePassBtn.addEventListener('click', () => {
     if (passInput.type === 'password') {
-        // Revelou a senha: Pula de trás do muro e arregala os olhos
         passInput.type = 'text';
         iconPass.classList.replace('fa-eye', 'fa-eye-slash');
-        
         eyelidL.style.transform = 'scaleY(0)';   
         eyelidR.style.transform = 'scaleY(0)'; 
-        trackTyping(passInput); // Reposiciona as barras lá no alto
+        trackTyping(passInput); 
     } else {
-        // Escondeu a senha: Volta a se abaixar e curiar
         passInput.type = 'password';
         iconPass.classList.replace('fa-eye-slash', 'fa-eye');
-        
         eyelidL.style.transform = 'scaleY(0.6)'; 
         eyelidR.style.transform = 'scaleY(0.6)';
         passInput.focus();
-        trackTyping(passInput); // Encolhe as barras novamente
+        trackTyping(passInput); 
     }
 });
 
-// 🟢 PISCAR AUTOMÁTICO (Vida ao mascote)
 setInterval(() => {
     const isPasswordFocus = passInput === document.activeElement;
-    
-    // Se o mascote estiver escondido/curiando a senha, ele não pisca para não estragar o charme da pose.
     if (isPasswordFocus && passInput.type === 'password') return; 
-    
     eyelidL.style.transform = 'scaleY(1)';
     eyelidR.style.transform = 'scaleY(1)';
-    
     setTimeout(() => {
-        // Retorna ao estado normal 
         if (!isPasswordFocus || (isPasswordFocus && passInput.type === 'text')) {
             eyelidL.style.transform = 'scaleY(0)';
             eyelidR.style.transform = 'scaleY(0)';
@@ -151,10 +129,11 @@ setInterval(() => {
 }, 4000);
 
 // ==========================================
-// ALTERNÂNCIA E SUPABASE
+// ALTERNÂNCIA E SUPABASE (DUAL LOGIN)
 // ==========================================
 document.getElementById('btn-toggle-mode').addEventListener('click', () => {
     isLogin = !isLogin;
+    
     document.getElementById('titulo-form').innerText = isLogin ? 'Acesso Seguro' : 'Criar Conta';
     document.getElementById('subtitulo-form').innerText = isLogin ? 'Analytics & Inteligência Financeira.' : 'Junte-se à alta performance financeira.';
     
@@ -165,15 +144,46 @@ document.getElementById('btn-toggle-mode').addEventListener('click', () => {
     document.getElementById('texto-rodape').innerText = isLogin ? 'Ainda não tem cadastro?' : 'Já possui cadastro?';
     document.getElementById('btn-toggle-mode').innerText = isLogin ? 'Criar Conta' : 'Fazer Login';
     
+    // Transições de campos do Formulário
     const boxLgpd = document.getElementById('box-lgpd');
-    if (isLogin) { boxLgpd.classList.add('hidden'); boxLgpd.classList.remove('flex'); } 
-    else { boxLgpd.classList.remove('hidden'); boxLgpd.classList.add('flex'); }
+    const boxUsername = document.getElementById('box-username');
+    const labelIdent = document.getElementById('label-identificador');
+    const iconIdent = document.getElementById('icon-identificador');
+    
+    if (isLogin) { 
+        boxLgpd.classList.add('hidden'); boxLgpd.classList.remove('flex');
+        boxUsername.classList.add('hidden', 'opacity-0');
+        usernameInput.required = false;
+        labelIdent.innerText = "E-mail ou Usuário";
+        identInput.placeholder = "Ex: kaua ou kaua@email.com";
+        iconIdent.className = "fa-solid fa-user absolute left-4 text-slate-500 transition-colors duration-300 group-focus-within:text-blue-400";
+    } else { 
+        boxLgpd.classList.remove('hidden'); boxLgpd.classList.add('flex');
+        boxUsername.classList.remove('hidden'); 
+        setTimeout(() => boxUsername.classList.remove('opacity-0'), 50); // Efeito fade
+        usernameInput.required = true;
+        labelIdent.innerText = "Seu E-mail";
+        identInput.placeholder = "Ex: kaua@email.com";
+        iconIdent.className = "fa-solid fa-envelope absolute left-4 text-slate-500 transition-colors duration-300 group-focus-within:text-blue-400";
+    }
 });
+
+// Tradutor de erros do Supabase
+function traduzirErroSupabase(mensagem) {
+    const msg = mensagem.toLowerCase();
+    if (msg.includes('invalid login credentials')) return 'E-mail, usuário ou senha incorretos.';
+    if (msg.includes('password should be at least')) return 'A senha deve ter no mínimo 6 caracteres.';
+    if (msg.includes('user already registered')) return 'Este e-mail ou usuário já está cadastrado.';
+    if (msg.includes('rate limit')) return 'Muitas tentativas. Aguarde um momento.';
+    return 'Erro interno. Verifique seus dados e tente novamente.';
+}
 
 document.getElementById('form-auth').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const email = emailInput.value.trim();
+    
+    const identificador = identInput.value.trim().toLowerCase();
     const senha = passInput.value.trim();
+    const username = usernameInput.value.trim().toLowerCase();
 
     if (!isLogin && !document.getElementById('check-lgpd').checked) {
         return Swal.fire('Atenção', 'Você deve concordar com os termos de tratamento de dados (LGPD).', 'warning');
@@ -181,28 +191,60 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
 
     const btn = document.getElementById('btn-submit');
     const textoOriginal = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Autenticando...';
+    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processando...';
     btn.disabled = true;
 
     try {
         const client = window.supabaseClient;
+
         if (isLogin) {
-            const { error } = await client.auth.signInWithPassword({ email, password: senha });
+            // LÓGICA DE LOGIN DUPLO
+            let emailLogin = identificador;
+            
+            // Se o cara não digitou "@", assumimos que é o Username. Vamos consultar o "Dicionário"!
+            if (!identificador.includes('@')) {
+                const { data, error: errUser } = await client.from('usuarios_dicionario').select('email').eq('username', identificador).single();
+                
+                if (errUser || !data) {
+                    throw new Error('invalid login credentials'); // Força erro padrão para não dar dicas a hackers
+                }
+                emailLogin = data.email; // Achamos o email dele!
+            }
+
+            const { error } = await client.auth.signInWithPassword({ email: emailLogin, password: senha });
             if (error) throw error;
+            
             Swal.fire({ icon: 'success', title: 'Acesso Liberado', showConfirmButton: false, timer: 1000 });
             setTimeout(() => window.location.href = 'dashboard.html', 1000);
+            
         } else {
-            const { error } = await client.auth.signUp({ email, password: senha });
-            if (error) throw error;
+            // LÓGICA DE CADASTRO
+            // 1. Verifica se o username já existe no Dicionário
+            const { data: userExiste } = await client.from('usuarios_dicionario').select('username').eq('username', username).single();
+            if (userExiste) throw new Error('user already registered');
+
+            // 2. Cria a conta no Supabase Auth
+            const { data: authData, error: authErr } = await client.auth.signUp({ email: identificador, password: senha });
+            if (authErr) throw authErr;
+
+            // 3. Salva o nickname no Dicionário para logins futuros
+            await client.from('usuarios_dicionario').insert([{ username: username, email: identificador }]);
+
             Swal.fire({
                 icon: 'success',
-                title: 'Solicitação Enviada!',
-                text: 'Sua conta foi criada com segurança. Aguarde a liberação do Administrador.',
-                confirmButtonColor: '#4f46e5'
-            }).then(() => { document.getElementById('btn-toggle-mode').click(); });
+                title: 'Cadastro Concluído!',
+                text: 'Sua conta de elite foi criada com segurança. Você já pode fazer login.',
+                confirmButtonColor: '#2563eb'
+            }).then(() => { 
+                document.getElementById('btn-toggle-mode').click(); 
+                identInput.value = username; // Preenche o usuário para ele
+                passInput.value = '';
+            });
         }
     } catch (err) {
-        Swal.fire('Falha na Autenticação', 'Verifique suas credenciais e tente novamente.', 'error');
+        // Agora você vai saber EXATAMENTE o que deu errado (fim da Síndrome do Impostor)
+        const msgAmigavel = traduzirErroSupabase(err.message);
+        Swal.fire('Falha na Autenticação', msgAmigavel, 'error');
     } finally {
         btn.innerHTML = textoOriginal;
         btn.disabled = false;
