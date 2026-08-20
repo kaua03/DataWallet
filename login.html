@@ -46,10 +46,9 @@
             <i class="fa-solid fa-arrow-left"></i>
         </button>
 
-        <!-- O MASCOTE (Combo Chart: Barras + Linha) -->
+        <!-- O MASCOTE (Combo Chart Vivo) -->
         <div class="relative w-40 h-28 mx-auto mb-4 flex items-end justify-center gap-3 px-4 bg-slate-950/60 rounded-2xl border border-slate-800/80 shadow-inner py-3 mt-4" id="mascot-container">
             
-            <!-- Barras (O Corpo/Olhos) -->
             <div class="w-7 h-12 bg-slate-800 rounded-t-lg border-t border-x border-slate-700 transition-all duration-300"></div>
             
             <div id="bar-left" class="relative w-9 h-16 bg-blue-600/30 rounded-t-lg border-t border-x border-blue-500/50 flex flex-col justify-start items-center pt-2 transition-all duration-300 shadow-[0_0_15px_rgba(59,130,246,0.2)] z-10">
@@ -68,16 +67,14 @@
 
             <div class="w-7 h-10 bg-slate-800 rounded-t-lg border-t border-x border-slate-700 transition-all duration-300"></div>
 
-            <!-- 🟢 O Gráfico de Linha (A Boca com Sorriso Torto) -->
+            <!-- 🟢 O Gráfico de Linha (A Boca Neutra Inicial) -->
             <svg class="absolute inset-0 w-full h-full pointer-events-none drop-shadow-[0_0_6px_rgba(34,211,238,0.4)] z-20" viewBox="0 0 160 112">
-                <!-- A Linha do Gráfico -->
-                <path id="mouth-line" d="M 25,85 L 60,95 L 100,90 L 135,70" fill="none" stroke="#22d3ee" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="transition-all duration-300 ease-out"/>
+                <path id="mouth-line" d="M 25,85 L 60,85 L 100,85 L 135,85" fill="none" stroke="#22d3ee" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="transition-all duration-300 ease-out"/>
                 
-                <!-- Os Pontos de Dados do Gráfico -->
                 <circle id="mouth-p1" cx="25" cy="85" r="3.5" fill="#020617" stroke="#22d3ee" stroke-width="2" class="transition-all duration-300 ease-out"/>
-                <circle id="mouth-p2" cx="60" cy="95" r="3.5" fill="#020617" stroke="#22d3ee" stroke-width="2" class="transition-all duration-300 ease-out"/>
-                <circle id="mouth-p3" cx="100" cy="90" r="3.5" fill="#020617" stroke="#22d3ee" stroke-width="2" class="transition-all duration-300 ease-out"/>
-                <circle id="mouth-p4" cx="135" cy="70" r="3.5" fill="#020617" stroke="#22d3ee" stroke-width="2" class="transition-all duration-300 ease-out"/>
+                <circle id="mouth-p2" cx="60" cy="85" r="3.5" fill="#020617" stroke="#22d3ee" stroke-width="2" class="transition-all duration-300 ease-out"/>
+                <circle id="mouth-p3" cx="100" cy="85" r="3.5" fill="#020617" stroke="#22d3ee" stroke-width="2" class="transition-all duration-300 ease-out"/>
+                <circle id="mouth-p4" cx="135" cy="85" r="3.5" fill="#020617" stroke="#22d3ee" stroke-width="2" class="transition-all duration-300 ease-out"/>
             </svg>
 
         </div>
