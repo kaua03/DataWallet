@@ -1,5 +1,5 @@
 // ==========================================
-// login.js - LÓGICA DO GRÁFICO VIVO DE BARRA
+// login.js - LÓGICA DO GRÁFICO VIVO E TOUCH (MOBILE)
 // ==========================================
 
 let isLogin = true;
@@ -16,12 +16,12 @@ const eyelidR = document.getElementById('eyelid-r');
 const barLeft = document.getElementById('bar-left');
 const barRight = document.getElementById('bar-right');
 
-// 🟢 OLHOS SEGUEM O MOUSE
-document.addEventListener('mousemove', (e) => {
+// 🟢 RASTREAMENTO UNIVERSAL (MOUSE NO PC E DEDO NO CELULAR)
+function rastrearOlhar(clientX, clientY) {
     if (!emailInput.matches(':focus') && !passInput.matches(':focus')) {
         const rect = mascotContainer.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
 
         pupils.forEach(pupil => {
             const bounds = pupil.getBoundingClientRect();
@@ -29,16 +29,22 @@ document.addEventListener('mousemove', (e) => {
             const pupilY = bounds.top - rect.top + bounds.height / 2;
             
             const angle = Math.atan2(y - pupilY, x - pupilX);
-            const distance = 4;
+            const distance = 4; // Raio limite do globo ocular
             
             const moveX = Math.cos(angle) * distance;
             const moveY = Math.sin(angle) * distance;
             pupil.style.transform = `translate(${moveX}px, ${moveY}px)`;
         });
     }
-});
+}
 
-// 🟢 ACOMPANHA A DIGITAÇÃO (Cresce levemente as barras e mexe as pupilas)
+// Escuta o Mouse no Computador
+document.addEventListener('mousemove', (e) => rastrearOlhar(e.clientX, e.clientY));
+
+// Escuta o Deslizar do Dedo no Celular (touches[0] é o primeiro dedo na tela)
+document.addEventListener('touchmove', (e) => rastrearOlhar(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+
+// 🟢 ACOMPANHA A DIGITAÇÃO (Cresce as barras e mexe as pupilas)
 function trackTyping(inputElement) {
     const length = inputElement.value.length;
     const percent = Math.min(length / 20, 1);
@@ -48,12 +54,11 @@ function trackTyping(inputElement) {
         pupil.style.transform = `translate(${moveX}px, 1px)`;
     });
 
-    // Reação visual: As barras esticam levemente para cima conforme você digita dados
     barLeft.style.height = `${64 + (percent * 8)}px`;
     barRight.style.height = `${80 + (percent * 8)}px`;
 }
 
-// 🟢 EVENTOS DE FOCO
+// 🟢 EVENTOS DO E-MAIL
 emailInput.addEventListener('input', () => trackTyping(emailInput));
 emailInput.addEventListener('focus', () => {
     eyelidL.style.transform = 'scaleY(0)';
@@ -61,17 +66,22 @@ emailInput.addEventListener('focus', () => {
     trackTyping(emailInput);
 });
 
+// 🟢 EVENTOS DA SENHA (A Mágica da Espiadinha)
 passInput.addEventListener('input', () => trackTyping(passInput));
 passInput.addEventListener('focus', () => {
     if (passInput.type === 'password') {
-        eyelidL.style.transform = 'scaleY(1)'; // Fecha o olho esquerdo (espiando)
-        eyelidR.style.transform = 'scaleY(0)'; // Mantém o direito aberto
+        eyelidL.style.transform = 'scaleY(1)'; // Fecha olho esquerdo 100%
+        eyelidR.style.transform = 'scaleY(1)'; // Fecha olho direito 100%
+    } else {
+        eyelidL.style.transform = 'scaleY(1)';   // Esquerdo continua fechado
+        eyelidR.style.transform = 'scaleY(0.6)'; // Direito espiando pela fresta (60% fechado)
     }
     trackTyping(passInput);
 });
 
 passInput.addEventListener('blur', () => {
-    eyelidL.style.transform = 'scaleY(0)';
+    eyelidL.style.transform = 'scaleY(0)'; // Abre
+    eyelidR.style.transform = 'scaleY(0)'; // Abre
     pupils.forEach(p => p.style.transform = `translate(0px, 0px)`);
     barLeft.style.height = '64px';
     barRight.style.height = '80px';
@@ -82,31 +92,43 @@ togglePassBtn.addEventListener('click', () => {
     if (passInput.type === 'password') {
         passInput.type = 'text';
         iconPass.classList.replace('fa-eye', 'fa-eye-slash');
-        eyelidL.style.transform = 'scaleY(0);'; // Abre os dois olhos com tudo
-        eyelidR.style.transform = 'scaleY(0)';
+        
+        // O Efeito Espião: Arregala só a metade de um olho!
+        eyelidL.style.transform = 'scaleY(1)';   // Mantém esquerdo trancado
+        eyelidR.style.transform = 'scaleY(0.6)'; // Levanta um pouco a pálpebra direita
+        
     } else {
         passInput.type = 'password';
         iconPass.classList.replace('fa-eye-slash', 'fa-eye');
-        eyelidL.style.transform = 'scaleY(1)'; // Fecha o esquerdo de novo
+        
+        // Volta a fechar os dois
+        eyelidL.style.transform = 'scaleY(1)'; 
+        eyelidR.style.transform = 'scaleY(1)';
         passInput.focus();
     }
 });
 
-// 🟢 PISCAR AUTOMÁTICO DAS BARRAS
+// 🟢 PISCAR AUTOMÁTICO (Com trava de inteligência)
 setInterval(() => {
-    const isPasswordHidden = passInput === document.activeElement && passInput.type === 'password';
+    const isPasswordFocus = passInput === document.activeElement;
     
-    if (!isPasswordHidden) eyelidL.style.transform = 'scaleY(1)';
+    // Se o usuário estiver na senha, o sistema anula o piscar automático 
+    // para não quebrar a animação dos olhos já fechados ou espiando.
+    if (isPasswordFocus) return; 
+    
+    eyelidL.style.transform = 'scaleY(1)';
     eyelidR.style.transform = 'scaleY(1)';
     
     setTimeout(() => {
-        if (!isPasswordHidden) eyelidL.style.transform = 'scaleY(0)';
-        eyelidR.style.transform = 'scaleY(0)';
+        if (!isPasswordFocus) {
+            eyelidL.style.transform = 'scaleY(0)';
+            eyelidR.style.transform = 'scaleY(0)';
+        }
     }, 150);
 }, 4000);
 
 // ==========================================
-// ALTERNÂNCIA E SUPABASE
+// ALTERNÂNCIA E INTEGRAÇÃO SUPABASE
 // ==========================================
 document.getElementById('btn-toggle-mode').addEventListener('click', () => {
     isLogin = !isLogin;
