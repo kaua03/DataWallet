@@ -1,5 +1,5 @@
 // ==========================================
-// login.js - LÓGICA DO GRÁFICO E NAVEGAÇÃO LIMPA
+// login.js - LÓGICA DO GRÁFICO E LOGIN DUPLO (EMAIL/USER)
 // ==========================================
 
 let isLogin = true;
@@ -141,7 +141,6 @@ function alternarModoTela() {
         ? 'Acessar <i class="fa-solid fa-arrow-right transition-transform duration-300 group-hover:translate-x-1.5"></i>' 
         : 'Cadastrar <i class="fa-solid fa-shield-halved transition-transform duration-300 group-hover:scale-110"></i>';
     
-    // Esconde ou Mostra Elementos da Interface
     const boxLgpd = document.getElementById('box-lgpd');
     const boxUsername = document.getElementById('box-username');
     const labelIdent = document.getElementById('label-identificador');
@@ -150,25 +149,21 @@ function alternarModoTela() {
     const boxRodape = document.getElementById('box-rodape');
     
     if (isLogin) { 
-        // MODO LOGIN
         btnVoltar.classList.add('hidden');
         boxRodape.classList.remove('hidden');
-        
         boxLgpd.classList.add('hidden'); boxLgpd.classList.remove('flex');
         boxUsername.classList.add('hidden', 'opacity-0');
         usernameInput.required = false;
         labelIdent.innerText = "E-mail ou Usuário";
         iconIdent.className = "fa-solid fa-user absolute left-4 text-slate-500 transition-colors duration-300 group-focus-within:text-blue-400";
     } else { 
-        // MODO CADASTRO
         btnVoltar.classList.remove('hidden');
-        boxRodape.classList.add('hidden'); // Esconde o rodapé no cadastro para ficar mais limpo
-        
+        boxRodape.classList.add('hidden'); 
         boxLgpd.classList.remove('hidden'); boxLgpd.classList.add('flex');
         boxUsername.classList.remove('hidden'); 
         setTimeout(() => boxUsername.classList.remove('opacity-0'), 50); 
         usernameInput.required = true;
-        labelIdent.innerText = "E-mail"; // Como tem campo de usuário, aqui vira só E-mail
+        labelIdent.innerText = "E-mail"; 
         iconIdent.className = "fa-solid fa-envelope absolute left-4 text-slate-500 transition-colors duration-300 group-focus-within:text-blue-400";
     }
 }
@@ -176,14 +171,18 @@ function alternarModoTela() {
 document.getElementById('btn-toggle-mode').addEventListener('click', alternarModoTela);
 document.getElementById('btn-voltar').addEventListener('click', alternarModoTela);
 
-// Tradutor de erros do Supabase
+// 🟢 TRADUTOR DE ERROS EVOLUÍDO
 function traduzirErroSupabase(mensagem) {
+    if (!mensagem) return 'Erro de conexão. Verifique sua internet.';
     const msg = mensagem.toLowerCase();
+    
     if (msg.includes('invalid login credentials')) return 'E-mail, usuário ou senha incorretos.';
     if (msg.includes('password should be at least')) return 'A senha deve ter no mínimo 6 caracteres.';
-    if (msg.includes('user already registered')) return 'Este e-mail ou usuário já está cadastrado.';
+    if (msg.includes('user already registered') || msg.includes('already exists')) return 'Este e-mail ou usuário já está em uso.';
     if (msg.includes('rate limit')) return 'Muitas tentativas. Aguarde um momento.';
-    return 'Erro interno. Verifique seus dados e tente novamente.';
+    
+    // Se o erro não for reconhecido, mostra a mensagem real do banco de dados na tela!
+    return `Alerta do Banco de Dados: ${mensagem}`;
 }
 
 document.getElementById('form-auth').addEventListener('submit', async (e) => {
@@ -209,7 +208,7 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
             let emailLogin = identificador;
             
             if (!identificador.includes('@')) {
-                const { data, error: errUser } = await client.from('usuarios_dicionario').select('email').eq('username', identificador).single();
+                const { data, error: errUser } = await client.from('usuarios_dicionario').select('email').eq('username', identificador).maybeSingle();
                 if (errUser || !data) throw new Error('invalid login credentials'); 
                 emailLogin = data.email; 
             }
@@ -221,19 +220,31 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
             setTimeout(() => window.location.href = 'dashboard.html', 1000);
             
         } else {
-            const { data: userExiste } = await client.from('usuarios_dicionario').select('username').eq('username', username).single();
-            if (userExiste) throw new Error('user already registered');
+            // 🟢 1. Busca sem dar pânico se não achar ninguém
+            const { data: userExiste, error: errBusca } = await client.from('usuarios_dicionario').select('username').eq('username', username);
+            if (errBusca) throw errBusca; // Se falhar por RLS, joga pro catch real
+            
+            if (userExiste && userExiste.length > 0) {
+                throw new Error('user already registered'); // O usuário já existe
+            }
 
+            // 🟢 2. Cria no Auth
             const { data: authData, error: authErr } = await client.auth.signUp({ email: identificador, password: senha });
             if (authErr) throw authErr;
 
-            await client.from('usuarios_dicionario').insert([{ username: username, email: identificador }]);
+            // 🟢 3. Quebra do Escudo Anti-Espionagem (Se o e-mail já existir e a config do supabase esconder)
+            if (authData?.user?.identities?.length === 0) {
+                throw new Error('user already registered');
+            }
 
-            // 🟢 INTEGRAÇÃO FINAL: Confirmação Oficial do E-mail
+            // 🟢 4. Salva no Dicionário
+            const { error: insertErr } = await client.from('usuarios_dicionario').insert([{ username: username, email: identificador }]);
+            if (insertErr) throw insertErr;
+
             Swal.fire({
                 icon: 'success',
                 title: 'Cadastro Concluído!',
-                text: 'Sua conta de elite foi criada com segurança. Verifique a caixa de entrada do seu e-mail para validar o acesso.',
+                text: 'Sua conta de elite foi criada com segurança. Faça o login para continuar.',
                 confirmButtonColor: '#2563eb'
             }).then(() => { 
                 alternarModoTela(); 
@@ -242,7 +253,8 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
             });
         }
     } catch (err) {
-        const msgAmigavel = traduzirErroSupabase(err.message);
+        console.error("LOG DE ERRO TÉCNICO PARA O KAUÃ:", err);
+        const msgAmigavel = traduzirErroSupabase(err.message || err.error_description || JSON.stringify(err));
         Swal.fire('Falha na Autenticação', msgAmigavel, 'error');
     } finally {
         btn.innerHTML = textoOriginal;
