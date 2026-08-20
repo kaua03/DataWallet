@@ -18,17 +18,17 @@
         .fade-in { animation: fadeIn 0.5s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Mágica do Botão: Feixe de Luz (Shine) */
+        /* Mágica do Botão: Feixe de Luz (Shine) Corrigido */
         @keyframes shimmer {
             0% { transform: translateX(-150%) skewX(-20deg); }
-            100% { transform: translateX(200%) skewX(-20deg); }
+            100% { transform: translateX(300%) skewX(-20deg); } /* Vai muito além do limite direito */
         }
         .btn-shine { position: relative; overflow: hidden; }
         .btn-shine::after {
             content: '';
             position: absolute;
-            top: 0; left: 0; width: 30%; height: 100%;
-            background: linear-gradient(to right, transparent, rgba(255,255,255,0.2), transparent);
+            top: 0; left: 0; width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.25), transparent);
             animation: shimmer 3.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
             pointer-events: none;
         }
@@ -71,17 +71,16 @@
 
         <form id="form-auth" class="space-y-5">
             
-            <!-- Campo: E-mail ou Usuário (Com Animação de Foco) -->
+            <!-- Campo: E-mail ou Usuário -->
             <div>
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">E-mail ou Usuário</label>
-                <!-- Container group com foco: flutua, pinta a borda e projeta sombra colorida -->
                 <div class="group relative flex items-center bg-slate-950 rounded-xl border border-slate-800 transition-all duration-300 focus-within:-translate-y-1 focus-within:shadow-[0_10px_25px_rgba(99,102,241,0.15)] focus-within:border-indigo-500">
                     <i class="fa-solid fa-user absolute left-4 text-slate-500 transition-colors duration-300 group-focus-within:text-indigo-400"></i>
                     <input type="text" id="email" required placeholder="Digite seu acesso..." class="w-full bg-transparent text-white pl-11 pr-4 py-3.5 outline-none font-medium">
                 </div>
             </div>
 
-            <!-- Campo: Senha (Com Animação de Foco) -->
+            <!-- Campo: Senha -->
             <div>
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Senha</label>
                 <div class="group relative flex items-center bg-slate-950 rounded-xl border border-slate-800 transition-all duration-300 focus-within:-translate-y-1 focus-within:shadow-[0_10px_25px_rgba(99,102,241,0.15)] focus-within:border-indigo-500">
@@ -100,7 +99,7 @@
                 </label>
             </div>
 
-            <!-- Botão Acessar (Com Efeito Shine, Hover Float e Seta Animada) -->
+            <!-- Botão Acessar -->
             <button type="submit" id="btn-submit" class="group btn-shine w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black text-lg py-4 rounded-xl shadow-[0_10px_20px_rgba(79,70,229,0.3)] hover:shadow-[0_15px_30px_rgba(79,70,229,0.5)] transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] mt-6 flex items-center justify-center gap-2">
                 Acessar <i class="fa-solid fa-arrow-right transition-transform duration-300 group-hover:translate-x-1.5"></i>
             </button>
