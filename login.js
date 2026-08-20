@@ -1,5 +1,5 @@
 // ==========================================
-// login.js - ENGINE DE EMOÇÃO COM "CÓCEGAS" E FÍSICA REAL
+// login.js - ENGINE DE EMOÇÃO COM FÍSICA CORRIGIDA (DRENO RÁPIDO)
 // ==========================================
 
 let isLogin = true;
@@ -26,10 +26,10 @@ const mP3 = document.getElementById('mouth-p3');
 const mP4 = document.getElementById('mouth-p4');
 const arrayBoca = [mouthLine, mP1, mP2, mP3, mP4];
 
-// 🟢 FÍSICA DO MOUSE E "MEDIDOR DE CÓCEGAS"
+// 🟢 FÍSICA DO MOUSE E MEDIDOR DE CÓCEGAS
 let mouseVel = 0;
 let lastX = 0, lastY = 0, lastTime = Date.now();
-let tickleMeter = 0; // Medidor que vai de 0 a 100+
+let tickleMeter = 0; 
 
 function trackMouseSpeed(clientX, clientY) {
     const now = Date.now();
@@ -117,9 +117,12 @@ function animarBoca(estado, percent = 0) {
 function renderMascotEmotions() {
     requestAnimationFrame(renderMascotEmotions);
     
-    // Desacelera a velocidade do mouse e o medidor de cócegas naturalmente
+    // Desacelera a velocidade do mouse
     mouseVel *= 0.90; 
-    tickleMeter = Math.max(0, tickleMeter - 3); // O medidor esvazia rápido se parar de fazer cócegas
+    
+    // 🟢 O DRENO INTELIGENTE: Se a mão do usuário parou (velocidade baixa), esvazia MUITO mais rápido.
+    const taxaEsvaziamento = (mouseVel < 10) ? 12 : 3;
+    tickleMeter = Math.max(0, tickleMeter - taxaEsvaziamento); 
     
     if (isErrorMode) {
         if (estadoMascote !== 'triste') {
@@ -132,7 +135,7 @@ function renderMascotEmotions() {
     const isFocus = identInput.matches(':focus') || passInput.matches(':focus') || usernameInput.matches(':focus');
     
     if (!isFocus) {
-        // MÁGICA: Só dá gargalhada se o Medidor de Cócegas passar de 100!
+        // Gargalhada ativa se passar de 100
         if (tickleMeter > 100) { 
             animarBoca('rindo');
             estadoMascote = 'rindo';
@@ -142,7 +145,7 @@ function renderMascotEmotions() {
                 eyelidR.style.transform = 'scaleY(0)';
             }
 
-            if (mouseVel > 4) { // Se mexer em qualquer lugar, ele só sorri
+            if (mouseVel > 4) { 
                 if (estadoMascote !== 'sorrindo') {
                     animarBoca('sorrindo');
                     estadoMascote = 'sorrindo';
@@ -164,14 +167,13 @@ requestAnimationFrame(renderMascotEmotions);
 function rastrearOlhar(clientX, clientY) {
     trackMouseSpeed(clientX, clientY);
     
-    // Verifica se o mouse está exatamente EM CIMA do mascote
     const rect = mascotContainer.getBoundingClientRect();
     const isHoveringMascot = clientX >= rect.left && clientX <= rect.right &&
                              clientY >= rect.top && clientY <= rect.bottom;
                              
-    // Se passar rápido POR CIMA DELE, enche o medidor de cócegas!
+    // 🟢 O TETO (CAP): Trava em no máximo 150 para não ficar acumulando infinitamente
     if (isHoveringMascot && mouseVel > 20) {
-        tickleMeter += 20; 
+        tickleMeter = Math.min(150, tickleMeter + 25); 
     }
     
     if (!identInput.matches(':focus') && !passInput.matches(':focus') && !usernameInput.matches(':focus')) {
