@@ -1,5 +1,5 @@
 // ==========================================
-// login.js - ENGINE DE EMOÇÃO COM FÍSICA CORRIGIDA (DRENO RÁPIDO)
+// login.js - ENGINE DE EMOÇÃO COM "CÓCEGAS" E RESISTÊNCIA AO SORRISO
 // ==========================================
 
 let isLogin = true;
@@ -26,10 +26,12 @@ const mP3 = document.getElementById('mouth-p3');
 const mP4 = document.getElementById('mouth-p4');
 const arrayBoca = [mouthLine, mP1, mP2, mP3, mP4];
 
-// 🟢 FÍSICA DO MOUSE E MEDIDOR DE CÓCEGAS
+// 🟢 FÍSICA DO MOUSE E MEDIDORES EMOCIONAIS
 let mouseVel = 0;
 let lastX = 0, lastY = 0, lastTime = Date.now();
-let tickleMeter = 0; 
+let tickleMeter = 0; // Medidor de Gargalhada
+let smileMeter = 0;  // Cronômetro para o sorriso (Vai até 5000ms)
+let lastRenderTime = Date.now();
 
 function trackMouseSpeed(clientX, clientY) {
     const now = Date.now();
@@ -98,7 +100,7 @@ function animarBoca(estado, percent = 0) {
         eyelidR.style.transform = 'scaleY(0.5)';
     }
     else {
-        y1 = 85; y2 = 85; y3 = 85; y4 = 85;
+        y1 = 85; y2 = 85; y3 = 85; y4 = 85; // Neutro 😐
         arrayBoca.forEach(el => el.style.transition = 'all 0.3s');
         barLeft.style.transition = 'all 0.3s';
         barRight.style.transition = 'all 0.3s';
@@ -117,12 +119,24 @@ function animarBoca(estado, percent = 0) {
 function renderMascotEmotions() {
     requestAnimationFrame(renderMascotEmotions);
     
-    // Desacelera a velocidade do mouse
+    const now = Date.now();
+    const dt = Math.max(now - lastRenderTime, 1);
+    lastRenderTime = now;
+
     mouseVel *= 0.90; 
     
-    // 🟢 O DRENO INTELIGENTE: Se a mão do usuário parou (velocidade baixa), esvazia MUITO mais rápido.
+    // Dreno do medidor de Cócegas
     const taxaEsvaziamento = (mouseVel < 10) ? 12 : 3;
     tickleMeter = Math.max(0, tickleMeter - taxaEsvaziamento); 
+    
+    // 🟢 TEMPORIZADOR DO SORRISO (A MÁGICA DA RESISTÊNCIA)
+    if (mouseVel > 4) {
+        // Se está mexendo, acumula tempo (Trava no máximo de 6000 para não estourar a memória)
+        smileMeter = Math.min(6000, smileMeter + dt);
+    } else {
+        // Se parou de mexer, perde a vontade de sorrir rapidamente
+        smileMeter = Math.max(0, smileMeter - (dt * 3));
+    }
     
     if (isErrorMode) {
         if (estadoMascote !== 'triste') {
@@ -135,7 +149,6 @@ function renderMascotEmotions() {
     const isFocus = identInput.matches(':focus') || passInput.matches(':focus') || usernameInput.matches(':focus');
     
     if (!isFocus) {
-        // Gargalhada ativa se passar de 100
         if (tickleMeter > 100) { 
             animarBoca('rindo');
             estadoMascote = 'rindo';
@@ -145,7 +158,8 @@ function renderMascotEmotions() {
                 eyelidR.style.transform = 'scaleY(0)';
             }
 
-            if (mouseVel > 4) { 
+            // 🟢 A REGRA DOS 5 SEGUNDOS (5000 milissegundos)
+            if (smileMeter > 5000) { 
                 if (estadoMascote !== 'sorrindo') {
                     animarBoca('sorrindo');
                     estadoMascote = 'sorrindo';
@@ -171,7 +185,6 @@ function rastrearOlhar(clientX, clientY) {
     const isHoveringMascot = clientX >= rect.left && clientX <= rect.right &&
                              clientY >= rect.top && clientY <= rect.bottom;
                              
-    // 🟢 O TETO (CAP): Trava em no máximo 150 para não ficar acumulando infinitamente
     if (isHoveringMascot && mouseVel > 20) {
         tickleMeter = Math.min(150, tickleMeter + 25); 
     }
