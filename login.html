@@ -14,8 +14,24 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; }
+        
         .fade-in { animation: fadeIn 0.5s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Mágica do Botão: Feixe de Luz (Shine) */
+        @keyframes shimmer {
+            0% { transform: translateX(-150%) skewX(-20deg); }
+            100% { transform: translateX(200%) skewX(-20deg); }
+        }
+        .btn-shine { position: relative; overflow: hidden; }
+        .btn-shine::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 30%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shimmer 3.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-[100dvh] flex items-center justify-center p-4 relative overflow-hidden">
@@ -27,31 +43,24 @@
 
     <main class="w-full max-w-md bg-slate-900 border border-slate-800 p-8 rounded-[2rem] shadow-2xl z-10 fade-in relative">
         
-        <!-- O MASCOTE: Estilo Gráfico de Barras Financeiro com Olhos -->
+        <!-- O MASCOTE: Estilo Gráfico -->
         <div class="relative w-40 h-28 mx-auto mb-4 flex items-end justify-center gap-3 px-4 bg-slate-950/60 rounded-2xl border border-slate-800/80 shadow-inner py-3" id="mascot-container">
-            
-            <!-- Barra 1 (Esquerda) -->
             <div class="w-7 h-12 bg-slate-800 rounded-t-lg border-t border-x border-slate-700 transition-all duration-300"></div>
             
-            <!-- Barra 2 (Olho Esquerdo - Altura Média) -->
             <div id="bar-left" class="relative w-9 h-16 bg-indigo-600/30 rounded-t-lg border-t border-x border-indigo-500/50 flex flex-col justify-start items-center pt-2 transition-all duration-300 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
-                <!-- Olho Esquerdo -->
                 <div class="relative w-4 h-4 bg-white rounded-full overflow-hidden flex items-center justify-center">
                     <div id="pupil-l" class="w-2 h-2 bg-slate-950 rounded-full transition-transform duration-75"></div>
                     <div id="eyelid-l" class="absolute inset-0 bg-indigo-900 origin-top scale-y-0 transition-transform duration-150"></div>
                 </div>
             </div>
 
-            <!-- Barra 3 (Olho Direito - Altura Alta / Dominante) -->
             <div id="bar-right" class="relative w-9 h-20 bg-indigo-600/40 rounded-t-lg border-t border-x border-indigo-500/60 flex flex-col justify-start items-center pt-2 transition-all duration-300 shadow-[0_0_15px_rgba(99,102,241,0.3)]">
-                <!-- Olho Direito -->
                 <div class="relative w-4 h-4 bg-white rounded-full overflow-hidden flex items-center justify-center">
                     <div id="pupil-r" class="w-2 h-2 bg-slate-950 rounded-full transition-transform duration-75"></div>
                     <div id="eyelid-r" class="absolute inset-0 bg-indigo-900 origin-top scale-y-0 transition-transform duration-150"></div>
                 </div>
             </div>
 
-            <!-- Barra 4 (Direita) -->
             <div class="w-7 h-10 bg-slate-800 rounded-t-lg border-t border-x border-slate-700 transition-all duration-300"></div>
         </div>
 
@@ -60,20 +69,24 @@
             <p class="text-sm text-slate-400 font-medium mt-1" id="subtitulo-form">Analytics & Inteligência Financeira.</p>
         </div>
 
-        <form id="form-auth" class="space-y-4">
+        <form id="form-auth" class="space-y-5">
+            
+            <!-- Campo: E-mail ou Usuário (Com Animação de Foco) -->
             <div>
-                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">E-mail Corporativo / Pessoal</label>
-                <div class="relative flex items-center">
-                    <i class="fa-solid fa-envelope absolute left-4 text-slate-500"></i>
-                    <input type="email" id="email" required placeholder="kaua@exemplo.com" class="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-11 pr-4 py-3.5 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-medium">
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">E-mail ou Usuário</label>
+                <!-- Container group com foco: flutua, pinta a borda e projeta sombra colorida -->
+                <div class="group relative flex items-center bg-slate-950 rounded-xl border border-slate-800 transition-all duration-300 focus-within:-translate-y-1 focus-within:shadow-[0_10px_25px_rgba(99,102,241,0.15)] focus-within:border-indigo-500">
+                    <i class="fa-solid fa-user absolute left-4 text-slate-500 transition-colors duration-300 group-focus-within:text-indigo-400"></i>
+                    <input type="text" id="email" required placeholder="Digite seu acesso..." class="w-full bg-transparent text-white pl-11 pr-4 py-3.5 outline-none font-medium">
                 </div>
             </div>
 
+            <!-- Campo: Senha (Com Animação de Foco) -->
             <div>
-                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Senha Segura</label>
-                <div class="relative flex items-center">
-                    <i class="fa-solid fa-lock absolute left-4 text-slate-500"></i>
-                    <input type="password" id="senha" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-11 pr-12 py-3.5 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-medium tracking-widest">
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Senha</label>
+                <div class="group relative flex items-center bg-slate-950 rounded-xl border border-slate-800 transition-all duration-300 focus-within:-translate-y-1 focus-within:shadow-[0_10px_25px_rgba(99,102,241,0.15)] focus-within:border-indigo-500">
+                    <i class="fa-solid fa-lock absolute left-4 text-slate-500 transition-colors duration-300 group-focus-within:text-indigo-400"></i>
+                    <input type="password" id="senha" required placeholder="••••••••" class="w-full bg-transparent text-white pl-11 pr-12 py-3.5 outline-none font-medium tracking-widest">
                     <button type="button" id="toggle-pass" class="absolute right-4 text-slate-400 hover:text-indigo-400 transition-colors p-1">
                         <i id="icon-pass" class="fa-solid fa-eye"></i>
                     </button>
@@ -87,14 +100,15 @@
                 </label>
             </div>
 
-            <button type="submit" id="btn-submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black text-lg py-4 rounded-xl shadow-[0_10px_20px_rgba(79,70,229,0.3)] transition-all active:scale-[0.98] mt-4 flex items-center justify-center gap-2">
-                Acessar Painel <i class="fa-solid fa-arrow-right"></i>
+            <!-- Botão Acessar (Com Efeito Shine, Hover Float e Seta Animada) -->
+            <button type="submit" id="btn-submit" class="group btn-shine w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black text-lg py-4 rounded-xl shadow-[0_10px_20px_rgba(79,70,229,0.3)] hover:shadow-[0_15px_30px_rgba(79,70,229,0.5)] transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] mt-6 flex items-center justify-center gap-2">
+                Acessar <i class="fa-solid fa-arrow-right transition-transform duration-300 group-hover:translate-x-1.5"></i>
             </button>
         </form>
 
         <div class="mt-8 text-center border-t border-slate-800 pt-6">
             <p class="text-sm text-slate-400 font-medium">
-                <span id="texto-rodape">Ainda não faz parte da elite?</span> 
+                <span id="texto-rodape">Ainda não tem cadastro?</span> 
                 <button type="button" id="btn-toggle-mode" class="text-indigo-400 font-bold hover:text-indigo-300 ml-1 transition-colors">Criar Conta</button>
             </p>
         </div>
