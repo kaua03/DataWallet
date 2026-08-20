@@ -1,97 +1,127 @@
 // ==========================================
-// login.js - AUTENTICAÇÃO E MASCOTE GUARDIÃO (UX DE ELITE)
+// login.js - AUTENTICAÇÃO E ANIMAÇÃO SVG
 // ==========================================
 
 let isLogin = true;
 
 const emailInput = document.getElementById('email');
 const passInput = document.getElementById('senha');
-const pupilL = document.getElementById('pupil-l');
-const pupilR = document.getElementById('pupil-r');
-const eyelidL = document.getElementById('eyelid-l');
-const eyelidR = document.getElementById('eyelid-r');
-const vaultDial = document.getElementById('vault-dial');
 const togglePassBtn = document.getElementById('toggle-pass');
 const iconPass = document.getElementById('icon-pass');
 
-// 🟢 FUNÇÕES DO MASCOTE
-function fecharOlho(olho) { olho.classList.replace('scale-y-0', 'scale-y-100'); }
-function abrirOlho(olho) { olho.classList.replace('scale-y-100', 'scale-y-0'); }
+// Elementos SVG
+const mascotContainer = document.getElementById('mascot-container');
+const pupils = document.querySelectorAll('.pupil');
+const eyeLGroup = document.getElementById('eye-l-group');
+const eyeRGroup = document.getElementById('eye-r-group');
+const eyelidL = document.getElementById('eyelid-l');
+const eyelidR = document.getElementById('eyelid-r');
+const handL = document.getElementById('hand-l');
+const handR = document.getElementById('hand-r');
 
-function seguirTexto(inputElement) {
+// 🟢 OLHOS SEGUEM O MOUSE (Quando não está digitando)
+document.addEventListener('mousemove', (e) => {
+    if (!emailInput.matches(':focus') && !passInput.matches(':focus')) {
+        const rect = mascotContainer.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        pupils.forEach(pupil => {
+            const bounds = pupil.getBoundingClientRect();
+            const pupilX = bounds.left - rect.left + bounds.width / 2;
+            const pupilY = bounds.top - rect.top + bounds.height / 2;
+            
+            const angle = Math.atan2(y - pupilY, x - pupilX);
+            const distance = 6; // O quanto a pupila se move
+            
+            const moveX = Math.cos(angle) * distance;
+            const moveY = Math.sin(angle) * distance;
+            pupil.style.transform = `translate(${moveX}px, ${moveY}px)`;
+        });
+    }
+});
+
+// 🟢 FUNÇÃO: Olhos acompanham a digitação (Esquerda pra Direita)
+function trackTyping(inputElement) {
     const length = inputElement.value.length;
     const maxLength = 25; 
     const percent = Math.min(length / maxLength, 1);
     
-    // Movimento X da pupila (-5px até +5px) e Y levemente para baixo (focando no input)
-    const moveX = (percent * 10) - 5;
-    const moveY = 2;
+    const moveX = (percent * 12) - 6; // Vai de -6px até +6px
+    const moveY = 3; // Foca levemente pra baixo (onde está o teclado)
 
-    pupilL.style.transform = `translate(${moveX}px, ${moveY}px)`;
-    pupilR.style.transform = `translate(${moveX}px, ${moveY}px)`;
-    
-    // O Dial (tranca do cofre) gira junto com a digitação!
-    vaultDial.style.transform = `rotate(${percent * 180}deg)`;
+    pupils.forEach(pupil => {
+        pupil.style.transform = `translate(${moveX}px, ${moveY}px)`;
+    });
 }
 
 // 🟢 EVENTOS DO E-MAIL
-emailInput.addEventListener('input', () => seguirTexto(emailInput));
+emailInput.addEventListener('input', () => trackTyping(emailInput));
 emailInput.addEventListener('focus', () => {
-    abrirOlho(eyelidL);
-    abrirOlho(eyelidR);
-    seguirTexto(emailInput);
+    // Garante que tudo está aberto
+    eyelidL.classList.replace('scale-y-100', 'scale-y-0');
+    eyelidR.classList.replace('scale-y-100', 'scale-y-0');
+    handL.classList.replace('translate-y-[0px]', 'translate-y-[150px]');
+    handR.classList.replace('translate-y-[30px]', 'translate-y-[150px]');
+    trackTyping(emailInput);
 });
 
-// 🟢 EVENTOS DA SENHA (A Mágica do Olho Fechado)
-passInput.addEventListener('input', () => seguirTexto(passInput));
+// 🟢 EVENTOS DA SENHA (Mão cobrindo, um olho espiando)
+passInput.addEventListener('input', () => trackTyping(passInput));
 passInput.addEventListener('focus', () => {
     if (passInput.type === 'password') {
-        fecharOlho(eyelidL); // Fecha o olho esquerdo!
-        abrirOlho(eyelidR);  // Mantém o direito aberto focando!
-    } else {
-        abrirOlho(eyelidL);
-        abrirOlho(eyelidR);
+        // Mãos sobem
+        handL.classList.replace('translate-y-[150px]', 'translate-y-[0px]');
+        handR.classList.replace('translate-y-[150px]', 'translate-y-[30px]'); // Fica mais baixa
+        
+        // Fecha olho esquerdo
+        eyelidL.classList.replace('scale-y-0', 'scale-y-100');
+        eyelidR.classList.replace('scale-y-100', 'scale-y-0'); // Mantém o direito aberto
     }
-    seguirTexto(passInput);
+    trackTyping(passInput);
 });
 
 passInput.addEventListener('blur', () => {
-    abrirOlho(eyelidL); // Abre os dois ao sair
-    pupilL.style.transform = `translate(0px, 0px)`;
-    pupilR.style.transform = `translate(0px, 0px)`;
-    vaultDial.style.transform = `rotate(0deg)`;
+    // Mãos descem
+    handL.classList.replace('translate-y-[0px]', 'translate-y-[150px]');
+    handR.classList.replace('translate-y-[30px]', 'translate-y-[150px]');
+    // Olho esquerdo abre
+    eyelidL.classList.replace('scale-y-100', 'scale-y-0');
+    
+    // Centraliza pupilas
+    pupils.forEach(p => p.style.transform = `translate(0px, 0px)`);
 });
 
-// 🟢 BOTÃO VER SENHA
+// 🟢 BOTÃO VER SENHA (Arregalar Olhos)
 togglePassBtn.addEventListener('click', () => {
     if (passInput.type === 'password') {
         passInput.type = 'text';
         iconPass.classList.replace('fa-eye', 'fa-eye-slash');
-        // Arregala os dois olhos quando a senha aparece
-        abrirOlho(eyelidL);
-        abrirOlho(eyelidR);
+        
+        // Mãos descem com tudo
+        handL.classList.replace('translate-y-[0px]', 'translate-y-[150px]');
+        handR.classList.replace('translate-y-[30px]', 'translate-y-[150px]');
+        
+        // Olho esquerdo abre e ambos ARREGALAM
+        eyelidL.classList.replace('scale-y-100', 'scale-y-0');
+        eyeLGroup.classList.add('scale-125');
+        eyeRGroup.classList.add('scale-125');
     } else {
         passInput.type = 'password';
         iconPass.classList.replace('fa-eye-slash', 'fa-eye');
-        // Fecha o olho esquerdo novamente
-        fecharOlho(eyelidL);
+        
+        // Desfaz o arregalado
+        eyeLGroup.classList.remove('scale-125');
+        eyeRGroup.classList.remove('scale-125');
+        
+        // Volta a espiar (Mãos sobem, olho esquerdo fecha)
+        handL.classList.replace('translate-y-[150px]', 'translate-y-[0px]');
+        handR.classList.replace('translate-y-[150px]', 'translate-y-[30px]');
+        eyelidL.classList.replace('scale-y-0', 'scale-y-100');
+        
         passInput.focus(); 
     }
 });
-
-// 🟢 PISCAR AUTOMÁTICO (Vida ao mascote)
-setInterval(() => {
-    // Se o olho esquerdo já estiver fechado (modo senha), não pisca ele.
-    const isPasswordHidden = passInput === document.activeElement && passInput.type === 'password';
-    
-    if (!isPasswordHidden) fecharOlho(eyelidL);
-    fecharOlho(eyelidR);
-    
-    setTimeout(() => {
-        if (!isPasswordHidden) abrirOlho(eyelidL);
-        abrirOlho(eyelidR);
-    }, 150); // Pisca super rápido
-}, 3500); // A cada 3.5 segundos
 
 // ==========================================
 // LÓGICA DE ALTERNÂNCIA (LOGIN / CADASTRO)
@@ -101,7 +131,7 @@ document.getElementById('btn-toggle-mode').addEventListener('click', () => {
     
     document.getElementById('titulo-form').innerText = isLogin ? 'Acesso Seguro' : 'Criar Conta de Elite';
     document.getElementById('subtitulo-form').innerText = isLogin ? 'O seu guardião de dados financeiros.' : 'Junte-se à alta performance financeira.';
-    document.getElementById('btn-submit').innerHTML = isLogin ? 'Desbloquear Cofre <i class="fa-solid fa-unlock-keyhole"></i>' : 'Cadastrar e Blindar <i class="fa-solid fa-shield-halved"></i>';
+    document.getElementById('btn-submit').innerHTML = isLogin ? 'Desbloquear Cofre <i class="fa-solid fa-unlock-keyhole"></i>' : 'Solicitar Acesso <i class="fa-solid fa-shield-halved"></i>';
     document.getElementById('texto-rodape').innerText = isLogin ? 'Ainda não faz parte da elite?' : 'Já possui acesso de elite?';
     document.getElementById('btn-toggle-mode').innerText = isLogin ? 'Criar Conta' : 'Fazer Login';
     
@@ -114,7 +144,7 @@ document.getElementById('btn-toggle-mode').addEventListener('click', () => {
 });
 
 // ==========================================
-// INTEGRAÇÃO SEGURA COM SUPABASE (AUTH)
+// INTEGRAÇÃO SEGURA COM SUPABASE
 // ==========================================
 document.getElementById('form-auth').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -122,7 +152,6 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
     const email = emailInput.value.trim();
     const senha = passInput.value.trim();
 
-    // 🟢 DEFESA LGPD
     if (!isLogin && !document.getElementById('check-lgpd').checked) {
         return Swal.fire('Atenção', 'Para prosseguirmos, você deve concordar com os termos de tratamento de dados (LGPD).', 'warning');
     }
@@ -146,10 +175,11 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
             const { data, error } = await client.auth.signUp({ email, password: senha });
             if (error) throw error;
             
+            // 🟢 INTEGRAÇÃO DE CADASTRO: Confirmação e Espera
             Swal.fire({
                 icon: 'success',
-                title: 'Cadastro Concluído!',
-                text: 'Sua conta de elite foi criada com segurança. Verifique seu e-mail para confirmar (se exigido).',
+                title: 'Solicitação Enviada!',
+                text: 'Sua conta foi criada. Aguarde a aprovação do Administrador ou verifique seu e-mail.',
                 confirmButtonColor: '#4f46e5'
             }).then(() => {
                 document.getElementById('btn-toggle-mode').click(); 
