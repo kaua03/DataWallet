@@ -31,6 +31,23 @@
             animation: shimmer 3.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
             pointer-events: none;
         }
+
+        /* 🟢 ANIMAÇÃO DE ERRO (TREMOR + VERMELHO) */
+        @keyframes errorShake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-8px); }
+            80% { transform: translateX(8px); }
+        }
+        .error-state {
+            animation: errorShake 0.4s ease-in-out;
+            border-color: #ef4444 !important; /* Red 500 */
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.25) !important;
+        }
+        .error-state i {
+            color: #ef4444 !important;
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-[100dvh] flex items-center justify-center p-4 relative overflow-hidden">
@@ -46,7 +63,7 @@
             <i class="fa-solid fa-arrow-left"></i>
         </button>
 
-        <!-- O MASCOTE (Combo Chart Vivo) -->
+        <!-- O MASCOTE -->
         <div class="relative w-40 h-28 mx-auto mb-4 flex items-end justify-center gap-3 px-4 bg-slate-950/60 rounded-2xl border border-slate-800/80 shadow-inner py-3 mt-4" id="mascot-container">
             
             <div class="w-7 h-12 bg-slate-800 rounded-t-lg border-t border-x border-slate-700 transition-all duration-300"></div>
@@ -67,16 +84,13 @@
 
             <div class="w-7 h-10 bg-slate-800 rounded-t-lg border-t border-x border-slate-700 transition-all duration-300"></div>
 
-            <!-- 🟢 O Gráfico de Linha (A Boca Neutra Inicial) -->
             <svg class="absolute inset-0 w-full h-full pointer-events-none drop-shadow-[0_0_6px_rgba(34,211,238,0.4)] z-20" viewBox="0 0 160 112">
                 <path id="mouth-line" d="M 25,85 L 60,85 L 100,85 L 135,85" fill="none" stroke="#22d3ee" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="transition-all duration-300 ease-out"/>
-                
                 <circle id="mouth-p1" cx="25" cy="85" r="3.5" fill="#020617" stroke="#22d3ee" stroke-width="2" class="transition-all duration-300 ease-out"/>
                 <circle id="mouth-p2" cx="60" cy="85" r="3.5" fill="#020617" stroke="#22d3ee" stroke-width="2" class="transition-all duration-300 ease-out"/>
                 <circle id="mouth-p3" cx="100" cy="85" r="3.5" fill="#020617" stroke="#22d3ee" stroke-width="2" class="transition-all duration-300 ease-out"/>
                 <circle id="mouth-p4" cx="135" cy="85" r="3.5" fill="#020617" stroke="#22d3ee" stroke-width="2" class="transition-all duration-300 ease-out"/>
             </svg>
-
         </div>
 
         <div class="text-center mb-8">
@@ -88,6 +102,7 @@
             
             <div id="box-email">
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1" id="label-identificador">E-mail ou Usuário</label>
+                <!-- Os containers "group" vão receber a classe .error-state quando falhar -->
                 <div class="group relative flex items-center bg-slate-950 rounded-xl border border-slate-800 transition-all duration-300 focus-within:-translate-y-1 focus-within:shadow-[0_10px_25px_rgba(59,130,246,0.15)] focus-within:border-blue-500">
                     <i class="fa-solid fa-user absolute left-4 text-slate-500 transition-colors duration-300 group-focus-within:text-blue-400" id="icon-identificador"></i>
                     <input type="text" id="identificador" required class="w-full bg-transparent text-white pl-11 pr-4 py-3.5 outline-none font-medium lowercase">
@@ -102,7 +117,7 @@
                 </div>
             </div>
 
-            <div>
+            <div id="box-senha">
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Senha</label>
                 <div class="group relative flex items-center bg-slate-950 rounded-xl border border-slate-800 transition-all duration-300 focus-within:-translate-y-1 focus-within:shadow-[0_10px_25px_rgba(59,130,246,0.15)] focus-within:border-blue-500">
                     <i class="fa-solid fa-lock absolute left-4 text-slate-500 transition-colors duration-300 group-focus-within:text-blue-400"></i>
