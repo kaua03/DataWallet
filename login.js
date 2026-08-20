@@ -1,10 +1,10 @@
 // ==========================================
-// login.js - ENGINE DE EMOÇÃO AVANÇADA (BARRAS + BOCA + ERRO)
+// login.js - ENGINE DE EMOÇÃO COM "CÓCEGAS" E FÍSICA REAL
 // ==========================================
 
 let isLogin = true;
-let isErrorMode = false; // 🔴 Trava de segurança para manter a cara triste
-let estadoMascote = 'neutro'; // Memória do estado atual
+let isErrorMode = false; 
+let estadoMascote = 'neutro'; 
 
 const identInput = document.getElementById('identificador');
 const usernameInput = document.getElementById('username');
@@ -26,9 +26,10 @@ const mP3 = document.getElementById('mouth-p3');
 const mP4 = document.getElementById('mouth-p4');
 const arrayBoca = [mouthLine, mP1, mP2, mP3, mP4];
 
-// 🟢 FÍSICA DO MOUSE
+// 🟢 FÍSICA DO MOUSE E "MEDIDOR DE CÓCEGAS"
 let mouseVel = 0;
 let lastX = 0, lastY = 0, lastTime = Date.now();
+let tickleMeter = 0; // Medidor que vai de 0 a 100+
 
 function trackMouseSpeed(clientX, clientY) {
     const now = Date.now();
@@ -38,7 +39,6 @@ function trackMouseSpeed(clientX, clientY) {
     const dist = Math.sqrt(dx * dx + dy * dy);
     
     mouseVel = (dist / dt) * 100;
-    
     lastX = clientX;
     lastY = clientY;
     lastTime = now;
@@ -69,19 +69,15 @@ function animarBoca(estado, percent = 0) {
         barRight.style.transform = `translateY(0px)`;
     } 
     else if (estado === 'rindo') {
-        // 🤣 GARGALHADA: Desliga CSS, usa matemática de seno para quicar linha e barras!
-        bounce = Math.sin(Date.now() / 50) * 6; // Pulos de 6px pra cima e pra baixo
+        bounce = Math.sin(Date.now() / 50) * 6; 
         y1 = 75 + bounce; y2 = 95 + bounce; y3 = 95 + bounce; y4 = 75 + bounce;
         
         arrayBoca.forEach(el => el.style.transition = 'none');
         barLeft.style.transition = 'none';
         barRight.style.transition = 'none';
-        
-        // Pula as barras de energia
         barLeft.style.transform = `translateY(${bounce}px)`;
         barRight.style.transform = `translateY(${bounce}px)`;
         
-        // Aperta os olhos de tanto rir
         eyelidL.style.transform = 'scaleY(1)';
         eyelidR.style.transform = 'scaleY(1)';
     }
@@ -94,18 +90,14 @@ function animarBoca(estado, percent = 0) {
         barRight.style.transform = `translateY(0px)`;
     }
     else if (estado === 'triste') {
-        // ☹️ ERRO: Sorriso invertido (Frown)
         y1 = 92; y2 = 80; y3 = 80; y4 = 92; 
         arrayBoca.forEach(el => el.style.transition = 'all 0.3s');
         barLeft.style.transform = `translateY(0px)`;
         barRight.style.transform = `translateY(0px)`;
-        
-        // Olhinhos caídos pela metade (tristeza)
         eyelidL.style.transform = 'scaleY(0.5)';
         eyelidR.style.transform = 'scaleY(0.5)';
     }
     else {
-        // 😐 Neutro
         y1 = 85; y2 = 85; y3 = 85; y4 = 85;
         arrayBoca.forEach(el => el.style.transition = 'all 0.3s');
         barLeft.style.transition = 'all 0.3s';
@@ -121,12 +113,14 @@ function animarBoca(estado, percent = 0) {
     mP4.setAttribute('cy', y4);
 }
 
-// 🟢 O MOTOR CONTÍNUO (60 FPS)
+// 🟢 O MOTOR CONTÍNUO (GAME LOOP)
 function renderMascotEmotions() {
     requestAnimationFrame(renderMascotEmotions);
-    mouseVel *= 0.90; // Desaceleração
     
-    // Se deu erro, trava a cara de triste
+    // Desacelera a velocidade do mouse e o medidor de cócegas naturalmente
+    mouseVel *= 0.90; 
+    tickleMeter = Math.max(0, tickleMeter - 3); // O medidor esvazia rápido se parar de fazer cócegas
+    
     if (isErrorMode) {
         if (estadoMascote !== 'triste') {
             animarBoca('triste');
@@ -138,22 +132,22 @@ function renderMascotEmotions() {
     const isFocus = identInput.matches(':focus') || passInput.matches(':focus') || usernameInput.matches(':focus');
     
     if (!isFocus) {
-        if (mouseVel > 65) { // 🤣 Sacudiu muito rápido
+        // MÁGICA: Só dá gargalhada se o Medidor de Cócegas passar de 100!
+        if (tickleMeter > 100) { 
             animarBoca('rindo');
             estadoMascote = 'rindo';
         } else {
-            // Se estava rindo e parou, restaura os olhos e as transições CSS
             if (estadoMascote === 'rindo') {
                 eyelidL.style.transform = 'scaleY(0)';
                 eyelidR.style.transform = 'scaleY(0)';
             }
 
-            if (mouseVel > 4) { // 🙂 Mexeu suave
+            if (mouseVel > 4) { // Se mexer em qualquer lugar, ele só sorri
                 if (estadoMascote !== 'sorrindo') {
                     animarBoca('sorrindo');
                     estadoMascote = 'sorrindo';
                 }
-            } else { // 😐 Parado
+            } else { 
                 if (estadoMascote !== 'neutro') {
                     animarBoca('neutro');
                     estadoMascote = 'neutro';
@@ -166,11 +160,21 @@ function renderMascotEmotions() {
 }
 requestAnimationFrame(renderMascotEmotions);
 
-// 🟢 OLHOS SEGUEM O MOUSE
+// 🟢 OLHOS SEGUEM O MOUSE E DETECTAM AS CÓCEGAS
 function rastrearOlhar(clientX, clientY) {
     trackMouseSpeed(clientX, clientY);
+    
+    // Verifica se o mouse está exatamente EM CIMA do mascote
+    const rect = mascotContainer.getBoundingClientRect();
+    const isHoveringMascot = clientX >= rect.left && clientX <= rect.right &&
+                             clientY >= rect.top && clientY <= rect.bottom;
+                             
+    // Se passar rápido POR CIMA DELE, enche o medidor de cócegas!
+    if (isHoveringMascot && mouseVel > 20) {
+        tickleMeter += 20; 
+    }
+    
     if (!identInput.matches(':focus') && !passInput.matches(':focus') && !usernameInput.matches(':focus')) {
-        const rect = mascotContainer.getBoundingClientRect();
         const x = clientX - rect.left;
         const y = clientY - rect.top;
 
@@ -191,7 +195,7 @@ document.addEventListener('touchmove', (e) => rastrearOlhar(e.touches[0].clientX
 
 // 🟢 ACOMPANHA A DIGITAÇÃO
 function trackTyping(inputElement) {
-    if (isErrorMode) return; // Se tiver em erro, não reage à digitação (fica triste)
+    if (isErrorMode) return; 
     
     const length = inputElement.value.length;
     const percent = Math.min(length / 20, 1);
@@ -273,7 +277,7 @@ togglePassBtn.addEventListener('click', () => {
     }
 });
 
-// PISCAR AUTOMÁTICO (Só pisca se não estiver triste ou gargalhando)
+// PISCAR AUTOMÁTICO 
 setInterval(() => {
     if (isErrorMode || estadoMascote === 'rindo') return; 
     const isPasswordFocus = passInput === document.activeElement;
@@ -332,21 +336,15 @@ function alternarModoTela() {
 document.getElementById('btn-toggle-mode').addEventListener('click', alternarModoTela);
 document.getElementById('btn-voltar').addEventListener('click', alternarModoTela);
 
-
-// 🔴 ATIVA O TREMOR E A CARA DE TRISTE
 function dispararErroVisual() {
-    isErrorMode = true; // Trava o mascote na tristeza
-    
-    // Seleciona os containers dos inputs para aplicar o CSS vermelho e o Tremor
+    isErrorMode = true; 
     const containers = [
         identInput.closest('.group'), 
         passInput.closest('.group'), 
         usernameInput.closest('.group')
     ];
-    
     containers.forEach(c => { if(c) c.classList.add('error-state'); });
     
-    // Função para limpar o erro no exato momento que o usuário começar a digitar de novo
     const limparErro = () => {
         isErrorMode = false;
         containers.forEach(c => { if(c) c.classList.remove('error-state'); });
@@ -355,7 +353,6 @@ function dispararErroVisual() {
         passInput.removeEventListener('input', limparErro);
         usernameInput.removeEventListener('input', limparErro);
         
-        // Religa a animação de focar dependendo de onde ele digitou
         if (document.activeElement === identInput) { trackTyping(identInput); eyelidL.style.transform = 'scaleY(0)'; eyelidR.style.transform = 'scaleY(0)'; }
         if (document.activeElement === passInput) trackTyping(passInput);
     };
@@ -365,8 +362,6 @@ function dispararErroVisual() {
     usernameInput.addEventListener('input', limparErro);
 }
 
-
-// Tradutor
 function traduzirErroSupabase(mensagem) {
     if (!mensagem) return 'Erro de conexão. Verifique sua internet.';
     const msg = mensagem.toLowerCase();
@@ -377,7 +372,6 @@ function traduzirErroSupabase(mensagem) {
     return `Alerta do Banco de Dados: ${mensagem}`;
 }
 
-// 🟢 ENVIO AO SUPABASE
 document.getElementById('form-auth').addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -399,7 +393,6 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
 
         if (isLogin) {
             let emailLogin = identificador;
-            
             if (!identificador.includes('@')) {
                 const { data, error: errUser } = await client.from('usuarios_dicionario').select('email').eq('username', identificador).maybeSingle();
                 if (errUser || !data) throw new Error('invalid login credentials'); 
@@ -437,11 +430,7 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
             });
         }
     } catch (err) {
-        console.error("LOG DE ERRO TÉCNICO:", err);
-        
-        // 🔴 ATIVA A ANIMAÇÃO DE ERRO NO MASCOTE E NAS CAIXAS!
         dispararErroVisual();
-        
         const msgAmigavel = traduzirErroSupabase(err.message || err.error_description || JSON.stringify(err));
         Swal.fire('Falha na Autenticação', msgAmigavel, 'error');
     } finally {
