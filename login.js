@@ -1,5 +1,5 @@
 // ==========================================
-// login.js - LÓGICA DO GRÁFICO E NAVEGAÇÃO LIMPA
+// login.js - LÓGICA DO MASCOTE COMBO CHART (BARRA + LINHA)
 // ==========================================
 
 let isLogin = true;
@@ -16,6 +16,42 @@ const eyelidL = document.getElementById('eyelid-l');
 const eyelidR = document.getElementById('eyelid-r');
 const barLeft = document.getElementById('bar-left');
 const barRight = document.getElementById('bar-right');
+
+// Elementos da Boca (Gráfico de Linha)
+const mouthLine = document.getElementById('mouth-line');
+const mP1 = document.getElementById('mouth-p1');
+const mP2 = document.getElementById('mouth-p2');
+const mP3 = document.getElementById('mouth-p3');
+const mP4 = document.getElementById('mouth-p4');
+
+// 🟢 CONTROLADOR DA BOCA (GRÁFICO DE LINHA)
+function animarBoca(estado, percent = 0) {
+    let y1, y2, y3, y4;
+
+    if (estado === 'escondido') {
+        // Modo "Curiando": A linha desce, fica reta e séria
+        y1 = 98; y2 = 100; y3 = 100; y4 = 98;
+    } else if (estado === 'revelado') {
+        // Olhos arregalados: Sorriso hiper aberto e confiante
+        y1 = 70; y2 = 98; y3 = 98; y4 = 60;
+    } else {
+        // Estado Normal (Sorriso torto / Smirk)
+        // Adicionamos uma minúscula vibração baseada na digitação (fala)
+        let flutter = percent * 8; 
+        y1 = 85;
+        y2 = 95 - (flutter / 2);
+        y3 = 90 + (flutter / 2);
+        y4 = 70;
+    }
+
+    // Atualiza o desenho da linha e a posição das bolinhas com transição CSS
+    mouthLine.setAttribute('d', `M 25,${y1} L 60,${y2} L 100,${y3} L 135,${y4}`);
+    mP1.setAttribute('cy', y1);
+    mP2.setAttribute('cy', y2);
+    mP3.setAttribute('cy', y3);
+    mP4.setAttribute('cy', y4);
+}
+
 
 // 🟢 OLHOS SEGUEM O MOUSE
 function rastrearOlhar(clientX, clientY) {
@@ -41,7 +77,8 @@ function rastrearOlhar(clientX, clientY) {
 document.addEventListener('mousemove', (e) => rastrearOlhar(e.clientX, e.clientY));
 document.addEventListener('touchmove', (e) => rastrearOlhar(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
 
-// 🟢 ACOMPANHA A DIGITAÇÃO
+
+// 🟢 ACOMPANHA A DIGITAÇÃO E CONTROLA A ALTURA + BOCA
 function trackTyping(inputElement) {
     const length = inputElement.value.length;
     const percent = Math.min(length / 20, 1);
@@ -54,20 +91,23 @@ function trackTyping(inputElement) {
         pupils.forEach(pupil => { pupil.style.transform = `translate(${moveX}px, 2px)`; });
         barLeft.style.height = '30px';
         barRight.style.height = '35px';
+        animarBoca('escondido');
     } else {
         pupils.forEach(pupil => { pupil.style.transform = `translate(${moveX}px, 1px)`; });
         
         if (isPasswordFocus && passInput.type === 'text') {
             barLeft.style.height = `${70 + (percent * 5)}px`;
             barRight.style.height = `${86 + (percent * 5)}px`;
+            animarBoca('revelado');
         } else {
             barLeft.style.height = `${64 + (percent * 8)}px`;
             barRight.style.height = `${80 + (percent * 8)}px`;
+            animarBoca('normal', percent);
         }
     }
 }
 
-// Eventos de Input Text (Email e Username)
+// Eventos de Input Text
 [identInput, usernameInput].forEach(el => {
     el.addEventListener('input', () => trackTyping(el));
     el.addEventListener('focus', () => {
@@ -96,6 +136,7 @@ passInput.addEventListener('blur', () => {
     pupils.forEach(p => p.style.transform = `translate(0px, 0px)`);
     barLeft.style.height = '64px';
     barRight.style.height = '80px';
+    animarBoca('normal', 0);
 });
 
 togglePassBtn.addEventListener('click', () => {
@@ -115,6 +156,7 @@ togglePassBtn.addEventListener('click', () => {
     }
 });
 
+// 🟢 PISCAR AUTOMÁTICO
 setInterval(() => {
     const isPasswordFocus = passInput === document.activeElement;
     if (isPasswordFocus && passInput.type === 'password') return; 
@@ -141,7 +183,6 @@ function alternarModoTela() {
         ? 'Acessar <i class="fa-solid fa-arrow-right transition-transform duration-300 group-hover:translate-x-1.5"></i>' 
         : 'Cadastrar <i class="fa-solid fa-shield-halved transition-transform duration-300 group-hover:scale-110"></i>';
     
-    // Esconde ou Mostra Elementos da Interface
     const boxLgpd = document.getElementById('box-lgpd');
     const boxUsername = document.getElementById('box-username');
     const labelIdent = document.getElementById('label-identificador');
@@ -150,25 +191,21 @@ function alternarModoTela() {
     const boxRodape = document.getElementById('box-rodape');
     
     if (isLogin) { 
-        // MODO LOGIN
         btnVoltar.classList.add('hidden');
         boxRodape.classList.remove('hidden');
-        
         boxLgpd.classList.add('hidden'); boxLgpd.classList.remove('flex');
         boxUsername.classList.add('hidden', 'opacity-0');
         usernameInput.required = false;
         labelIdent.innerText = "E-mail ou Usuário";
         iconIdent.className = "fa-solid fa-user absolute left-4 text-slate-500 transition-colors duration-300 group-focus-within:text-blue-400";
     } else { 
-        // MODO CADASTRO
         btnVoltar.classList.remove('hidden');
-        boxRodape.classList.add('hidden'); // Esconde o rodapé no cadastro para ficar mais limpo
-        
+        boxRodape.classList.add('hidden'); 
         boxLgpd.classList.remove('hidden'); boxLgpd.classList.add('flex');
         boxUsername.classList.remove('hidden'); 
         setTimeout(() => boxUsername.classList.remove('opacity-0'), 50); 
         usernameInput.required = true;
-        labelIdent.innerText = "E-mail"; // Como tem campo de usuário, aqui vira só E-mail
+        labelIdent.innerText = "E-mail"; 
         iconIdent.className = "fa-solid fa-envelope absolute left-4 text-slate-500 transition-colors duration-300 group-focus-within:text-blue-400";
     }
 }
@@ -178,12 +215,15 @@ document.getElementById('btn-voltar').addEventListener('click', alternarModoTela
 
 // Tradutor de erros do Supabase
 function traduzirErroSupabase(mensagem) {
+    if (!mensagem) return 'Erro de conexão. Verifique sua internet.';
     const msg = mensagem.toLowerCase();
+    
     if (msg.includes('invalid login credentials')) return 'E-mail, usuário ou senha incorretos.';
     if (msg.includes('password should be at least')) return 'A senha deve ter no mínimo 6 caracteres.';
-    if (msg.includes('user already registered')) return 'Este e-mail ou usuário já está cadastrado.';
+    if (msg.includes('user already registered') || msg.includes('already exists')) return 'Este e-mail ou usuário já está em uso.';
     if (msg.includes('rate limit')) return 'Muitas tentativas. Aguarde um momento.';
-    return 'Erro interno. Verifique seus dados e tente novamente.';
+    
+    return `Alerta do Banco de Dados: ${mensagem}`;
 }
 
 document.getElementById('form-auth').addEventListener('submit', async (e) => {
@@ -209,7 +249,7 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
             let emailLogin = identificador;
             
             if (!identificador.includes('@')) {
-                const { data, error: errUser } = await client.from('usuarios_dicionario').select('email').eq('username', identificador).single();
+                const { data, error: errUser } = await client.from('usuarios_dicionario').select('email').eq('username', identificador).maybeSingle();
                 if (errUser || !data) throw new Error('invalid login credentials'); 
                 emailLogin = data.email; 
             }
@@ -221,19 +261,27 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
             setTimeout(() => window.location.href = 'dashboard.html', 1000);
             
         } else {
-            const { data: userExiste } = await client.from('usuarios_dicionario').select('username').eq('username', username).single();
-            if (userExiste) throw new Error('user already registered');
+            const { data: userExiste, error: errBusca } = await client.from('usuarios_dicionario').select('username').eq('username', username);
+            if (errBusca) throw errBusca; 
+            
+            if (userExiste && userExiste.length > 0) {
+                throw new Error('user already registered'); 
+            }
 
             const { data: authData, error: authErr } = await client.auth.signUp({ email: identificador, password: senha });
             if (authErr) throw authErr;
 
-            await client.from('usuarios_dicionario').insert([{ username: username, email: identificador }]);
+            if (authData?.user?.identities?.length === 0) {
+                throw new Error('user already registered');
+            }
 
-            // 🟢 INTEGRAÇÃO FINAL: Confirmação Oficial do E-mail
+            const { error: insertErr } = await client.from('usuarios_dicionario').insert([{ username: username, email: identificador }]);
+            if (insertErr) throw insertErr;
+
             Swal.fire({
                 icon: 'success',
                 title: 'Cadastro Concluído!',
-                text: 'Sua conta de elite foi criada com segurança. Verifique a caixa de entrada do seu e-mail para validar o acesso.',
+                text: 'Sua conta de elite foi criada com segurança. Faça o login para continuar.',
                 confirmButtonColor: '#2563eb'
             }).then(() => { 
                 alternarModoTela(); 
@@ -242,7 +290,8 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
             });
         }
     } catch (err) {
-        const msgAmigavel = traduzirErroSupabase(err.message);
+        console.error("LOG DE ERRO TÉCNICO PARA O KAUÃ:", err);
+        const msgAmigavel = traduzirErroSupabase(err.message || err.error_description || JSON.stringify(err));
         Swal.fire('Falha na Autenticação', msgAmigavel, 'error');
     } finally {
         btn.innerHTML = textoOriginal;
