@@ -1,5 +1,5 @@
 // ==========================================
-// layout.js - MOTOR GLOBAL E CONTROLE DE TELA
+// layout.js - MOTOR GLOBAL E CONTROLE DE TELA (COM SAUDAÇÃO INTELIGENTE)
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -66,7 +66,6 @@ window.fecharMenuEAbrirModal = function(funcaoAlvo) {
     if (window._menuMobileAberto) {
         window.toggleMobileMenu();
     }
-    // Aguarda a animação do menu fechar (150ms) antes de acionar o Modal/Ação
     setTimeout(() => {
         if (typeof window[funcaoAlvo] === 'function') {
             window[funcaoAlvo]();
@@ -77,8 +76,6 @@ window.fecharMenuEAbrirModal = function(funcaoAlvo) {
 }
 
 function inicializarLayout(isDark) {
-    // 🟢 AUTO-LIMPEZA MESTRE: O "Exterminador de Clones"
-    // Busca e destrói qualquer menu antigo que tenha ficado hardcoded no HTML.
     document.querySelectorAll('#sidebar, #fab-container, #fab-overlay').forEach(el => el.remove());
 
     const paginaAtual = window.location.pathname.split('/').pop() || 'movimentacoes.html';
@@ -129,11 +126,16 @@ function inicializarLayout(isDark) {
     const sidebarHtml = `
         <div class="hidden md:block w-20 shrink-0"></div>
         <aside id="sidebar" class="hidden md:flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200/60 dark:border-slate-800 py-6 px-4 h-full z-40 fixed left-0 top-0 overflow-hidden shadow-sm transition-colors duration-300">
-            <div class="flex items-center justify-start mb-10 h-12 px-1">
+            
+            <!-- CABEÇALHO PERSONALIZADO DESKTOP -->
+            <div class="flex items-center justify-start mb-8 h-12 px-1 cursor-default">
                 <div class="w-10 h-10 shrink-0 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-indigo-600/30">
                     <i class="fa-solid fa-wallet text-xl"></i>
                 </div>
-                <h2 class="sidebar-text text-2xl font-black text-slate-900 dark:text-white tracking-tight ml-3">DataWallet</h2>
+                <div class="sidebar-text ml-3 flex flex-col justify-center overflow-hidden w-full">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider" id="desk-saudacao">...</span>
+                    <h2 class="text-base font-black text-slate-900 dark:text-white truncate w-full" id="desk-nome">Carregando</h2>
+                </div>
             </div>
             
             <nav class="flex-1 space-y-2 w-full">${navLinksHtml}</nav>
@@ -182,7 +184,16 @@ function inicializarLayout(isDark) {
         
         <div id="fab-container" class="fixed bottom-6 right-6 z-[9999] flex items-end justify-end pointer-events-none">
             ${btnAcaoMobileHtml}
-            <div id="fab-items" class="absolute bottom-16 right-2 w-10 flex flex-col items-center gap-2.5 transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none z-[9999]">
+            
+            <!-- 🟢 PÍLULA FLUTUANTE DE SAUDAÇÃO MOBILE ALINHADA À DIREITA -->
+            <div id="fab-items" class="absolute bottom-16 right-0 flex flex-col items-end gap-2.5 transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none z-[9999]">
+                
+                <div class="mobile-menu-btn pointer-events-none opacity-0 transition-opacity bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-2xl px-4 py-2 mb-2 flex items-center gap-1.5 whitespace-nowrap">
+                    <span class="text-xs font-bold text-slate-500 dark:text-slate-400">
+                        <span id="mob-saudacao">...</span>, <span id="mob-nome" class="text-indigo-600 dark:text-indigo-400 font-black">Carregando</span>
+                    </span>
+                </div>
+
                 <button onclick="sairDoSistema()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-rose-500 border border-rose-100 dark:border-rose-900/50 shadow-lg flex items-center justify-center transition-transform hover:scale-110 pointer-events-none mobile-menu-btn">
                     <i class="fa-solid fa-right-from-bracket pointer-events-none text-sm"></i>
                 </button>
@@ -191,7 +202,7 @@ function inicializarLayout(isDark) {
                     <i id="icone-dark-mode-mobile" class="${iconeTemaMobile} pointer-events-none"></i>
                     <i id="star-mobile" class="fa-solid fa-star absolute text-[12px] text-white opacity-0 pointer-events-none z-50"></i>
                 </button>
-                <div class="w-8 h-px bg-slate-200 dark:bg-slate-700 my-1 mobile-menu-btn pointer-events-none opacity-0 transition-opacity"></div>
+                <div class="w-8 h-px bg-slate-200 dark:bg-slate-700 my-1 mr-1 mobile-menu-btn pointer-events-none opacity-0 transition-opacity"></div>
                 ${mobileLinksHtml}
             </div>
             
@@ -203,6 +214,54 @@ function inicializarLayout(isDark) {
 
     document.body.insertAdjacentHTML('afterbegin', sidebarHtml);
     document.body.insertAdjacentHTML('beforeend', mobileMenuHtml);
+
+    // Dispara a rotina de carregar o perfil e hora
+    injetarSaudacaoPersonalizada();
+}
+
+// 🟢 NOVO MOTOR DE INTELIGÊNCIA DE PERFIL
+async function injetarSaudacaoPersonalizada() {
+    // 1. Descobre a saudação pela hora do dia
+    const hora = new Date().getHours();
+    let saudacao = 'Boa noite';
+    if (hora >= 5 && hora < 12) saudacao = 'Bom dia';
+    else if (hora >= 12 && hora < 18) saudacao = 'Boa tarde';
+
+    const elDeskSaudacao = document.getElementById('desk-saudacao');
+    const elMobSaudacao = document.getElementById('mob-saudacao');
+    
+    if (elDeskSaudacao) elDeskSaudacao.innerText = saudacao + ',';
+    if (elMobSaudacao) elMobSaudacao.innerText = saudacao;
+
+    // 2. Busca o nome no banco de dados
+    let nomeFinal = 'Investidor';
+    try {
+        const client = window.supabaseClient;
+        if (client) {
+            const { data: { session } } = await client.auth.getSession();
+            if (session && session.user) {
+                const email = session.user.email;
+                const { data } = await client.from('usuarios_dicionario').select('username').eq('email', email).maybeSingle();
+                
+                if (data && data.username) {
+                    // Capitaliza a primeira letra do username
+                    nomeFinal = data.username.charAt(0).toUpperCase() + data.username.slice(1);
+                } else {
+                    // Fallback: pega o prefixo do e-mail
+                    nomeFinal = email.split('@')[0];
+                    nomeFinal = nomeFinal.charAt(0).toUpperCase() + nomeFinal.slice(1);
+                }
+            }
+        }
+    } catch(e) {
+        console.error("Aviso silencioso: Falha ao carregar nome.", e);
+    }
+
+    const elDeskNome = document.getElementById('desk-nome');
+    const elMobNome = document.getElementById('mob-nome');
+
+    if (elDeskNome) elDeskNome.innerText = nomeFinal;
+    if (elMobNome) elMobNome.innerText = nomeFinal;
 }
 
 window._menuMobileAberto = false;
