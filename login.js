@@ -95,7 +95,7 @@ function animarBoca(estado, percent = 0) {
         y1 = 92; y2 = 80; y3 = 80; y4 = 92; 
         arrayBoca.forEach(el => el.style.transition = 'all 0.3s');
         
-        // 🟢 CORREÇÃO: Faz ele LEVANTAR quando erra a senha, para a boca não ficar voando
+        // Faz ele LEVANTAR quando erra a senha, para a boca não ficar voando
         barLeft.style.transition = 'all 0.3s';
         barRight.style.transition = 'all 0.3s';
         barLeft.style.height = '64px';
@@ -354,7 +354,6 @@ function traduzirErroSupabase(mensagem) {
     if (msg.includes('password should be at least')) return 'A senha deve ter no mínimo 6 caracteres.';
     if (msg.includes('user already registered') || msg.includes('already exists')) return 'Este e-mail ou usuário já está em uso.';
     if (msg.includes('rate limit')) return 'Muitas tentativas. Aguarde um momento.';
-    if (msg.includes('email not confirmed')) return 'Sua conta ainda não foi ativada. Verifique o link no seu e-mail!';
     
     if (msg.includes('relation') && msg.includes('does not exist')) return 'Aviso de Desenvolvedor: Você esqueceu de criar a tabela usuarios_dicionario no banco de dados!';
     
@@ -379,7 +378,6 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
     btn.disabled = true;
 
     try {
-        // 🟢 Correção de Arquitetura: Variável global usada da forma correta.
         const client = supabaseClient;
 
         if (isLogin) {
@@ -414,10 +412,11 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
             const { error: insertErr } = await client.from('usuarios_dicionario').insert([{ username: username, email: identificador }]);
             if (insertErr) throw insertErr;
 
+            // 🟢 CADASTRO DIRETO (SEM PEDIR CÓDIGO/E-MAIL)
             Swal.fire({
                 icon: 'success',
                 title: 'Cadastro Concluído!',
-                text: 'Sua conta foi criada. Verifique a sua caixa de entrada de e-mail para validar o acesso.',
+                text: 'Sua conta de elite foi criada com sucesso. Faça o login para acessar o sistema.',
                 confirmButtonColor: '#2563eb'
             }).then(() => { 
                 alternarModoTela(); 
