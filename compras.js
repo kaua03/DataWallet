@@ -1,5 +1,5 @@
 // ==========================================
-// compras.js - MOTOR MULTIPLAYER, PERMISSÕES E UX
+// compras.js - MOTOR MULTIPLAYER, PERMISSÕES E UX (TOAST GLOBAL)
 // ==========================================
 
 let usuarioLogado = null;
@@ -20,6 +20,19 @@ let usuariosConectados = 1;
 
 let permissoesConvidados = {}; 
 let minhasPermissoes = { incluir: true, editar: true, excluir: false }; 
+
+// 🟢 CONFIGURAÇÃO DO TOAST DE ELITE (Global para a tela de compras)
+const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+        toast.addEventListener('mouseenter', Swal.stopTimer);
+        toast.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+});
 
 function getDbClient() {
     return window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
@@ -249,7 +262,7 @@ function iniciarSubscriptionRealtime() {
 // GERENCIADOR DE LIVE E PERMISSÕES DOS CONVIDADOS
 // ---------------------------------------------------------
 window.abrirGerenciadorLive = function() {
-    if (meuApelido !== "Dono(a)") return Swal.fire('Aviso', 'Apenas o administrador gerencia membros.', 'info');
+    if (meuApelido !== "Dono(a)") return Toast.fire({ icon: 'info', title: 'Acesso Negado', text: 'Apenas o administrador gerencia membros.' });
     
     const state = realTimeChannel ? realTimeChannel.presenceState() : {};
     let html = '';
@@ -325,14 +338,14 @@ window.expulsarUsuario = function(apelido) {
         container.innerHTML = '<p class="text-xs font-bold text-slate-400 py-4 text-center">Nenhum convidado online.</p>';
     }
 
-    Swal.fire({ icon: 'success', title: 'Usuário Removido', showConfirmButton: false, timer: 1000 });
+    Toast.fire({ icon: 'success', title: 'Usuário Removido' });
 }
 
 // ---------------------------------------------------------
 // COMPARTILHAMENTO
 // ---------------------------------------------------------
 async function abrirModalShare() {
-    if (!sessaoAtualId) return Swal.fire('Aviso', 'Sessão ainda não inicializada.', 'warning');
+    if (!sessaoAtualId) return Toast.fire({ icon: 'warning', title: 'Aguarde', text: 'Sessão ainda inicializando...' });
     
     const url = new URL(window.location.href);
     url.searchParams.set('s', sessaoAtualId);
@@ -381,7 +394,7 @@ function atualizarTimerOTP() {
 function copiarLinkShare() {
     const input = document.getElementById('share-link-input');
     input.select(); document.execCommand('copy');
-    Swal.fire({ icon: 'success', title: 'Copiado!', showConfirmButton: false, timer: 1000 });
+    Toast.fire({ icon: 'success', title: 'Link Copiado!' });
 }
 
 async function entrarComoConvidado() {
@@ -395,14 +408,14 @@ async function entrarComoConvidado() {
         nomeInput.focus();
         nomeInput.classList.add('ring-2', 'ring-rose-500', 'border-rose-500');
         setTimeout(() => nomeInput.classList.remove('ring-2', 'ring-rose-500', 'border-rose-500'), 2500);
-        return Swal.fire('Atenção', 'Digite o seu nome para entrar.', 'warning');
+        return Toast.fire({ icon: 'warning', title: 'Atenção', text: 'Digite o seu nome para entrar.' });
     }
     
     if (!senha || senha.length !== 6) {
         senhaInput.focus();
         senhaInput.classList.add('ring-2', 'ring-rose-500', 'border-rose-500');
         setTimeout(() => senhaInput.classList.remove('ring-2', 'ring-rose-500', 'border-rose-500'), 2500);
-        return Swal.fire('Atenção', 'Informe a senha de 6 dígitos exibida na tela do administrador.', 'warning');
+        return Toast.fire({ icon: 'warning', title: 'Atenção', text: 'Informe a senha de 6 dígitos.' });
     }
     
     Swal.fire({ title: 'Verificando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
@@ -412,9 +425,9 @@ async function entrarComoConvidado() {
         
     Swal.close();
     
-    if (error || !data) return Swal.fire('Erro', 'Sessão inválida ou finalizada.', 'error');
-    if (data.senha !== senha) return Swal.fire('Acesso Negado', 'Senha Incorreta.', 'error');
-    if (new Date() > new Date(data.senha_expira_em)) return Swal.fire('Acesso Negado', 'Esta senha expirou. Obtenha a nova senha no dispositivo do dono.', 'error');
+    if (error || !data) return Toast.fire({ icon: 'error', title: 'Sessão Inválida', text: 'A sessão de mercado foi finalizada.' });
+    if (data.senha !== senha) return Toast.fire({ icon: 'error', title: 'Acesso Negado', text: 'Senha Incorreta.' });
+    if (new Date() > new Date(data.senha_expira_em)) return Toast.fire({ icon: 'error', title: 'Senha Expirou', text: 'Olhe a nova senha na tela do dono.' });
     
     meuApelido = nome;
     
@@ -428,7 +441,7 @@ async function entrarComoConvidado() {
     await carregarCarrinhoDB();
     iniciarSubscriptionRealtime();
     aplicarMinhasPermissoesUI();
-    Swal.fire({ icon: 'success', title: 'Você entrou na compra!', showConfirmButton: false, timer: 1500 });
+    Toast.fire({ icon: 'success', title: 'Sincronizado', text: 'Você entrou na compra ao vivo!' });
 }
 
 // ---------------------------------------------------------
@@ -497,8 +510,8 @@ async function abrirLeitorCamera(fromModal = false) {
     scanOriginadoDoModal = fromModal;
     try {
         const devices = await Html5Qrcode.getCameras();
-        if (!devices || devices.length === 0) return Swal.fire('Aviso', 'Nenhuma câmera encontrada.', 'info');
-    } catch (err) { return Swal.fire('Erro na Câmera', 'Permissão negada.', 'error'); }
+        if (!devices || devices.length === 0) return Toast.fire({ icon: 'info', title: 'Aviso', text: 'Nenhuma câmera detectada.' });
+    } catch (err) { return Toast.fire({ icon: 'error', title: 'Câmera Bloqueada', text: 'Permissão negada pelo navegador.' }); }
 
     document.getElementById('modal-camera').classList.remove('hidden');
     html5QrCode = new Html5Qrcode("reader");
@@ -511,7 +524,7 @@ async function abrirLeitorCamera(fromModal = false) {
         },
         () => { }
     ).catch(() => {
-        fecharLeitorCamera(); Swal.fire('Erro', 'Não foi possível acessar a câmera.', 'error');
+        fecharLeitorCamera(); Toast.fire({ icon: 'error', title: 'Erro', text: 'Não foi possível iniciar o leitor.' });
     });
 }
 
@@ -532,12 +545,10 @@ async function processarCodigoDeBarras(codigo, isUpdate = false) {
         return;
     }
 
-    // 🟢 DEFESA NÍVEL SÊNIOR: Corta a conexão se a API demorar mais de 5 segundos
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     try {
-        // 🟢 MUDANÇA PARA O BRASIL: "br.openfoodfacts.org"
         const resOFF = await fetch(`https://br.openfoodfacts.org/api/v0/product/${codigo}.json`, { signal: controller.signal });
         clearTimeout(timeoutId);
         
@@ -554,7 +565,6 @@ async function processarCodigoDeBarras(codigo, isUpdate = false) {
             else abrirModalProduto('', 'fa-barcode', 'text-slate-500', null, null, codigo);
         }
     } catch (e) {
-        // Cai aqui se a API estiver fora do ar ou estourar o limite de 5s
         clearTimeout(timeoutId);
         Swal.close();
         if (isUpdate) atualizarCamposModalProduto('', 'fa-barcode', 'text-slate-500', null, codigo);
@@ -618,12 +628,10 @@ function buscarProdutosAutocompletar() {
     clearTimeout(debounceBuscaTimeout);
     if (termo.length >= 3) {
         debounceBuscaTimeout = setTimeout(async () => {
-            // 🟢 DEFESA NÍVEL SÊNIOR: Timeout de 4 segundos na busca de texto
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 4000);
 
             try {
-                // 🟢 MUDANÇA PARA O BRASIL: "br.openfoodfacts.org"
                 const res = await fetch(`https://br.openfoodfacts.org/cgi/search.pl?search_terms=${termo}&search_simple=1&action=process&json=1&page_size=3`, { signal: controller.signal });
                 clearTimeout(timeoutId);
                 
@@ -651,7 +659,6 @@ function buscarProdutosAutocompletar() {
                 clearTimeout(timeoutId);
                 const spinner = document.getElementById('spinner-api-busca');
                 if(spinner) {
-                    // Mensagem extremamente sutil de falha que some sozinha
                     spinner.innerHTML = `<i class="fa-solid fa-link-slash text-slate-400/40 mr-1"></i> <span class="text-slate-400/40 font-medium">Servidor global offline</span>`;
                     setTimeout(() => { if(spinner) spinner.remove(); }, 2000);
                 }
@@ -679,13 +686,13 @@ async function abrirModalProduto(nomeProduto, icone = 'fa-barcode', cor = 'text-
     if (dbId && dbId !== 'null') {
         
         if (meuApelido !== "Dono(a)" && !minhasPermissoes.editar) {
-            return Swal.fire('Bloqueado', 'O administrador não concedeu permissão para você editar itens.', 'warning');
+            return Toast.fire({ icon: 'warning', title: 'Bloqueado', text: 'Você não tem permissão para editar itens.' });
         }
 
         const item = carrinho.find(i => i.id === dbId);
         if (item) {
             if (usuariosConectados > 1 && item.editando_por && item.editando_por !== meuApelido) {
-                return Swal.fire('Bloqueado', `Sendo alterado por: <b>${item.editando_por}</b>. Aguarde.`, 'warning');
+                return Toast.fire({ icon: 'warning', title: 'Acesso Negado', text: `Sendo alterado por: ${item.editando_por}` });
             }
             
             if (usuariosConectados > 1) {
@@ -791,15 +798,15 @@ function calcularTotalItemModal() {
 
 async function salvarItemCarrinho(event) {
     event.preventDefault();
-    if (!sessaoAtualId) return Swal.fire('Erro', 'Sessão Perdida. Recarregue a página.', 'error');
+    if (!sessaoAtualId) return Toast.fire({ icon: 'error', title: 'Erro de Conexão', text: 'Sessão Perdida. Recarregue a página.' });
 
     const dbId = document.getElementById('prod-id').value;
     let nome = document.getElementById('prod-nome').value.trim();
     const preco = desmascararMoeda(document.getElementById('prod-preco').value); 
     const qtd = parseInt(document.getElementById('prod-qtd').value);
     
-    if (!nome) return Swal.fire('Atenção', 'Informe o nome do produto.', 'warning');
-    if (!qtd || qtd < 1) return Swal.fire('Atenção', 'Informe uma quantidade válida.', 'warning');
+    if (!nome) return Toast.fire({ icon: 'warning', title: 'Atenção', text: 'Informe o nome do produto.' });
+    if (!qtd || qtd < 1) return Toast.fire({ icon: 'warning', title: 'Atenção', text: 'Informe uma quantidade válida.' });
 
     const obs = document.getElementById('prod-obs').value.trim();
     const imgUrl = document.getElementById('prod-img-hidden').value;
@@ -835,30 +842,28 @@ async function salvarItemCarrinho(event) {
             if (error) throw error;
         }
         
-        // GRITO DE ATUALIZAÇÃO (Sincronia Rápida)
         if (realTimeChannel) realTimeChannel.send({ type: 'broadcast', event: 'comando_sala', payload: { acao: 'atualizar_carrinho' } });
         carregarCarrinhoDB();
+        Toast.fire({ icon: 'success', title: 'Item Salvo' });
         
     } catch(err) {
-        Swal.fire('Erro ao salvar item', 'Verifique sua conexão e tente novamente.', 'error');
+        Toast.fire({ icon: 'error', title: 'Erro de Conexão', text: 'Não foi possível salvar o item.' });
     }
 }
 
-// 🟢 FUNÇÃO DE REMOVER COM ALERTA E ATUALIZAÇÃO EM TEMPO REAL
 async function removerItem(dbId) {
     if (meuApelido !== "Dono(a)" && !minhasPermissoes.excluir) {
-        return Swal.fire('Bloqueado', 'O administrador não concedeu permissão para você excluir itens.', 'warning');
+        return Toast.fire({ icon: 'warning', title: 'Acesso Negado', text: 'Você não tem permissão para excluir itens.' });
     }
 
     const item = carrinho.find(i => i.id === dbId);
     if (usuariosConectados > 1 && item && item.editando_por && item.editando_por !== meuApelido) {
-        return Swal.fire('Bloqueado', `Sendo alterado por: ${item.editando_por}`, 'warning');
+        return Toast.fire({ icon: 'warning', title: 'Item Bloqueado', text: `Sendo alterado por: ${item.editando_por}` });
     }
     
-    // AVISO DE CONFIRMAÇÃO ELEGANTE
     const confirmacao = await Swal.fire({
         title: 'Remover item?',
-        html: `Deseja realmente remover <b>${item.nome}</b> do carrinho?`,
+        html: `Deseja remover <b>${item.nome}</b> do carrinho?`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444', 
@@ -875,12 +880,12 @@ async function removerItem(dbId) {
     try {
         await client.from('mercado_carrinho').delete().eq('id', dbId);
         
-        // GRITO DE ATUALIZAÇÃO PARA EXCLUSÃO (Sincronia Rápida)
         if (realTimeChannel) realTimeChannel.send({ type: 'broadcast', event: 'comando_sala', payload: { acao: 'atualizar_carrinho' } });
         carregarCarrinhoDB();
+        Toast.fire({ icon: 'info', title: 'Item Removido' });
         
     } catch (err) {
-        Swal.fire('Erro', 'Não foi possível remover o item.', 'error');
+        Toast.fire({ icon: 'error', title: 'Falha na Exclusão', text: 'Tente novamente.' });
     }
 }
 
@@ -1030,7 +1035,7 @@ async function efetivarCompra(event) {
         await inicializarSessaoRealtimeOwner(); 
         await carregarHistoricoPrecos();
         dispararOverlaySucesso("Compra Registrada!");
-    } catch (e) { Swal.fire('Erro ao Finalizar', e.message, 'error'); } finally { btn.innerHTML = htmlOriginal; btn.disabled = false; }
+    } catch (e) { Toast.fire({ icon: 'error', title: 'Falha', text: e.message }); } finally { btn.innerHTML = htmlOriginal; btn.disabled = false; }
 }
 
 window.fecharOverlaySucesso = function() {
