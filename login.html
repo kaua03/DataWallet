@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Acesso - DataWallet</title>
-    <link rel="icon" type="image/png" href="favicon.png">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script> tailwind.config = { darkMode: 'class' }; </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -44,11 +44,51 @@
         }
         .error-state {
             animation: errorShake 0.4s ease-in-out;
-            border-color: #ef4444 !important; /* Red 500 */
+            border-color: #ef4444 !important; 
             box-shadow: 0 0 15px rgba(239, 68, 68, 0.25) !important;
         }
         .error-state i {
             color: #ef4444 !important;
+        }
+
+        /* 🟢 TOAST DE ELITE (SWEETALERT2 OVERRIDE) */
+        div.swal2-popup.swal2-toast {
+            padding: 12px 20px !important;
+            border-radius: 1rem !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2) !important;
+            margin-top: 16px !important;
+            margin-right: 16px !important;
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+        html.dark div.swal2-popup.swal2-toast {
+            background-color: #0f172a !important; /* bg-slate-900 */
+            border: 1px solid #1e293b !important; /* border-slate-800 */
+            color: #f8fafc !important; /* text-slate-50 */
+        }
+        html:not(.dark) div.swal2-popup.swal2-toast {
+            background-color: #ffffff !important;
+            border: 1px solid #f1f5f9 !important; /* border-slate-100 */
+            color: #0f172a !important; /* text-slate-900 */
+        }
+        .swal2-timer-progress-bar {
+            background-color: #4f46e5 !important; /* bg-indigo-600 */
+            height: 4px !important;
+        }
+        div.swal2-popup.swal2-toast .swal2-title {
+            font-family: 'Inter', sans-serif !important;
+            font-size: 0.875rem !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        div.swal2-popup.swal2-toast .swal2-html-container {
+            font-family: 'Inter', sans-serif !important;
+            font-size: 0.75rem !important;
+            margin: 4px 0 0 0 !important;
+            opacity: 0.7 !important;
+        }
+        div.swal2-popup.swal2-toast .swal2-icon {
+            margin: 0 16px 0 0 !important;
+            transform: scale(0.7) !important;
         }
     </style>
 </head>
@@ -104,7 +144,6 @@
             
             <div id="box-email">
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1" id="label-identificador">E-mail ou Usuário</label>
-                <!-- Os containers "group" vão receber a classe .error-state quando falhar -->
                 <div class="group relative flex items-center bg-slate-950 rounded-xl border border-slate-800 transition-all duration-300 focus-within:-translate-y-1 focus-within:shadow-[0_10px_25px_rgba(59,130,246,0.15)] focus-within:border-blue-500">
                     <i class="fa-solid fa-user absolute left-4 text-slate-500 transition-colors duration-300 group-focus-within:text-blue-400" id="icon-identificador"></i>
                     <input type="text" id="identificador" required class="w-full bg-transparent text-white pl-11 pr-4 py-3.5 outline-none font-medium lowercase">
