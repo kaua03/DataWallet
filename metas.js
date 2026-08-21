@@ -111,18 +111,8 @@ async function carregarDadosDoBanco() {
         transacoesGlobais = rTrans.data || [];
         metasGlobais = rMetas.data || [];
 
-        if (metasGlobais.length === 0) {
-            const metaExemplo = {
-                usuario_id: usuarioLogado.id,
-                titulo: 'Reserva de Emergência 🛡️',
-                valor_alvo: 5000.00,
-                valor_atual: 0.00,
-                prazo: new Date(Date.now() + 180*24*60*60*1000).toISOString().split('T')[0],
-                criado_em: new Date().toISOString()
-            };
-            const { data: insData } = await client.from('metas').insert([metaExemplo]).select();
-            if (insData) metasGlobais = insData;
-        }
+        // 🟢 CORREÇÃO: O robô que criava a meta fantasma de exemplo foi exterminado.
+        // Agora você tem controle absoluto. Se apagar tudo, fica tudo limpo.
 
         processarAnaliseInteligente();
         renderizarMetas();
