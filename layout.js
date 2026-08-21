@@ -1,5 +1,5 @@
 // ==========================================
-// layout.js - MOTOR GLOBAL E CONTROLE DE TELA (COM SAUDAÇÃO INTELIGENTE)
+// layout.js - MOTOR GLOBAL E CONTROLE DE TELA (COM SAUDAÇÃO INTELIGENTE CORRIGIDA)
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -61,7 +61,6 @@ function injetarEstilosGlobais() {
     document.head.appendChild(style);
 }
 
-// 🟢 FUNÇÃO ENVELOPADORA: Fecha o menu antes de abrir a função solicitada
 window.fecharMenuEAbrirModal = function(funcaoAlvo) {
     if (window._menuMobileAberto) {
         window.toggleMobileMenu();
@@ -185,7 +184,6 @@ function inicializarLayout(isDark) {
         <div id="fab-container" class="fixed bottom-6 right-6 z-[9999] flex items-end justify-end pointer-events-none">
             ${btnAcaoMobileHtml}
             
-            <!-- 🟢 PÍLULA FLUTUANTE DE SAUDAÇÃO MOBILE ALINHADA À DIREITA -->
             <div id="fab-items" class="absolute bottom-16 right-0 flex flex-col items-end gap-2.5 transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none z-[9999]">
                 
                 <div class="mobile-menu-btn pointer-events-none opacity-0 transition-opacity bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-2xl px-4 py-2 mb-2 flex items-center gap-1.5 whitespace-nowrap">
@@ -215,13 +213,11 @@ function inicializarLayout(isDark) {
     document.body.insertAdjacentHTML('afterbegin', sidebarHtml);
     document.body.insertAdjacentHTML('beforeend', mobileMenuHtml);
 
-    // Dispara a rotina de carregar o perfil e hora
     injetarSaudacaoPersonalizada();
 }
 
-// 🟢 NOVO MOTOR DE INTELIGÊNCIA DE PERFIL
+// 🟢 CORREÇÃO: MOTOR DE INTELIGÊNCIA DE PERFIL BLINDADO
 async function injetarSaudacaoPersonalizada() {
-    // 1. Descobre a saudação pela hora do dia
     const hora = new Date().getHours();
     let saudacao = 'Boa noite';
     if (hora >= 5 && hora < 12) saudacao = 'Bom dia';
@@ -233,10 +229,11 @@ async function injetarSaudacaoPersonalizada() {
     if (elDeskSaudacao) elDeskSaudacao.innerText = saudacao + ',';
     if (elMobSaudacao) elMobSaudacao.innerText = saudacao;
 
-    // 2. Busca o nome no banco de dados
     let nomeFinal = 'Investidor';
     try {
-        const client = window.supabaseClient;
+        // AQUI ESTAVA O ERRO: Usando o escopo global correto para evitar o "undefined"
+        const client = window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
+        
         if (client) {
             const { data: { session } } = await client.auth.getSession();
             if (session && session.user) {
@@ -244,17 +241,16 @@ async function injetarSaudacaoPersonalizada() {
                 const { data } = await client.from('usuarios_dicionario').select('username').eq('email', email).maybeSingle();
                 
                 if (data && data.username) {
-                    // Capitaliza a primeira letra do username
-                    nomeFinal = data.username.charAt(0).toUpperCase() + data.username.slice(1);
+                    // Capitaliza corretamente (ex: "kaua" -> "Kauã")
+                    nomeFinal = data.username.charAt(0).toUpperCase() + data.username.slice(1).toLowerCase();
                 } else {
-                    // Fallback: pega o prefixo do e-mail
                     nomeFinal = email.split('@')[0];
-                    nomeFinal = nomeFinal.charAt(0).toUpperCase() + nomeFinal.slice(1);
+                    nomeFinal = nomeFinal.charAt(0).toUpperCase() + nomeFinal.slice(1).toLowerCase();
                 }
             }
         }
     } catch(e) {
-        console.error("Aviso silencioso: Falha ao carregar nome.", e);
+        console.error("Falha ao carregar nome do banco:", e);
     }
 
     const elDeskNome = document.getElementById('desk-nome');
