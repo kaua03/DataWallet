@@ -134,9 +134,9 @@ function renderMascotEmotions() {
     const taxaEsvaziamento = (mouseVel < 10) ? 12 : 3;
     tickleMeter = Math.max(0, tickleMeter - taxaEsvaziamento); 
     
-    // TEMPORIZADOR DO SORRISO REDUZIDO (2.5 segundos)
+    // TEMPORIZADOR DO SORRISO RÁPIDO (1 segundo)
     if (mouseVel > 4) {
-        smileMeter = Math.min(3000, smileMeter + dt); 
+        smileMeter = Math.min(1500, smileMeter + dt); 
     } else {
         smileMeter = Math.max(0, smileMeter - (dt * 3));
     }
@@ -158,7 +158,7 @@ function renderMascotEmotions() {
                 eyelidR.style.transform = 'scaleY(0)';
             }
 
-            if (smileMeter > 2500) { 
+            if (smileMeter > 1000) { // 🟢 Ajustado para 1000ms (1 segundo)
                 if (estadoMascote !== 'sorrindo') {
                     animarBoca('sorrindo');
                     estadoMascote = 'sorrindo';
