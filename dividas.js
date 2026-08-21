@@ -1,10 +1,23 @@
 // ==========================================
-// dividas.js - ERP KANBAN DEFINITIVO (BLINDAGEM TOTAL + FLUIDEZ GLOBAL)
+// dividas.js - ERP KANBAN DEFINITIVO (BLINDAGEM TOTAL E UX GLOBAL)
 // ==========================================
 
 let usuarioLogado = null;
 let transacoesGlobais = [];
 let categoriasGlobais = [];
+
+// 🟢 CONFIGURAÇÃO DO TOAST DE ELITE (Global para a tela de Dívidas)
+const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+        toast.addEventListener('mouseenter', Swal.stopTimer);
+        toast.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+});
 
 document.addEventListener('DOMContentLoaded', async () => {
     
@@ -126,7 +139,6 @@ async function carregarDadosDoBanco() {
             throw new Error("Cliente Supabase ou usuário não inicializado.");
         }
 
-        // 🟢 CORREÇÃO: Busca as categorias globais sem filtrar por usuario_id
         const [rTrans, rCat] = await Promise.all([
             client.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).eq('tipo', 'despesa').order('data_vencimento', { ascending: true }),
             client.from('categorias').select('*').order('nome', { ascending: true })
@@ -362,12 +374,10 @@ window.alterarStatusPagamento = async function(idTransacao, novoStatusPago) {
         processarEAtualizarKanban();
         
         if (novoStatusPago) {
-            const isDark = document.documentElement.classList.contains('dark');
-            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, timerProgressBar: true, background: isDark ? '#1e293b' : '#fff', color: isDark ? '#fff' : '#1e293b' });
             Toast.fire({ icon: 'success', title: 'Conta Liquidada!' });
         }
     } catch (e) { 
-        Swal.fire('Erro', e.message, 'error'); 
+        Toast.fire({ icon: 'error', title: 'Falha', text: e.message }); 
     }
 };
 
@@ -429,7 +439,11 @@ window.excluirDivida = async function(idTransacao) {
         if (error) throw error;
         transacoesGlobais = transacoesGlobais.filter(t => t.id != idTransacao);
         processarEAtualizarKanban();
-    } catch (e) { Swal.fire('Erro', e.message, 'error'); }
+        
+        Toast.fire({ icon: 'info', title: 'Dívida Excluída' });
+    } catch (e) { 
+        Toast.fire({ icon: 'error', title: 'Erro', text: e.message }); 
+    }
 };
 
 window.salvarDivida = async function(event) {
@@ -446,7 +460,7 @@ window.salvarDivida = async function(event) {
     const catId = document.getElementById('divida-categoria').value;
 
     if (valorFloat <= 0) {
-        Swal.fire('Aviso', 'O valor não pode ser zero.', 'warning');
+        Toast.fire({ icon: 'warning', title: 'Atenção', text: 'O valor não pode ser zero.' });
         btn.innerHTML = conteudoOriginal; btn.disabled = false; return;
     }
 
@@ -494,14 +508,10 @@ window.salvarDivida = async function(event) {
         window.fecharModalNovaDivida();
         processarEAtualizarKanban();
 
-        const isDark = document.documentElement.classList.contains('dark');
-        const Toast = Swal.mixin({
-            toast: true, position: 'top-end', showConfirmButton: false, timer: 2000, timerProgressBar: true, background: isDark ? '#1e293b' : '#fff', color: isDark ? '#fff' : '#1e293b'
-        });
         Toast.fire({ icon: 'success', title: 'Registro guardado!' });
 
     } catch (e) {
-        Swal.fire('Erro', e.message, 'error');
+        Toast.fire({ icon: 'error', title: 'Falha', text: e.message });
     } finally {
         btn.innerHTML = conteudoOriginal;
         btn.disabled = false;
