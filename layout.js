@@ -1,5 +1,5 @@
 // ==========================================
-// layout.js - MOTOR GLOBAL E CONTROLE DE TELA (COM SAUDAÇÃO INTELIGENTE CORRIGIDA)
+// layout.js - MOTOR GLOBAL E CONTROLE DE TELA (COM ALINHAMENTO MILIMÉTRICO)
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -126,7 +126,6 @@ function inicializarLayout(isDark) {
         <div class="hidden md:block w-20 shrink-0"></div>
         <aside id="sidebar" class="hidden md:flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200/60 dark:border-slate-800 py-6 px-4 h-full z-40 fixed left-0 top-0 overflow-hidden shadow-sm transition-colors duration-300">
             
-            <!-- CABEÇALHO PERSONALIZADO DESKTOP -->
             <div class="flex items-center justify-start mb-8 h-12 px-1 cursor-default">
                 <div class="w-10 h-10 shrink-0 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-indigo-600/30">
                     <i class="fa-solid fa-wallet text-xl"></i>
@@ -186,22 +185,28 @@ function inicializarLayout(isDark) {
             
             <div id="fab-items" class="absolute bottom-16 right-0 flex flex-col items-end gap-2.5 transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none z-[9999]">
                 
+                <!-- PÍLULA DE SAUDAÇÃO (Mantém encostada à direita) -->
                 <div class="mobile-menu-btn pointer-events-none opacity-0 transition-opacity bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-2xl px-4 py-2 mb-2 flex items-center gap-1.5 whitespace-nowrap">
                     <span class="text-xs font-bold text-slate-500 dark:text-slate-400">
                         <span id="mob-saudacao">...</span>, <span id="mob-nome" class="text-indigo-600 dark:text-indigo-400 font-black">Carregando</span>
                     </span>
                 </div>
 
-                <button onclick="sairDoSistema()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-rose-500 border border-rose-100 dark:border-rose-900/50 shadow-lg flex items-center justify-center transition-transform hover:scale-110 pointer-events-none mobile-menu-btn">
-                    <i class="fa-solid fa-right-from-bracket pointer-events-none text-sm"></i>
-                </button>
-                
-                <button id="btn-dark-mobile" onclick="window.toggleDarkMode(); window.toggleMobileMenu();" class="w-10 h-10 rounded-full bg-slate-800 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible pointer-events-none mobile-menu-btn">
-                    <i id="icone-dark-mode-mobile" class="${iconeTemaMobile} pointer-events-none"></i>
-                    <i id="star-mobile" class="fa-solid fa-star absolute text-[12px] text-white opacity-0 pointer-events-none z-50"></i>
-                </button>
-                <div class="w-8 h-px bg-slate-200 dark:bg-slate-700 my-1 mr-1 mobile-menu-btn pointer-events-none opacity-0 transition-opacity"></div>
-                ${mobileLinksHtml}
+                <!-- 🟢 COLUNA CENTRALIZADA DOS ÍCONES (mr-2 corrige a matemática de alinhamento) -->
+                <div class="flex flex-col items-center gap-2.5 mr-2">
+                    <button onclick="sairDoSistema()" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-rose-500 border border-rose-100 dark:border-rose-900/50 shadow-lg flex items-center justify-center transition-transform hover:scale-110 pointer-events-none mobile-menu-btn">
+                        <i class="fa-solid fa-right-from-bracket pointer-events-none text-sm"></i>
+                    </button>
+                    
+                    <button id="btn-dark-mobile" onclick="window.toggleDarkMode(); window.toggleMobileMenu();" class="w-10 h-10 rounded-full bg-slate-800 shadow-lg flex items-center justify-center transition-transform hover:scale-110 border border-slate-700 relative overflow-visible pointer-events-none mobile-menu-btn">
+                        <i id="icone-dark-mode-mobile" class="${iconeTemaMobile} pointer-events-none"></i>
+                        <i id="star-mobile" class="fa-solid fa-star absolute text-[12px] text-white opacity-0 pointer-events-none z-50"></i>
+                    </button>
+                    
+                    <div class="w-8 h-px bg-slate-200 dark:bg-slate-700 my-1 mobile-menu-btn pointer-events-none opacity-0 transition-opacity"></div>
+                    
+                    ${mobileLinksHtml}
+                </div>
             </div>
             
             <button onclick="toggleMobileMenu()" id="fab-menu" class="relative w-14 h-14 rounded-full bg-indigo-600 text-white shadow-[0_4px_20px_rgba(79,70,229,0.5)] flex items-center justify-center text-xl transition-all duration-300 z-[9999] pointer-events-auto hover:scale-105">
@@ -216,7 +221,6 @@ function inicializarLayout(isDark) {
     injetarSaudacaoPersonalizada();
 }
 
-// 🟢 CORREÇÃO: MOTOR DE INTELIGÊNCIA DE PERFIL BLINDADO
 async function injetarSaudacaoPersonalizada() {
     const hora = new Date().getHours();
     let saudacao = 'Boa noite';
@@ -231,7 +235,6 @@ async function injetarSaudacaoPersonalizada() {
 
     let nomeFinal = 'Investidor';
     try {
-        // AQUI ESTAVA O ERRO: Usando o escopo global correto para evitar o "undefined"
         const client = window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
         
         if (client) {
@@ -241,7 +244,6 @@ async function injetarSaudacaoPersonalizada() {
                 const { data } = await client.from('usuarios_dicionario').select('username').eq('email', email).maybeSingle();
                 
                 if (data && data.username) {
-                    // Capitaliza corretamente (ex: "kaua" -> "Kauã")
                     nomeFinal = data.username.charAt(0).toUpperCase() + data.username.slice(1).toLowerCase();
                 } else {
                     nomeFinal = email.split('@')[0];
