@@ -62,7 +62,7 @@ async function atualizarTudo() {
     try {
         const [rTrans, rCat, rDiv, rPlan] = await Promise.all([
             supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).order('id', { ascending: false }),
-            supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id),
+            supabaseClient.from('categorias').select('*').order('nome', { ascending: true })
             supabaseClient.from('dividas').select('*').eq('usuario_id', usuarioLogado.id),
             supabaseClient.from('metas').select('*').eq('usuario_id', usuarioLogado.id)
         ]);
