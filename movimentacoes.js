@@ -1,5 +1,5 @@
 // ==========================================
-// movimentacoes.js - IA ESTRITA E SINCRONIZAÇÃO DE METAS
+// movimentacoes.js - IA ESTRITA E SINCRONIZAÇÃO DE METAS (GLOBAL CATEGORIES + TOAST GLOBAL)
 // ==========================================
 
 let usuarioLogado = null;
@@ -13,6 +13,19 @@ let reconhecimentoDeVoz = null;
 let timerPressao;
 let modoSelecao = false;
 let selecionados = new Set();
+
+// 🟢 CONFIGURAÇÃO DO TOAST DE ELITE
+const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+        toast.addEventListener('mouseenter', Swal.stopTimer);
+        toast.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+});
 
 document.addEventListener('DOMContentLoaded', async () => {
     
@@ -241,7 +254,7 @@ function renderizarListaHistorico() {
     }
     const transacoesExibidas = isHistoricoExpandido ? transacoesFiltradas : transacoesFiltradas.slice(0, 5);
     const htmlLista = transacoesExibidas.map(t => {
-        const cat = categoriasGlobais.find(c => c.id === t.categoria_id) || { nome: 'Outros', icone: 'fa-tag', cor: 'text-gray-500' };
+        const cat = categoriasGlobais.find(c => c.id === t.categoria_id) || { nome: 'Outros', icone: 'fa-box', cor: 'text-slate-500' };
         const isReceita = t.tipo === 'receita';
         const corBg = isReceita ? 'bg-emerald-50 dark:bg-emerald-500/10' : 'bg-rose-50 dark:bg-rose-500/10';
         const corTxt = isReceita ? 'text-emerald-500' : 'text-rose-500';
@@ -426,7 +439,7 @@ window.abrirModalComTextoRapido = function() { processarFraseNLP(document.getEle
 // ==========================================
 window.ativarMicrofone = function() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return Swal.fire('Ops!', 'Seu navegador não suporta microfone nativo. Use o Chrome.', 'error');
+    if (!SpeechRecognition) return Toast.fire({ icon: 'error', title: 'Aviso', text: 'Navegador não suporta microfone nativo. Use o Chrome.' });
     
     reconhecimentoDeVoz = new SpeechRecognition(); 
     reconhecimentoDeVoz.lang = 'pt-BR'; 
@@ -489,7 +502,7 @@ window.ativarMicrofone = function() {
     reconhecimentoDeVoz.onerror = (e) => { 
         window.cancelarMicrofone(); 
         if (e.error === 'not-allowed') {
-            Swal.fire({ icon: 'warning', title: 'Microfone Bloqueado', text: 'Libere a permissão de microfone.', confirmButtonColor: '#4f46e5' });
+            Toast.fire({ icon: 'warning', title: 'Bloqueado', text: 'Libere a permissão de microfone.' });
         }
     };
     
@@ -545,11 +558,10 @@ window.abrirModalEdicao = function(id) {
     const t = transacoesGlobais.find(x => x.id === id); if(!t) return;
     
     if (t.tipo === 'despesa' && t.descricao && t.descricao.startsWith('Aporte:')) {
-        Swal.fire({
+        Toast.fire({
             icon: 'info',
             title: 'Ação Protegida',
-            text: 'Este é um depósito de Meta. Para alterar o valor, exclua este registro e faça um novo aporte diretamente na tela de Metas para manter seu saldo sincronizado.',
-            confirmButtonColor: '#4f46e5'
+            text: 'Para alterar, exclua este registro e refaça na tela de Metas.'
         });
         return;
     }
@@ -565,20 +577,46 @@ window.fecharModal = function() { document.getElementById('modal-transacao').cla
 
 window.excluirTransacao = async function(id) {
     if(modoSelecao) return; 
-    const confirmacao = await Swal.fire({ title: 'Excluir Transação?', text: "Essa ação apagará este registro do fluxo.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8', confirmButtonText: 'Sim', cancelButtonText: 'Cancelar' });
+    const isDark = document.documentElement.classList.contains('dark');
+    const confirmacao = await Swal.fire({ 
+        title: 'Excluir Transação?', 
+        text: "Essa ação apagará este registro permanentemente.", 
+        icon: 'warning', 
+        showCancelButton: true, 
+        confirmButtonColor: '#ef4444', 
+        cancelButtonColor: '#94a3b8', 
+        confirmButtonText: 'Sim, excluir', 
+        cancelButtonText: 'Cancelar',
+        background: isDark ? '#1e293b' : '#fff',
+        color: isDark ? '#fff' : '#1e293b'
+    });
     if(!confirmacao.isConfirmed) return;
+    
     try {
         const transacaoAlvo = transacoesGlobais.find(t => t.id == id);
         if (transacaoAlvo) await estornarAporteSeExistir(transacaoAlvo);
 
         await supabaseClient.from('transacoes').delete().eq('id', id).eq('usuario_id', usuarioLogado.id);
-        await carregarDadosDoBanco(); Swal.fire({ icon: 'success', title: 'Excluído!', showConfirmButton: false, timer: 1500 });
-    } catch(e) { Swal.fire('Erro', e.message, 'error'); }
+        await carregarDadosDoBanco(); 
+        Toast.fire({ icon: 'success', title: 'Excluído com sucesso!' });
+    } catch(e) { Toast.fire({ icon: 'error', title: 'Falha', text: e.message }); }
 };
 
 window.excluirSelecionados = async function() {
     if (selecionados.size === 0) return;
-    const confirmacao = await Swal.fire({ title: 'Excluir Registros?', text: `Você está prestes a excluir ${selecionados.size} registros. Isso não pode ser desfeito.`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8', confirmButtonText: 'Sim, excluir todos', cancelButtonText: 'Cancelar' });
+    const isDark = document.documentElement.classList.contains('dark');
+    const confirmacao = await Swal.fire({ 
+        title: 'Excluir Registros?', 
+        text: `Você está prestes a excluir ${selecionados.size} registros. Isso não pode ser desfeito.`, 
+        icon: 'warning', 
+        showCancelButton: true, 
+        confirmButtonColor: '#ef4444', 
+        cancelButtonColor: '#94a3b8', 
+        confirmButtonText: 'Sim, excluir todos', 
+        cancelButtonText: 'Cancelar',
+        background: isDark ? '#1e293b' : '#fff',
+        color: isDark ? '#fff' : '#1e293b'
+    });
     if (!confirmacao.isConfirmed) return;
     try {
         const idsArray = Array.from(selecionados);
@@ -592,14 +630,14 @@ window.excluirSelecionados = async function() {
         if (error) throw error;
         transacoesGlobais = transacoesGlobais.filter(t => !selecionados.has(t.id));
         sairModoSelecao(); window.aplicarFiltrosHistorico(); atualizarTopCards();
-        Swal.fire({ icon: 'success', title: 'Excluídos!', showConfirmButton: false, timer: 1500 });
-    } catch(e) { Swal.fire({ icon: 'error', title: 'Erro ao excluir', text: e.message }); }
+        Toast.fire({ icon: 'success', title: 'Excluídos com sucesso!' });
+    } catch(e) { Toast.fire({ icon: 'error', title: 'Falha ao excluir', text: e.message }); }
 };
 
 window.salvarTransacao = async function(event) {
     event.preventDefault();
     const id = document.getElementById('transacao-id').value; const desc = document.getElementById('transacao-desc').value.trim(); const val = desmascararMoeda(document.getElementById('transacao-valor').value); const dataV = document.getElementById('transacao-data').value; const catId = parseInt(document.getElementById('transacao-categoria').value); const tipo = document.querySelector('input[name="tipo"]:checked').value;
-    if(!desc || isNaN(val) || val <= 0 || !dataV) return Swal.fire('Aviso', 'Preencha os dados corretamente.', 'warning');
+    if(!desc || isNaN(val) || val <= 0 || !dataV) return Toast.fire({ icon: 'warning', title: 'Atenção', text: 'Preencha os dados corretamente.' });
     const payload = { usuario_id: usuarioLogado.id, descricao: desc, valor: val, data_vencimento: dataV, categoria_id: catId, tipo: tipo, pago: true };
     const btn = document.getElementById('btn-salvar-transacao'); const conteudoOriginal = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando...'; btn.disabled = true;
 
@@ -625,5 +663,5 @@ window.salvarTransacao = async function(event) {
         
         requestAnimationFrame(() => overlayLottie.style.opacity = '1');
         setTimeout(() => { overlayLottie.style.opacity = '0'; setTimeout(() => overlayLottie.remove(), 300); }, 2600);
-    } catch(e) { Swal.fire('Erro', e.message, 'error'); } finally { btn.innerHTML = conteudoOriginal; btn.disabled = false; }
+    } catch(e) { Toast.fire({ icon: 'error', title: 'Falha', text: e.message }); } finally { btn.innerHTML = conteudoOriginal; btn.disabled = false; }
 };
