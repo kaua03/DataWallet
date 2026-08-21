@@ -1,5 +1,5 @@
 // ==========================================
-// dividas.js - ERP KANBAN DEFINITIVO (BLINDAGEM TOTAL + FLUIDEZ)
+// dividas.js - ERP KANBAN DEFINITIVO (BLINDAGEM TOTAL + FLUIDEZ GLOBAL)
 // ==========================================
 
 let usuarioLogado = null;
@@ -126,9 +126,10 @@ async function carregarDadosDoBanco() {
             throw new Error("Cliente Supabase ou usuário não inicializado.");
         }
 
+        // 🟢 CORREÇÃO: Busca as categorias globais sem filtrar por usuario_id
         const [rTrans, rCat] = await Promise.all([
             client.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).eq('tipo', 'despesa').order('data_vencimento', { ascending: true }),
-            client.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
+            client.from('categorias').select('*').order('nome', { ascending: true })
         ]);
 
         if (rTrans.error) throw rTrans.error;
