@@ -1,5 +1,5 @@
 // ==========================================
-// login.js - ENGINE DE EMOÇÃO RÁPIDA E LOGIN BLINDADO
+// login.js - ENGINE DE EMOÇÃO E LOGIN BLINDADO COMPLETO
 // ==========================================
 
 let isLogin = true;
@@ -94,13 +94,20 @@ function animarBoca(estado, percent = 0) {
     else if (estado === 'triste') {
         y1 = 92; y2 = 80; y3 = 80; y4 = 92; 
         arrayBoca.forEach(el => el.style.transition = 'all 0.3s');
+        
+        // 🟢 CORREÇÃO: Faz ele LEVANTAR quando erra a senha, para a boca não ficar voando
+        barLeft.style.transition = 'all 0.3s';
+        barRight.style.transition = 'all 0.3s';
+        barLeft.style.height = '64px';
+        barRight.style.height = '80px';
         barLeft.style.transform = `translateY(0px)`;
         barRight.style.transform = `translateY(0px)`;
+        
         eyelidL.style.transform = 'scaleY(0.5)';
         eyelidR.style.transform = 'scaleY(0.5)';
     }
     else {
-        y1 = 85; y2 = 85; y3 = 85; y4 = 85;
+        y1 = 85; y2 = 85; y3 = 85; y4 = 85; // Neutro 😐
         arrayBoca.forEach(el => el.style.transition = 'all 0.3s');
         barLeft.style.transition = 'all 0.3s';
         barRight.style.transition = 'all 0.3s';
@@ -127,9 +134,9 @@ function renderMascotEmotions() {
     const taxaEsvaziamento = (mouseVel < 10) ? 12 : 3;
     tickleMeter = Math.max(0, tickleMeter - taxaEsvaziamento); 
     
-    // 🟢 TEMPORIZADOR DO SORRISO REDUZIDO (Agora atinge o pico com 2.5 segundos)
+    // TEMPORIZADOR DO SORRISO REDUZIDO (2.5 segundos)
     if (mouseVel > 4) {
-        smileMeter = Math.min(3000, smileMeter + dt); // Cap máximo de 3 seg
+        smileMeter = Math.min(3000, smileMeter + dt); 
     } else {
         smileMeter = Math.max(0, smileMeter - (dt * 3));
     }
@@ -151,7 +158,6 @@ function renderMascotEmotions() {
                 eyelidR.style.transform = 'scaleY(0)';
             }
 
-            // 🟢 A REGRA DOS 2.5 SEGUNDOS (2500 milissegundos)
             if (smileMeter > 2500) { 
                 if (estadoMascote !== 'sorrindo') {
                     animarBoca('sorrindo');
@@ -350,13 +356,12 @@ function traduzirErroSupabase(mensagem) {
     if (msg.includes('rate limit')) return 'Muitas tentativas. Aguarde um momento.';
     if (msg.includes('email not confirmed')) return 'Sua conta ainda não foi ativada. Verifique o link no seu e-mail!';
     
-    // Auto-diagnóstico de erro de Setup
     if (msg.includes('relation') && msg.includes('does not exist')) return 'Aviso de Desenvolvedor: Você esqueceu de criar a tabela usuarios_dicionario no banco de dados!';
     
     return `Alerta do Banco de Dados: ${mensagem}`;
 }
 
-// 🟢 AUTENTICAÇÃO COM FALHAS COBERTAS
+// 🟢 AUTENTICAÇÃO COM FALHAS COBERTAS E FIX DO SUPABASE
 document.getElementById('form-auth').addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -374,12 +379,12 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
     btn.disabled = true;
 
     try {
-        const client = window.supabaseClient;
+        // 🟢 Correção de Arquitetura: Variável global usada da forma correta.
+        const client = supabaseClient;
 
         if (isLogin) {
             let emailLogin = identificador;
             
-            // Tentativa protegida de buscar o Dicionário de Usuários
             if (!identificador.includes('@')) {
                 const { data, error: errUser } = await client.from('usuarios_dicionario').select('email').eq('username', identificador).maybeSingle();
                 if (errUser) {
