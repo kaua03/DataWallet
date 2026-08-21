@@ -13,6 +13,19 @@ let grafRadar = null;
 let statsGlobais = { receitas: 0, despesas: 0, saldo: 0, taxaPoupanca: 0, mediaDiaria: 0, maiorGasto: null, topCategoria: null, transacoesNoPeriodo: 0 };
 let inicializacaoCompleta = false; 
 
+// 🟢 CONFIGURAÇÃO DO TOAST DE ELITE
+const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+        toast.addEventListener('mouseenter', Swal.stopTimer);
+        toast.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+});
+
 const coresPorCategoria = {
     'Alimentação': { hex: '#3b82f6', tw: 'bg-blue-500' },          
     'Veículo & Transporte': { hex: '#6366f1', tw: 'bg-indigo-500' },
@@ -69,8 +82,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     observer.observe(document.documentElement, { attributes: true });
 });
 
-// A Função de Menu foi removida daqui! O layout.js agora comanda.
-
 function formatarMoedaLocal(valor) {
     let p = Math.abs(valor).toFixed(2).split('.');
     p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -114,7 +125,10 @@ async function carregarDadosDoBanco() {
         transacoesGlobais = rTrans.data || [];
         categoriasGlobais = rCat.data || [];
         processarEAtualizarTudo();
-    } catch (e) { console.error("Erro ao puxar dados:", e.message); }
+    } catch (e) { 
+        console.error("Erro ao puxar dados:", e.message); 
+        Toast.fire({ icon: 'error', title: 'Erro de Conexão', text: 'Falha ao carregar dados do painel.' });
+    }
 }
 
 window.mudarTipoFiltro = function() {
