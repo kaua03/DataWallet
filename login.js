@@ -95,7 +95,6 @@ function animarBoca(estado, percent = 0) {
         y1 = 92; y2 = 80; y3 = 80; y4 = 92; 
         arrayBoca.forEach(el => el.style.transition = 'all 0.3s');
         
-        // Faz ele LEVANTAR quando erra a senha, para a boca não ficar voando
         barLeft.style.transition = 'all 0.3s';
         barRight.style.transition = 'all 0.3s';
         barLeft.style.height = '64px';
@@ -107,7 +106,7 @@ function animarBoca(estado, percent = 0) {
         eyelidR.style.transform = 'scaleY(0.5)';
     }
     else {
-        y1 = 85; y2 = 85; y3 = 85; y4 = 85; // Neutro 😐
+        y1 = 85; y2 = 85; y3 = 85; y4 = 85; 
         arrayBoca.forEach(el => el.style.transition = 'all 0.3s');
         barLeft.style.transition = 'all 0.3s';
         barRight.style.transition = 'all 0.3s';
@@ -134,7 +133,6 @@ function renderMascotEmotions() {
     const taxaEsvaziamento = (mouseVel < 10) ? 12 : 3;
     tickleMeter = Math.max(0, tickleMeter - taxaEsvaziamento); 
     
-    // TEMPORIZADOR DO SORRISO RÁPIDO (1 segundo)
     if (mouseVel > 4) {
         smileMeter = Math.min(1500, smileMeter + dt); 
     } else {
@@ -158,7 +156,7 @@ function renderMascotEmotions() {
                 eyelidR.style.transform = 'scaleY(0)';
             }
 
-            if (smileMeter > 1000) { // 🟢 Ajustado para 1000ms (1 segundo)
+            if (smileMeter > 1000) { 
                 if (estadoMascote !== 'sorrindo') {
                     animarBoca('sorrindo');
                     estadoMascote = 'sorrindo';
@@ -345,6 +343,19 @@ function dispararErroVisual() {
     usernameInput.addEventListener('input', limparErro);
 }
 
+// 🟢 CONFIGURAÇÃO DO TOAST DE ELITE (Substitui os alertas modais chatos)
+const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+        toast.addEventListener('mouseenter', Swal.stopTimer);
+        toast.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+});
+
 // 🟢 INTELIGÊNCIA ARTIFICIAL DOS ERROS DO BANCO
 function traduzirErroSupabase(mensagem) {
     if (!mensagem) return 'Erro de conexão. Verifique sua internet.';
@@ -360,7 +371,7 @@ function traduzirErroSupabase(mensagem) {
     return `Alerta do Banco de Dados: ${mensagem}`;
 }
 
-// 🟢 AUTENTICAÇÃO COM FALHAS COBERTAS E FIX DO SUPABASE
+// 🟢 AUTENTICAÇÃO COM FALHAS COBERTAS E TOASTS MODERNOS
 document.getElementById('form-auth').addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -369,7 +380,7 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
     const username = usernameInput.value.trim().toLowerCase();
 
     if (!isLogin && !document.getElementById('check-lgpd').checked) {
-        return Swal.fire('Atenção', 'Você deve concordar com os termos de tratamento de dados (LGPD).', 'warning');
+        return Toast.fire({ icon: 'warning', title: 'Atenção', text: 'Você deve concordar com os termos de tratamento de dados (LGPD).' });
     }
 
     const btn = document.getElementById('btn-submit');
@@ -396,7 +407,7 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
             const { error } = await client.auth.signInWithPassword({ email: emailLogin, password: senha });
             if (error) throw error;
             
-            Swal.fire({ icon: 'success', title: 'Acesso Liberado', showConfirmButton: false, timer: 1000 });
+            Toast.fire({ icon: 'success', title: 'Acesso Liberado', text: 'Bem-vindo de volta.' });
             setTimeout(() => window.location.href = 'index.html', 1000);
             
         } else {
@@ -412,23 +423,21 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
             const { error: insertErr } = await client.from('usuarios_dicionario').insert([{ username: username, email: identificador }]);
             if (insertErr) throw insertErr;
 
-            // 🟢 CADASTRO DIRETO (SEM PEDIR CÓDIGO/E-MAIL)
-            Swal.fire({
+            Toast.fire({
                 icon: 'success',
                 title: 'Cadastro Concluído!',
-                text: 'Sua conta de elite foi criada com sucesso. Faça o login para acessar o sistema.',
-                confirmButtonColor: '#2563eb'
-            }).then(() => { 
-                alternarModoTela(); 
-                identInput.value = username; 
-                passInput.value = '';
+                text: 'Faça o login para acessar o sistema.'
             });
+
+            alternarModoTela(); 
+            identInput.value = username; 
+            passInput.value = '';
         }
     } catch (err) {
         console.error("LOG DE ERRO TÉCNICO:", err);
         dispararErroVisual();
         const msgAmigavel = traduzirErroSupabase(err.message || err.error_description || JSON.stringify(err));
-        Swal.fire('Falha na Autenticação', msgAmigavel, 'error');
+        Toast.fire({ icon: 'error', title: 'Falha na Autenticação', text: msgAmigavel });
     } finally {
         btn.innerHTML = textoOriginal;
         btn.disabled = false;
