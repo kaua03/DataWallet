@@ -1,5 +1,5 @@
 // ==========================================
-// layout.js - MOTOR GLOBAL E CONTROLE DE TELA (COM ALINHAMENTO MILIMÉTRICO)
+// layout.js - MOTOR GLOBAL E CONTROLE DE TELA (CLEAN URLS E ALINHAMENTO MILIMÉTRICO)
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -77,19 +77,26 @@ window.fecharMenuEAbrirModal = function(funcaoAlvo) {
 function inicializarLayout(isDark) {
     document.querySelectorAll('#sidebar, #fab-container, #fab-overlay').forEach(el => el.remove());
 
-    const paginaAtual = window.location.pathname.split('/').pop() || 'movimentacoes.html';
-    const isDashboard = paginaAtual === 'dashboard.html';
-    const isPassivos = paginaAtual === 'dividas.html';
-    const isMetas = paginaAtual === 'metas.html' || paginaAtual === 'planos.html';
-    const isCompras = paginaAtual === 'compras.html';
+    // 🟢 INTELIGÊNCIA DE URLS LIMPAS (Vercel)
+    let caminho = window.location.pathname.split('/').pop();
+    if (!caminho || caminho === '') caminho = 'movimentacoes';
+    
+    // Arranca o .html da leitura para manter a lógica uniforme
+    const paginaAtual = caminho.replace('.html', '');
 
+    const isDashboard = paginaAtual === 'dashboard';
+    const isPassivos = paginaAtual === 'dividas';
+    const isMetas = paginaAtual === 'metas' || paginaAtual === 'planos';
+    const isCompras = paginaAtual === 'compras';
+
+    // 🟢 Menu também gerado com links limpos (sem .html)
     const menuItems = [
-        { nome: 'Movimentações', link: 'movimentacoes.html', icone: 'fa-money-bill-transfer', corBg: 'indigo-50', corTxt: 'indigo-700' },
-        { nome: 'Dashboard', link: 'dashboard.html', icone: 'fa-chart-pie', corBg: 'indigo-50', corTxt: 'indigo-700' },
-        { nome: 'Dívidas', link: 'dividas.html', icone: 'fa-file-invoice-dollar', corBg: 'indigo-50', corTxt: 'indigo-700' },
-        { nome: 'Categorias', link: 'categorias.html', icone: 'fa-tags', corBg: 'indigo-50', corTxt: 'indigo-700' },
-        { nome: 'Metas', link: 'metas.html', icone: 'fa-bullseye', corBg: 'indigo-50', corTxt: 'indigo-700' },
-        { nome: 'Mercado', link: 'compras.html', icone: 'fa-cart-shopping', corBg: 'indigo-50', corTxt: 'indigo-700' }
+        { nome: 'Movimentações', link: 'movimentacoes', icone: 'fa-money-bill-transfer', corBg: 'indigo-50', corTxt: 'indigo-700' },
+        { nome: 'Dashboard', link: 'dashboard', icone: 'fa-chart-pie', corBg: 'indigo-50', corTxt: 'indigo-700' },
+        { nome: 'Dívidas', link: 'dividas', icone: 'fa-file-invoice-dollar', corBg: 'indigo-50', corTxt: 'indigo-700' },
+        { nome: 'Categorias', link: 'categorias', icone: 'fa-tags', corBg: 'indigo-50', corTxt: 'indigo-700' },
+        { nome: 'Metas', link: 'metas', icone: 'fa-bullseye', corBg: 'indigo-50', corTxt: 'indigo-700' },
+        { nome: 'Mercado', link: 'compras', icone: 'fa-cart-shopping', corBg: 'indigo-50', corTxt: 'indigo-700' }
     ];
 
     let navLinksHtml = menuItems.map(item => {
@@ -103,7 +110,7 @@ function inicializarLayout(isDark) {
             </a>
         `;
 
-        if (item.link === 'compras.html' && isCompras) {
+        if (item.link === 'compras' && isCompras) {
             html += `
                 <div class="sub-menu-item pl-9 pr-1 w-full">
                     <button onclick="window.abrirModalShare()" class="w-full flex items-center h-9 px-3 rounded-lg font-bold bg-indigo-500 hover:bg-indigo-400 text-white dark:bg-indigo-600 dark:hover:bg-indigo-500 shadow-md shadow-indigo-500/30 transition-transform active:scale-95 border border-indigo-400 dark:border-indigo-500">
