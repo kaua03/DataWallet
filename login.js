@@ -399,7 +399,7 @@ document.getElementById('form-auth').addEventListener('submit', async (e) => {
             if (error) throw error;
             
             Swal.fire({ icon: 'success', title: 'Acesso Liberado', showConfirmButton: false, timer: 1000 });
-            setTimeout(() => window.location.href = 'dashboard.html', 1000);
+            setTimeout(() => window.location.href = 'index.html', 1000);
             
         } else {
             const { data: userExiste, error: errBusca } = await client.from('usuarios_dicionario').select('username').eq('username', username);
