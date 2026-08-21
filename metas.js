@@ -1,10 +1,23 @@
 // ==========================================
-// metas.js - MOTOR DE INTELIGÊNCIA, APORTES E VALIDAÇÃO DE CAIXA PRECISA
+// metas.js - MOTOR DE INTELIGÊNCIA, APORTES E VALIDAÇÃO DE CAIXA PRECISA (TOAST GLOBAL)
 // ==========================================
 
 let usuarioLogado = null;
 let transacoesGlobais = [];
 let metasGlobais = [];
+
+// 🟢 CONFIGURAÇÃO DO TOAST DE ELITE
+const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+        toast.addEventListener('mouseenter', Swal.stopTimer);
+        toast.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+});
 
 document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(() => document.body.classList.remove('fade-in'), 500);
@@ -111,9 +124,6 @@ async function carregarDadosDoBanco() {
         transacoesGlobais = rTrans.data || [];
         metasGlobais = rMetas.data || [];
 
-        // 🟢 CORREÇÃO: O robô que criava a meta fantasma de exemplo foi exterminado.
-        // Agora você tem controle absoluto. Se apagar tudo, fica tudo limpo.
-
         processarAnaliseInteligente();
         renderizarMetas();
 
@@ -122,9 +132,6 @@ async function carregarDadosDoBanco() {
     }
 }
 
-// ---------------------------------------------------------
-// CÁLCULO DE SALDO REAL DISPONÍVEL (UNIFICADO COM O PAINEL)
-// ---------------------------------------------------------
 function calcularSaldoRealDisponivel() {
     let totalReceitas = 0;
     let totalDespesasPagas = 0;
@@ -142,9 +149,6 @@ function calcularSaldoRealDisponivel() {
     return totalReceitas - totalDespesasPagas;
 }
 
-// ---------------------------------------------------------
-// INTELIGÊNCIA FINANCEIRA COM CONTADORES ANIMADOS
-// ---------------------------------------------------------
 function processarAnaliseInteligente() {
     const hoje = new Date();
     const mesAtual = hoje.getMonth();
@@ -206,9 +210,6 @@ function processarAnaliseInteligente() {
     }
 }
 
-// ---------------------------------------------------------
-// RENDERIZAÇÃO DAS METAS
-// ---------------------------------------------------------
 function renderizarMetas() {
     const grid = document.getElementById('grid-metas');
     if (!grid) return;
@@ -272,9 +273,6 @@ function renderizarMetas() {
     grid.innerHTML = html;
 }
 
-// ---------------------------------------------------------
-// EXIBIR HISTÓRICO DE APORTES COM OPÇÃO DE EXCLUIR APORTE
-// ---------------------------------------------------------
 function abrirHistoricoMeta(metaId) {
     const meta = metasGlobais.find(m => m.id == metaId);
     if (!meta) return;
@@ -359,10 +357,10 @@ async function excluirAporte(transacaoId, metaId) {
         renderizarMetas();
         renderizarListaAportesModal(meta);
 
-        Swal.fire({ icon: 'success', title: 'Valor estornado com sucesso!', showConfirmButton: false, timer: 1500 });
+        Toast.fire({ icon: 'info', title: 'Valor estornado com sucesso!' });
 
     } catch (e) {
-        Swal.fire('Erro', e.message, 'error');
+        Toast.fire({ icon: 'error', title: 'Erro', text: e.message });
     }
 }
 
@@ -370,9 +368,6 @@ function fecharHistoricoMeta() {
     document.getElementById('modal-historico-meta').classList.add('hidden');
 }
 
-// ---------------------------------------------------------
-// MODAIS E AÇÕES DE GRAVAÇÃO
-// ---------------------------------------------------------
 function abrirModalNovaMeta() {
     document.getElementById('form-meta').reset();
     document.getElementById('meta-id').value = '';
@@ -419,7 +414,7 @@ async function salvarMeta(event) {
     const prazo = document.getElementById('meta-prazo').value;
 
     if (alvo <= 0) {
-        Swal.fire('Aviso', 'O valor alvo deve ser maior que zero.', 'warning');
+        Toast.fire({ icon: 'warning', title: 'Atenção', text: 'O valor alvo deve ser maior que zero.' });
         return;
     }
 
@@ -444,7 +439,7 @@ async function salvarMeta(event) {
 
             fecharModalMeta();
             renderizarMetas();
-            Swal.fire({ icon: 'success', title: 'Meta Atualizada!', showConfirmButton: false, timer: 1500 });
+            Toast.fire({ icon: 'success', title: 'Meta Atualizada!' });
 
         } else {
             const novaMeta = {
@@ -469,7 +464,7 @@ async function salvarMeta(event) {
         }
 
     } catch (e) {
-        Swal.fire('Erro', e.message, 'error');
+        Toast.fire({ icon: 'error', title: 'Falha', text: e.message });
     }
 }
 
@@ -479,7 +474,7 @@ async function efetivarGuardar(event) {
     const valorGuardado = desmascararMoeda(document.getElementById('guardar-valor').value);
 
     if (valorGuardado <= 0) {
-        Swal.fire('Aviso', 'Insira um valor válido para guardar.', 'warning');
+        Toast.fire({ icon: 'warning', title: 'Atenção', text: 'Insira um valor válido para guardar.' });
         return;
     }
 
@@ -526,7 +521,7 @@ async function efetivarGuardar(event) {
         dispararOverlayLottie(`+ ${formatarMoedaLocal(valorGuardado)} adicionados a "${meta.titulo}"`);
 
     } catch (e) {
-        Swal.fire('Erro', e.message, 'error');
+        Toast.fire({ icon: 'error', title: 'Falha', text: e.message });
     }
 }
 
@@ -567,16 +562,13 @@ async function excluirMeta(metaId) {
         renderizarMetas();
         fecharHistoricoMeta();
 
-        Swal.fire({ icon: 'success', title: 'Meta excluída e valores estornados!', showConfirmButton: false, timer: 1500 });
+        Toast.fire({ icon: 'info', title: 'Meta excluída', text: 'Valores estornados para o caixa.' });
 
     } catch (e) {
-        Swal.fire('Erro', e.message, 'error');
+        Toast.fire({ icon: 'error', title: 'Falha', text: e.message });
     }
 }
 
-// ---------------------------------------------------------
-// ANIMAÇÃO LOTTIE BLINDADA (COM CARREGAMENTO DINÂMICO)
-// ---------------------------------------------------------
 function dispararOverlayLottie(subtexto = "Depósito Realizado com Sucesso!") {
     const urlAnimacao = "https://lottie.host/896876fe-ed06-4076-a17b-5d6704174739/9BiS4WTolI.lottie";
 
