@@ -109,7 +109,7 @@ async function carregarDadosDoBanco() {
     try {
         const [rTrans, rCat] = await Promise.all([
             supabaseClient.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id),
-            supabaseClient.from('categorias').select('*').eq('usuario_id', usuarioLogado.id)
+            supabaseClient.from('categorias').select('*').order('nome', { ascending: true })
         ]);
         transacoesGlobais = rTrans.data || [];
         categoriasGlobais = rCat.data || [];
