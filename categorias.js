@@ -1,5 +1,5 @@
 // ==========================================
-// categorias.js - MOTOR DE ORGANIZAÇÃO, EXTRATO E FILTROS ADEQUADOS
+// categorias.js - MOTOR DE ORGANIZAÇÃO, EXTRATO E FILTROS ADEQUADOS (GLOBAL MODE)
 // ==========================================
 
 let usuarioLogado = null;
@@ -52,23 +52,15 @@ async function carregarDadosDoBanco() {
         const client = window.supabaseClient || supabaseClient;
         if (!client) throw new Error("Cliente Supabase não inicializado.");
 
+        // 🟢 CORREÇÃO DE ARQUITETURA AQUI: 
+        // 1. Busca TODAS as categorias do sistema (Cardápio Global)
+        // 2. Busca apenas as transações DO USUÁRIO LOGADO.
         let [resCat, resTrans] = await Promise.all([
-            client.from('categorias').select('*').eq('usuario_id', usuarioLogado.id).order('nome', { ascending: true }),
+            client.from('categorias').select('*').order('nome', { ascending: true }),
             client.from('transacoes').select('*').eq('usuario_id', usuarioLogado.id).order('data_vencimento', { ascending: false }).order('id', { ascending: false })
         ]);
 
-        if (resCat.data && resCat.data.length === 0) {
-            await client.from('categorias').insert([
-                { usuario_id: usuarioLogado.id, nome: 'Alimentação', icone: 'fa-utensils', cor: 'text-orange-500' },
-                { usuario_id: usuarioLogado.id, nome: 'Veículo & Transporte', icone: 'fa-car', cor: 'text-slate-700 dark:text-slate-300' },
-                { usuario_id: usuarioLogado.id, nome: 'Moradia', icone: 'fa-house', cor: 'text-blue-500' },
-                { usuario_id: usuarioLogado.id, nome: 'Estudo & Carreira', icone: 'fa-graduation-cap', cor: 'text-purple-500' },
-                { usuario_id: usuarioLogado.id, nome: 'Saúde & Imprevistos', icone: 'fa-kit-medical', cor: 'text-teal-500' },
-                { usuario_id: usuarioLogado.id, nome: 'Lazer & Pessoal', icone: 'fa-ticket', cor: 'text-pink-500' },
-                { usuario_id: usuarioLogado.id, nome: 'Renda & Salário', icone: 'fa-money-bill-wave', cor: 'text-emerald-500' }
-            ]);
-            resCat = await client.from('categorias').select('*').eq('usuario_id', usuarioLogado.id).order('nome', { ascending: true });
-        }
+        // Removido o bloco de "insert" automático, pois agora o banco SQL gerencia as categorias globais.
 
         categoriasGlobais = resCat.data || [];
         transacoesGlobais = resTrans.data || [];
@@ -133,8 +125,8 @@ function renderizarCategorias() {
         return `
         <div onclick="abrirExtrato(${c.id}, '${c.nome}', '${c.cor}', '${c.icone}')" class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-lg hover:border-indigo-300 dark:hover:border-indigo-500/50 transition-all cursor-pointer flex flex-col justify-between group relative overflow-hidden">
             <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center ${c.cor} text-2xl group-hover:scale-110 transition-transform">
-                    <i class="fa-solid ${c.icone}"></i>
+                <div class="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-[${c.cor}] text-2xl group-hover:scale-110 transition-transform">
+                    <i class="${c.icone}"></i>
                 </div>
                 ${!isRenda ? `<span class="text-[10px] font-bold px-2.5 py-1 rounded-full ${posicaoIndex === 0 ? 'bg-rose-50 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400' : 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400'} shadow-inner">${badgeRanking}</span>` : ''}
             </div>
@@ -158,7 +150,7 @@ function renderizarCategorias() {
 // ---------------------------------------------
 function abrirExtrato(idCategoria, nome, cor, icone) {
     document.getElementById('extrato-titulo').innerText = nome;
-    document.getElementById('extrato-icone').innerHTML = `<i class="fa-solid ${icone} ${cor}"></i>`;
+    document.getElementById('extrato-icone').innerHTML = `<i class="${icone}" style="color: ${cor}"></i>`;
     
     categoriaAtivaModal = { id: idCategoria, nome: nome };
     
